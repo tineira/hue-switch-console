@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "push-from-bridge": "node scripts/push-from-bridge.mjs"
   },
   "dependencies": {
     "next": "16.3.5",

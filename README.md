@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# hue-switch-console
 
-## Getting Started
+Consola web (Vercel) para ver la topología Hue que suben los interruptores Wi‑Fi. **No habla con el Bridge.** El snapshot lo manda un XIAO (más adelante) o `npm run push-from-bridge` desde un PC en la LAN.
 
-First, run the development server:
+El firmware vive en otro repo: `hue-simple-switch`.
+
+## Local
 
 ```bash
+cp .env.example .env.local
+# edita INGEST_TOKEN
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+En otra terminal, con el Bridge al alcance:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# PowerShell
+$env:HUE_BRIDGE_IP="192.168.100.12"
+$env:HUE_APP_KEY="tu-key"
+$env:INGEST_TOKEN="el-mismo-de-.env.local"
+npm run push-from-bridge
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Abre [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+## API
 
-To learn more about Next.js, take a look at the following resources:
+`POST /api/ingest` (header `Authorization: Bearer INGEST_TOKEN`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```json
+{
+  "bridgeid": "C42996FFFECA6703",
+  "bridge_ip": "192.168.100.12",
+  "source": "xiao",
+  "lights": [{ "id": "uuid", "name": "Velador", "on": true, "caps": ["dim", "ct"] }],
+  "rooms": [{ "id": "uuid", "name": "Dormitorio Principal" }]
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+En local el JSON queda en `data/topology.json` (gitignored). En Vercel hace falta [KV](https://vercel.com/docs/storage/vercel-kv) (`KV_REST_API_URL` + `KV_REST_API_TOKEN`); sin eso el snapshot no sobrevive entre deploys.
 
-## Deploy on Vercel
+## Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npx vercel
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pon `INGEST_TOKEN` en Project → Environment Variables. Opcional: añade KV y las dos vars `KV_*`.

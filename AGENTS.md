@@ -7,3 +7,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# hue-switch-console
+
+Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
+
+- Topology arrives via `POST /api/ingest`; this app never calls the Hue Bridge.
+- Secrets: `INGEST_TOKEN`, optional Hue key only in the local `push-from-bridge` env — never commit `.env.local`.
+- Persistence: `data/topology.json` locally; Vercel KV in production.
+- Do not mix this tree with `C:\Users\tinei\Arduino`.
