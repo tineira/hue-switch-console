@@ -16,6 +16,8 @@ Copia canónica también en `hue-round-switch/docs/pages-requirements.md`. Mante
 
 La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel. El dedo en el círculo **nunca** espera a la web. Eso no cambia.
 
+Alta del aparato (flash + Wi‑Fi + token desde Chrome): `docs/web-setup.md`. Fuera de páginas; no implementado.
+
 ---
 
 ## 1. Veredicto

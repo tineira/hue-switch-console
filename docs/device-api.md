@@ -9,12 +9,7 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Put that URL and a console API key in `config.h`:
-
-```
-CONSOLE_URL      // https://hue.tineira.com
-CONSOLE_TOKEN    // device API key created in the console UI
-```
+Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome, no Arduino): `docs/web-setup.md` — requisitos, no implementado.
 
 Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
