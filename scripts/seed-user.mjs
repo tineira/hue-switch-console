@@ -1,62 +1,26 @@
 /**
- * Creates the seeded console user (email + password). No public signup.
- *
- *   npm run seed-user
+ * Seeds the first console user. No public signup.
+ *   npx vercel env run -- node scripts/seed-user.mjs
  */
-function env(name) {
-  let value = process.env[name];
-  if (
-    value &&
-    ((value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'")))
-  ) {
-    value = value.slice(1, -1);
-  }
-  return value;
-}
+import { randomBytes, scryptSync } from "node:crypto";
+import { neon } from "@neondatabase/serverless";
 
-const url = env("NEXT_PUBLIC_SUPABASE_URL");
-const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY");
-const email = env("USER_EMAIL")?.trim();
-const password = env("USER_PASSWORD");
-
-if (!url || !serviceKey || !email || !password) {
-  console.error(
-    "Need NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, USER_EMAIL, USER_PASSWORD",
-  );
+const url = process.env.DATABASE_URL;
+const email = process.env.USER_EMAIL?.trim().toLowerCase();
+const password = process.env.USER_PASSWORD;
+if (!url || url.includes("[SENSITIVE]") || !email || !password) {
+  console.error("Need DATABASE_URL, USER_EMAIL, USER_PASSWORD");
   process.exit(1);
 }
 
-const res = await fetch(`${url.replace(/\/$/, "")}/auth/v1/admin/users`, {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${serviceKey}`,
-    apikey: serviceKey,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    email,
-    password,
-    email_confirm: true,
-  }),
-});
-
-const body = await res.text();
-if (res.ok) {
-  console.log(`seeded ${email}`);
-  process.exit(0);
-}
-
-const lower = body.toLowerCase();
-if (
-  res.status === 422 ||
-  lower.includes("already") ||
-  lower.includes("registered") ||
-  lower.includes("exists")
-) {
+const salt = randomBytes(16);
+const hash = scryptSync(password, salt, 32);
+const stored = `${salt.toString("hex")}:${hash.toString("hex")}`;
+const sql = neon(url);
+const existing = await sql`select id from users where email = ${email} limit 1`;
+if (existing.length > 0) {
   console.log(`already exists: ${email}`);
   process.exit(0);
 }
-
-console.error(`seed failed ${res.status} ${body}`);
-process.exit(1);
+await sql`insert into users (email, password_hash) values (${email}, ${stored})`;
+console.log(`seeded ${email}`);

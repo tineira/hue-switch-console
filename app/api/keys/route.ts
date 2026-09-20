@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth";
 import { insertApiKey, listApiKeys, toApiKeyPublic } from "@/lib/db";
-import { isSupabaseConfigured } from "@/lib/env";
+import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
 import { asString } from "@/lib/parse";
 import { generateDeviceToken } from "@/lib/tokens";
@@ -8,8 +8,8 @@ import { generateDeviceToken } from "@/lib/tokens";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!isSupabaseConfigured()) {
-    return jsonError(503, "supabase_not_configured");
+  if (!isDbConfigured()) {
+    return jsonError(503, "database_not_configured");
   }
   const user = await getSessionUser();
   if (!user) return jsonError(401, "unauthorized");
@@ -23,8 +23,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!isSupabaseConfigured()) {
-    return jsonError(503, "supabase_not_configured");
+  if (!isDbConfigured()) {
+    return jsonError(503, "database_not_configured");
   }
   const user = await getSessionUser();
   if (!user) return jsonError(401, "unauthorized");

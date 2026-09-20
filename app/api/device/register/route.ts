@@ -4,7 +4,7 @@ import {
   upsertSwitch,
 } from "@/lib/db";
 import { authenticateDevice } from "@/lib/device-auth";
-import { isSupabaseConfigured } from "@/lib/env";
+import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
 import {
   asString,
@@ -19,8 +19,8 @@ import type { TopologySnapshot } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  if (!isSupabaseConfigured()) {
-    return jsonError(503, "supabase_not_configured");
+  if (!isDbConfigured()) {
+    return jsonError(503, "database_not_configured");
   }
 
   let device;

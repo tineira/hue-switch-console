@@ -1,9 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { ensureSeedUser } from "@/lib/auth";
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import {
+  clearSessionCookie,
+  ensureSeedUser,
+  signInWithPassword,
+} from "@/lib/auth";
+import { isDbConfigured } from "@/lib/env";
 
 export type LoginState = { error: string } | undefined;
 
@@ -11,8 +14,8 @@ export async function login(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  if (!isSupabaseConfigured()) {
-    return { error: "Supabase is not configured." };
+  if (!isDbConfigured()) {
+    return { error: "Database is not configured." };
   }
 
   const email = String(formData.get("email") ?? "").trim();
@@ -22,20 +25,14 @@ export async function login(
   }
 
   await ensureSeedUser();
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
+  const ok = await signInWithPassword(email, password);
+  if (!ok) {
     return { error: "Invalid email or password." };
   }
   redirect("/");
 }
 
 export async function signOut() {
-  if (!isSupabaseConfigured()) {
-    redirect("/login");
-  }
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  await clearSessionCookie();
   redirect("/login");
 }

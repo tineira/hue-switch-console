@@ -47,7 +47,7 @@ Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
 | 401 | `unauthorized` |
 | 404 | `not_found` |
 | 410 | `gone` (`/api/ingest` only) |
-| 503 | `supabase_not_configured` |
+| 503 | `database_not_configured` |
 
 MAC is 12 hex digits, case-insensitive, `:` / `-` allowed on input. Stored and
 returned lowercase without separators (`aabbccddeeff`).

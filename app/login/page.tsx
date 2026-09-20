@@ -1,11 +1,13 @@
 import { LoginForm } from "@/app/login/login-form";
 import { ensureSeedUser } from "@/lib/auth";
-import { isSupabaseConfigured } from "@/lib/env";
+import { ensureSchema } from "@/lib/ensure-schema";
+import { isDbConfigured } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  if (isSupabaseConfigured()) {
+  if (isDbConfigured()) {
+    await ensureSchema();
     await ensureSeedUser();
   }
 
@@ -22,21 +24,14 @@ export default async function LoginPage() {
         </p>
       </header>
 
-      {!isSupabaseConfigured() ? (
+      {!isDbConfigured() ? (
         <section className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
-          <p className="font-medium text-foreground">Supabase is not configured</p>
+          <p className="font-medium text-foreground">Database is not configured</p>
           <p className="mt-2">
-            Set{" "}
-            <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
-            <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>{" "}
-            (or{" "}
-            <code className="font-mono text-xs">
-              NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-            </code>
-            ), and{" "}
-            <code className="font-mono text-xs">SUPABASE_SERVICE_ROLE_KEY</code>.
-            Apply <code className="font-mono text-xs">supabase/migrations</code>,
-            then run <code className="font-mono text-xs">npm run seed-user</code>.
+            Set <code className="font-mono text-xs">DATABASE_URL</code> (Neon)
+            and <code className="font-mono text-xs">AUTH_SECRET</code>, apply{" "}
+            <code className="font-mono text-xs">db/schema.sql</code>, then seed
+            the first user.
           </p>
         </section>
       ) : (

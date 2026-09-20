@@ -1,6 +1,6 @@
 # hue-switch-console
 
-Web console (Vercel + Supabase) for Wi-Fi Hue wall switches. **It never talks
+Web console (Vercel + Neon Postgres) for Wi-Fi Hue wall switches. **It never talks
 to the Bridge.** A XIAO or `npm run push-from-bridge` uploads topology.
 Humans sign in with email + password. Devices use an API key.
 
@@ -15,16 +15,12 @@ Production host: `https://hue.tineira.com`.
 
 ```bash
 cp .env.example .env.local
-# set Supabase URL + anon/publishable key + service role
-# set USER_EMAIL / USER_PASSWORD for the seeded account
+# DATABASE_URL from Vercel/Neon, AUTH_SECRET, USER_EMAIL, USER_PASSWORD
 npm install
-npx supabase db push   # after supabase link, or apply the SQL in the dashboard
-npm run seed-user
+npx vercel env run -e production -- node scripts/migrate.mjs
+npx vercel env run -e production -- node scripts/seed-user.mjs
 npm run dev
 ```
-
-Disable public signups in the Supabase Auth settings (this repo’s local
-`supabase/config.toml` already has `enable_signup = false`).
 
 Open [http://localhost:3000](http://localhost:3000), sign in, create a device
 API key, copy it once.

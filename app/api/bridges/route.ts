@@ -1,13 +1,13 @@
 import { getSessionUser } from "@/lib/auth";
 import { listBridges } from "@/lib/db";
-import { isSupabaseConfigured } from "@/lib/env";
+import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!isSupabaseConfigured()) {
-    return jsonError(503, "supabase_not_configured");
+  if (!isDbConfigured()) {
+    return jsonError(503, "database_not_configured");
   }
   const user = await getSessionUser();
   if (!user) return jsonError(401, "unauthorized");

@@ -1,11 +1,11 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { formatMac } from "@/lib/mac";
+import { sql } from "@/lib/sql";
 import type {
-  ApiKeyPublic,
   Channel,
   Recipe,
   SwitchPublic,
   TopologySnapshot,
+  ApiKeyPublic,
 } from "@/lib/types";
 
 export type DeviceApiKeyRow = {
@@ -42,6 +42,70 @@ export type BridgeRow = {
   updated_at: string;
 };
 
+function asChannels(value: unknown): Channel[] {
+  if (Array.isArray(value)) return value as Channel[];
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as Channel[];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function asSnapshot(value: unknown): TopologySnapshot {
+  if (value && typeof value === "object") return value as TopologySnapshot;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as TopologySnapshot;
+    } catch {
+      return { receivedAt: "", bridgeid: "", lights: [], rooms: [], scenes: [] };
+    }
+  }
+  return { receivedAt: "", bridgeid: "", lights: [], rooms: [], scenes: [] };
+}
+
+function mapKey(row: Record<string, unknown>): DeviceApiKeyRow {
+  return {
+    id: String(row.id),
+    user_id: String(row.user_id),
+    name: String(row.name),
+    key_prefix: String(row.key_prefix),
+    created_at: String(row.created_at),
+    revoked_at: row.revoked_at ? String(row.revoked_at) : null,
+    last_used_at: row.last_used_at ? String(row.last_used_at) : null,
+  };
+}
+
+function mapSwitch(row: Record<string, unknown>): SwitchRow {
+  return {
+    id: String(row.id),
+    user_id: String(row.user_id),
+    mac: String(row.mac),
+    label: row.label ? String(row.label) : null,
+    firmware: row.firmware ? String(row.firmware) : null,
+    bridgeid: String(row.bridgeid),
+    bridge_ip: row.bridge_ip ? String(row.bridge_ip) : null,
+    channels: asChannels(row.channels),
+    api_key_id: row.api_key_id ? String(row.api_key_id) : null,
+    rev: Number(row.rev) || 0,
+    last_seen_at: row.last_seen_at ? String(row.last_seen_at) : null,
+    created_at: String(row.created_at),
+  };
+}
+
+function mapBridge(row: Record<string, unknown>): BridgeRow {
+  return {
+    id: String(row.id),
+    user_id: String(row.user_id),
+    bridgeid: String(row.bridgeid),
+    bridge_ip: row.bridge_ip ? String(row.bridge_ip) : null,
+    snapshot: asSnapshot(row.snapshot),
+    updated_at: String(row.updated_at),
+  };
+}
+
 export function toApiKeyPublic(row: DeviceApiKeyRow): ApiKeyPublic {
   return {
     id: row.id,
@@ -66,35 +130,28 @@ export function toSwitchPublic(row: SwitchRow): SwitchPublic {
 }
 
 export async function findActiveApiKeyByHash(hash: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("device_api_keys")
-    .select("id, user_id, name, key_prefix, created_at, revoked_at, last_used_at")
-    .eq("key_hash", hash)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data || data.revoked_at) return null;
-  return data as DeviceApiKeyRow;
+  const rows = await sql()`
+    select id, user_id, name, key_prefix, created_at, revoked_at, last_used_at
+    from device_api_keys
+    where key_hash = ${hash} and revoked_at is null
+    limit 1
+  `;
+  if (!rows[0]) return null;
+  return mapKey(rows[0] as Record<string, unknown>);
 }
 
 export async function touchApiKey(id: string) {
-  const admin = createAdminClient();
-  await admin
-    .from("device_api_keys")
-    .update({ last_used_at: new Date().toISOString() })
-    .eq("id", id);
+  await sql()`update device_api_keys set last_used_at = now() where id = ${id}`;
 }
 
 export async function listApiKeys(userId: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("device_api_keys")
-    .select("id, user_id, name, key_prefix, created_at, revoked_at, last_used_at")
-    .eq("user_id", userId)
-    .is("revoked_at", null)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as DeviceApiKeyRow[];
+  const rows = await sql()`
+    select id, user_id, name, key_prefix, created_at, revoked_at, last_used_at
+    from device_api_keys
+    where user_id = ${userId} and revoked_at is null
+    order by created_at desc
+  `;
+  return rows.map((row) => mapKey(row as Record<string, unknown>));
 }
 
 export async function insertApiKey(row: {
@@ -103,106 +160,83 @@ export async function insertApiKey(row: {
   prefix: string;
   hash: string;
 }) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("device_api_keys")
-    .insert({
-      user_id: row.userId,
-      name: row.name,
-      key_prefix: row.prefix,
-      key_hash: row.hash,
-    })
-    .select("id, user_id, name, key_prefix, created_at, revoked_at, last_used_at")
-    .single();
-  if (error) throw error;
-  return data as DeviceApiKeyRow;
+  const rows = await sql()`
+    insert into device_api_keys (user_id, name, key_prefix, key_hash)
+    values (${row.userId}, ${row.name}, ${row.prefix}, ${row.hash})
+    returning id, user_id, name, key_prefix, created_at, revoked_at, last_used_at
+  `;
+  return mapKey(rows[0] as Record<string, unknown>);
 }
 
 export async function revokeApiKey(userId: string, id: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("device_api_keys")
-    .update({ revoked_at: new Date().toISOString() })
-    .eq("user_id", userId)
-    .eq("id", id)
-    .is("revoked_at", null)
-    .select("id")
-    .maybeSingle();
-  if (error) throw error;
-  return Boolean(data);
+  const rows = await sql()`
+    update device_api_keys
+    set revoked_at = now()
+    where user_id = ${userId} and id = ${id} and revoked_at is null
+    returning id
+  `;
+  return rows.length > 0;
 }
 
 export async function upsertBridge(row: {
   userId: string;
   snapshot: TopologySnapshot;
 }) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("bridges")
-    .upsert(
-      {
-        user_id: row.userId,
-        bridgeid: row.snapshot.bridgeid,
-        bridge_ip: row.snapshot.bridgeIp ?? null,
-        snapshot: row.snapshot,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,bridgeid" },
-    )
-    .select("id, user_id, bridgeid, bridge_ip, snapshot, updated_at")
-    .single();
-  if (error) throw error;
-  return data as BridgeRow;
+  const payload = JSON.stringify(row.snapshot);
+  const rows = await sql()`
+    insert into bridges (user_id, bridgeid, bridge_ip, snapshot, updated_at)
+    values (${row.userId}, ${row.snapshot.bridgeid}, ${row.snapshot.bridgeIp ?? null}, ${payload}::jsonb, now())
+    on conflict (user_id, bridgeid) do update set
+      bridge_ip = excluded.bridge_ip,
+      snapshot = excluded.snapshot,
+      updated_at = now()
+    returning id, user_id, bridgeid, bridge_ip, snapshot, updated_at
+  `;
+  return mapBridge(rows[0] as Record<string, unknown>);
 }
 
 export async function getBridge(userId: string, bridgeid: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("bridges")
-    .select("id, user_id, bridgeid, bridge_ip, snapshot, updated_at")
-    .eq("user_id", userId)
-    .eq("bridgeid", bridgeid)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as BridgeRow | null) ?? null;
+  const rows = await sql()`
+    select id, user_id, bridgeid, bridge_ip, snapshot, updated_at
+    from bridges
+    where user_id = ${userId} and bridgeid = ${bridgeid}
+    limit 1
+  `;
+  if (!rows[0]) return null;
+  return mapBridge(rows[0] as Record<string, unknown>);
 }
 
 export async function listBridges(userId: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("bridges")
-    .select("id, user_id, bridgeid, bridge_ip, snapshot, updated_at")
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as BridgeRow[];
+  const rows = await sql()`
+    select id, user_id, bridgeid, bridge_ip, snapshot, updated_at
+    from bridges
+    where user_id = ${userId}
+    order by updated_at desc
+  `;
+  return rows.map((row) => mapBridge(row as Record<string, unknown>));
 }
 
 export async function getSwitchByMac(userId: string, mac: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("switches")
-    .select(
-      "id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels, api_key_id, rev, last_seen_at, created_at",
-    )
-    .eq("user_id", userId)
-    .eq("mac", mac)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as SwitchRow | null) ?? null;
+  const rows = await sql()`
+    select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
+           api_key_id, rev, last_seen_at, created_at
+    from switches
+    where user_id = ${userId} and mac = ${mac}
+    limit 1
+  `;
+  if (!rows[0]) return null;
+  return mapSwitch(rows[0] as Record<string, unknown>);
 }
 
 export async function listSwitches(userId: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("switches")
-    .select(
-      "id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels, api_key_id, rev, last_seen_at, created_at",
-    )
-    .eq("user_id", userId)
-    .order("last_seen_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as SwitchRow[];
+  const rows = await sql()`
+    select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
+           api_key_id, rev, last_seen_at, created_at
+    from switches
+    where user_id = ${userId}
+    order by last_seen_at desc nulls last
+  `;
+  return rows.map((row) => mapSwitch(row as Record<string, unknown>));
 }
 
 export async function upsertSwitch(row: {
@@ -215,70 +249,76 @@ export async function upsertSwitch(row: {
   channels: Channel[];
   apiKeyId: string;
 }) {
-  const admin = createAdminClient();
   const existing = await getSwitchByMac(row.userId, row.mac);
   const bridgeChanged = Boolean(existing && existing.bridgeid !== row.bridgeid);
   if (existing && bridgeChanged) {
-    await admin.from("recipes").delete().eq("switch_id", existing.id);
+    await sql()`delete from recipes where switch_id = ${existing.id}`;
   }
-
-  const { data, error } = await admin
-    .from("switches")
-    .upsert(
-      {
-        user_id: row.userId,
-        mac: row.mac,
-        label: row.label ?? existing?.label ?? formatMac(row.mac),
-        firmware: row.firmware ?? existing?.firmware ?? null,
-        bridgeid: row.bridgeid,
-        bridge_ip: row.bridgeIp ?? existing?.bridge_ip ?? null,
-        channels: row.channels,
-        api_key_id: row.apiKeyId,
-        rev: bridgeChanged ? 0 : (existing?.rev ?? 0),
-        last_seen_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,mac" },
+  const label = row.label ?? existing?.label ?? formatMac(row.mac);
+  const firmware = row.firmware ?? existing?.firmware ?? null;
+  const bridgeIp = row.bridgeIp ?? existing?.bridge_ip ?? null;
+  const rev = bridgeChanged ? 0 : (existing?.rev ?? 0);
+  const channels = JSON.stringify(row.channels);
+  const rows = await sql()`
+    insert into switches (
+      user_id, mac, label, firmware, bridgeid, bridge_ip, channels, api_key_id, rev, last_seen_at
     )
-    .select(
-      "id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels, api_key_id, rev, last_seen_at, created_at",
+    values (
+      ${row.userId}, ${row.mac}, ${label}, ${firmware}, ${row.bridgeid}, ${bridgeIp},
+      ${channels}::jsonb, ${row.apiKeyId}, ${rev}, now()
     )
-    .single();
-  if (error) throw error;
-  return data as SwitchRow;
+    on conflict (user_id, mac) do update set
+      label = excluded.label,
+      firmware = excluded.firmware,
+      bridgeid = excluded.bridgeid,
+      bridge_ip = excluded.bridge_ip,
+      channels = excluded.channels,
+      api_key_id = excluded.api_key_id,
+      rev = excluded.rev,
+      last_seen_at = now()
+    returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
+              api_key_id, rev, last_seen_at, created_at
+  `;
+  return mapSwitch(rows[0] as Record<string, unknown>);
 }
 
 export async function touchSwitch(id: string) {
-  const admin = createAdminClient();
-  await admin
-    .from("switches")
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq("id", id);
+  await sql()`update switches set last_seen_at = now() where id = ${id}`;
 }
 
 export async function listRecipes(switchId: string): Promise<Recipe[]> {
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("recipes")
-    .select("channel_id, event, action, target_rtype, target_rid")
-    .eq("switch_id", switchId);
-  if (error) throw error;
-  return (data ?? []).map((row) => ({
-    channelId: row.channel_id as string,
-    event: row.event as Recipe["event"],
-    action: row.action as Recipe["action"],
-    target: {
-      rtype: row.target_rtype as Recipe["target"]["rtype"],
-      rid: row.target_rid as string,
-    },
-  }));
+  const rows = await sql()`
+    select channel_id, event, action, target_rtype, target_rid
+    from recipes
+    where switch_id = ${switchId}
+  `;
+  return rows.map((row) => {
+    const rec = row as Record<string, unknown>;
+    return {
+      channelId: String(rec.channel_id),
+      event: rec.event as Recipe["event"],
+      action: rec.action as Recipe["action"],
+      target: {
+        rtype: rec.target_rtype as Recipe["target"]["rtype"],
+        rid: String(rec.target_rid),
+      },
+    };
+  });
 }
 
 export async function replaceRecipes(switchId: string, recipes: Recipe[]) {
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("replace_switch_recipes", {
-    p_switch_id: switchId,
-    p_recipes: recipes,
-  });
-  if (error) throw error;
-  return data as number;
+  await sql()`delete from recipes where switch_id = ${switchId}`;
+  for (const rec of recipes) {
+    await sql()`
+      insert into recipes (switch_id, channel_id, event, action, target_rtype, target_rid)
+      values (
+        ${switchId}, ${rec.channelId}, ${rec.event}, ${rec.action},
+        ${rec.target.rtype}, ${rec.target.rid}
+      )
+    `;
+  }
+  const rows = await sql()`
+    update switches set rev = rev + 1 where id = ${switchId} returning rev
+  `;
+  return Number((rows[0] as { rev: number }).rev);
 }

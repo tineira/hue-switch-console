@@ -8,11 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "push-from-bridge": "node scripts/push-from-bridge.mjs",
-    "seed-user": "node --env-file=.env.local scripts/seed-user.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "seed-user": "node scripts/seed-user.mjs"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.116.0",
+    "@neondatabase/serverless": "^1.1.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
