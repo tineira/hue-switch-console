@@ -1,50 +1,53 @@
 # hue-switch-console
 
-Consola web (Vercel) para ver la topología Hue que suben los interruptores Wi‑Fi. **No habla con el Bridge.** El snapshot lo manda un XIAO (más adelante) o `npm run push-from-bridge` desde un PC en la LAN.
+Web console (Vercel + Supabase) for Wi-Fi Hue wall switches. **It never talks
+to the Bridge.** A XIAO or `npm run push-from-bridge` uploads topology.
+Humans sign in with email + password. Devices use an API key.
 
-El firmware vive en otro repo: `hue-simple-switch`.
+Firmware lives in `hue-simple-switch`. Product UI is **English**.
+
+Device HTTP contract: [`docs/device-api.md`](docs/device-api.md).
+Product model: [`docs/definiciones.md`](docs/definiciones.md).
+
+Production host: `https://hue.tineira.com`.
 
 ## Local
 
 ```bash
 cp .env.example .env.local
-# edita INGEST_TOKEN
+# set Supabase URL + anon/publishable key + service role
+# set USER_EMAIL / USER_PASSWORD for the seeded account
 npm install
+npx supabase db push   # after supabase link, or apply the SQL in the dashboard
+npm run seed-user
 npm run dev
 ```
 
-En otra terminal, con el Bridge al alcance:
+Disable public signups in the Supabase Auth settings (this repo’s local
+`supabase/config.toml` already has `enable_signup = false`).
+
+Open [http://localhost:3000](http://localhost:3000), sign in, create a device
+API key, copy it once.
+
+On a PC that can reach the Bridge:
 
 ```bash
 # PowerShell
 $env:HUE_BRIDGE_IP="192.168.100.12"
-$env:HUE_APP_KEY="tu-key"
-$env:INGEST_TOKEN="el-mismo-de-.env.local"
+$env:HUE_APP_KEY="your-hue-key"
+$env:CONSOLE_TOKEN="hsw_…"
+$env:CONSOLE_URL="http://localhost:3000"
 npm run push-from-bridge
 ```
 
-Abre [http://localhost:3000](http://localhost:3000).
+## Device API
 
-## API
+See [`docs/device-api.md`](docs/device-api.md). Short version:
 
-`POST /api/ingest` (header `Authorization: Bearer INGEST_TOKEN`)
+- `POST /api/device/register` — Bearer device key; MAC, firmware, channels, rich snapshot
+- `GET /api/device/config?mac=` — `{ rev, recipes[] }`
+- `PUT /api/switches/{mac}/recipes` — logged-in user
 
-```json
-{
-  "bridgeid": "C42996FFFECA6703",
-  "bridge_ip": "192.168.100.12",
-  "source": "xiao",
-  "lights": [{ "id": "uuid", "name": "Velador", "on": true, "caps": ["dim", "ct"] }],
-  "rooms": [{ "id": "uuid", "name": "Dormitorio Principal" }]
-}
-```
+`POST /api/ingest` is gone (`410`). Postgres replaces the old file / KV store.
 
-En local el JSON queda en `data/topology.json` (gitignored). En Vercel hace falta [KV](https://vercel.com/docs/storage/vercel-kv) (`KV_REST_API_URL` + `KV_REST_API_TOKEN`); sin eso el snapshot no sobrevive entre deploys.
-
-## Vercel
-
-```bash
-npx vercel
-```
-
-Pon `INGEST_TOKEN` en Project → Environment Variables. Opcional: añade KV y las dos vars `KV_*`.
+Firmware TLS against `https://hue.tineira.com` must **verify** the certificate.

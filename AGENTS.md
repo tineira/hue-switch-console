@@ -12,7 +12,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 
-- Topology arrives via `POST /api/ingest`; this app never calls the Hue Bridge.
-- Secrets: `INGEST_TOKEN`, optional Hue key only in the local `push-from-bridge` env — never commit `.env.local`.
-- Persistence: `data/topology.json` locally; Vercel KV in production.
+- Product UI is **English** (labels, errors, auth emails). Spec in `docs/definiciones.md` may stay Spanish.
+- Topology arrives from the LAN (switch or `push-from-bridge`); this app never calls the Hue Bridge.
+- Secrets stay in `.env.local` — never commit it.
 - Do not mix this tree with `C:\Users\tinei\Arduino`.
+- Read `docs/definiciones.md` before implementing.

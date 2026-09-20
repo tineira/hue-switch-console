@@ -1,93 +1,126 @@
-import { listSnapshots } from "@/lib/store";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Shell } from "@/app/shell";
+import { requireSessionUser } from "@/lib/auth";
+import { listBridges, listSwitches } from "@/lib/db";
+import { formatMac } from "@/lib/mac";
+import type { TopologySnapshot } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-function formatCaps(caps?: string[]): string {
-  if (!caps?.length) {
-    return "—";
-  }
-  return caps.join(", ");
+function snapshotCounts(snapshot: TopologySnapshot | null) {
+  if (!snapshot) return "No snapshot";
+  const lights = snapshot.lights?.length ?? 0;
+  const rooms = snapshot.rooms?.length ?? 0;
+  const scenes = snapshot.scenes?.length ?? 0;
+  return `${lights} lights · ${rooms} rooms · ${scenes} scenes`;
 }
 
 export default async function Home() {
-  const snapshots = await listSnapshots();
+  const user = await requireSessionUser();
+  const [bridges, switches] = await Promise.all([
+    listBridges(user.id),
+    listSwitches(user.id),
+  ]);
+
+  if (bridges.length === 1) {
+    redirect(`/bridges/${encodeURIComponent(bridges[0].bridgeid)}`);
+  }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-10">
-      <header className="flex flex-col gap-2">
-        <p className="text-sm text-zinc-500">hue-switch-console</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Topología Hue</h1>
-        <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-          Snapshot que sube un switch (o un curl desde la LAN). Vercel no habla
-          con el Bridge; solo guarda lo que llega a{" "}
-          <code className="font-mono text-xs">POST /api/ingest</code>.
+    <Shell email={user.email}>
+      <section className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Bridges</h1>
+        <p className="max-w-2xl text-sm text-muted">
+          Configuration is per Bridge — not a Hue Home. Switches paired to the
+          same <span className="font-mono text-xs">bridgeid</span> share one
+          topology. Open a Bridge to assign recipes per channel and event.
         </p>
-      </header>
+      </section>
 
-      {snapshots.length === 0 ? (
-        <section className="rounded-lg border border-dashed border-zinc-300 p-6 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
-          Todavía no hay datos. Desde el PC en la misma red que el Bridge:
-          <pre className="mt-3 overflow-x-auto rounded-md bg-zinc-100 p-3 font-mono text-xs dark:bg-zinc-900">
-            npm run push-from-bridge
-          </pre>
+      {bridges.length === 0 ? (
+        <section className="flex flex-col gap-4 rounded-xl border border-dashed border-line bg-cream p-6">
+          <h2 className="text-lg font-medium">No Bridge snapshot yet</h2>
+          <ol className="flex max-w-xl list-decimal flex-col gap-2 pl-5 text-sm text-muted">
+            <li>
+              Create a device API key and put it in{" "}
+              <code className="font-mono text-xs">config.h</code> as{" "}
+              <code className="font-mono text-xs">CONSOLE_TOKEN</code>.
+            </li>
+            <li>
+              Let the XIAO pair with Hue on the LAN, then register. Or run{" "}
+              <code className="font-mono text-xs">npm run push-from-bridge</code>{" "}
+              from a machine that can reach the Bridge.
+            </li>
+            <li>
+              Come back here. Rooms, lights, and scenes will appear so you can
+              assign on / off / double-click.
+            </li>
+          </ol>
+          <p>
+            <Link
+              href="/keys"
+              className="text-sm font-medium text-filament hover:underline"
+            >
+              Manage API keys
+            </Link>
+          </p>
+          {switches.length > 0 ? (
+            <p className="text-sm text-muted">
+              {switches.length} switch{switches.length === 1 ? "" : "es"}{" "}
+              registered, but no topology row yet. Re-register so the snapshot
+              lands.
+            </p>
+          ) : null}
         </section>
       ) : (
-        snapshots.map((snap) => (
-          <section key={snap.bridgeid} className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-              <h2 className="text-lg font-medium">{snap.bridgeid}</h2>
-              {snap.bridgeIp ? (
-                <span className="font-mono text-zinc-500">{snap.bridgeIp}</span>
-              ) : null}
-              <span className="text-zinc-500">
-                {snap.lights.length} luces
-                {snap.rooms.length ? ` · ${snap.rooms.length} rooms` : ""}
-              </span>
-              <span className="text-zinc-400">
-                {snap.source} · {new Date(snap.receivedAt).toLocaleString()}
-              </span>
-            </div>
-
-            {snap.rooms.length > 0 ? (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                {snap.rooms.map((room) => room.name).join(" · ")}
-              </p>
-            ) : null}
-
-            <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-              <table className="w-full min-w-[40rem] text-left text-sm">
-                <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Nombre</th>
-                    <th className="px-3 py-2 font-medium">Estado</th>
-                    <th className="px-3 py-2 font-medium">Caps</th>
-                    <th className="px-3 py-2 font-medium">id</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {snap.lights.map((light) => (
-                    <tr
-                      key={light.id}
-                      className="border-t border-zinc-200 dark:border-zinc-800"
-                    >
-                      <td className="px-3 py-2">{light.name}</td>
-                      <td className="px-3 py-2">
-                        {light.on === undefined ? "—" : light.on ? "on" : "off"}
-                      </td>
-                      <td className="px-3 py-2 text-zinc-500">
-                        {formatCaps(light.caps)}
-                      </td>
-                      <td className="px-3 py-2 font-mono text-xs text-zinc-500">
-                        {light.id}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ))
+        <section className="grid gap-3">
+          {bridges.map((bridge) => {
+            const snap = bridge.snapshot;
+            const boards = switches.filter(
+              (item) => item.bridgeid === bridge.bridgeid,
+            );
+            return (
+              <article
+                key={bridge.id}
+                className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  <div className="flex flex-col gap-1">
+                    <h2 className="font-mono text-base">{bridge.bridgeid}</h2>
+                    <p className="text-sm text-muted">
+                      {bridge.bridge_ip ? (
+                        <span className="font-mono">{bridge.bridge_ip} · </span>
+                      ) : null}
+                      {snapshotCounts(snap)} · {boards.length} switch
+                      {boards.length === 1 ? "" : "es"} · updated{" "}
+                      {new Date(bridge.updated_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/bridges/${encodeURIComponent(bridge.bridgeid)}`}
+                    className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
+                  >
+                    Open workspace
+                  </Link>
+                </div>
+                {boards.length > 0 ? (
+                  <p className="text-sm text-muted">
+                    {boards
+                      .map((item) => item.label || formatMac(item.mac))
+                      .join(" · ")}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted">
+                    Topology is here; no switch has registered against this
+                    Bridge yet.
+                  </p>
+                )}
+              </article>
+            );
+          })}
+        </section>
       )}
-    </main>
+    </Shell>
   );
 }
