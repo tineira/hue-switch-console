@@ -42,7 +42,37 @@ export function ThemePicker() {
     setOpen(false);
   }
 
-  const current = THEMES.find((item) => item.id === theme) ?? THEMES[1];
+  const current = THEMES.find((item) => item.id === theme) ?? THEMES[0];
+  const dark = THEMES.filter((item) => item.group === "dark");
+  const light = THEMES.filter((item) => item.group === "light");
+
+  function group(title: string, items: typeof THEMES[number][]) {
+    return (
+      <li className="px-1 pt-1">
+        <p className="px-2 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted">
+          {title}
+        </p>
+        <ul>
+          {items.map((item) => (
+            <li key={item.id}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={item.id === theme}
+                className={`flex w-full flex-col rounded-md px-3 py-1.5 text-left text-sm ${
+                  item.id === theme ? "bg-filament-soft" : "hover:bg-background"
+                }`}
+                onClick={() => choose(item.id)}
+              >
+                <span className="font-medium">{item.name}</span>
+                <span className="text-xs text-muted">{item.blurb}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </li>
+    );
+  }
 
   return (
     <div className="relative" data-theme-picker>
@@ -57,25 +87,11 @@ export function ThemePicker() {
       </button>
       {open ? (
         <ul
-          className="absolute right-0 z-20 mt-1 min-w-52 rounded-lg border border-line bg-cream p-1 shadow-lg"
+          className="absolute right-0 z-20 mt-1 max-h-[70vh] min-w-56 overflow-y-auto rounded-lg border border-line bg-cream py-1 shadow-lg"
           role="listbox"
         >
-          {THEMES.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={item.id === theme}
-                className={`flex w-full flex-col rounded-md px-3 py-2 text-left text-sm ${
-                  item.id === theme ? "bg-filament-soft" : "hover:bg-background"
-                }`}
-                onClick={() => choose(item.id)}
-              >
-                <span className="font-medium">{item.name}</span>
-                <span className="text-xs text-muted">{item.blurb}</span>
-              </button>
-            </li>
-          ))}
+          {group("Dark", dark)}
+          {group("Light", light)}
         </ul>
       ) : null}
     </div>

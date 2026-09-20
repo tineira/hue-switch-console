@@ -3,86 +3,115 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hue console — dark theme prototypes</title>
+  <title>Hue console — theme prototypes</title>
   <style>
     :root {
       --sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
-      --mono: "Cascadia Mono", "SF Mono", ui-monospace, monospace;
+      --mono: "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
     }
 
-    /* 1 Ember — warm charcoal, copper (dark sibling of current filament) */
+    /* —— Dark (10) —— */
     [data-theme="ember"] {
-      --bg: #14110f;
-      --fg: #f4eee6;
-      --card: #1e1a17;
-      --muted: #a89a8c;
-      --line: #3a322c;
-      --accent: #e07a3d;
-      --accent-ink: #1c140e;
-      --accent-soft: #3a2618;
-      --ok: #9dce9a;
-      --ok-soft: #1d2b1e;
-      --danger: #e08a7a;
+      --bg: #14110f; --fg: #f4eee6; --card: #1e1a17; --muted: #a89a8c; --line: #3a322c;
+      --accent: #e07a3d; --accent-ink: #1c140e; --accent-soft: #3a2618;
+      --ok: #9dce9a; --ok-soft: #1d2b1e; --danger: #e08a7a;
     }
-
-    /* 2 Graphite — neutral zinc, champagne */
     [data-theme="graphite"] {
-      --bg: #121314;
-      --fg: #ececec;
-      --card: #1c1d1f;
-      --muted: #9a9ca3;
-      --line: #2e3035;
-      --accent: #d4b483;
-      --accent-ink: #1a1610;
-      --accent-soft: #2f2a22;
-      --ok: #8fbf9a;
-      --ok-soft: #1a2620;
-      --danger: #d9897c;
+      --bg: #121314; --fg: #ececec; --card: #1c1d1f; --muted: #9a9ca3; --line: #2e3035;
+      --accent: #d4b483; --accent-ink: #1a1610; --accent-soft: #2f2a22;
+      --ok: #8fbf9a; --ok-soft: #1a2620; --danger: #d9897c;
     }
-
-    /* 3 Night — near-black OLED, electric amber */
     [data-theme="night"] {
-      --bg: #070708;
-      --fg: #f2f2f0;
-      --card: #111114;
-      --muted: #8e8e96;
-      --line: #24242b;
-      --accent: #ffb020;
-      --accent-ink: #16110a;
-      --accent-soft: #2a220e;
-      --ok: #6ee7b7;
-      --ok-soft: #10231c;
-      --danger: #fb7185;
+      --bg: #070708; --fg: #f2f2f0; --card: #111114; --muted: #8e8e96; --line: #24242b;
+      --accent: #ffb020; --accent-ink: #16110a; --accent-soft: #2a220e;
+      --ok: #6ee7b7; --ok-soft: #10231c; --danger: #fb7185;
     }
-
-    /* 4 Ink — blue-black, teal */
     [data-theme="ink"] {
-      --bg: #0b1016;
-      --fg: #e8eef6;
-      --card: #121a24;
-      --muted: #8fa0b5;
-      --line: #243040;
-      --accent: #3dd6c6;
-      --accent-ink: #06201c;
-      --accent-soft: #143330;
-      --ok: #7dcea0;
-      --ok-soft: #15261c;
-      --danger: #f07a72;
+      --bg: #0b1016; --fg: #e8eef6; --card: #121a24; --muted: #8fa0b5; --line: #243040;
+      --accent: #3dd6c6; --accent-ink: #06201c; --accent-soft: #143330;
+      --ok: #7dcea0; --ok-soft: #15261c; --danger: #f07a72;
+    }
+    [data-theme="plum"] {
+      --bg: #140f14; --fg: #f3e8ee; --card: #1d161d; --muted: #b39aa8; --line: #3a2c36;
+      --accent: #e8a0b4; --accent-ink: #2a1218; --accent-soft: #3a222a;
+      --ok: #a8d5b5; --ok-soft: #1c2a20; --danger: #e07a7a;
+    }
+    [data-theme="matrix"] {
+      --bg: #020402; --fg: #d0ffd4; --card: #071208; --muted: #5f9e68; --line: #1a3d1e;
+      --accent: #00ff41; --accent-ink: #021006; --accent-soft: #0a2a12;
+      --ok: #00ff41; --ok-soft: #062410; --danger: #ff4d4d;
+    }
+    [data-theme="nord"] {
+      --bg: #2e3440; --fg: #eceff4; --card: #3b4252; --muted: #a0a8b8; --line: #4c566a;
+      --accent: #88c0d0; --accent-ink: #2e3440; --accent-soft: #434c5e;
+      --ok: #a3be8c; --ok-soft: #3b4252; --danger: #bf616a;
+    }
+    [data-theme="dracula"] {
+      --bg: #1e1f29; --fg: #f8f8f2; --card: #282a36; --muted: #b0b3c8; --line: #44475a;
+      --accent: #bd93f9; --accent-ink: #1e1f29; --accent-soft: #3b3354;
+      --ok: #50fa7b; --ok-soft: #1e3328; --danger: #ff5555;
+    }
+    [data-theme="ocean"] {
+      --bg: #071018; --fg: #dceef8; --card: #0d1b28; --muted: #7fa3bb; --line: #1c3348;
+      --accent: #38bdf8; --accent-ink: #062033; --accent-soft: #123044;
+      --ok: #5eead4; --ok-soft: #0f2a28; --danger: #fb7185;
+    }
+    [data-theme="forest"] {
+      --bg: #0c120e; --fg: #e8f0e6; --card: #151e17; --muted: #8fa88c; --line: #2a3a2c;
+      --accent: #c9a227; --accent-ink: #1c1606; --accent-soft: #2e2a12;
+      --ok: #86c98a; --ok-soft: #1a2c1c; --danger: #e07a6a;
     }
 
-    /* 5 Plum — espresso / wine, rose */
-    [data-theme="plum"] {
-      --bg: #140f14;
-      --fg: #f3e8ee;
-      --card: #1d161d;
-      --muted: #b39aa8;
-      --line: #3a2c36;
-      --accent: #e8a0b4;
-      --accent-ink: #2a1218;
-      --accent-soft: #3a222a;
-      --ok: #a8d5b5;
-      --ok-soft: #1c2a20;
-      --danger: #e07a7a;
+    /* —— Light (10) —— */
+    [data-theme="paper"] {
+      --bg: #f3eee4; --fg: #1c1814; --card: #fffaf2; --muted: #6e675c; --line: #e0d4c4;
+      --accent: #c45c26; --accent-ink: #fffaf2; --accent-soft: #f6e4d6;
+      --ok: #2f5d38; --ok-soft: #e4f0dc; --danger: #a33b2a;
+    }
+    [data-theme="snow"] {
+      --bg: #f4f6f8; --fg: #1a2330; --card: #ffffff; --muted: #5c6b7a; --line: #d5dde4;
+      --accent: #2563eb; --accent-ink: #ffffff; --accent-soft: #dbe7ff;
+      --ok: #157a3a; --ok-soft: #ddf5e4; --danger: #b42318;
+    }
+    [data-theme="sand"] {
+      --bg: #f4ecdf; --fg: #2a2118; --card: #fff8ee; --muted: #7a6a58; --line: #e4d4c0;
+      --accent: #b85c38; --accent-ink: #fff8ee; --accent-soft: #f3e0d4;
+      --ok: #3d6b3a; --ok-soft: #e4f0dc; --danger: #a33b2a;
+    }
+    [data-theme="mist"] {
+      --bg: #eef0f2; --fg: #1f2328; --card: #ffffff; --muted: #5e656e; --line: #d4d8de;
+      --accent: #4b5563; --accent-ink: #ffffff; --accent-soft: #e5e7eb;
+      --ok: #2f6b48; --ok-soft: #dcefe4; --danger: #b42318;
+    }
+    [data-theme="meadow"] {
+      --bg: #eef3e8; --fg: #1c2418; --card: #f7fbf3; --muted: #5d6b55; --line: #d4e0cc;
+      --accent: #3f7a4a; --accent-ink: #f7fbf3; --accent-soft: #dcead8;
+      --ok: #2f6b48; --ok-soft: #d8f0dc; --danger: #a33b2a;
+    }
+    [data-theme="porcelain"] {
+      --bg: #f6f1f3; --fg: #2a1c22; --card: #fffafb; --muted: #7a6570; --line: #eadde2;
+      --accent: #c45c78; --accent-ink: #fffafb; --accent-soft: #f6e0e8;
+      --ok: #2f6b48; --ok-soft: #e0f0e4; --danger: #b42318;
+    }
+    [data-theme="citrus"] {
+      --bg: #f7f3e6; --fg: #242018; --card: #fffdf6; --muted: #6e6754; --line: #e6ddc4;
+      --accent: #d97706; --accent-ink: #fffdf6; --accent-soft: #f8e6c4;
+      --ok: #3d6b3a; --ok-soft: #e4f0dc; --danger: #b45309;
+    }
+    [data-theme="sky"] {
+      --bg: #eaf3f8; --fg: #152030; --card: #f7fcff; --muted: #4e6a80; --line: #c9dde8;
+      --accent: #0284c7; --accent-ink: #f7fcff; --accent-soft: #d4eef8;
+      --ok: #157a3a; --ok-soft: #ddf5e4; --danger: #b42318;
+    }
+    [data-theme="linen"] {
+      --bg: #f3efe4; --fg: #242018; --card: #fbf8f0; --muted: #6a6558; --line: #ddd6c4;
+      --accent: #6b7a3a; --accent-ink: #fbf8f0; --accent-soft: #e6ead4;
+      --ok: #3d6b3a; --ok-soft: #e0f0dc; --danger: #a33b2a;
+    }
+    [data-theme="phosphor"] {
+      --bg: #e8f5e9; --fg: #0b2e14; --card: #f4fbf4; --muted: #3d6b45; --line: #c5e0c8;
+      --accent: #15803d; --accent-ink: #f4fbf4; --accent-soft: #d1f0d6;
+      --ok: #166534; --ok-soft: #d8f5dc; --danger: #b91c1c;
     }
 
     * { box-sizing: border-box; }
@@ -93,16 +122,28 @@
       color: var(--fg);
       line-height: 1.45;
     }
+    body[data-theme="matrix"],
+    body[data-theme="phosphor"] {
+      font-family: var(--mono);
+    }
 
-    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 64px; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 64px; }
 
+    .group { margin-bottom: 16px; }
+    .group h2 {
+      font-size: 11px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
     .picker {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       gap: 10px;
-      margin-bottom: 28px;
     }
-    @media (max-width: 800px) {
+    @media (max-width: 900px) {
       .picker { grid-template-columns: 1fr 1fr; }
     }
 
@@ -126,7 +167,7 @@
     .chips { display: flex; gap: 5px; margin-top: 10px; }
     .chip {
       width: 18px; height: 18px; border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
+      border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
     }
 
     header.app {
@@ -134,7 +175,7 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 16px;
-      margin-bottom: 28px;
+      margin: 28px 0;
     }
     .eyebrow {
       font-size: 11px;
@@ -251,16 +292,8 @@
       padding: 4px 8px;
       cursor: pointer;
     }
-    .slot .fill {
-      background: var(--accent);
-      color: var(--accent-ink);
-      border-color: var(--accent);
-      font-weight: 600;
-    }
 
-    .room {
-      padding: 14px 16px;
-    }
+    .room { padding: 14px 16px; }
     .room h3 { margin: 0 0 4px; font-size: 16px; }
     .chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .target {
@@ -299,8 +332,15 @@
 </head>
 <body data-theme="ember">
   <div class="wrap">
-    <p class="eyebrow">Prototype · not the live app</p>
-    <div class="picker" id="picker"></div>
+    <p class="eyebrow">Prototype · not the live app · 20 palettes</p>
+    <div class="group">
+      <h2>Dark</h2>
+      <div class="picker" id="picker-dark"></div>
+    </div>
+    <div class="group">
+      <h2>Light</h2>
+      <div class="picker" id="picker-light"></div>
+    </div>
 
     <header class="app">
       <div>
@@ -380,46 +420,63 @@
       </section>
     </div>
 
-    <p class="note">Keys 1–5 switch themes. Choice is stored in this browser only. Open the file locally; it does not need a server.</p>
+    <p class="note">Click a swatch. Matrix is the phosphor-green terminal look; Phosphor is its light twin. Choice stays in this browser only.</p>
   </div>
 
   <script>
-    const themes = [
-      { id: "ember", name: "Ember", blurb: "Warm charcoal, copper", colors: ["#14110f", "#1e1a17", "#e07a3d", "#f4eee6"] },
+    const dark = [
+      { id: "ember", name: "Ember", blurb: "Charcoal, copper", colors: ["#14110f", "#1e1a17", "#e07a3d", "#f4eee6"] },
       { id: "graphite", name: "Graphite", blurb: "Zinc, champagne", colors: ["#121314", "#1c1d1f", "#d4b483", "#ececec"] },
-      { id: "night", name: "Night", blurb: "OLED black, electric amber", colors: ["#070708", "#111114", "#ffb020", "#f2f2f0"] },
+      { id: "night", name: "Night", blurb: "OLED, electric amber", colors: ["#070708", "#111114", "#ffb020", "#f2f2f0"] },
       { id: "ink", name: "Ink", blurb: "Blue-black, teal", colors: ["#0b1016", "#121a24", "#3dd6c6", "#e8eef6"] },
       { id: "plum", name: "Plum", blurb: "Espresso, rose", colors: ["#140f14", "#1d161d", "#e8a0b4", "#f3e8ee"] },
+      { id: "matrix", name: "Matrix", blurb: "Black, phosphor green", colors: ["#020402", "#071208", "#00ff41", "#d0ffd4"] },
+      { id: "nord", name: "Nord", blurb: "Polar night, frost", colors: ["#2e3440", "#3b4252", "#88c0d0", "#eceff4"] },
+      { id: "dracula", name: "Dracula", blurb: "Purple, pink", colors: ["#1e1f29", "#282a36", "#bd93f9", "#f8f8f2"] },
+      { id: "ocean", name: "Ocean", blurb: "Navy, sky cyan", colors: ["#071018", "#0d1b28", "#38bdf8", "#dceef8"] },
+      { id: "forest", name: "Forest", blurb: "Pine, gold", colors: ["#0c120e", "#151e17", "#c9a227", "#e8f0e6"] },
+    ];
+    const light = [
+      { id: "paper", name: "Paper", blurb: "Cream, filament (current)", colors: ["#f3eee4", "#fffaf2", "#c45c26", "#1c1814"] },
+      { id: "snow", name: "Snow", blurb: "Cool white, blue", colors: ["#f4f6f8", "#ffffff", "#2563eb", "#1a2330"] },
+      { id: "sand", name: "Sand", blurb: "Beige, terracotta", colors: ["#f4ecdf", "#fff8ee", "#b85c38", "#2a2118"] },
+      { id: "mist", name: "Mist", blurb: "Gray, slate", colors: ["#eef0f2", "#ffffff", "#4b5563", "#1f2328"] },
+      { id: "meadow", name: "Meadow", blurb: "Sage, leaf", colors: ["#eef3e8", "#f7fbf3", "#3f7a4a", "#1c2418"] },
+      { id: "porcelain", name: "Porcelain", blurb: "Blush, rose", colors: ["#f6f1f3", "#fffafb", "#c45c78", "#2a1c22"] },
+      { id: "citrus", name: "Citrus", blurb: "Ivory, amber", colors: ["#f7f3e6", "#fffdf6", "#d97706", "#242018"] },
+      { id: "sky", name: "Sky", blurb: "Pale blue, azure", colors: ["#eaf3f8", "#f7fcff", "#0284c7", "#152030"] },
+      { id: "linen", name: "Linen", blurb: "Ivory, olive", colors: ["#f3efe4", "#fbf8f0", "#6b7a3a", "#242018"] },
+      { id: "phosphor", name: "Phosphor", blurb: "Mint paper, matrix green", colors: ["#e8f5e9", "#f4fbf4", "#15803d", "#0b2e14"] },
     ];
 
-    const picker = document.getElementById("picker");
+    const pickers = { dark: document.getElementById("picker-dark"), light: document.getElementById("picker-light") };
     const saved = localStorage.getItem("hsw-theme-preview") || "ember";
 
     function apply(id) {
       document.body.dataset.theme = id;
       localStorage.setItem("hsw-theme-preview", id);
-      picker.querySelectorAll(".swatch").forEach((btn) => {
+      document.querySelectorAll(".swatch").forEach((btn) => {
         btn.setAttribute("aria-pressed", btn.dataset.id === id ? "true" : "false");
       });
     }
 
-    themes.forEach((t, i) => {
-      const b = document.createElement("button");
-      b.className = "swatch";
-      b.dataset.id = t.id;
-      b.type = "button";
-      b.innerHTML = `<strong>${i + 1}. ${t.name}</strong><span>${t.blurb}</span><div class="chips">${
-        t.colors.map((c) => `<i class="chip" style="background:${c}"></i>`).join("")
-      }</div>`;
-      b.addEventListener("click", () => apply(t.id));
-      picker.appendChild(b);
-    });
+    function fill(el, list) {
+      list.forEach((t) => {
+        const b = document.createElement("button");
+        b.className = "swatch";
+        b.dataset.id = t.id;
+        b.type = "button";
+        b.innerHTML = `<strong>${t.name}</strong><span>${t.blurb}</span><div class="chips">${
+          t.colors.map((c) => `<i class="chip" style="background:${c}"></i>`).join("")
+        }</div>`;
+        b.addEventListener("click", () => apply(t.id));
+        el.appendChild(b);
+      });
+    }
 
+    fill(pickers.dark, dark);
+    fill(pickers.light, light);
     apply(saved);
-    document.addEventListener("keydown", (e) => {
-      const n = Number(e.key);
-      if (n >= 1 && n <= themes.length) apply(themes[n - 1].id);
-    });
   </script>
 </body>
 </html>
