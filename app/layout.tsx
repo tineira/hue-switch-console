@@ -17,12 +17,19 @@ export const metadata: Metadata = {
   description: "Commissioning UI for Wi-Fi Hue wall switches",
 };
 
+const themeBoot = `(function(){try{var t=localStorage.getItem("hsw-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      data-theme="ember"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

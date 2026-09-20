@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-:root {
+:root,
+html[data-theme="paper"] {
+  color-scheme: light;
   --background: #f3eee4;
   --foreground: #1c1814;
   --cream: #fffaf2;
@@ -15,6 +17,96 @@
   --warn-soft: #f8ecd0;
   --danger: #a33b2a;
   --danger-soft: #f8e2dc;
+}
+
+html[data-theme="ember"] {
+  color-scheme: dark;
+  --background: #14110f;
+  --foreground: #f4eee6;
+  --cream: #1e1a17;
+  --muted: #a89a8c;
+  --line: #3a322c;
+  --filament: #e07a3d;
+  --filament-ink: #1c140e;
+  --filament-soft: #3a2618;
+  --ok: #9dce9a;
+  --ok-soft: #1d2b1e;
+  --warn: #e0c078;
+  --warn-soft: #2f2718;
+  --danger: #e08a7a;
+  --danger-soft: #2f1c18;
+}
+
+html[data-theme="graphite"] {
+  color-scheme: dark;
+  --background: #121314;
+  --foreground: #ececec;
+  --cream: #1c1d1f;
+  --muted: #9a9ca3;
+  --line: #2e3035;
+  --filament: #d4b483;
+  --filament-ink: #1a1610;
+  --filament-soft: #2f2a22;
+  --ok: #8fbf9a;
+  --ok-soft: #1a2620;
+  --warn: #d4b483;
+  --warn-soft: #2a261c;
+  --danger: #d9897c;
+  --danger-soft: #2f1c18;
+}
+
+html[data-theme="night"] {
+  color-scheme: dark;
+  --background: #070708;
+  --foreground: #f2f2f0;
+  --cream: #111114;
+  --muted: #8e8e96;
+  --line: #24242b;
+  --filament: #ffb020;
+  --filament-ink: #16110a;
+  --filament-soft: #2a220e;
+  --ok: #6ee7b7;
+  --ok-soft: #10231c;
+  --warn: #ffb020;
+  --warn-soft: #2a220e;
+  --danger: #fb7185;
+  --danger-soft: #2f1c18;
+}
+
+html[data-theme="ink"] {
+  color-scheme: dark;
+  --background: #0b1016;
+  --foreground: #e8eef6;
+  --cream: #121a24;
+  --muted: #8fa0b5;
+  --line: #243040;
+  --filament: #3dd6c6;
+  --filament-ink: #06201c;
+  --filament-soft: #143330;
+  --ok: #7dcea0;
+  --ok-soft: #15261c;
+  --warn: #e0c078;
+  --warn-soft: #2f2718;
+  --danger: #f07a72;
+  --danger-soft: #2f1c18;
+}
+
+html[data-theme="plum"] {
+  color-scheme: dark;
+  --background: #140f14;
+  --foreground: #f3e8ee;
+  --cream: #1d161d;
+  --muted: #b39aa8;
+  --line: #3a2c36;
+  --filament: #e8a0b4;
+  --filament-ink: #2a1218;
+  --filament-soft: #3a222a;
+  --ok: #a8d5b5;
+  --ok-soft: #1c2a20;
+  --warn: #e8c090;
+  --warn-soft: #2f2718;
+  --danger: #e07a7a;
+  --danger-soft: #2f1c18;
 }
 
 @theme inline {
@@ -34,25 +126,6 @@
   --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #161310;
-    --foreground: #f3eee4;
-    --cream: #1f1b17;
-    --muted: #a39a8e;
-    --line: #3a332c;
-    --filament: #e08a4f;
-    --filament-ink: #1c1814;
-    --filament-soft: #3a2a20;
-    --ok: #9dce9a;
-    --ok-soft: #1d2b1e;
-    --warn: #e0c078;
-    --warn-soft: #2f2718;
-    --danger: #e08a7a;
-    --danger-soft: #2f1c18;
-  }
 }
 
 body {

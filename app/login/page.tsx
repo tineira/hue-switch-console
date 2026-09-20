@@ -1,4 +1,5 @@
 import { LoginForm } from "@/app/login/login-form";
+import { ThemePicker } from "@/app/theme-picker";
 import { ensureSeedUser } from "@/lib/auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
@@ -13,6 +14,9 @@ export default async function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-16">
+      <div className="flex justify-end">
+        <ThemePicker />
+      </div>
       <header className="flex flex-col gap-2">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted">
           Hue switch console

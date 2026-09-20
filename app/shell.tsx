@@ -1,5 +1,6 @@
 import { NavLinks } from "@/app/nav-links";
 import { SignOutButton } from "@/app/sign-out-button";
+import { ThemePicker } from "@/app/theme-picker";
 
 export function Shell({
   email,
@@ -23,7 +24,8 @@ export function Shell({
           </p>
           <NavLinks />
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <ThemePicker />
           {email ? <span className="text-muted">{email}</span> : null}
           <SignOutButton />
         </div>
