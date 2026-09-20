@@ -1,4 +1,3 @@
-import { formatMac } from "@/lib/mac";
 import { sql } from "@/lib/sql";
 import type {
   Channel,
@@ -254,7 +253,7 @@ export async function upsertSwitch(row: {
   if (existing && bridgeChanged) {
     await sql()`delete from recipes where switch_id = ${existing.id}`;
   }
-  const label = row.label ?? existing?.label ?? formatMac(row.mac);
+  const label = existing?.label ?? row.label ?? null;
   const firmware = row.firmware ?? existing?.firmware ?? null;
   const bridgeIp = row.bridgeIp ?? existing?.bridge_ip ?? null;
   const rev = bridgeChanged ? 0 : (existing?.rev ?? 0);
@@ -268,7 +267,6 @@ export async function upsertSwitch(row: {
       ${channels}::jsonb, ${row.apiKeyId}, ${rev}, now()
     )
     on conflict (user_id, mac) do update set
-      label = excluded.label,
       firmware = excluded.firmware,
       bridgeid = excluded.bridgeid,
       bridge_ip = excluded.bridge_ip,
@@ -279,6 +277,22 @@ export async function upsertSwitch(row: {
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
               api_key_id, rev, last_seen_at, created_at
   `;
+  return mapSwitch(rows[0] as Record<string, unknown>);
+}
+
+export async function updateSwitchLabel(
+  userId: string,
+  mac: string,
+  label: string | null,
+) {
+  const rows = await sql()`
+    update switches
+    set label = ${label}
+    where user_id = ${userId} and mac = ${mac}
+    returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
+              api_key_id, rev, last_seen_at, created_at
+  `;
+  if (!rows[0]) return null;
   return mapSwitch(rows[0] as Record<string, unknown>);
 }
 

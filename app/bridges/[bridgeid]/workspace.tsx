@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   actionLabel,
@@ -142,6 +142,10 @@ export function BridgeWorkspace({
   );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [names, setNames] = useState<Record<string, string | null>>(() =>
+    Object.fromEntries(switches.map((item) => [item.mac, item.label])),
+  );
+  const [editingMac, setEditingMac] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
@@ -385,42 +389,64 @@ export function BridgeWorkspace({
                       : "border-line"
                   }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (item.mac === selectedMac) return;
-                      setSelectedMac(item.mac);
-                      setSelectedSlot(
-                        firstOpenSlot(item, drafts[item.mac] ?? item.recipes),
-                      );
-                      setNotice(null);
-                      setError(null);
-                    }}
-                    className="flex w-full flex-col gap-1 px-4 py-3 text-left"
-                  >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="font-medium">
-                        {item.label || formatMac(item.mac)}
+                  <div className="flex items-start gap-1 px-3 py-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (item.mac === selectedMac) return;
+                        setSelectedMac(item.mac);
+                        setSelectedSlot(
+                          firstOpenSlot(item, drafts[item.mac] ?? item.recipes),
+                        );
+                        setNotice(null);
+                        setError(null);
+                      }}
+                      className="flex min-w-0 flex-1 flex-col gap-1 px-1 text-left"
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium">
+                          {(names[item.mac] || "").trim() || formatMac(item.mac)}
+                        </span>
+                        {itemDirty ? (
+                          <span className="shrink-0 rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
+                            Unsaved
+                          </span>
+                        ) : savedAt === item.mac ? (
+                          <span className="shrink-0 rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
+                            Saved
+                          </span>
+                        ) : null}
                       </span>
-                      {itemDirty ? (
-                        <span className="rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
-                          Unsaved
-                        </span>
-                      ) : savedAt === item.mac ? (
-                        <span className="rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
-                          Saved
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-xs text-muted">
-                      {formatMac(item.mac)}
-                      {item.firmware ? ` · fw ${item.firmware}` : ""}
-                      {` · rev ${revs[item.mac] ?? item.rev}`}
-                      {item.last_seen_at
-                        ? ` · seen ${formatWhen(item.last_seen_at)}`
-                        : " · never seen"}
-                    </span>
-                  </button>
+                      <span className="text-xs text-muted">
+                        {formatMac(item.mac)}
+                        {item.firmware ? ` · fw ${item.firmware}` : ""}
+                        {` · rev ${revs[item.mac] ?? item.rev}`}
+                        {item.last_seen_at
+                          ? ` · seen ${formatWhen(item.last_seen_at)}`
+                          : " · never seen"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="mt-0.5 shrink-0 rounded-md p-1.5 text-muted hover:bg-filament-soft hover:text-filament"
+                      aria-label={`Rename ${formatMac(item.mac)}`}
+                      onClick={() => setEditingMac(item.mac)}
+                    >
+                      <PencilIcon />
+                    </button>
+                  </div>
+                  {editingMac === item.mac ? (
+                    <SwitchRenameForm
+                      mac={item.mac}
+                      initial={(names[item.mac] || "").trim()}
+                      onCancel={() => setEditingMac(null)}
+                      onSaved={(label) => {
+                        setNames((current) => ({ ...current, [item.mac]: label }));
+                        setEditingMac(null);
+                      }}
+                      onError={setError}
+                    />
+                  ) : null}
 
                   {active ? (
                     <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
@@ -872,5 +898,105 @@ function TargetButton({
         <span className="ml-2 text-xs text-muted">{detail}</span>
       ) : null}
     </button>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M13.586 3.586a2 2 0 0 1 2.828 2.828l-8.486 8.486a2 2 0 0 1-.707.464l-3.04 1.013a.5.5 0 0 1-.64-.64l1.013-3.04a2 2 0 0 1 .464-.707l8.486-8.486ZM15 5l-1-1" />
+    </svg>
+  );
+}
+
+function SwitchRenameForm({
+  mac,
+  initial,
+  onCancel,
+  onSaved,
+  onError,
+}: {
+  mac: string;
+  initial: string;
+  onCancel: () => void;
+  onSaved: (label: string | null) => void;
+  onError: (message: string | null) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const [pending, setPending] = useState(false);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setPending(true);
+    onError(null);
+    try {
+      const label = value.trim() || null;
+      const res = await fetch(`/api/switches/${mac}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label }),
+      });
+      const body = (await res.json()) as { error?: string; details?: string; label?: string | null };
+      if (!res.ok) {
+        onError(body.details ?? body.error ?? "Could not rename switch");
+        return;
+      }
+      onSaved(body.label ?? label);
+    } catch {
+      onError("Could not rename switch");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={save}
+      className="flex flex-col gap-2 border-t border-line px-4 py-3"
+    >
+      <label className="text-xs font-medium uppercase tracking-[0.12em] text-muted" htmlFor={`rename-${mac}`}>
+        Display name
+      </label>
+      <input
+        id={`rename-${mac}`}
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            onCancel();
+          }
+        }}
+        maxLength={80}
+        autoFocus
+        placeholder={formatMac(mac)}
+        className="rounded-md border border-line bg-background px-3 py-1.5 text-sm outline-none focus:border-filament"
+        disabled={pending}
+      />
+      <p className="text-xs text-muted">Shown only in this console. The switch keeps using its MAC.</p>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-60"
+        >
+          {pending ? "Saving…" : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={pending}
+          className="rounded-md border border-line px-3 py-1.5 text-sm"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }

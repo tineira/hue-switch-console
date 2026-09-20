@@ -117,9 +117,9 @@ Content-Type: application/json
 | `channels` | yes when registering a board | `{ id, gpio, label, kind }`. `kind` is `maintained` or `momentary`. Empty array allowed |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string |
+| `label` | no | Console display name on **first** insert only. Later registers do not overwrite a name set in the UI. Not sent to the board |
 | `bridge_ip` | no | LAN address of the Bridge; not a tunnel |
 | `source` | no | Default `xiao` if `mac` is set, else `unknown`. Script uses `push-from-bridge` |
-| `label` | no | Display name; default is the formatted MAC |
 
 `push-from-bridge` may omit `mac` / `firmware` / `channels` and still replace
 the snapshot.

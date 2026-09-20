@@ -15,7 +15,7 @@ La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel. El dedo en 
 
 **Bridge.** Hue Bridge Pro en la LAN. Fuente de verdad de luces, rooms, zonas y escenas. API local Clip v2 por HTTPS (certificado propio).
 
-**Switch / XIAO.** Placa Seeed XIAO ESP32-C6. Wi‑Fi 2.4 GHz. No es accesorio Zigbee ni se hace pasar por un interruptor Hue. Varios **canales** (entradas digitales). Cada canal tiene tipo de contacto y recetas por **evento leído**, no una sola receta “del switch”.
+**Switch / XIAO.** Placa Seeed XIAO ESP32-C6 (u otro XIAO Wi‑Fi). No es accesorio Zigbee ni se hace pasar por un interruptor Hue. Varios **canales** (entradas digitales o botones en pantalla). Cada canal tiene tipo de contacto y recetas por **evento leído**, no una sola receta “del switch”. El **nombre de pantalla** lo edita el usuario en la consola (`switches.label`); no se envía al aparato. Si está vacío, la UI muestra la MAC.
 
 **Canal.** Un GPIO de entrada. El firmware declara `{ id, gpio, label, kind }`; la consola asigna recetas a ese `id`, no elige el pin. `kind`:
 
