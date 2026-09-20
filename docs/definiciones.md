@@ -161,10 +161,10 @@ Flujo de la pantalla del Bridge (gastar tiempo aquí: estados vacío / incomplet
 
 | Hueco (evento) | Default acción Hue | Destinos que encajan |
 | --- | --- | --- |
-| `on` | `on` | `light` o `grouped_light` |
-| `off` | `off` | el **mismo** destino que `on`, o vacío |
+| `on` | `on` | `light`, `grouped_light`, o `scene` (`recall_scene`) |
+| `off` | `off` | el **mismo** destino que `on`, o `scene`, o vacío |
 | `double_click` | `recall_scene` | `scene` (o otro light/group si se quiere) |
-| `short` (momentary) | `toggle` | light o grouped_light |
+| `short` (momentary) | `toggle` | light, grouped_light, o `scene` (`recall_scene`) |
 
 Atajo de UI (inglés): “Use this room for on and off” llena `on` y `off` juntos al mismo `grouped_light`. Double-click queda vacío hasta que elijan una escena.
 
@@ -172,7 +172,7 @@ Un hueco vacío = el switch **no hace nada** en ese evento. Guardar incompleto e
 
 Frase de confirmación (inglés, no solo UUIDs): *“D0 on → turn on Living · off → turn off Living · double-click → scene Relax”*.
 
-Validar al guardar: `rid` existe en el snapshot de ese `bridgeid`; `recall_scene` solo con `rtype: scene`; `on`/`off` no apuntan a una escena.
+Validar al guardar: `rid` existe en el snapshot de ese `bridgeid`; `recall_scene` solo con `rtype: scene`; `on` / `off` / `toggle` no apuntan a una escena (el hueco `on`/`off`/`short` sí puede tener acción `recall_scene`).
 
 `rev` incrementa. Eso es lo que el poll compara.
 

@@ -76,7 +76,7 @@ export function defaultActionForTarget(
   rtype: TargetRtype,
 ): HueAction | null {
   if (rtype === "scene") {
-    return event === "double_click" ? "recall_scene" : null;
+    return "recall_scene";
   }
   if (event === "on") return "on";
   if (event === "off") return "off";

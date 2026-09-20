@@ -69,10 +69,7 @@ function clearRecipe(recipes: Recipe[], slot: SlotRef): Recipe[] {
 }
 
 function incompatibleHint(event: ChannelEvent): string {
-  if (event === "double_click") {
-    return "Double-click can take a scene, a room, or a light.";
-  }
-  return `${eventLabel(event)} cannot target a scene. Pick a room or a light.`;
+  return `${eventLabel(event)} cannot use that target. Pick a room, light, or scene.`;
 }
 
 function firstOpenSlot(
@@ -105,9 +102,9 @@ function assignHint(slot: SlotRef | null, channel: Channel | undefined): string 
     return `Assigning ${channel.label} · Double-click — a scene is typical. A room or light also works.`;
   }
   if (slot.event === "short") {
-    return `Assigning ${channel.label} · Short press — click a room or a light. Default action is toggle.`;
+    return `Assigning ${channel.label} · Short press — click a room or light (toggle) or a scene.`;
   }
-  return `Assigning ${channel.label} · ${eventLabel(slot.event)} — click a room or a light.`;
+  return `Assigning ${channel.label} · ${eventLabel(slot.event)} — click a room, light, or scene.`;
 }
 
 export function BridgeWorkspace({

@@ -251,8 +251,9 @@ Content-Type: application/json
 
 Omitted slots stay empty (no-op on the switch). Validation: `channelId` must
 exist on the switch; event must match `kind`; `recall_scene` only with
-`rtype: scene`; `on` / `off` / `toggle` cannot target a scene; `rid` must exist
-in the latest snapshot for that `bridgeid`.
+`rtype: scene` (any event: `on`, `off`, `double_click`, `short`); `on` / `off` /
+`toggle` cannot target a scene; `rid` must exist in the latest snapshot for
+that `bridgeid`.
 
 Response:
 
