@@ -44,6 +44,37 @@ export type Recipe = {
   target: RecipeTarget;
 };
 
+export type SwitchProduct = "simple" | "round";
+export type PageSwipeAxis = "horizontal" | "vertical";
+export type RoundEvent = "short" | "double_click";
+
+export type DimTarget = {
+  rtype: "light" | "grouped_light";
+  rid: string;
+};
+
+export type SceneListItem = {
+  rtype: "scene";
+  rid: string;
+  name: string;
+};
+
+export type SwitchPage = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  theme: string;
+  dimTarget: DimTarget | null;
+};
+
+export type RoundRecipe = {
+  pageId: string;
+  event: RoundEvent;
+  action: HueAction;
+  target?: RecipeTarget;
+  targets?: SceneListItem[];
+};
+
 export type TopologySnapshot = {
   receivedAt: string;
   bridgeid: string;
@@ -71,4 +102,6 @@ export type SwitchPublic = {
   channels: Channel[];
   rev: number;
   last_seen_at: string | null;
+  product: SwitchProduct;
+  pageSwipeAxis: PageSwipeAxis;
 };

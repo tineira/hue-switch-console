@@ -1,3 +1,4 @@
+import { migrateLegacyRoundSwitches } from "@/lib/db";
 import { sql } from "@/lib/sql";
 
 const STATEMENTS = [
@@ -42,26 +43,68 @@ const STATEMENTS = [
   rev integer not null default 0,
   last_seen_at timestamptz,
   created_at timestamptz not null default now(),
+  product text not null default 'simple',
+  page_swipe_axis text not null default 'horizontal',
+  page_seq integer not null default 1,
   unique (user_id, mac)
 )`,
   `create index if not exists switches_user_bridge_idx
   on switches (user_id, bridgeid)`,
+  `alter table switches add column if not exists product text not null default 'simple'`,
+  `alter table switches add column if not exists page_swipe_axis text not null default 'horizontal'`,
+  `alter table switches add column if not exists page_seq integer not null default 1`,
+  `create table if not exists pages (
+  switch_id uuid not null references switches (id) on delete cascade,
+  id text not null,
+  name text not null check (char_length(name) between 1 and 12),
+  sort_order integer not null,
+  theme text not null default 'ember',
+  dim_target_rtype text,
+  dim_target_rid text,
+  primary key (switch_id, id)
+)`,
+  `create index if not exists pages_switch_sort_idx
+  on pages (switch_id, sort_order)`,
   `create table if not exists recipes (
   id uuid primary key default gen_random_uuid(),
   switch_id uuid not null references switches (id) on delete cascade,
-  channel_id text not null,
+  channel_id text,
+  page_id text,
   event text not null check (event in ('on', 'off', 'double_click', 'short')),
   action text not null check (action in ('on', 'off', 'recall_scene', 'toggle')),
   target_rtype text not null check (target_rtype in ('light', 'grouped_light', 'scene')),
   target_rid text not null,
-  unique (switch_id, channel_id, event)
+  targets jsonb not null default '[]'::jsonb
 )`,
+  `alter table recipes add column if not exists page_id text`,
+  `alter table recipes add column if not exists targets jsonb not null default '[]'::jsonb`,
+  `alter table recipes alter column channel_id drop not null`,
+  `alter table recipes drop constraint if exists recipes_switch_id_channel_id_event_key`,
+  `create unique index if not exists recipes_simple_uniq
+  on recipes (switch_id, channel_id, event)
+  where page_id is null and channel_id is not null`,
+  `create unique index if not exists recipes_round_uniq
+  on recipes (switch_id, page_id, event)
+  where page_id is not null`,
   `create index if not exists recipes_switch_id_idx on recipes (switch_id)`,
 ];
 
-export async function ensureSchema() {
+let running: Promise<void> | null = null;
+
+async function applySchema() {
   const db = sql();
   for (const statement of STATEMENTS) {
     await db.query(statement);
   }
+  await migrateLegacyRoundSwitches();
+}
+
+export async function ensureSchema() {
+  if (!running) {
+    running = applySchema().catch((err) => {
+      running = null;
+      throw err;
+    });
+  }
+  return running;
 }

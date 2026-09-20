@@ -3,15 +3,21 @@ import {
   getBridge,
   getSwitchByMac,
   isRoundSwitch,
-  listRecipes,
-  replaceRecipes,
+  listPages,
+  listRoundRecipes,
+  replaceRoundConfig,
   toSwitchPublic,
 } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
-import { parseRecipes } from "@/lib/parse";
-import { snapshotFromJson, validateRecipes } from "@/lib/recipes";
+import {
+  parsePageSwipeAxis,
+  parseRoundPages,
+  parseRoundRecipes,
+} from "@/lib/parse";
+import { validateRoundConfig, withSceneNames } from "@/lib/pages";
+import { snapshotFromJson } from "@/lib/recipes";
 import { normalizeMac } from "@/lib/tokens";
 
 export const dynamic = "force-dynamic";
@@ -38,8 +44,18 @@ export async function GET(
   try {
     const sw = await getSwitchByMac(user.id, mac);
     if (!sw) return jsonError(404, "not_found");
-    const recipes = await listRecipes(sw.id);
-    return jsonOk({ ...toSwitchPublic(sw), recipes });
+    if (!isRoundSwitch(sw)) {
+      return jsonError(400, "not_a_round_display");
+    }
+    const bridge = await getBridge(user.id, sw.bridgeid);
+    const snapshot = snapshotFromJson(bridge?.snapshot);
+    const pages = await listPages(sw.id);
+    const recipes = await listRoundRecipes(sw.id);
+    return jsonOk({
+      ...toSwitchPublic(sw),
+      pages,
+      recipes: snapshot ? withSceneNames(recipes, snapshot) : recipes,
+    });
   } catch (err) {
     const details = err instanceof Error ? err.message : "unknown";
     return jsonError(500, "database_error", { details });
@@ -71,29 +87,46 @@ export async function PUT(
   } catch {
     return jsonError(400, "invalid_json");
   }
-  const recipes = parseRecipes((body as { recipes?: unknown })?.recipes);
-  if (!recipes) {
-    return jsonError(400, "recipes[] is required");
+  if (!body || typeof body !== "object") {
+    return jsonError(400, "invalid_payload");
+  }
+  const raw = body as Record<string, unknown>;
+  const pageSwipeAxis = parsePageSwipeAxis(raw.pageSwipeAxis) ?? "horizontal";
+  const pages = parseRoundPages(raw.pages);
+  const recipes = parseRoundRecipes(raw.recipes);
+  if (!pages || !recipes) {
+    return jsonError(400, "pages[] and recipes[] are required");
   }
 
   try {
     const sw = await getSwitchByMac(user.id, mac);
     if (!sw) return jsonError(404, "not_found");
-    if (isRoundSwitch(sw)) {
-      return jsonError(400, "round_switch_uses_pages", {
-        details: "Round Display recipes are saved with pages",
-      });
+    if (!isRoundSwitch(sw)) {
+      return jsonError(400, "not_a_round_display");
     }
     const bridge = await getBridge(user.id, sw.bridgeid);
     const snapshot = snapshotFromJson(bridge?.snapshot);
     if (!snapshot) {
       return jsonError(400, "no topology snapshot for this bridge");
     }
-    const invalid = validateRecipes(recipes, sw.channels ?? [], snapshot);
+    const invalid = validateRoundConfig(pages, recipes, snapshot);
     if (invalid) return jsonError(400, "validation_error", { details: invalid });
 
-    const rev = await replaceRecipes(sw.id, recipes);
-    return jsonOk({ ok: true, mac, rev, recipes });
+    const saved = await replaceRoundConfig(sw, {
+      pageSwipeAxis,
+      pages,
+      recipes,
+      snapshot,
+    });
+    return jsonOk({
+      ok: true,
+      mac,
+      rev: saved.rev,
+      product: "round",
+      pageSwipeAxis: saved.pageSwipeAxis,
+      pages: saved.pages,
+      recipes: saved.recipes,
+    });
   } catch (err) {
     const details = err instanceof Error ? err.message : "unknown";
     return jsonError(500, "database_error", { details });

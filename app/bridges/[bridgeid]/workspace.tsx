@@ -1,7 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import {
+  RoundPagesEditor,
+  type PageSlotRef,
+  type RoundDraft,
+} from "@/app/bridges/[bridgeid]/round-pages-editor";
+import { formatMac } from "@/lib/mac";
+import {
+  MAX_SCENE_LIST,
+  clearRoundRecipe,
+  clearStaleRoundRecipes,
+  defaultRoundActionForTarget,
+  findRoundRecipe,
+  pagesEqual,
+  roundRecipesEqual,
+  sceneGroupRid,
+  sceneListItem,
+  staleRoundCount,
+  upsertRoundRecipe,
+} from "@/lib/pages";
 import {
   actionLabel,
   actionsForTarget,
@@ -16,20 +33,54 @@ import {
   nameForTarget,
   recipesEqual,
 } from "@/lib/recipes";
-import { formatMac } from "@/lib/mac";
 import type {
   Channel,
   ChannelEvent,
   HueAction,
   Recipe,
   RecipeTarget,
+  RoundRecipe,
+  SwitchPage,
   SwitchPublic,
   TopologySnapshot,
 } from "@/lib/types";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
-export type WorkspaceSwitch = SwitchPublic & { recipes: Recipe[] };
+export type WorkspaceSwitch = SwitchPublic & {
+  recipes: Recipe[];
+  pages: SwitchPage[];
+  roundRecipes: RoundRecipe[];
+};
 
 type SlotRef = { channelId: string; event: ChannelEvent };
+
+function isRoundItem(item: WorkspaceSwitch | null | undefined): boolean {
+  return item?.product === "round";
+}
+
+function roundDraftOf(item: WorkspaceSwitch): RoundDraft {
+  return {
+    pages: item.pages ?? [],
+    recipes: item.roundRecipes ?? [],
+    pageSwipeAxis: item.pageSwipeAxis ?? "horizontal",
+  };
+}
+
+function firstOpenPageSlot(
+  pages: SwitchPage[],
+  recipes: RoundRecipe[],
+): PageSlotRef | null {
+  if (pages.length === 0) return null;
+  for (const page of pages) {
+    for (const event of ["short", "double_click"] as const) {
+      if (!findRoundRecipe(recipes, page.id, event)) {
+        return { pageId: page.id, event };
+      }
+    }
+  }
+  return { pageId: pages[0].id, event: "short" };
+}
 
 function formatWhen(iso: string | null | undefined): string {
   if (!iso) return "Unknown";
@@ -107,6 +158,16 @@ function assignHint(slot: SlotRef | null, channel: Channel | undefined): string 
   return `Assigning ${channel.label} · ${eventLabel(slot.event)} — click a room, light, or scene.`;
 }
 
+function roundAssignHint(slot: PageSlotRef | null): string {
+  if (!slot) {
+    return "Select Tap or Double tap, then click a room, light, or scene.";
+  }
+  if (slot.event === "double_click") {
+    return "Assigning Double tap — a room or light turns off. A scene starts or edits a list. Off is not a scene.";
+  }
+  return "Assigning Tap — click a room or light (toggle) or a scene (cycle list).";
+}
+
 export function BridgeWorkspace({
   bridgeid,
   bridgeIp,
@@ -126,13 +187,31 @@ export function BridgeWorkspace({
     switches[0]?.mac ?? null,
   );
   const [selectedSlot, setSelectedSlot] = useState<SlotRef | null>(() =>
-    firstOpenSlot(switches[0], switches[0]?.recipes ?? []),
+    isRoundItem(switches[0])
+      ? null
+      : firstOpenSlot(switches[0], switches[0]?.recipes ?? []),
+  );
+  const [pageSlot, setPageSlot] = useState<PageSlotRef | null>(() =>
+    isRoundItem(switches[0])
+      ? firstOpenPageSlot(switches[0].pages ?? [], switches[0].roundRecipes ?? [])
+      : null,
   );
   const [drafts, setDrafts] = useState<Record<string, Recipe[]>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, item.recipes])),
   );
   const [saved, setSaved] = useState<Record<string, Recipe[]>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, item.recipes])),
+  );
+  const [roundDrafts, setRoundDrafts] = useState<Record<string, RoundDraft>>(
+    () =>
+      Object.fromEntries(
+        switches.filter(isRoundItem).map((item) => [item.mac, roundDraftOf(item)]),
+      ),
+  );
+  const [roundSaved, setRoundSaved] = useState<Record<string, RoundDraft>>(() =>
+    Object.fromEntries(
+      switches.filter(isRoundItem).map((item) => [item.mac, roundDraftOf(item)]),
+    ),
   );
   const [revs, setRevs] = useState<Record<string, number>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, item.rev])),
@@ -147,18 +226,53 @@ export function BridgeWorkspace({
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const selected = switches.find((item) => item.mac === selectedMac) ?? null;
+  const round = isRoundItem(selected);
   const recipes = selected ? (drafts[selected.mac] ?? []) : [];
   const baseline = selected ? (saved[selected.mac] ?? []) : [];
-  const dirty = selected ? !recipesEqual(recipes, baseline) : false;
+  const roundDraft = selected ? roundDrafts[selected.mac] : undefined;
+  const roundBaseline = selected ? roundSaved[selected.mac] : undefined;
+  const dirty = selected
+    ? round
+      ? Boolean(
+          roundDraft &&
+            roundBaseline &&
+            (roundDraft.pageSwipeAxis !== roundBaseline.pageSwipeAxis ||
+              !pagesEqual(roundDraft.pages, roundBaseline.pages) ||
+              !roundRecipesEqual(roundDraft.recipes, roundBaseline.recipes)),
+        )
+      : !recipesEqual(recipes, baseline)
+    : false;
   const selectedChannel = selected?.channels.find(
     (channel) => channel.id === selectedSlot?.channelId,
   );
-  const staleCount = recipes.filter((recipe) =>
-    isTargetStale(snapshot, recipe.target),
-  ).length;
+  const staleCount = round
+    ? staleRoundCount(roundDraft?.recipes ?? [], snapshot)
+    : recipes.filter((recipe) => isTargetStale(snapshot, recipe.target)).length;
+
+  function isTargetActive(rid: string): boolean {
+    if (round && pageSlot && roundDraft) {
+      const rec = findRoundRecipe(
+        roundDraft.recipes,
+        pageSlot.pageId,
+        pageSlot.event,
+      );
+      if (!rec) return false;
+      if (rec.action === "recall_scene") {
+        return (rec.targets ?? []).some((item) => item.rid === rid);
+      }
+      return rec.target?.rid === rid;
+    }
+    return Boolean(
+      selectedSlot && findRecipe(recipes, selectedSlot)?.target.rid === rid,
+    );
+  }
 
   function setRecipesFor(mac: string, next: Recipe[]) {
     setDrafts((current) => ({ ...current, [mac]: next }));
+  }
+
+  function setRoundDraft(mac: string, next: RoundDraft) {
+    setRoundDrafts((current) => ({ ...current, [mac]: next }));
   }
 
   function toggleSlot(slot: SlotRef) {
@@ -179,10 +293,90 @@ export function BridgeWorkspace({
     return selected.channels.find((channel) => channel.kind === "maintained") ?? null;
   }
 
+  function assignRoundTarget(target: RecipeTarget) {
+    if (!selected || !roundDraft) return;
+    if (!pageSlot) {
+      setNotice("Select Tap or Double tap, then click a destination.");
+      return;
+    }
+    const current = findRoundRecipe(
+      roundDraft.recipes,
+      pageSlot.pageId,
+      pageSlot.event,
+    );
+    if (target.rtype === "scene") {
+      const existing =
+        current?.action === "recall_scene" ? (current.targets ?? []) : [];
+      if (existing.some((item) => item.rid === target.rid)) {
+        const nextTargets = existing.filter((item) => item.rid !== target.rid);
+        const nextRecipes =
+          nextTargets.length === 0
+            ? clearRoundRecipe(
+                roundDraft.recipes,
+                pageSlot.pageId,
+                pageSlot.event,
+              )
+            : upsertRoundRecipe(roundDraft.recipes, {
+                pageId: pageSlot.pageId,
+                event: pageSlot.event,
+                action: "recall_scene",
+                targets: nextTargets,
+              });
+        setRoundDraft(selected.mac, { ...roundDraft, recipes: nextRecipes });
+        setNotice(null);
+        return;
+      }
+      if (existing.length > 0) {
+        const group = sceneGroupRid(snapshot, existing[0].rid);
+        const nextGroup = sceneGroupRid(snapshot, target.rid);
+        if (!group || !nextGroup || group !== nextGroup) {
+          setNotice("Scenes must be in the same room or zone.");
+          return;
+        }
+      }
+      if (existing.length >= MAX_SCENE_LIST) {
+        setNotice("A scene list can have at most 8 scenes.");
+        return;
+      }
+      const nextRecipes = upsertRoundRecipe(roundDraft.recipes, {
+        pageId: pageSlot.pageId,
+        event: pageSlot.event,
+        action: "recall_scene",
+        targets: [...existing, sceneListItem(snapshot, target.rid)],
+      });
+      setRoundDraft(selected.mac, { ...roundDraft, recipes: nextRecipes });
+      setNotice(null);
+      return;
+    }
+    const action = defaultRoundActionForTarget(pageSlot.event, target.rtype);
+    const nextRecipes = upsertRoundRecipe(roundDraft.recipes, {
+      pageId: pageSlot.pageId,
+      event: pageSlot.event,
+      action,
+      target,
+    });
+    setRoundDraft(selected.mac, { ...roundDraft, recipes: nextRecipes });
+    if (pageSlot.event === "short") {
+      const dblEmpty = !findRoundRecipe(
+        nextRecipes,
+        pageSlot.pageId,
+        "double_click",
+      );
+      if (dblEmpty) {
+        setPageSlot({ pageId: pageSlot.pageId, event: "double_click" });
+      }
+    }
+    setNotice(null);
+  }
+
   function assignTarget(target: RecipeTarget) {
     setError(null);
     if (!selected) {
       setNotice("Select a switch on the left first.");
+      return;
+    }
+    if (round) {
+      assignRoundTarget(target);
       return;
     }
     if (!selectedSlot) {
@@ -217,10 +411,39 @@ export function BridgeWorkspace({
     setNotice(null);
   }
 
+  function assignRoomTapAndOff(groupedLightId: string, roomName: string) {
+    if (!selected || !roundDraft) return;
+    const pageId = pageSlot?.pageId ?? roundDraft.pages[0]?.id;
+    if (!pageId) return;
+    const target: RecipeTarget = { rtype: "grouped_light", rid: groupedLightId };
+    let next = roundDraft.recipes;
+    next = upsertRoundRecipe(next, {
+      pageId,
+      event: "short",
+      action: "toggle",
+      target,
+    });
+    next = upsertRoundRecipe(next, {
+      pageId,
+      event: "double_click",
+      action: "off",
+      target,
+    });
+    setRoundDraft(selected.mac, { ...roundDraft, recipes: next });
+    setPageSlot({ pageId, event: "short" });
+    setNotice(
+      `Tap toggles ${roomName}. Double-tap turns it off. The ring dims ${roomName}.`,
+    );
+  }
+
   function assignRoomOnOff(groupedLightId: string, roomName: string) {
     setError(null);
     if (!selected) {
       setNotice("Select a switch on the left first.");
+      return;
+    }
+    if (round) {
+      assignRoomTapAndOff(groupedLightId, roomName);
       return;
     }
     const channel = maintainedChannel();
@@ -268,6 +491,13 @@ export function BridgeWorkspace({
 
   function discard() {
     if (!selected) return;
+    if (round) {
+      const baselineDraft = roundSaved[selected.mac] ?? roundDraftOf(selected);
+      setRoundDraft(selected.mac, baselineDraft);
+      setError(null);
+      setNotice("Reverted to the last saved pages.");
+      return;
+    }
     setRecipesFor(selected.mac, saved[selected.mac] ?? []);
     setError(null);
     setNotice("Reverted to the last saved recipes.");
@@ -275,6 +505,14 @@ export function BridgeWorkspace({
 
   function clearStale() {
     if (!selected) return;
+    if (round && roundDraft) {
+      setRoundDraft(selected.mac, {
+        ...roundDraft,
+        recipes: clearStaleRoundRecipes(roundDraft.recipes, snapshot),
+      });
+      setNotice("Cleared assignments that are missing from this snapshot.");
+      return;
+    }
     setRecipesFor(
       selected.mac,
       recipes.filter((recipe) => !isTargetStale(snapshot, recipe.target)),
@@ -288,6 +526,53 @@ export function BridgeWorkspace({
     setError(null);
     setNotice(null);
     try {
+      if (round && roundDraft) {
+        const res = await fetch(`/api/switches/${selected.mac}/pages`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pageSwipeAxis: roundDraft.pageSwipeAxis,
+            pages: roundDraft.pages.map((page) => ({
+              id: page.id,
+              name: page.name,
+              theme: page.theme,
+            })),
+            recipes: roundDraft.recipes,
+          }),
+        });
+        const body = (await res.json()) as {
+          ok?: boolean;
+          rev?: number;
+          pages?: SwitchPage[];
+          recipes?: RoundRecipe[];
+          pageSwipeAxis?: RoundDraft["pageSwipeAxis"];
+          error?: string;
+          details?: string;
+        };
+        if (!res.ok) {
+          setError(body.details ?? body.error ?? "Could not save pages");
+          return;
+        }
+        const next: RoundDraft = {
+          pages: body.pages ?? roundDraft.pages,
+          recipes: body.recipes ?? roundDraft.recipes,
+          pageSwipeAxis: body.pageSwipeAxis ?? roundDraft.pageSwipeAxis,
+        };
+        setRoundDraft(selected.mac, next);
+        setRoundSaved((current) => ({ ...current, [selected.mac]: next }));
+        if (pageSlot && !next.pages.some((page) => page.id === pageSlot.pageId)) {
+          setPageSlot(firstOpenPageSlot(next.pages, next.recipes));
+        }
+        if (typeof body.rev === "number") {
+          setRevs((current) => ({ ...current, [selected.mac]: body.rev as number }));
+        }
+        setSavedAt(selected.mac);
+        setNotice(
+          `Saved · rev ${body.rev}. The switch picks this up on poll, or immediately after reboot.`,
+        );
+        router.refresh();
+        return;
+      }
       const res = await fetch(`/api/switches/${selected.mac}/recipes`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -352,7 +637,7 @@ export function BridgeWorkspace({
         <section className="flex flex-col gap-3">
           <header className="flex items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium uppercase tracking-[0.12em] text-muted">
-              Switches and channels
+              {round ? "Switches and pages" : "Switches and channels"}
             </h2>
             <span className="text-xs text-muted">
               {switches.length === 0
@@ -375,8 +660,23 @@ export function BridgeWorkspace({
           ) : (
             switches.map((item) => {
               const active = item.mac === selectedMac;
+              const itemRound = isRoundItem(item);
               const itemRecipes = drafts[item.mac] ?? [];
-              const itemDirty = !recipesEqual(itemRecipes, saved[item.mac] ?? []);
+              const itemRoundDraft = roundDrafts[item.mac];
+              const itemRoundSaved = roundSaved[item.mac];
+              const itemDirty = itemRound
+                ? Boolean(
+                    itemRoundDraft &&
+                      itemRoundSaved &&
+                      (itemRoundDraft.pageSwipeAxis !==
+                        itemRoundSaved.pageSwipeAxis ||
+                        !pagesEqual(itemRoundDraft.pages, itemRoundSaved.pages) ||
+                        !roundRecipesEqual(
+                          itemRoundDraft.recipes,
+                          itemRoundSaved.recipes,
+                        )),
+                  )
+                : !recipesEqual(itemRecipes, saved[item.mac] ?? []);
               return (
                 <article
                   key={item.mac}
@@ -392,9 +692,19 @@ export function BridgeWorkspace({
                       onClick={() => {
                         if (item.mac === selectedMac) return;
                         setSelectedMac(item.mac);
-                        setSelectedSlot(
-                          firstOpenSlot(item, drafts[item.mac] ?? item.recipes),
-                        );
+                        if (isRoundItem(item)) {
+                          const draft =
+                            roundDrafts[item.mac] ?? roundDraftOf(item);
+                          setSelectedSlot(null);
+                          setPageSlot(
+                            firstOpenPageSlot(draft.pages, draft.recipes),
+                          );
+                        } else {
+                          setPageSlot(null);
+                          setSelectedSlot(
+                            firstOpenSlot(item, drafts[item.mac] ?? item.recipes),
+                          );
+                        }
                         setNotice(null);
                         setError(null);
                       }}
@@ -417,6 +727,7 @@ export function BridgeWorkspace({
                       <span className="text-xs text-muted">
                         {formatMac(item.mac)}
                         {item.firmware ? ` · fw ${item.firmware}` : ""}
+                        {itemRound ? " · round" : ""}
                         {` · rev ${revs[item.mac] ?? item.rev}`}
                         {item.last_seen_at
                           ? ` · seen ${formatWhen(item.last_seen_at)}`
@@ -445,7 +756,24 @@ export function BridgeWorkspace({
                     />
                   ) : null}
 
-                  {active ? (
+                  {active && itemRound && itemRoundDraft ? (
+                    <RoundPagesEditor
+                      snapshot={snapshot}
+                      draft={itemRoundDraft}
+                      selectedSlot={pageSlot}
+                      pending={pending}
+                      dirty={itemDirty}
+                      savedFlash={savedAt === item.mac}
+                      staleCount={staleCount}
+                      onSelectSlot={setPageSlot}
+                      onChange={(next) => setRoundDraft(item.mac, next)}
+                      onSave={save}
+                      onDiscard={discard}
+                      onClearStale={clearStale}
+                    />
+                  ) : null}
+
+                  {active && !itemRound ? (
                     <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
                       {(item.channels ?? []).length === 0 ? (
                         <p className="text-sm text-muted">
@@ -556,7 +884,9 @@ export function BridgeWorkspace({
               Topology
             </h2>
             <p className="text-sm text-muted">
-              {assignHint(selectedSlot, selectedChannel)}
+              {round
+                ? roundAssignHint(pageSlot)
+                : assignHint(selectedSlot, selectedChannel)}
             </p>
             {notice ? (
               <p className="text-sm text-filament" role="status">
@@ -599,11 +929,7 @@ export function BridgeWorkspace({
                       <TargetButton
                         label="Whole room"
                         detail="grouped light"
-                        active={Boolean(
-                          selectedSlot &&
-                            findRecipe(recipes, selectedSlot)?.target.rid ===
-                              room.grouped_light_id,
-                        )}
+                        active={isTargetActive(room.grouped_light_id)}
                         onClick={() =>
                           assignTarget({
                             rtype: "grouped_light",
@@ -618,7 +944,9 @@ export function BridgeWorkspace({
                         }
                         className="rounded-md border border-filament/40 bg-filament-soft px-3 py-1.5 text-sm font-medium"
                       >
-                        Use this room for on and off
+                        {round
+                          ? "Use this room for tap and double-tap"
+                          : "Use this room for on and off"}
                       </button>
                     </div>
                   ) : (
@@ -634,11 +962,7 @@ export function BridgeWorkspace({
                           key={light.id}
                           label={light.name}
                           detail={light.on === true ? "on" : light.on === false ? "off" : undefined}
-                          active={Boolean(
-                            selectedSlot &&
-                              findRecipe(recipes, selectedSlot)?.target.rid ===
-                                light.id,
-                          )}
+                          active={isTargetActive(light.id)}
                           onClick={() =>
                             assignTarget({ rtype: "light", rid: light.id })
                           }
@@ -656,11 +980,7 @@ export function BridgeWorkspace({
                           key={scene.id}
                           label={scene.name}
                           detail="scene"
-                          active={Boolean(
-                            selectedSlot &&
-                              findRecipe(recipes, selectedSlot)?.target.rid ===
-                                scene.id,
-                          )}
+                          active={isTargetActive(scene.id)}
                           onClick={() =>
                             assignTarget({ rtype: "scene", rid: scene.id })
                           }
@@ -683,11 +1003,7 @@ export function BridgeWorkspace({
                       <TargetButton
                         key={light.id}
                         label={light.name}
-                        active={Boolean(
-                          selectedSlot &&
-                            findRecipe(recipes, selectedSlot)?.target.rid ===
-                              light.id,
-                        )}
+                        active={isTargetActive(light.id)}
                         onClick={() =>
                           assignTarget({ rtype: "light", rid: light.id })
                         }
@@ -706,11 +1022,7 @@ export function BridgeWorkspace({
                         key={scene.id}
                         label={scene.name}
                         detail="scene"
-                        active={Boolean(
-                          selectedSlot &&
-                            findRecipe(recipes, selectedSlot)?.target.rid ===
-                              scene.id,
-                        )}
+                        active={isTargetActive(scene.id)}
                         onClick={() =>
                           assignTarget({ rtype: "scene", rid: scene.id })
                         }

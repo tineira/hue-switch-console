@@ -4,6 +4,7 @@ import {
   upsertSwitch,
 } from "@/lib/db";
 import { authenticateDevice } from "@/lib/device-auth";
+import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
 import {
@@ -11,6 +12,7 @@ import {
   parseChannels,
   parseLights,
   parseMac,
+  parseProduct,
   parseRooms,
   parseScenes,
 } from "@/lib/parse";
@@ -21,6 +23,13 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   if (!isDbConfigured()) {
     return jsonError(503, "database_not_configured");
+  }
+
+  try {
+    await ensureSchema();
+  } catch (err) {
+    const details = err instanceof Error ? err.message : "unknown";
+    return jsonError(500, "database_error", { details });
   }
 
   let device;
@@ -49,11 +58,15 @@ export async function POST(req: Request) {
   const scenes = parseScenes(raw.scenes);
   const channels = parseChannels(raw.channels);
   const mac = parseMac(raw.mac);
+  const product = parseProduct(raw.product);
   if (mac === null) {
     return jsonError(400, "mac must be 12 hex digits");
   }
-  if (!bridgeid || !lights || !rooms || !scenes || !channels) {
-    return jsonError(400, "bridgeid, lights[], rooms[], scenes[], channels[] are required");
+  if (!bridgeid || !lights || !rooms || !scenes) {
+    return jsonError(400, "bridgeid, lights[], rooms[], scenes[] are required");
+  }
+  if (!channels) {
+    return jsonError(400, "channels[] is invalid");
   }
 
   const snapshot: TopologySnapshot = {
@@ -87,6 +100,7 @@ export async function POST(req: Request) {
       bridgeIp: asString(raw.bridge_ip),
       channels,
       apiKeyId: device.keyId,
+      product,
     });
     const stored = await getSwitchByMac(device.userId, mac);
 
@@ -95,6 +109,7 @@ export async function POST(req: Request) {
       mac: sw.mac,
       bridgeid: sw.bridgeid,
       rev: stored?.rev ?? sw.rev,
+      product: stored?.product ?? sw.product,
       lights: lights.length,
       rooms: rooms.length,
       scenes: scenes.length,

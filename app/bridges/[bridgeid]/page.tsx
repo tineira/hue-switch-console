@@ -2,7 +2,17 @@ import Link from "next/link";
 import { BridgeWorkspace } from "@/app/bridges/[bridgeid]/workspace";
 import { Shell } from "@/app/shell";
 import { requireSessionUser } from "@/lib/auth";
-import { getBridge, listRecipes, listSwitches, toSwitchPublic } from "@/lib/db";
+import {
+  getBridge,
+  isRoundSwitch,
+  listPages,
+  listRecipes,
+  listRoundRecipes,
+  listSwitches,
+  toSwitchPublic,
+} from "@/lib/db";
+import { ensureSchema } from "@/lib/ensure-schema";
+import { withSceneNames } from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +23,9 @@ export default async function BridgePage({
   params: Promise<{ bridgeid: string }>;
 }) {
   const user = await requireSessionUser();
+  if (process.env.DATABASE_URL) {
+    await ensureSchema();
+  }
   const { bridgeid } = await params;
   const [row, allSwitches] = await Promise.all([
     getBridge(user.id, bridgeid),
@@ -50,10 +63,17 @@ export default async function BridgePage({
   const switches = await Promise.all(
     allSwitches
       .filter((item) => item.bridgeid === row.bridgeid)
-      .map(async (item) => ({
-        ...toSwitchPublic(item),
-        recipes: await listRecipes(item.id),
-      })),
+      .map(async (item) => {
+        const round = isRoundSwitch(item);
+        return {
+          ...toSwitchPublic(item),
+          recipes: round ? [] : await listRecipes(item.id),
+          pages: round ? await listPages(item.id) : [],
+          roundRecipes: round
+            ? withSceneNames(await listRoundRecipes(item.id), snapshot)
+            : [],
+        };
+      }),
   );
 
   return (

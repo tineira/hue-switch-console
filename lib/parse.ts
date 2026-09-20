@@ -4,12 +4,20 @@ import type {
   ChannelKind,
   HueAction,
   Light,
+  PageSwipeAxis,
   Recipe,
+  RecipeTarget,
   Room,
+  RoundRecipe,
   Scene,
+  SceneListItem,
+  SwitchPage,
+  SwitchProduct,
   TargetRtype,
 } from "@/lib/types";
 import { normalizeMac } from "@/lib/mac";
+import { isPageSwipeAxis, isRoundEvent, PAGE_NAME_MAX } from "@/lib/pages";
+import { isRoundThemeId, normalizeRoundTheme } from "@/lib/round-themes";
 
 const KINDS: ChannelKind[] = ["maintained", "momentary"];
 const EVENTS: ChannelEvent[] = ["on", "off", "double_click", "short"];
@@ -159,4 +167,102 @@ export function parseRecipes(raw: unknown): Recipe[] | null {
     });
   }
   return recipes;
+}
+
+export function parseProduct(raw: unknown): SwitchProduct | undefined {
+  if (raw === "round" || raw === "simple") return raw;
+  return undefined;
+}
+
+export function parsePageSwipeAxis(raw: unknown): PageSwipeAxis | null {
+  if (isPageSwipeAxis(raw)) return raw;
+  return null;
+}
+
+function parseRecipeTarget(raw: unknown): RecipeTarget | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const rid = asString(row.rid);
+  if (!rid || !isRtype(row.rtype)) return null;
+  return { rtype: row.rtype, rid };
+}
+
+function parseSceneList(raw: unknown): SceneListItem[] | null {
+  if (!Array.isArray(raw)) return null;
+  const targets: SceneListItem[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return null;
+    const row = item as Record<string, unknown>;
+    const rid = asString(row.rid);
+    if (!rid) return null;
+    if (row.rtype !== undefined && row.rtype !== "scene") return null;
+    targets.push({
+      rtype: "scene",
+      rid,
+      name: asString(row.name) ?? "",
+    });
+  }
+  return targets;
+}
+
+export function parseRoundRecipes(raw: unknown): RoundRecipe[] | null {
+  if (!Array.isArray(raw)) return null;
+  const recipes: RoundRecipe[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return null;
+    const row = item as Record<string, unknown>;
+    const pageId = asString(row.pageId);
+    if (!pageId || !isRoundEvent(row.event) || !isAction(row.action)) {
+      return null;
+    }
+    if (row.action === "recall_scene") {
+      const fromTargets = parseSceneList(row.targets);
+      const single = parseRecipeTarget(row.target);
+      const targets =
+        fromTargets && fromTargets.length > 0
+          ? fromTargets
+          : single && single.rtype === "scene"
+            ? [{ rtype: "scene" as const, rid: single.rid, name: "" }]
+            : null;
+      if (!targets) return null;
+      recipes.push({
+        pageId,
+        event: row.event,
+        action: "recall_scene",
+        targets,
+      });
+      continue;
+    }
+    const target = parseRecipeTarget(row.target);
+    if (!target) return null;
+    recipes.push({
+      pageId,
+      event: row.event,
+      action: row.action,
+      target,
+    });
+  }
+  return recipes;
+}
+
+export function parseRoundPages(raw: unknown): SwitchPage[] | null {
+  if (!Array.isArray(raw)) return null;
+  const pages: SwitchPage[] = [];
+  for (const [index, item] of raw.entries()) {
+    if (!item || typeof item !== "object") return null;
+    const row = item as Record<string, unknown>;
+    const name = asString(row.name);
+    if (!name || name.length > PAGE_NAME_MAX) return null;
+    const themeRaw = asString(row.theme) ?? "ember";
+    const theme = isRoundThemeId(themeRaw) ? themeRaw : null;
+    if (!theme) return null;
+    pages.push({
+      id: asString(row.id) ?? "",
+      name,
+      sortOrder: index,
+      theme: normalizeRoundTheme(theme),
+      dimTarget: null,
+    });
+  }
+  return pages;
 }

@@ -114,7 +114,8 @@ Content-Type: application/json
 | `lights` | yes | Array; may be empty. Each item needs `id`, `name`. `on`, `caps[]` optional |
 | `rooms` | yes | Array; may be empty. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
 | `scenes` | yes | Array; may be empty. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
-| `channels` | yes when registering a board | `{ id, gpio, label, kind }`. `kind` is `maintained` or `momentary`. Empty array allowed |
+| `channels` | yes when registering a GPIO board | `{ id, gpio, label, kind }`. `kind` is `maintained` or `momentary`. Empty array allowed. Round Display may send `[]` |
+| `product` | no | `"round"` or `"simple"`. Inferred from empty/`c1` channels if omitted |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string |
 | `label` | no | Console display name on **first** insert only. Later registers do not overwrite a name set in the UI. Not sent to the board |
@@ -139,6 +140,12 @@ the snapshot.
 ```
 
 Without `mac`, `mac` and `rev` are omitted.
+
+---
+
+Round Display firmware may send `"product": "round"` and `channels: []`.
+Placeholder `c1` (gpio 0) is still accepted and treated as round. Simple-switch
+boards omit `product` or send `"simple"` with GPIO channels.
 
 ---
 
@@ -188,6 +195,42 @@ Authorization: Bearer hsw_…
 
 Empty assignment: `{ "rev": 0, "recipes": [] }`.
 
+If the board is a Round Display (`product: "round"`), the payload is instead:
+
+```json
+{
+  "rev": 12,
+  "product": "round",
+  "pageSwipeAxis": "horizontal",
+  "pages": [
+    {
+      "id": "p1",
+      "name": "Living",
+      "theme": "ember",
+      "dimTarget": { "rtype": "grouped_light", "rid": "…" }
+    }
+  ],
+  "recipes": [
+    {
+      "pageId": "p1",
+      "event": "short",
+      "action": "recall_scene",
+      "targets": [
+        { "rtype": "scene", "rid": "…", "name": "Relax" }
+      ]
+    },
+    {
+      "pageId": "p1",
+      "event": "double_click",
+      "action": "off",
+      "target": { "rtype": "grouped_light", "rid": "…" }
+    }
+  ]
+}
+```
+
+Simple-switch firmware still receives `{ rev, recipes[] }` with `channelId` only.
+
 Unknown MAC for this key’s account: `404`.
 
 | Recipe field | Values |
@@ -214,7 +257,9 @@ Used by the console UI. Firmware does not call these.
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
 | `GET` | `/api/switches` | registered boards |
 | `GET` | `/api/switches/{mac}/recipes` | `{ mac, rev, channels, recipes, … }` |
-| `PUT` | `/api/switches/{mac}/recipes` | replace recipes; increments `rev` |
+| `PUT` | `/api/switches/{mac}/recipes` | replace GPIO recipes; increments `rev` |
+| `GET` | `/api/switches/{mac}/pages` | round pages + recipes |
+| `PUT` | `/api/switches/{mac}/pages` | replace pages, swipe axis, and page recipes; increments `rev` |
 
 ### `PUT /api/switches/{mac}/recipes`
 
