@@ -12,7 +12,7 @@ import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
 import {
-  computeDimTarget,
+  computeDim,
   deviceRoundPage,
   deviceRoundRecipe,
   withSceneNames,
@@ -59,13 +59,11 @@ export async function GET(req: Request) {
       const rawRecipes = await listRoundRecipes(sw.id);
       const recipes = snapshot ? withSceneNames(rawRecipes, snapshot) : rawRecipes;
       const payloadPages = pages.map((page) => {
-        const dimTarget = snapshot
-          ? computeDimTarget(
-              recipes.filter((recipe) => recipe.pageId === page.id),
-              snapshot,
-            )
-          : page.dimTarget;
-        return deviceRoundPage({ ...page, dimTarget });
+        const dim = computeDim(
+          recipes.filter((recipe) => recipe.pageId === page.id),
+          page.group?.groupedLightRid,
+        );
+        return deviceRoundPage({ ...page, dim });
       });
       return jsonOk({
         rev: sw.rev,

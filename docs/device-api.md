@@ -207,7 +207,12 @@ If the board is a Round Display (`product: "round"`), the payload is instead:
       "id": "p1",
       "name": "Living",
       "theme": "ember",
-      "dimTarget": { "rtype": "grouped_light", "rid": "…" }
+      "group": {
+        "rtype": "room",
+        "rid": "…",
+        "groupedLightRid": "…"
+      },
+      "dim": { "mode": "group", "rid": "…" }
     }
   ],
   "recipes": [
@@ -228,6 +233,11 @@ If the board is a Round Display (`product: "round"`), the payload is instead:
   ]
 }
 ```
+
+`pages[].group` is the room or zone. `pages[].dim` is `null` (no ring),
+`{ "mode": "group", "rid" }` (the page's `grouped_light`), or
+`{ "mode": "lights", "rids": ["…"] }` (child lights from tap/double). There is
+no `dimTarget`.
 
 Simple-switch firmware still receives `{ rev, recipes[] }` with `channelId` only.
 

@@ -1,15 +1,20 @@
 import {
-  computeDimTarget,
+  computeDim,
+  dimsEqual,
+  groupsEqual,
+  inferPageGroup,
   inferProduct,
   isPlaceholderRoundChannels,
   recipeToC1,
+  resolvePageGroup,
   withSceneNames,
 } from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
 import { sql } from "@/lib/sql";
 import type {
   Channel,
-  DimTarget,
+  DimSet,
+  PageGroup,
   PageSwipeAxis,
   Recipe,
   RoundRecipe,
@@ -401,19 +406,54 @@ function asTargets(value: unknown): SceneListItem[] {
   return items;
 }
 
+function asDim(value: unknown): DimSet | null {
+  let raw = value;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  if (row.mode === "group" && typeof row.rid === "string" && row.rid) {
+    return { mode: "group", rid: row.rid };
+  }
+  if (row.mode === "lights" && Array.isArray(row.rids)) {
+    const rids = row.rids.filter(
+      (item): item is string => typeof item === "string" && item.length > 0,
+    );
+    if (rids.length === 0) return null;
+    return { mode: "lights", rids };
+  }
+  return null;
+}
+
+function asPageGroup(row: Record<string, unknown>): PageGroup | null {
+  const rtype = row.group_rtype;
+  const rid = row.group_rid ? String(row.group_rid) : "";
+  const groupedLightRid = row.grouped_light_rid
+    ? String(row.grouped_light_rid)
+    : "";
+  if ((rtype !== "room" && rtype !== "zone") || !rid || !groupedLightRid) {
+    return null;
+  }
+  return { rtype, rid, groupedLightRid };
+}
+
+function dimJson(dim: DimSet | null): string | null {
+  return dim ? JSON.stringify(dim) : null;
+}
+
 function mapPage(row: Record<string, unknown>): SwitchPage {
-  const rtype = row.dim_target_rtype;
-  const rid = row.dim_target_rid ? String(row.dim_target_rid) : "";
-  const dimTarget: DimTarget | null =
-    (rtype === "light" || rtype === "grouped_light") && rid
-      ? { rtype, rid }
-      : null;
   return {
     id: String(row.id),
     name: String(row.name),
     sortOrder: Number(row.sort_order) || 0,
     theme: String(row.theme || "ember"),
-    dimTarget,
+    group: asPageGroup(row),
+    dim: asDim(row.dim),
   };
 }
 
@@ -448,7 +488,8 @@ function mapRoundRecipe(row: Record<string, unknown>): RoundRecipe {
 
 export async function listPages(switchId: string): Promise<SwitchPage[]> {
   const rows = await sql()`
-    select id, name, sort_order, theme, dim_target_rtype, dim_target_rid
+    select id, name, sort_order, theme,
+           group_rtype, group_rid, grouped_light_rid, dim
     from pages
     where switch_id = ${switchId}
     order by sort_order asc, id asc
@@ -491,23 +532,37 @@ async function snapshotForSwitch(
   return snapshotFromJson((rows[0] as { snapshot: unknown }).snapshot);
 }
 
-async function applyDimTargets(
+function withGroupAndDim(
+  page: SwitchPage,
+  recipes: RoundRecipe[],
+  snapshot: TopologySnapshot | null,
+): SwitchPage {
+  const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
+  const group = snapshot
+    ? (resolvePageGroup(snapshot, page.group) ??
+      (page.group ? null : inferPageGroup(pageRecipes, snapshot)))
+    : page.group;
+  return {
+    ...page,
+    group,
+    dim: computeDim(pageRecipes, group?.groupedLightRid),
+  };
+}
+
+async function persistPageGroupAndDim(
   switchId: string,
   pages: SwitchPage[],
   recipes: RoundRecipe[],
   snapshot: TopologySnapshot | null,
 ) {
   for (const page of pages) {
-    const dim = snapshot
-      ? computeDimTarget(
-          recipes.filter((recipe) => recipe.pageId === page.id),
-          snapshot,
-        )
-      : null;
+    const next = withGroupAndDim(page, recipes, snapshot);
     await sql()`
       update pages
-      set dim_target_rtype = ${dim?.rtype ?? null},
-          dim_target_rid = ${dim?.rid ?? null}
+      set group_rtype = ${next.group?.rtype ?? null},
+          group_rid = ${next.group?.rid ?? null},
+          grouped_light_rid = ${next.group?.groupedLightRid ?? null},
+          dim = ${dimJson(next.dim)}::jsonb
       where switch_id = ${switchId} and id = ${page.id}
     `;
   }
@@ -556,7 +611,7 @@ async function migrateC1RecipesForSwitch(
   `;
   const pages = await listPages(switchId);
   const recipes = await listRoundRecipes(switchId);
-  await applyDimTargets(switchId, pages, recipes, snapshot);
+  await persistPageGroupAndDim(switchId, pages, recipes, snapshot);
   await sql()`update switches set rev = rev + 1, product = 'round' where id = ${switchId}`;
   return true;
 }
@@ -641,24 +696,22 @@ export async function replaceRoundConfig(
   }));
 
   const named = withSceneNames(finalRecipes, input.snapshot);
-  const withDim = finalPages.map((page) => ({
-    ...page,
-    dimTarget: computeDimTarget(
-      named.filter((recipe) => recipe.pageId === page.id),
-      input.snapshot,
-    ),
-  }));
+  const withDim = finalPages.map((page) =>
+    withGroupAndDim(page, named, input.snapshot),
+  );
 
   await sql()`delete from recipes where switch_id = ${sw.id} and page_id is not null`;
   await sql()`delete from pages where switch_id = ${sw.id}`;
   for (const page of withDim) {
     await sql()`
       insert into pages (
-        switch_id, id, name, sort_order, theme, dim_target_rtype, dim_target_rid
+        switch_id, id, name, sort_order, theme,
+        group_rtype, group_rid, grouped_light_rid, dim
       )
       values (
         ${sw.id}, ${page.id}, ${page.name}, ${page.sortOrder}, ${page.theme},
-        ${page.dimTarget?.rtype ?? null}, ${page.dimTarget?.rid ?? null}
+        ${page.group?.rtype ?? null}, ${page.group?.rid ?? null},
+        ${page.group?.groupedLightRid ?? null}, ${dimJson(page.dim)}::jsonb
       )
     `;
   }
@@ -711,12 +764,40 @@ export async function migrateLegacyRoundSwitches() {
   for (const row of rounds) {
     const rec = row as Record<string, unknown>;
     const switchId = String(rec.id);
+    const userId = String(rec.user_id);
+    const bridgeid = String(rec.bridgeid);
     await ensureDefaultRoundPage(switchId);
-    await migrateC1RecipesForSwitch(
-      switchId,
-      String(rec.user_id),
-      String(rec.bridgeid),
-    );
+    await migrateC1RecipesForSwitch(switchId, userId, bridgeid);
+    await migratePageGroupsForSwitch(switchId, userId, bridgeid);
+  }
+}
+
+async function migratePageGroupsForSwitch(
+  switchId: string,
+  userId: string,
+  bridgeid: string,
+) {
+  const snapshot = await snapshotForSwitch(userId, bridgeid);
+  const pages = await listPages(switchId);
+  const recipes = await listRoundRecipes(switchId);
+  let changed = false;
+  for (const page of pages) {
+    const next = withGroupAndDim(page, recipes, snapshot);
+    if (groupsEqual(page.group, next.group) && dimsEqual(page.dim, next.dim)) {
+      continue;
+    }
+    changed = true;
+    await sql()`
+      update pages
+      set group_rtype = ${next.group?.rtype ?? null},
+          group_rid = ${next.group?.rid ?? null},
+          grouped_light_rid = ${next.group?.groupedLightRid ?? null},
+          dim = ${dimJson(next.dim)}::jsonb
+      where switch_id = ${switchId} and id = ${page.id}
+    `;
+  }
+  if (changed) {
+    await sql()`update switches set rev = rev + 1 where id = ${switchId}`;
   }
 }
 

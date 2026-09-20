@@ -4,6 +4,7 @@ import type {
   ChannelKind,
   HueAction,
   Light,
+  PageGroup,
   PageSwipeAxis,
   Recipe,
   RecipeTarget,
@@ -245,6 +246,18 @@ export function parseRoundRecipes(raw: unknown): RoundRecipe[] | null {
   return recipes;
 }
 
+function parsePageGroup(raw: unknown): PageGroup | null | undefined {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== "object") return undefined;
+  const row = raw as Record<string, unknown>;
+  const rtype = row.rtype;
+  const rid = asString(row.rid);
+  const groupedLightRid = asString(row.groupedLightRid);
+  if (rtype !== "room" && rtype !== "zone") return undefined;
+  if (!rid || !groupedLightRid) return undefined;
+  return { rtype, rid, groupedLightRid };
+}
+
 export function parseRoundPages(raw: unknown): SwitchPage[] | null {
   if (!Array.isArray(raw)) return null;
   const pages: SwitchPage[] = [];
@@ -256,12 +269,15 @@ export function parseRoundPages(raw: unknown): SwitchPage[] | null {
     const themeRaw = asString(row.theme) ?? "ember";
     const theme = isRoundThemeId(themeRaw) ? themeRaw : null;
     if (!theme) return null;
+    const group = parsePageGroup(row.group);
+    if (group === undefined) return null;
     pages.push({
       id: asString(row.id) ?? "",
       name,
       sortOrder: index,
       theme: normalizeRoundTheme(theme),
-      dimTarget: null,
+      group,
+      dim: null,
     });
   }
   return pages;

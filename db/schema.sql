@@ -60,6 +60,10 @@ create table if not exists pages (
   name text not null check (char_length(name) between 1 and 12),
   sort_order integer not null,
   theme text not null default 'ember',
+  group_rtype text,
+  group_rid text,
+  grouped_light_rid text,
+  dim jsonb,
   dim_target_rtype text,
   dim_target_rid text,
   primary key (switch_id, id)
@@ -94,6 +98,10 @@ create index if not exists recipes_switch_id_idx on recipes (switch_id);
 alter table switches add column if not exists product text not null default 'simple';
 alter table switches add column if not exists page_swipe_axis text not null default 'horizontal';
 alter table switches add column if not exists page_seq integer not null default 1;
+alter table pages add column if not exists group_rtype text;
+alter table pages add column if not exists group_rid text;
+alter table pages add column if not exists grouped_light_rid text;
+alter table pages add column if not exists dim jsonb;
 alter table recipes add column if not exists page_id text;
 alter table recipes add column if not exists targets jsonb not null default '[]'::jsonb;
 alter table recipes alter column channel_id drop not null;

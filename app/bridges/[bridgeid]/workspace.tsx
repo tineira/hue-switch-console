@@ -17,6 +17,7 @@ import {
   sceneGroupRid,
   sceneListItem,
   staleRoundCount,
+  targetBelongsToGroup,
   upsertRoundRecipe,
 } from "@/lib/pages";
 import {
@@ -158,14 +159,20 @@ function assignHint(slot: SlotRef | null, channel: Channel | undefined): string 
   return `Assigning ${channel.label} · ${eventLabel(slot.event)} — click a room, light, or scene.`;
 }
 
-function roundAssignHint(slot: PageSlotRef | null): string {
+function roundAssignHint(
+  slot: PageSlotRef | null,
+  groupName: string | null,
+): string {
+  if (!groupName) {
+    return "Pick a room or zone for this page first. Topology only shows lights and scenes in that group.";
+  }
   if (!slot) {
-    return "Select Tap or Double tap, then click a room, light, or scene.";
+    return `Select Tap or Double tap, then click a light or scene in ${groupName}.`;
   }
   if (slot.event === "double_click") {
-    return "Assigning Double tap — a room or light turns off. A scene starts or edits a list. Off is not a scene.";
+    return `Assigning Double tap in ${groupName} — the room or a light turns off. A scene starts or edits a list. Off is not a scene.`;
   }
-  return "Assigning Tap — click a room or light (toggle) or a scene (cycle list).";
+  return `Assigning Tap in ${groupName} — click a light (toggle) or a scene (cycle list).`;
 }
 
 export function BridgeWorkspace({
@@ -299,6 +306,15 @@ export function BridgeWorkspace({
       setNotice("Select Tap or Double tap, then click a destination.");
       return;
     }
+    const page = roundDraft.pages.find((item) => item.id === pageSlot.pageId);
+    if (!page?.group) {
+      setNotice("Pick a room or zone for this page first.");
+      return;
+    }
+    if (!targetBelongsToGroup(target, page.group, snapshot)) {
+      setNotice("That light or scene is not in this page's room or zone.");
+      return;
+    }
     const current = findRoundRecipe(
       roundDraft.recipes,
       pageSlot.pageId,
@@ -415,6 +431,15 @@ export function BridgeWorkspace({
     if (!selected || !roundDraft) return;
     const pageId = pageSlot?.pageId ?? roundDraft.pages[0]?.id;
     if (!pageId) return;
+    const page = roundDraft.pages.find((item) => item.id === pageId);
+    if (!page?.group) {
+      setNotice("Pick a room or zone for this page first.");
+      return;
+    }
+    if (page.group.groupedLightRid !== groupedLightId) {
+      setNotice("That room is not this page's group.");
+      return;
+    }
     const target: RecipeTarget = { rtype: "grouped_light", rid: groupedLightId };
     let next = roundDraft.recipes;
     next = upsertRoundRecipe(next, {
@@ -536,6 +561,7 @@ export function BridgeWorkspace({
               id: page.id,
               name: page.name,
               theme: page.theme,
+              group: page.group,
             })),
             recipes: roundDraft.recipes,
           }),
@@ -609,6 +635,21 @@ export function BridgeWorkspace({
   const roomCount = snapshot.rooms.length;
   const sceneCount = snapshot.scenes.length;
   const topologyEmpty = lightCount === 0 && roomCount === 0 && sceneCount === 0;
+  const selectedPage =
+    round && roundDraft
+      ? (roundDraft.pages.find((page) => page.id === pageSlot?.pageId) ??
+        roundDraft.pages[0] ??
+        null)
+      : null;
+  const pageGroup = selectedPage?.group ?? null;
+  const pageGroupName = pageGroup
+    ? (snapshot.rooms.find((room) => room.id === pageGroup.rid)?.name ?? null)
+    : null;
+  const visibleRooms = round
+    ? pageGroup
+      ? grouped.rooms.filter((item) => item.room.id === pageGroup.rid)
+      : []
+    : grouped.rooms;
 
   return (
     <div className="flex flex-col gap-5">
@@ -885,7 +926,7 @@ export function BridgeWorkspace({
             </h2>
             <p className="text-sm text-muted">
               {round
-                ? roundAssignHint(pageSlot)
+                ? roundAssignHint(pageSlot, pageGroupName)
                 : assignHint(selectedSlot, selectedChannel)}
             </p>
             {notice ? (
@@ -906,13 +947,25 @@ export function BridgeWorkspace({
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {grouped.rooms.length === 0 ? (
+              {round && !pageGroup ? (
+                <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
+                  Pick a room or zone for this page. Topology then shows only
+                  that group&apos;s lights and scenes.
+                </p>
+              ) : null}
+              {round && pageGroup && visibleRooms.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
+                  This page&apos;s room or zone is missing from the snapshot.
+                  Pick another group, or wait for a new topology upload.
+                </p>
+              ) : null}
+              {!round && grouped.rooms.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
                   Snapshot has no rooms. Lights and scenes are listed below.
                 </p>
               ) : null}
 
-              {grouped.rooms.map(({ room, lights, scenes }) => (
+              {visibleRooms.map(({ room, lights, scenes }) => (
                 <article
                   key={room.id}
                   className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4"
@@ -995,7 +1048,7 @@ export function BridgeWorkspace({
                 </article>
               ))}
 
-              {grouped.ungroupedLights.length > 0 ? (
+              {!round && grouped.ungroupedLights.length > 0 ? (
                 <article className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
                   <h3 className="text-base font-medium">Ungrouped lights</h3>
                   <TargetGroup title="Lights">
@@ -1013,7 +1066,7 @@ export function BridgeWorkspace({
                 </article>
               ) : null}
 
-              {grouped.ungroupedScenes.length > 0 ? (
+              {!round && grouped.ungroupedScenes.length > 0 ? (
                 <article className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
                   <h3 className="text-base font-medium">Other scenes</h3>
                   <TargetGroup title="Scenes">

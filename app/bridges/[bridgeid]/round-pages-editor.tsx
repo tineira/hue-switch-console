@@ -7,14 +7,21 @@ import {
   PAGE_NAME_MAX,
   confirmationForPage,
   findRoundRecipe,
-  nextPageName,
+  groupsEqual,
+  pageGroupFromRoom,
+  pageNameFromGroup,
+  pickableGroups,
+  recipesForGroup,
   roundEventLabel,
+  roundRecipesEqual,
 } from "@/lib/pages";
 import { ROUND_THEMES, roundThemeById } from "@/lib/round-themes";
 import { actionLabel, actionsForTarget, isTargetStale, nameForTarget } from "@/lib/recipes";
 import type {
   HueAction,
+  PageGroup,
   PageSwipeAxis,
+  Room,
   RoundEvent,
   RoundRecipe,
   SwitchPage,
@@ -38,6 +45,13 @@ function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
   next[index] = next[nextIndex];
   next[nextIndex] = tmp;
   return next;
+}
+
+let draftPageSeq = 0;
+
+function nextDraftPageId(): string {
+  draftPageSeq += 1;
+  return `draft-${draftPageSeq}`;
 }
 
 export function RoundPagesEditor({
@@ -69,10 +83,12 @@ export function RoundPagesEditor({
 }) {
   const { pages, recipes, pageSwipeAxis } = draft;
   const [previewOn, setPreviewOn] = useState(true);
+  const [addingPage, setAddingPage] = useState(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState(
     selectedSlot?.pageId ?? pages[0]?.id ?? "",
   );
+  const groups = pickableGroups(snapshot);
   const selectedPage =
     pages.find((page) => page.id === selectedPageId) ?? pages[0] ?? null;
 
@@ -91,22 +107,51 @@ export function RoundPagesEditor({
 
   function addPage() {
     if (pages.length >= MAX_ROUND_PAGES) return;
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? `draft-${crypto.randomUUID()}`
-        : `draft-${Date.now()}`;
+    setAddingPage(true);
+  }
+
+  function createPage(room: Room) {
+    if (pages.length >= MAX_ROUND_PAGES) return;
+    const group = pageGroupFromRoom(room);
+    if (!group) return;
+    const id = nextDraftPageId();
     const page: SwitchPage = {
       id,
-      name: nextPageName(pages),
+      name: pageNameFromGroup(room.name),
       sortOrder: pages.length,
       theme: "ember",
-      dimTarget: null,
+      group,
+      dim: null,
     };
     const next = [...pages, page];
     onChange({ ...draft, pages: next });
     setSelectedPageId(id);
     setEditingPageId(id);
+    setAddingPage(false);
     onSelectSlot({ pageId: id, event: "short" });
+  }
+
+  function changePageGroup(pageId: string, group: PageGroup) {
+    const page = pages.find((item) => item.id === pageId);
+    if (!page || groupsEqual(page.group, group)) return;
+    const nextRecipes = recipesForGroup(recipes, pageId, group, snapshot);
+    const before = recipes.filter((recipe) => recipe.pageId === pageId);
+    const after = nextRecipes.filter((recipe) => recipe.pageId === pageId);
+    if (!roundRecipesEqual(before, after)) {
+      const ok = window.confirm(
+        "Changing the group will clear tap and double-tap recipes that are not in the new room or zone.",
+      );
+      if (!ok) return;
+    }
+    onChange({
+      ...draft,
+      pages: pages.map((item, index) =>
+        item.id === pageId
+          ? { ...item, group, sortOrder: index }
+          : { ...item, sortOrder: index },
+      ),
+      recipes: nextRecipes,
+    });
   }
 
   function deletePage(page: SwitchPage) {
@@ -171,6 +216,40 @@ export function RoundPagesEditor({
           Add page
         </button>
       </div>
+
+      {addingPage ? (
+        <div className="flex flex-col gap-2 rounded-lg border border-line bg-background/40 p-3">
+          <p className="text-sm font-medium">Pick a room or zone for this page</p>
+          {groups.length === 0 ? (
+            <p className="text-sm text-muted">
+              No rooms or zones in this snapshot. A page needs a Hue group.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {groups.map((room) => (
+                <button
+                  key={room.id}
+                  type="button"
+                  onClick={() => createPage(room)}
+                  className="rounded-md border border-line px-3 py-1.5 text-left text-sm hover:border-filament"
+                >
+                  {room.name}
+                  <span className="ml-2 text-xs uppercase tracking-[0.12em] text-muted">
+                    {room.rtype === "zone" ? "Zone" : "Room"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setAddingPage(false)}
+            className="self-start text-xs text-muted hover:text-foreground"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-1">
         {pages.map((page, index) => {
@@ -291,6 +370,7 @@ export function RoundPagesEditor({
           onPreviewOn={setPreviewOn}
           onSelectSlot={onSelectSlot}
           onPatchPage={(patch) => patchPage(selectedPage.id, patch)}
+          onChangeGroup={(group) => changePageGroup(selectedPage.id, group)}
           onRecipesChange={(next) => onChange({ ...draft, recipes: next })}
         />
       ) : null}
@@ -371,6 +451,7 @@ function PageEditor({
   onPreviewOn,
   onSelectSlot,
   onPatchPage,
+  onChangeGroup,
   onRecipesChange,
 }: {
   page: SwitchPage;
@@ -382,6 +463,7 @@ function PageEditor({
   onPreviewOn: (on: boolean) => void;
   onSelectSlot: (slot: PageSlotRef) => void;
   onPatchPage: (patch: Partial<SwitchPage>) => void;
+  onChangeGroup: (group: PageGroup) => void;
   onRecipesChange: (recipes: RoundRecipe[]) => void;
 }) {
   const pageIndex = Math.max(
@@ -410,8 +492,46 @@ function PageEditor({
     ]);
   }
 
+  const rooms = pickableGroups(snapshot);
+  const groupRid = page.group?.rid ?? "";
+  const groupMissing =
+    Boolean(page.group) && !rooms.some((room) => room.id === page.group?.rid);
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-line bg-background/40 p-3">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+          Group
+        </span>
+        <select
+          value={groupRid}
+          onChange={(event) => {
+            const room = rooms.find((item) => item.id === event.target.value);
+            if (!room) return;
+            const group = pageGroupFromRoom(room);
+            if (group) onChangeGroup(group);
+          }}
+          className="rounded-md border border-line bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament"
+        >
+          {!groupRid ? (
+            <option value="">Select a room or zone</option>
+          ) : null}
+          {groupMissing && page.group ? (
+            <option value={page.group.rid}>Unknown group — pick another</option>
+          ) : null}
+          {rooms.map((room) => (
+            <option key={room.id} value={room.id}>
+              {room.name} ({room.rtype === "zone" ? "zone" : "room"})
+            </option>
+          ))}
+        </select>
+        {!page.group ? (
+          <span className="text-xs text-warn">
+            Required. Lights and scenes come only from this room or zone.
+          </span>
+        ) : null}
+      </label>
+
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <button

@@ -59,10 +59,18 @@ const STATEMENTS = [
   name text not null check (char_length(name) between 1 and 12),
   sort_order integer not null,
   theme text not null default 'ember',
+  group_rtype text,
+  group_rid text,
+  grouped_light_rid text,
+  dim jsonb,
   dim_target_rtype text,
   dim_target_rid text,
   primary key (switch_id, id)
 )`,
+  `alter table pages add column if not exists group_rtype text`,
+  `alter table pages add column if not exists group_rid text`,
+  `alter table pages add column if not exists grouped_light_rid text`,
+  `alter table pages add column if not exists dim jsonb`,
   `create index if not exists pages_switch_sort_idx
   on pages (switch_id, sort_order)`,
   `create table if not exists recipes (

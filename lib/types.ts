@@ -48,10 +48,15 @@ export type SwitchProduct = "simple" | "round";
 export type PageSwipeAxis = "horizontal" | "vertical";
 export type RoundEvent = "short" | "double_click";
 
-export type DimTarget = {
-  rtype: "light" | "grouped_light";
+export type PageGroup = {
+  rtype: "room" | "zone";
   rid: string;
+  groupedLightRid: string;
 };
+
+export type DimSet =
+  | { mode: "group"; rid: string }
+  | { mode: "lights"; rids: string[] };
 
 export type SceneListItem = {
   rtype: "scene";
@@ -64,7 +69,8 @@ export type SwitchPage = {
   name: string;
   sortOrder: number;
   theme: string;
-  dimTarget: DimTarget | null;
+  group: PageGroup | null;
+  dim: DimSet | null;
 };
 
 export type RoundRecipe = {

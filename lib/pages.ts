@@ -13,11 +13,13 @@ import {
 } from "@/lib/recipes";
 import type {
   Channel,
-  DimTarget,
+  DimSet,
   HueAction,
+  PageGroup,
   PageSwipeAxis,
   Recipe,
   RecipeTarget,
+  Room,
   RoundEvent,
   RoundRecipe,
   SceneListItem,
@@ -103,43 +105,219 @@ export function sceneGroupRid(
   return snapshot.scenes.find((scene) => scene.id === sceneRid)?.group_rid ?? null;
 }
 
-export function groupedLightForScene(
-  snapshot: TopologySnapshot,
-  sceneRid: string,
-): DimTarget | null {
-  const scene = snapshot.scenes.find((item) => item.id === sceneRid);
-  if (!scene) return null;
-  const room = snapshot.rooms.find((item) => item.id === scene.group_rid);
-  if (!room?.grouped_light_id) return null;
-  return { rtype: "grouped_light", rid: room.grouped_light_id };
+export function foldAscii(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7E]/g, "")
+    .trim();
 }
 
-function dimFromRecipe(
-  recipe: RoundRecipe | undefined,
+export function pageNameFromGroup(name: string): string {
+  const folded = foldAscii(name).slice(0, PAGE_NAME_MAX).trim();
+  return folded || "Page";
+}
+
+export function pageGroupFromRoom(room: Room): PageGroup | null {
+  if (!room.grouped_light_id) return null;
+  return {
+    rtype: room.rtype === "zone" ? "zone" : "room",
+    rid: room.id,
+    groupedLightRid: room.grouped_light_id,
+  };
+}
+
+export function pickableGroups(snapshot: TopologySnapshot): Room[] {
+  return snapshot.rooms.filter((room) => Boolean(room.grouped_light_id));
+}
+
+export function resolvePageGroup(
   snapshot: TopologySnapshot,
-): DimTarget | null {
-  if (!recipe) return null;
-  if (recipe.action === "recall_scene") {
-    const first = recipe.targets?.[0];
-    if (!first) return null;
-    return groupedLightForScene(snapshot, first.rid);
+  group: PageGroup | null | undefined,
+): PageGroup | null {
+  if (!group?.rid) return null;
+  const room = snapshot.rooms.find((item) => item.id === group.rid);
+  return room ? pageGroupFromRoom(room) : null;
+}
+
+export function groupsEqual(
+  a: PageGroup | null | undefined,
+  b: PageGroup | null | undefined,
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return (
+    a.rtype === b.rtype &&
+    a.rid === b.rid &&
+    a.groupedLightRid === b.groupedLightRid
+  );
+}
+
+export function dimsEqual(a: DimSet | null | undefined, b: DimSet | null | undefined): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  if (a.mode !== b.mode) return false;
+  if (a.mode === "group" && b.mode === "group") return a.rid === b.rid;
+  if (a.mode === "lights" && b.mode === "lights") {
+    return (
+      a.rids.length === b.rids.length &&
+      a.rids.every((rid, index) => rid === b.rids[index])
+    );
   }
-  const target = recipe.target;
+  return false;
+}
+
+export function roomForGroup(
+  snapshot: TopologySnapshot,
+  groupRid: string,
+): Room | undefined {
+  return snapshot.rooms.find((room) => room.id === groupRid);
+}
+
+export function targetBelongsToGroup(
+  target: RecipeTarget,
+  group: PageGroup,
+  snapshot: TopologySnapshot,
+): boolean {
+  if (target.rtype === "grouped_light") {
+    return target.rid === group.groupedLightRid;
+  }
+  if (target.rtype === "light") {
+    const room = roomForGroup(snapshot, group.rid);
+    return Boolean(room?.light_ids?.includes(target.rid));
+  }
+  if (target.rtype === "scene") {
+    return sceneGroupRid(snapshot, target.rid) === group.rid;
+  }
+  return false;
+}
+
+export function recipeBelongsToGroup(
+  recipe: RoundRecipe,
+  group: PageGroup,
+  snapshot: TopologySnapshot,
+): boolean {
+  if (recipe.action === "recall_scene") {
+    const targets = recipe.targets ?? [];
+    return (
+      targets.length > 0 &&
+      targets.every((item) =>
+        targetBelongsToGroup({ rtype: "scene", rid: item.rid }, group, snapshot),
+      )
+    );
+  }
+  return recipe.target
+    ? targetBelongsToGroup(recipe.target, group, snapshot)
+    : false;
+}
+
+/** Drop tap/double targets that are not in the page's room or zone. */
+export function recipesForGroup(
+  recipes: RoundRecipe[],
+  pageId: string,
+  group: PageGroup,
+  snapshot: TopologySnapshot,
+): RoundRecipe[] {
+  const next: RoundRecipe[] = [];
+  for (const recipe of recipes) {
+    if (recipe.pageId !== pageId) {
+      next.push(recipe);
+      continue;
+    }
+    if (recipe.action === "recall_scene") {
+      const targets = (recipe.targets ?? []).filter((item) =>
+        targetBelongsToGroup({ rtype: "scene", rid: item.rid }, group, snapshot),
+      );
+      if (targets.length > 0) next.push({ ...recipe, targets });
+      continue;
+    }
+    if (recipe.target && targetBelongsToGroup(recipe.target, group, snapshot)) {
+      next.push(recipe);
+    }
+  }
+  return next;
+}
+
+function groupFromTarget(
+  snapshot: TopologySnapshot,
+  target: RecipeTarget | undefined,
+): PageGroup | null {
   if (!target) return null;
-  if (target.rtype === "light" || target.rtype === "grouped_light") {
-    return { rtype: target.rtype, rid: target.rid };
+  if (target.rtype === "light") {
+    const room = snapshot.rooms.find((item) =>
+      (item.light_ids ?? []).includes(target.rid),
+    );
+    return room ? pageGroupFromRoom(room) : null;
+  }
+  if (target.rtype === "grouped_light") {
+    const room = snapshot.rooms.find(
+      (item) => item.grouped_light_id === target.rid,
+    );
+    return room ? pageGroupFromRoom(room) : null;
+  }
+  if (target.rtype === "scene") {
+    const groupRid = sceneGroupRid(snapshot, target.rid);
+    if (!groupRid) return null;
+    const room = roomForGroup(snapshot, groupRid);
+    return room ? pageGroupFromRoom(room) : null;
   }
   return null;
 }
 
-/** Spec §8.2: short light/group, else short scene list's group, else the same for double tap. */
-export function computeDimTarget(
+function groupFromRecipe(
+  recipe: RoundRecipe | undefined,
+  snapshot: TopologySnapshot,
+): PageGroup | null {
+  if (!recipe) return null;
+  if (recipe.action === "recall_scene") {
+    const first = recipe.targets?.[0];
+    if (!first) return null;
+    return groupFromTarget(snapshot, { rtype: "scene", rid: first.rid });
+  }
+  return groupFromTarget(snapshot, recipe.target);
+}
+
+/** Spec §14: light → its room, scene → its group, grouped_light → that group. */
+export function inferPageGroup(
   recipes: RoundRecipe[],
   snapshot: TopologySnapshot,
-): DimTarget | null {
+): PageGroup | null {
   const short = recipes.find((recipe) => recipe.event === "short");
   const dbl = recipes.find((recipe) => recipe.event === "double_click");
-  return dimFromRecipe(short, snapshot) ?? dimFromRecipe(dbl, snapshot);
+  return groupFromRecipe(short, snapshot) ?? groupFromRecipe(dbl, snapshot);
+}
+
+/**
+ * Spec §8.2, in order: scene → group; any grouped_light of the page → group;
+ * only child lights → those lights; else null. Tap=lamp + double=off group → group.
+ */
+export function computeDim(
+  recipes: RoundRecipe[],
+  groupedLightRid: string | null | undefined,
+): DimSet | null {
+  if (!groupedLightRid) return null;
+  const tap = recipes.find((recipe) => recipe.event === "short");
+  const dbl = recipes.find((recipe) => recipe.event === "double_click");
+  const slots = [tap, dbl].filter((recipe): recipe is RoundRecipe => Boolean(recipe));
+  if (slots.some((recipe) => recipe.action === "recall_scene")) {
+    return { mode: "group", rid: groupedLightRid };
+  }
+  if (
+    slots.some(
+      (recipe) =>
+        recipe.target?.rtype === "grouped_light" &&
+        recipe.target.rid === groupedLightRid,
+    )
+  ) {
+    return { mode: "group", rid: groupedLightRid };
+  }
+  const rids: string[] = [];
+  for (const recipe of slots) {
+    if (recipe.target?.rtype !== "light") return null;
+    if (!rids.includes(recipe.target.rid)) rids.push(recipe.target.rid);
+  }
+  if (rids.length === 0) return null;
+  return { mode: "lights", rids };
 }
 
 export function sceneListItem(
@@ -202,15 +380,22 @@ export function confirmationForPage(
   const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
   const tap = findRoundRecipe(pageRecipes, page.id, "short");
   const dbl = findRoundRecipe(pageRecipes, page.id, "double_click");
-  const dim = computeDimTarget(pageRecipes, snapshot);
+  const dim = computeDim(pageRecipes, page.group?.groupedLightRid);
   const tapPart = tap
     ? `tap → ${roundActionClause(tap, snapshot)}`
     : "tap → unassigned";
   const dblPart = dbl
     ? `double-tap → ${roundActionClause(dbl, snapshot)}`
     : "double-tap → unassigned";
-  const dimName = dim ? nameForTarget(snapshot, dim) : null;
-  const ring = dimName ? `ring dims ${dimName}` : "ring unused";
+  let ring = "ring unused";
+  if (dim?.mode === "group") {
+    const name =
+      nameForTarget(snapshot, { rtype: "grouped_light", rid: dim.rid }) ??
+      "the room";
+    ring = `ring dims ${name} (on lights)`;
+  } else if (dim?.mode === "lights") {
+    ring = "ring dims those lights";
+  }
   return `${page.name} · ${tapPart} · ${dblPart} · ${ring}`;
 }
 
@@ -272,7 +457,8 @@ export function pagesEqual(a: SwitchPage[], b: SwitchPage[]): boolean {
       page.id === other.id &&
       page.name === other.name &&
       page.theme === other.theme &&
-      page.sortOrder === other.sortOrder
+      page.sortOrder === other.sortOrder &&
+      groupsEqual(page.group, other.group)
     );
   });
 }
@@ -325,6 +511,18 @@ export function validateRoundConfig(
     if (!isRoundThemeId(page.theme)) {
       return `unknown theme ${page.theme}`;
     }
+    const resolved = resolvePageGroup(snapshot, page.group);
+    const hasRecipes = recipes.some((recipe) => recipe.pageId === page.id);
+    if (!page.group) {
+      if (hasRecipes) return `page ${page.name} needs a room or zone`;
+    } else if (!resolved) {
+      return `unknown room or zone for page ${page.name}`;
+    } else if (
+      page.group.rtype !== "room" &&
+      page.group.rtype !== "zone"
+    ) {
+      return `group rtype must be room or zone`;
+    }
   }
 
   const seen = new Set<string>();
@@ -335,6 +533,7 @@ export function validateRoundConfig(
       .filter((id): id is string => Boolean(id)),
   );
   const sceneIds = new Set(snapshot.scenes.map((scene) => scene.id));
+  const pageById = new Map(pages.map((page) => [page.id, page]));
 
   for (const recipe of recipes) {
     const key = `${recipe.pageId}:${recipe.event}`;
@@ -346,13 +545,17 @@ export function validateRoundConfig(
     if (recipe.event !== "short" && recipe.event !== "double_click") {
       return `event ${recipe.event} is not valid for a round page`;
     }
+    const page = pageById.get(recipe.pageId);
+    const group = page ? resolvePageGroup(snapshot, page.group) : null;
+    if (!group) {
+      return `page ${page?.name ?? recipe.pageId} needs a room or zone`;
+    }
 
     if (recipe.action === "recall_scene") {
       const targets = recipe.targets ?? [];
       if (targets.length < 1 || targets.length > MAX_SCENE_LIST) {
         return "recall_scene needs 1–8 scenes";
       }
-      let group: string | null = null;
       for (const item of targets) {
         if (item.rtype !== "scene") {
           return "recall_scene targets must be scenes";
@@ -364,10 +567,9 @@ export function validateRoundConfig(
         if (!itemGroup) {
           return `scene ${item.rid} has no room or zone`;
         }
-        if (group && itemGroup !== group) {
-          return "Scenes must be in the same room or zone.";
+        if (itemGroup !== group.rid) {
+          return "Scenes must belong to the page's room or zone.";
         }
-        group = itemGroup;
       }
     } else {
       const target = recipe.target;
@@ -380,6 +582,9 @@ export function validateRoundConfig(
       }
       if (target.rtype === "grouped_light" && !groupedIds.has(target.rid)) {
         return `unknown grouped_light rid ${target.rid}`;
+      }
+      if (!targetBelongsToGroup(target, group, snapshot)) {
+        return "Recipes must belong to the page's room or zone.";
       }
     }
   }
@@ -435,17 +640,30 @@ export function deviceRoundPage(page: SwitchPage): Record<string, unknown> {
     id: page.id,
     name: page.name,
     theme: normalizeRoundTheme(page.theme),
-    dimTarget: page.dimTarget,
+    group: page.group
+      ? {
+          rtype: page.group.rtype,
+          rid: page.group.rid,
+          groupedLightRid: page.group.groupedLightRid,
+        }
+      : null,
+    dim: page.dim,
   };
 }
 
-export function defaultRoundPage(id: string, name: string, sortOrder: number): SwitchPage {
+export function defaultRoundPage(
+  id: string,
+  name: string,
+  sortOrder: number,
+  group: PageGroup | null = null,
+): SwitchPage {
   return {
     id,
     name,
     sortOrder,
     theme: DEFAULT_ROUND_THEME,
-    dimTarget: null,
+    group,
+    dim: null,
   };
 }
 
