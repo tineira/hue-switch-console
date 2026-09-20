@@ -2,12 +2,13 @@
 
 Documento de producto y arquitectura. No es una guía de implementación ni un changelog.
 
-Dos repos:
+Tres repos:
 
 | Repo | Rol |
 | --- | --- |
-| `hue-simple-switch` | Firmware del XIAO ESP32-C6. Pulsación → Bridge Hue en la LAN (Clip v2). |
-| `hue-switch-console` | App web (Vercel + Supabase). Cuenta de usuario, topología, asignación de funciones. |
+| `hue-simple-switch` | Firmware del XIAO ESP32-C6. Pulsación → Bridge Hue en la LAN (Clip v2). Canales GPIO. |
+| `hue-round-switch` | Firmware del XIAO ESP32-S3 + Round Display. Tap en el círculo, no pines. Páginas: ver `docs/round-pages.md`. |
+| `hue-switch-console` | App web (Vercel + Neon). Cuenta de usuario, topología, asignación de funciones. |
 
 La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel. El dedo en el interruptor **nunca** espera a la web.
 
