@@ -295,21 +295,23 @@ export function computeDim(
   recipes: RoundRecipe[],
   groupedLightRid: string | null | undefined,
 ): DimSet | null {
-  if (!groupedLightRid) return null;
   const tap = recipes.find((recipe) => recipe.event === "short");
   const dbl = recipes.find((recipe) => recipe.event === "double_click");
   const slots = [tap, dbl].filter((recipe): recipe is RoundRecipe => Boolean(recipe));
+  const groupRid =
+    groupedLightRid ||
+    slots.find((recipe) => recipe.target?.rtype === "grouped_light")?.target?.rid;
   if (slots.some((recipe) => recipe.action === "recall_scene")) {
-    return { mode: "group", rid: groupedLightRid };
+    return groupRid ? { mode: "group", rid: groupRid } : null;
   }
   if (
     slots.some(
       (recipe) =>
         recipe.target?.rtype === "grouped_light" &&
-        recipe.target.rid === groupedLightRid,
+        (!groupedLightRid || recipe.target.rid === groupedLightRid),
     )
   ) {
-    return { mode: "group", rid: groupedLightRid };
+    return groupRid ? { mode: "group", rid: groupRid } : null;
   }
   const rids: string[] = [];
   for (const recipe of slots) {

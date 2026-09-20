@@ -5,6 +5,7 @@ import {
   listPages,
   listRecipes,
   listRoundRecipes,
+  persistPageGroupAndDim,
   touchSwitch,
 } from "@/lib/db";
 import { authenticateDevice } from "@/lib/device-auth";
@@ -15,6 +16,8 @@ import {
   computeDim,
   deviceRoundPage,
   deviceRoundRecipe,
+  inferPageGroup,
+  resolvePageGroup,
   withSceneNames,
 } from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
@@ -58,12 +61,17 @@ export async function GET(req: Request) {
       const pages = await listPages(sw.id);
       const rawRecipes = await listRoundRecipes(sw.id);
       const recipes = snapshot ? withSceneNames(rawRecipes, snapshot) : rawRecipes;
-      const payloadPages = pages.map((page) => {
-        const dim = computeDim(
-          recipes.filter((recipe) => recipe.pageId === page.id),
-          page.group?.groupedLightRid,
-        );
-        return deviceRoundPage({ ...page, dim });
+      await persistPageGroupAndDim(sw.id, pages, recipes, snapshot);
+      const filled = await listPages(sw.id);
+      const payloadPages = filled.map((page) => {
+        const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
+        const group = snapshot
+          ? (resolvePageGroup(snapshot, page.group) ??
+            inferPageGroup(pageRecipes, snapshot) ??
+            page.group)
+          : page.group;
+        const dim = computeDim(pageRecipes, group?.groupedLightRid);
+        return deviceRoundPage({ ...page, group, dim });
       });
       return jsonOk({
         rev: sw.rev,

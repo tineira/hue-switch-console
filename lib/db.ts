@@ -540,7 +540,8 @@ function withGroupAndDim(
   const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
   const group = snapshot
     ? (resolvePageGroup(snapshot, page.group) ??
-      (page.group ? null : inferPageGroup(pageRecipes, snapshot)))
+      inferPageGroup(pageRecipes, snapshot) ??
+      page.group)
     : page.group;
   return {
     ...page,
@@ -549,7 +550,7 @@ function withGroupAndDim(
   };
 }
 
-async function persistPageGroupAndDim(
+export async function persistPageGroupAndDim(
   switchId: string,
   pages: SwitchPage[],
   recipes: RoundRecipe[],
