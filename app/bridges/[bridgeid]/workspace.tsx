@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   actionLabel,
@@ -818,25 +818,12 @@ function ChannelCard({
               {recipe ? (
                 <div className="flex shrink-0 items-center gap-1">
                   {actionsForTarget(recipe.target.rtype).length > 1 ? (
-                    <label className="sr-only" htmlFor={`action-${channel.id}-${event}`}>
-                      Hue action
-                    </label>
-                  ) : null}
-                  {actionsForTarget(recipe.target.rtype).length > 1 ? (
-                    <select
+                    <ActionSelect
                       id={`action-${channel.id}-${event}`}
                       value={recipe.action}
-                      onChange={(ev) =>
-                        onChangeAction(slot, ev.target.value as HueAction)
-                      }
-                      className="rounded-md border border-line bg-cream px-1.5 py-1 text-xs"
-                    >
-                      {actionsForTarget(recipe.target.rtype).map((action) => (
-                        <option key={action} value={action}>
-                          {actionLabel(action)}
-                        </option>
-                      ))}
-                    </select>
+                      actions={actionsForTarget(recipe.target.rtype)}
+                      onChange={(action) => onChangeAction(slot, action)}
+                    />
                   ) : null}
                   <button
                     type="button"
@@ -898,6 +885,74 @@ function TargetButton({
         <span className="ml-2 text-xs text-muted">{detail}</span>
       ) : null}
     </button>
+  );
+}
+
+function ActionSelect({
+  id,
+  value,
+  actions,
+  onChange,
+}: {
+  id: string;
+  value: HueAction;
+  actions: HueAction[];
+  onChange: (action: HueAction) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(`[data-action-select="${id}"]`)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    return () => document.removeEventListener("mousedown", onPointer);
+  }, [open, id]);
+
+  return (
+    <div className="relative" data-action-select={id}>
+      <label className="sr-only" htmlFor={id}>
+        Hue action
+      </label>
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="rounded-md border border-line bg-cream px-1.5 py-1 text-xs text-foreground"
+      >
+        {actionLabel(value)}
+      </button>
+      {open ? (
+        <ul
+          className="absolute right-0 z-10 mt-1 min-w-24 overflow-hidden rounded-md border border-line bg-cream py-1 shadow-lg"
+          role="listbox"
+        >
+          {actions.map((action) => (
+            <li key={action}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={action === value}
+                className={`w-full px-2.5 py-1.5 text-left text-xs text-foreground ${
+                  action === value ? "bg-filament-soft" : "hover:bg-background"
+                }`}
+                onClick={() => {
+                  onChange(action);
+                  setOpen(false);
+                }}
+              >
+                {actionLabel(action)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 

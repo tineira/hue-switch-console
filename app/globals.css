@@ -341,3 +341,10 @@ html[data-theme="phosphor"] body {
   background: var(--filament-soft);
   color: var(--foreground);
 }
+
+select,
+option {
+  background-color: var(--cream);
+  color: var(--foreground);
+  color-scheme: inherit;
+}
