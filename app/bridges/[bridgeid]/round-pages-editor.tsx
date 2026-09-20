@@ -10,7 +10,7 @@ import {
   nextPageName,
   roundEventLabel,
 } from "@/lib/pages";
-import { ROUND_THEMES } from "@/lib/round-themes";
+import { ROUND_THEMES, roundThemeById } from "@/lib/round-themes";
 import { actionLabel, actionsForTarget, isTargetStale, nameForTarget } from "@/lib/recipes";
 import type {
   HueAction,
@@ -331,10 +331,13 @@ function PageEditor({
     0,
     pages.findIndex((item) => item.id === page.id),
   );
+  const [themeOpen, setThemeOpen] = useState(false);
+  const currentTheme = roundThemeById(page.theme);
   const sample =
     findRoundRecipe(recipes, page.id, "short")?.targets?.[0]?.name ??
     findRoundRecipe(recipes, page.id, "double_click")?.targets?.[0]?.name ??
     null;
+  const themePickerId = `theme-picker-${page.id}`;
 
   function setTargets(event: RoundEvent, targets: NonNullable<RoundRecipe["targets"]>) {
     const without = recipes.filter(
@@ -368,45 +371,80 @@ function PageEditor({
       </label>
 
       <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-            Theme
-          </p>
+        <div className="flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={() => onPreviewOn(!previewOn)}
-            className="text-xs font-medium text-filament"
+            aria-expanded={themeOpen}
+            aria-controls={themePickerId}
+            onClick={() => setThemeOpen((open) => !open)}
+            className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left touch-manipulation sm:min-h-0"
           >
-            Preview {previewOn ? "On" : "Off"}
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+              Theme
+            </span>
+            <span className="truncate text-sm font-medium">{currentTheme.name}</span>
+            <span className="ml-auto text-xs text-muted" aria-hidden="true">
+              {themeOpen ? "▴" : "▾"}
+            </span>
           </button>
+          {themeOpen ? (
+            <button
+              type="button"
+              onClick={() => onPreviewOn(!previewOn)}
+              className="shrink-0 text-xs font-medium text-filament"
+            >
+              Preview {previewOn ? "On" : "Off"}
+            </button>
+          ) : null}
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {ROUND_THEMES.map((theme) => {
-            const selected = page.theme === theme.id;
-            return (
-              <button
-                key={theme.id}
-                type="button"
-                onClick={() => onPatchPage({ theme: theme.id })}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 ${
-                  selected
-                    ? "border-filament shadow-[0_0_0_1px_var(--filament)]"
-                    : "border-line hover:border-filament/50"
-                }`}
-              >
-                <RoundDial
-                  theme={theme}
-                  name={page.name || theme.name}
-                  scene={sample}
-                  pageCount={pages.length}
-                  activeIndex={pageIndex}
-                  on={previewOn}
-                  size={96}
-                />
-                <span className="text-xs font-medium">{theme.name}</span>
-              </button>
-            );
-          })}
+        <div id={themePickerId}>
+          {themeOpen ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {ROUND_THEMES.map((theme) => {
+                const selected = page.theme === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => onPatchPage({ theme: theme.id })}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 ${
+                      selected
+                        ? "border-filament shadow-[0_0_0_1px_var(--filament)]"
+                        : "border-line hover:border-filament/50"
+                    }`}
+                  >
+                    <RoundDial
+                      theme={theme}
+                      name={page.name || theme.name}
+                      scene={sample}
+                      pageCount={pages.length}
+                      activeIndex={pageIndex}
+                      on={previewOn}
+                      size={96}
+                    />
+                    <span className="text-xs font-medium">{theme.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setThemeOpen(true)}
+              className="flex items-center gap-3 self-start rounded-xl border border-line p-2 touch-manipulation"
+            >
+              <RoundDial
+                theme={currentTheme}
+                name={page.name || currentTheme.name}
+                scene={sample}
+                pageCount={pages.length}
+                activeIndex={pageIndex}
+                on={previewOn}
+                size={72}
+              />
+              <span className="text-xs text-muted">Change</span>
+            </button>
+          )}
         </div>
       </div>
 
