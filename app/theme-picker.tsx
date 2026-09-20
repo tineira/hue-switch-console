@@ -39,10 +39,10 @@ function SwatchGrid({
               role="option"
               aria-selected={selected}
               onClick={() => onChoose(item.id)}
-              className={`rounded-xl border bg-cream p-2.5 text-left ${
+              className={`min-h-11 touch-manipulation rounded-xl border bg-cream p-3 text-left sm:p-2.5 ${
                 selected
                   ? "border-filament shadow-[0_0_0_1px_var(--filament)]"
-                  : "border-line hover:border-filament/50"
+                  : "border-line"
               }`}
             >
               <span className="block text-sm font-medium">{item.name}</span>
@@ -77,13 +77,24 @@ export function ThemePicker() {
 
   useEffect(() => {
     if (!open) return;
-    function onPointer(event: MouseEvent) {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    function onPointer(event: PointerEvent) {
       const target = event.target as HTMLElement | null;
       if (target?.closest("[data-theme-picker]")) return;
       setOpen(false);
     }
-    document.addEventListener("mousedown", onPointer);
-    return () => document.removeEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
   }, [open]);
 
   function choose(id: ThemeId) {
@@ -100,7 +111,7 @@ export function ThemePicker() {
     <div className="relative" data-theme-picker>
       <button
         type="button"
-        className="rounded-md border border-line bg-cream px-2.5 py-1 text-sm text-foreground"
+        className="min-h-11 touch-manipulation rounded-md border border-line bg-cream px-3 py-1.5 text-sm text-foreground sm:min-h-0 sm:px-2.5 sm:py-1"
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
@@ -108,16 +119,34 @@ export function ThemePicker() {
         Theme · {current.name}
       </button>
       {open ? (
-        <div
-          className="absolute right-0 z-30 mt-2 w-[min(36rem,calc(100vw-2rem))] max-h-[min(70vh,36rem)] overflow-y-auto rounded-xl border border-line bg-background p-3 shadow-lg"
-          role="dialog"
-          aria-label="Choose theme"
-        >
-          <div className="flex flex-col gap-4">
-            <SwatchGrid title="Dark" items={dark} theme={theme} onChoose={choose} />
-            <SwatchGrid title="Light" items={light} theme={theme} onChoose={choose} />
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-foreground/40 md:hidden"
+            aria-label="Close theme picker"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-line bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg md:absolute md:inset-auto md:right-0 md:top-full md:mt-2 md:max-h-[min(70vh,36rem)] md:w-[min(36rem,calc(100vw-2.5rem))] md:rounded-xl md:border md:p-3"
+            role="dialog"
+            aria-label="Choose theme"
+          >
+            <div className="mb-3 flex items-center justify-between md:hidden">
+              <p className="text-sm font-medium">Theme</p>
+              <button
+                type="button"
+                className="min-h-11 touch-manipulation rounded-md border border-line px-3 text-sm"
+                onClick={() => setOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <SwatchGrid title="Dark" items={dark} theme={theme} onChoose={choose} />
+              <SwatchGrid title="Light" items={light} theme={theme} onChoose={choose} />
+            </div>
           </div>
-        </div>
+        </>
       ) : null}
     </div>
   );
