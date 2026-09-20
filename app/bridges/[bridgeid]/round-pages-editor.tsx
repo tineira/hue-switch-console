@@ -4,6 +4,7 @@ import { RoundDial } from "@/app/bridges/[bridgeid]/round-dial";
 import {
   MAX_ROUND_PAGES,
   MAX_SCENE_LIST,
+  MAX_SCREEN_TIMEOUT_SEC,
   PAGE_NAME_MAX,
   confirmationForPage,
   findRoundRecipe,
@@ -35,6 +36,7 @@ export type RoundDraft = {
   pages: SwitchPage[];
   recipes: RoundRecipe[];
   pageSwipeAxis: PageSwipeAxis;
+  screenTimeoutSec: number;
 };
 
 function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
@@ -81,7 +83,7 @@ export function RoundPagesEditor({
   onDiscard: () => void;
   onClearStale: () => void;
 }) {
-  const { pages, recipes, pageSwipeAxis } = draft;
+  const { pages, recipes, pageSwipeAxis, screenTimeoutSec } = draft;
   const [previewOn, setPreviewOn] = useState(true);
   const [addingPage, setAddingPage] = useState(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
@@ -202,6 +204,32 @@ export function RoundPagesEditor({
           </button>
         </div>
       </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+          Screen timeout
+        </span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={MAX_SCREEN_TIMEOUT_SEC}
+          step={1}
+          value={screenTimeoutSec}
+          aria-describedby="screen-timeout-hint"
+          onChange={(event) => {
+            const n = Number.parseInt(event.target.value, 10);
+            onChange({
+              ...draft,
+              screenTimeoutSec: Number.isFinite(n) ? n : 0,
+            });
+          }}
+          className="w-24 rounded-md border border-line bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament"
+        />
+        <span id="screen-timeout-hint" className="text-xs text-muted">
+          Seconds until the display sleeps. 0 = always on.
+        </span>
+      </label>
 
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">

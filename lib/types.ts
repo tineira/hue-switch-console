@@ -110,4 +110,5 @@ export type SwitchPublic = {
   last_seen_at: string | null;
   product: SwitchProduct;
   pageSwipeAxis: PageSwipeAxis;
+  screenTimeoutSec: number;
 };

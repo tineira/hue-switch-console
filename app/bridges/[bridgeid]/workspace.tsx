@@ -7,6 +7,7 @@ import {
 } from "@/app/bridges/[bridgeid]/round-pages-editor";
 import { formatMac } from "@/lib/mac";
 import {
+  DEFAULT_SCREEN_TIMEOUT_SEC,
   MAX_SCENE_LIST,
   clearRoundRecipe,
   clearStaleRoundRecipes,
@@ -65,6 +66,7 @@ function roundDraftOf(item: WorkspaceSwitch): RoundDraft {
     pages: item.pages ?? [],
     recipes: item.roundRecipes ?? [],
     pageSwipeAxis: item.pageSwipeAxis ?? "horizontal",
+    screenTimeoutSec: item.screenTimeoutSec ?? DEFAULT_SCREEN_TIMEOUT_SEC,
   };
 }
 
@@ -244,6 +246,7 @@ export function BridgeWorkspace({
           roundDraft &&
             roundBaseline &&
             (roundDraft.pageSwipeAxis !== roundBaseline.pageSwipeAxis ||
+              roundDraft.screenTimeoutSec !== roundBaseline.screenTimeoutSec ||
               !pagesEqual(roundDraft.pages, roundBaseline.pages) ||
               !roundRecipesEqual(roundDraft.recipes, roundBaseline.recipes)),
         )
@@ -557,6 +560,7 @@ export function BridgeWorkspace({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             pageSwipeAxis: roundDraft.pageSwipeAxis,
+            screenTimeoutSec: roundDraft.screenTimeoutSec,
             pages: roundDraft.pages.map((page) => ({
               id: page.id,
               name: page.name,
@@ -572,6 +576,7 @@ export function BridgeWorkspace({
           pages?: SwitchPage[];
           recipes?: RoundRecipe[];
           pageSwipeAxis?: RoundDraft["pageSwipeAxis"];
+          screenTimeoutSec?: number;
           error?: string;
           details?: string;
         };
@@ -583,6 +588,7 @@ export function BridgeWorkspace({
           pages: body.pages ?? roundDraft.pages,
           recipes: body.recipes ?? roundDraft.recipes,
           pageSwipeAxis: body.pageSwipeAxis ?? roundDraft.pageSwipeAxis,
+          screenTimeoutSec: body.screenTimeoutSec ?? roundDraft.screenTimeoutSec,
         };
         setRoundDraft(selected.mac, next);
         setRoundSaved((current) => ({ ...current, [selected.mac]: next }));
@@ -711,6 +717,8 @@ export function BridgeWorkspace({
                       itemRoundSaved &&
                       (itemRoundDraft.pageSwipeAxis !==
                         itemRoundSaved.pageSwipeAxis ||
+                        itemRoundDraft.screenTimeoutSec !==
+                          itemRoundSaved.screenTimeoutSec ||
                         !pagesEqual(itemRoundDraft.pages, itemRoundSaved.pages) ||
                         !roundRecipesEqual(
                           itemRoundDraft.recipes,

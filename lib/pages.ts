@@ -38,6 +38,10 @@ export {
 
 export const ROUND_EVENTS: RoundEvent[] = ["short", "double_click"];
 
+export const DEFAULT_SCREEN_TIMEOUT_SEC = 30;
+export const MIN_SCREEN_TIMEOUT_SEC = 10;
+export const MAX_SCREEN_TIMEOUT_SEC = 600;
+
 export function isPlaceholderRoundChannels(channels: Channel[]): boolean {
   if (channels.length === 0) return true;
   if (channels.length !== 1) return false;
@@ -675,4 +679,13 @@ export function isRoundEvent(value: unknown): value is RoundEvent {
 
 export function isPageSwipeAxis(value: unknown): value is PageSwipeAxis {
   return value === "horizontal" || value === "vertical";
+}
+
+export function isScreenTimeoutSec(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    (value === 0 ||
+      (value >= MIN_SCREEN_TIMEOUT_SEC && value <= MAX_SCREEN_TIMEOUT_SEC))
+  );
 }

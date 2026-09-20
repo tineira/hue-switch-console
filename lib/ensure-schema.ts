@@ -46,6 +46,7 @@ const STATEMENTS = [
   product text not null default 'simple',
   page_swipe_axis text not null default 'horizontal',
   page_seq integer not null default 1,
+  screen_timeout_sec integer not null default 30,
   unique (user_id, mac)
 )`,
   `create index if not exists switches_user_bridge_idx
@@ -53,6 +54,7 @@ const STATEMENTS = [
   `alter table switches add column if not exists product text not null default 'simple'`,
   `alter table switches add column if not exists page_swipe_axis text not null default 'horizontal'`,
   `alter table switches add column if not exists page_seq integer not null default 1`,
+  `alter table switches add column if not exists screen_timeout_sec integer not null default 30`,
   `create table if not exists pages (
   switch_id uuid not null references switches (id) on delete cascade,
   id text not null,

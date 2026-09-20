@@ -17,7 +17,12 @@ import type {
   TargetRtype,
 } from "@/lib/types";
 import { normalizeMac } from "@/lib/mac";
-import { isPageSwipeAxis, isRoundEvent, PAGE_NAME_MAX } from "@/lib/pages";
+import {
+  isPageSwipeAxis,
+  isRoundEvent,
+  isScreenTimeoutSec,
+  PAGE_NAME_MAX,
+} from "@/lib/pages";
 import { isRoundThemeId, normalizeRoundTheme } from "@/lib/round-themes";
 
 const KINDS: ChannelKind[] = ["maintained", "momentary"];
@@ -177,6 +182,19 @@ export function parseProduct(raw: unknown): SwitchProduct | undefined {
 
 export function parsePageSwipeAxis(raw: unknown): PageSwipeAxis | null {
   if (isPageSwipeAxis(raw)) return raw;
+  return null;
+}
+
+/** Valid integer timeout, or `undefined` if omitted. `null` = present but invalid. */
+export function parseScreenTimeoutSec(raw: unknown): number | null | undefined {
+  if (raw === undefined) return undefined;
+  if (isScreenTimeoutSec(raw)) return raw;
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed === "") return null;
+    const n = Number(trimmed);
+    if (isScreenTimeoutSec(n)) return n;
+  }
   return null;
 }
 

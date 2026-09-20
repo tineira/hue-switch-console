@@ -202,6 +202,7 @@ If the board is a Round Display (`product: "round"`), the payload is instead:
   "rev": 12,
   "product": "round",
   "pageSwipeAxis": "horizontal",
+  "screenTimeoutSec": 30,
   "pages": [
     {
       "id": "p1",

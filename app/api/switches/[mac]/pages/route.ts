@@ -15,8 +15,13 @@ import {
   parsePageSwipeAxis,
   parseRoundPages,
   parseRoundRecipes,
+  parseScreenTimeoutSec,
 } from "@/lib/parse";
-import { validateRoundConfig, withSceneNames } from "@/lib/pages";
+import {
+  DEFAULT_SCREEN_TIMEOUT_SEC,
+  validateRoundConfig,
+  withSceneNames,
+} from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
 import { normalizeMac } from "@/lib/tokens";
 
@@ -92,6 +97,11 @@ export async function PUT(
   }
   const raw = body as Record<string, unknown>;
   const pageSwipeAxis = parsePageSwipeAxis(raw.pageSwipeAxis) ?? "horizontal";
+  const parsedTimeout = parseScreenTimeoutSec(raw.screenTimeoutSec);
+  if (parsedTimeout === null) {
+    return jsonError(400, "screenTimeoutSec must be 0 or 10–600");
+  }
+  const screenTimeoutSec = parsedTimeout ?? DEFAULT_SCREEN_TIMEOUT_SEC;
   const pages = parseRoundPages(raw.pages);
   const recipes = parseRoundRecipes(raw.recipes);
   if (!pages || !recipes) {
@@ -114,6 +124,7 @@ export async function PUT(
 
     const saved = await replaceRoundConfig(sw, {
       pageSwipeAxis,
+      screenTimeoutSec,
       pages,
       recipes,
       snapshot,
@@ -124,6 +135,7 @@ export async function PUT(
       rev: saved.rev,
       product: "round",
       pageSwipeAxis: saved.pageSwipeAxis,
+      screenTimeoutSec: saved.screenTimeoutSec,
       pages: saved.pages,
       recipes: saved.recipes,
     });

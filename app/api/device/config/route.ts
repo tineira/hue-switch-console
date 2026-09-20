@@ -77,6 +77,7 @@ export async function GET(req: Request) {
         rev: sw.rev,
         product: "round",
         pageSwipeAxis: sw.page_swipe_axis,
+        screenTimeoutSec: sw.screen_timeout_sec,
         pages: payloadPages,
         recipes: recipes.map(deviceRoundRecipe),
       });

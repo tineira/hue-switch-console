@@ -1,5 +1,6 @@
 import {
   computeDim,
+  DEFAULT_SCREEN_TIMEOUT_SEC,
   dimsEqual,
   groupsEqual,
   inferPageGroup,
@@ -52,6 +53,7 @@ export type SwitchRow = {
   product: SwitchProduct;
   page_swipe_axis: PageSwipeAxis;
   page_seq: number;
+  screen_timeout_sec: number;
 };
 
 export type BridgeRow = {
@@ -99,6 +101,15 @@ function mapKey(row: Record<string, unknown>): DeviceApiKeyRow {
   };
 }
 
+function asScreenTimeoutSec(value: unknown): number {
+  if (value === null || value === undefined || value === "") {
+    return DEFAULT_SCREEN_TIMEOUT_SEC;
+  }
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(n)) return DEFAULT_SCREEN_TIMEOUT_SEC;
+  return n;
+}
+
 function mapSwitch(row: Record<string, unknown>): SwitchRow {
   return {
     id: String(row.id),
@@ -116,6 +127,7 @@ function mapSwitch(row: Record<string, unknown>): SwitchRow {
     product: row.product === "round" ? "round" : "simple",
     page_swipe_axis: row.page_swipe_axis === "vertical" ? "vertical" : "horizontal",
     page_seq: Number(row.page_seq) || 1,
+    screen_timeout_sec: asScreenTimeoutSec(row.screen_timeout_sec),
   };
 }
 
@@ -152,6 +164,7 @@ export function toSwitchPublic(row: SwitchRow): SwitchPublic {
     last_seen_at: row.last_seen_at,
     product: row.product,
     pageSwipeAxis: row.page_swipe_axis,
+    screenTimeoutSec: row.screen_timeout_sec,
   };
 }
 
@@ -245,7 +258,8 @@ export async function listBridges(userId: string) {
 export async function getSwitchByMac(userId: string, mac: string) {
   const rows = await sql()`
     select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
-           api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq
+           api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
+           screen_timeout_sec
     from switches
     where user_id = ${userId} and mac = ${mac}
     limit 1
@@ -257,7 +271,8 @@ export async function getSwitchByMac(userId: string, mac: string) {
 export async function listSwitches(userId: string) {
   const rows = await sql()`
     select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
-           api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq
+           api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
+           screen_timeout_sec
     from switches
     where user_id = ${userId}
     order by last_seen_at desc nulls last
@@ -294,15 +309,19 @@ export async function upsertSwitch(row: {
       : "horizontal";
   const pageSeq =
     product === "round" && existing && !bridgeChanged ? existing.page_seq : 1;
+  const screenTimeoutSec =
+    product === "round" && existing && !bridgeChanged
+      ? existing.screen_timeout_sec
+      : DEFAULT_SCREEN_TIMEOUT_SEC;
   const rows = await sql()`
     insert into switches (
       user_id, mac, label, firmware, bridgeid, bridge_ip, channels, api_key_id, rev, last_seen_at,
-      product, page_swipe_axis, page_seq
+      product, page_swipe_axis, page_seq, screen_timeout_sec
     )
     values (
       ${row.userId}, ${row.mac}, ${label}, ${firmware}, ${row.bridgeid}, ${bridgeIp},
       ${channels}::jsonb, ${row.apiKeyId}, ${rev}, now(),
-      ${product}, ${axis}, ${pageSeq}
+      ${product}, ${axis}, ${pageSeq}, ${screenTimeoutSec}
     )
     on conflict (user_id, mac) do update set
       firmware = excluded.firmware,
@@ -314,7 +333,8 @@ export async function upsertSwitch(row: {
       last_seen_at = now(),
       product = excluded.product
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
-              api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq
+              api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
+              screen_timeout_sec
   `;
   const sw = mapSwitch(rows[0] as Record<string, unknown>);
   if (sw.product === "round") {
@@ -334,7 +354,8 @@ export async function updateSwitchLabel(
     set label = ${label}
     where user_id = ${userId} and mac = ${mac}
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
-              api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq
+              api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
+              screen_timeout_sec
   `;
   if (!rows[0]) return null;
   return mapSwitch(rows[0] as Record<string, unknown>);
@@ -662,6 +683,7 @@ export async function replaceRoundConfig(
   sw: SwitchRow,
   input: {
     pageSwipeAxis: PageSwipeAxis;
+    screenTimeoutSec: number;
     pages: SwitchPage[];
     recipes: RoundRecipe[];
     snapshot: TopologySnapshot;
@@ -722,22 +744,25 @@ export async function replaceRoundConfig(
   const rows = await sql()`
     update switches
     set page_swipe_axis = ${input.pageSwipeAxis},
+        screen_timeout_sec = ${input.screenTimeoutSec},
         page_seq = ${seq},
         rev = rev + 1
     where id = ${sw.id}
-    returning rev, page_swipe_axis, page_seq, product
+    returning rev, page_swipe_axis, page_seq, product, screen_timeout_sec
   `;
   const updated = rows[0] as {
     rev: number;
     page_swipe_axis: string;
     page_seq: number;
     product: string;
+    screen_timeout_sec: number;
   };
   return {
     rev: Number(updated.rev),
     pageSwipeAxis: (updated.page_swipe_axis === "vertical"
       ? "vertical"
       : "horizontal") as PageSwipeAxis,
+    screenTimeoutSec: asScreenTimeoutSec(updated.screen_timeout_sec),
     pages: withDim,
     recipes: named,
   };

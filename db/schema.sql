@@ -48,6 +48,8 @@ create table if not exists switches (
   product text not null default 'simple' check (product in ('simple', 'round')),
   page_swipe_axis text not null default 'horizontal' check (page_swipe_axis in ('horizontal', 'vertical')),
   page_seq integer not null default 1,
+  screen_timeout_sec integer not null default 30
+    check (screen_timeout_sec = 0 or (screen_timeout_sec >= 10 and screen_timeout_sec <= 600)),
   unique (user_id, mac)
 );
 
@@ -98,6 +100,7 @@ create index if not exists recipes_switch_id_idx on recipes (switch_id);
 alter table switches add column if not exists product text not null default 'simple';
 alter table switches add column if not exists page_swipe_axis text not null default 'horizontal';
 alter table switches add column if not exists page_seq integer not null default 1;
+alter table switches add column if not exists screen_timeout_sec integer not null default 30;
 alter table pages add column if not exists group_rtype text;
 alter table pages add column if not exists group_rid text;
 alter table pages add column if not exists grouped_light_rid text;
