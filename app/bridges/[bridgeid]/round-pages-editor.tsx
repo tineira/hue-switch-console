@@ -69,6 +69,7 @@ export function RoundPagesEditor({
 }) {
   const { pages, recipes, pageSwipeAxis } = draft;
   const [previewOn, setPreviewOn] = useState(true);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState(
     selectedSlot?.pageId ?? pages[0]?.id ?? "",
   );
@@ -104,6 +105,7 @@ export function RoundPagesEditor({
     const next = [...pages, page];
     onChange({ ...draft, pages: next });
     setSelectedPageId(id);
+    setEditingPageId(id);
     onSelectSlot({ pageId: id, event: "short" });
   }
 
@@ -116,6 +118,7 @@ export function RoundPagesEditor({
     const nextPages = pages.filter((item) => item.id !== page.id);
     const nextRecipes = recipes.filter((recipe) => recipe.pageId !== page.id);
     onChange({ ...draft, pages: nextPages, recipes: nextRecipes });
+    if (editingPageId === page.id) setEditingPageId(null);
     const fallback = nextPages[0];
     if (fallback) {
       setSelectedPageId(fallback.id);
@@ -172,6 +175,7 @@ export function RoundPagesEditor({
       <div className="flex flex-col gap-1">
         {pages.map((page, index) => {
           const active = page.id === selectedPage?.id;
+          const editing = editingPageId === page.id;
           return (
             <div
               key={page.id}
@@ -179,19 +183,72 @@ export function RoundPagesEditor({
                 active ? "border-filament bg-filament-soft" : "border-line"
               }`}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPageId(page.id);
-                  onSelectSlot({
-                    pageId: page.id,
-                    event: selectedSlot?.event ?? "short",
-                  });
-                }}
-                className="min-w-0 flex-1 truncate text-left text-sm font-medium"
-              >
-                {page.name}
-              </button>
+              {editing ? (
+                <label className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="sr-only">Page name</span>
+                  <input
+                    value={page.name}
+                    maxLength={PAGE_NAME_MAX}
+                    autoFocus
+                    aria-describedby={`page-name-hint-${page.id}`}
+                    onChange={(event) =>
+                      patchPage(page.id, { name: event.target.value })
+                    }
+                    onBlur={(event) => {
+                      const trimmed = event.currentTarget.value.trim();
+                      if (!trimmed) patchPage(page.id, { name: "Page" });
+                      else if (trimmed !== event.currentTarget.value) {
+                        patchPage(page.id, { name: trimmed });
+                      }
+                      setEditingPageId(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === "Escape") {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                      }
+                    }}
+                    className="min-w-0 flex-1 rounded-md border border-line bg-cream px-2 py-1 text-sm outline-none focus:border-filament"
+                  />
+                  <span
+                    id={`page-name-hint-${page.id}`}
+                    className="shrink-0 text-[11px] text-muted"
+                  >
+                    {page.name.length}/{PAGE_NAME_MAX}
+                  </span>
+                </label>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPageId(page.id);
+                      onSelectSlot({
+                        pageId: page.id,
+                        event: selectedSlot?.event ?? "short",
+                      });
+                    }}
+                    className="min-w-0 flex-1 truncate text-left text-sm font-medium"
+                  >
+                    {page.name}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Rename ${page.name || "page"}`}
+                    onClick={() => {
+                      setSelectedPageId(page.id);
+                      setEditingPageId(page.id);
+                      onSelectSlot({
+                        pageId: page.id,
+                        event: selectedSlot?.event ?? "short",
+                      });
+                    }}
+                    className="shrink-0 rounded p-1 text-muted hover:bg-filament-soft hover:text-filament"
+                  >
+                    <PencilIcon />
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 aria-label="Move page up"
@@ -355,21 +412,6 @@ function PageEditor({
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-line bg-background/40 p-3">
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-          Name
-        </span>
-        <input
-          value={page.name}
-          maxLength={PAGE_NAME_MAX}
-          onChange={(event) => onPatchPage({ name: event.target.value })}
-          className="rounded-md border border-line bg-cream px-3 py-1.5 text-sm outline-none focus:border-filament"
-        />
-        <span className="text-xs text-muted">
-          {page.name.length}/{PAGE_NAME_MAX} · shown on the circle
-        </span>
-      </label>
-
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <button
@@ -655,5 +697,19 @@ function RoundSlot({
         </ol>
       ) : null}
     </div>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M13.586 3.586a2 2 0 0 1 2.828 2.828l-8.486 8.486a2 2 0 0 1-.707.464l-3.04 1.013a.5.5 0 0 1-.64-.64l1.013-3.04a2 2 0 0 1 .464-.707l8.486-8.486ZM15 5l-1-1" />
+    </svg>
   );
 }
