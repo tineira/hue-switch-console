@@ -40,6 +40,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Agent / browser tooling (local only)
+.grok/
+.playwright-mcp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
