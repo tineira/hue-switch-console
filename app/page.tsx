@@ -44,9 +44,9 @@ export default async function Home() {
           <h2 className="text-lg font-medium">No Bridge snapshot yet</h2>
           <ol className="flex max-w-xl list-decimal flex-col gap-2 pl-5 text-sm text-muted">
             <li>
-              Create a device API key and put it in{" "}
-              <code className="font-mono text-xs">config.h</code> as{" "}
-              <code className="font-mono text-xs">CONSOLE_TOKEN</code>.
+              Plug a virgin XIAO into USB and use Install device (Chrome or
+              Edge). Developers can still put a key in{" "}
+              <code className="font-mono text-xs">config.h</code>.
             </li>
             <li>
               Let the XIAO pair with Hue on the LAN, then register. Or run{" "}
@@ -58,10 +58,16 @@ export default async function Home() {
               recipes on a Simple switch, or pages on a Round Display.
             </li>
           </ol>
-          <p>
+          <p className="flex flex-wrap gap-4">
+            <Link
+              href="/install"
+              className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
+            >
+              Install device
+            </Link>
             <Link
               href="/keys"
-              className="text-sm font-medium text-filament hover:underline"
+              className="self-center text-sm font-medium text-filament hover:underline"
             >
               Manage API keys
             </Link>
