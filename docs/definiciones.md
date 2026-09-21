@@ -6,22 +6,29 @@ Tres repos:
 
 | Repo | Rol |
 | --- | --- |
-| `hue-simple-switch` | Firmware del XIAO ESP32-C6. Pulsación → Bridge Hue en la LAN (Clip v2). Canales GPIO. |
-| `hue-round-switch` | Firmware del XIAO ESP32-S3 + Round Display. Tap en el círculo, no pines. Páginas: ver `docs/round-pages.md`. |
-| `hue-switch-console` | App web (Vercel + Neon). Cuenta de usuario, topología, asignación de funciones. |
+| `hue-simple-switch` | Firmware del XIAO ESP32-C6. Pulsación GPIO → Bridge Hue en la LAN (Clip v2). Canales `boot` / `d0` / `d1` / `d2`. |
+| `hue-round-switch` | Firmware del XIAO ESP32-S3 + Round Display. Tap en el círculo, no pines. Páginas: `docs/round-pages.md`. |
+| `hue-switch-console` | App web (Vercel + **Neon** Postgres). Cuenta de usuario, topología, asignación de funciones. Este repo. |
 
 La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel. El dedo en el interruptor **nunca** espera a la web.
+
+Wire HTTP: `docs/device-api.md`. Páginas Round: `docs/round-pages.md` (esa copia manda el estado). Alta desde el navegador (`docs/specs/web-setup.md`) **no** entra en este v1; el aparato se flashea con Arduino y `config.h`.
 
 ## Piezas
 
 **Bridge.** Hue Bridge Pro en la LAN. Fuente de verdad de luces, rooms, zonas y escenas. API local Clip v2 por HTTPS (certificado propio).
 
-**Switch / XIAO.** Placa Seeed XIAO ESP32-C6 (u otro XIAO Wi‑Fi). No es accesorio Zigbee ni se hace pasar por un interruptor Hue. Varios **canales** (entradas digitales o botones en pantalla). Cada canal tiene tipo de contacto y recetas por **evento leído**, no una sola receta “del switch”. El **nombre de pantalla** lo edita el usuario en la consola (`switches.label`); no se envía al aparato. Si está vacío, la UI muestra la MAC.
+**Switch / XIAO.** Placa Seeed XIAO Wi‑Fi. No es accesorio Zigbee ni se hace pasar por un interruptor Hue.
 
-**Canal.** Un GPIO de entrada. El firmware declara `{ id, gpio, label, kind }`; la consola asigna recetas a ese `id`, no elige el pin. `kind`:
+- **Simple:** varios **canales** GPIO. El firmware declara `{ id, gpio, label, kind }`; la consola asigna recetas a ese `id`, no elige el pin.
+- **Round:** no hay GPIO de receta. La consola inventa **páginas**; el poll baja `pages[]` + recetas con `pageId`. Ver `docs/round-pages.md`.
+
+El **nombre de pantalla** lo edita el usuario en la consola (`switches.label`); no se envía al aparato. Si está vacío, la UI muestra la MAC.
+
+**Canal (solo simple).** Un GPIO de entrada. `kind`:
 
 - `maintained` — interruptor de pared clásico: el circuito queda **cerrado** o **abierto** (dos estados estables).
-- `momentary` — pulsador (p. ej. BOOT en el prototipo): pulso y vuelve.
+- `momentary` — pulsador (p. ej. BOOT): pulso y vuelve.
 
 Canales v1 (el firmware los declara; cerrado = GPIO a GND, `INPUT_PULLUP`):
 
@@ -34,36 +41,45 @@ Canales v1 (el firmware los declara; cerrado = GPIO a GND, `INPUT_PULLUP`):
 
 No usar GPIO 3/14 (RF), 15 (LED), ni USB.
 
-**Consola.** Next.js en Vercel. Login humano. Recibe snapshots y guarda asignaciones. Host público previsto: `https://hue.tineira.com` (Cloudflare DNS → Vercel). **Toda la UI (copy, botones, errores, emails de Auth) es en inglés.** Este archivo de definiciones puede seguir en español.
+**Consola.** Next.js en Vercel. Login humano. Recibe snapshots y guarda asignaciones. Host: `https://hue.tineira.com` (Cloudflare DNS → Vercel). **Toda la UI (copy, botones, errores) es en inglés.** Este archivo de definiciones puede seguir en español.
 
-**Supabase.** Auth (email + contraseña) y Postgres (cuentas, API keys de aparato, topología, recetas de cada switch).
+**Postgres (Neon).** Cuentas (`users` con email + `password_hash`), API keys de aparato, topología, recetas, páginas Round. **No es Supabase Auth.** La sesión humana es la cookie `hsw_session` (HMAC). El runtime aplica `db/schema.sql` y `lib/ensure-schema.ts`. No aplicar migraciones en `docs/archive/supabase-DO-NOT-APPLY/`.
 
 **Hue application key.** Token que emite el Bridge al emparejar (`POST /api` con el botón del Bridge). Vive en la NVS del XIAO. No es el API key de la consola.
 
-**API key de consola / `CONSOLE_TOKEN`.** Token de aparato. El usuario lo **crea y administra** en la consola (nombre, copiar una vez, revocar). El XIAO lo pone en `Authorization: Bearer`. No sirve para entrar a la página.
+**API key de consola / `CONSOLE_TOKEN`.** Token de aparato (`hsw_…`). El usuario lo **crea y administra** en la consola (nombre, copiar una vez, revocar). El XIAO lo pone en `Authorization: Bearer`. No sirve para entrar a la página.
 
-**Cuenta de usuario.** Email + contraseña en la consola. Solo humanos.
+**Cuenta de usuario.** Email + contraseña en la consola. Solo humanos. Signup público: no. Primera cuenta: seed `USER_EMAIL` / `USER_PASSWORD` (`.env.local`, no commitear).
 
-**Topología.** Snapshot de **un Bridge**. Lo sube cualquier XIAO emparejado a ese `bridgeid` (o `push-from-bridge`). No es “la topología del switch”. El JSON tiene que servir para pintar rooms y asignar `rid`:
+**Topología.** Snapshot de **un Bridge**. Lo sube cualquier XIAO emparejado a ese `bridgeid` (o `push-from-bridge`) con `POST /api/device/register`. No es “la topología del switch”. El JSON tiene que servir para pintar rooms y asignar `rid`:
 
 ```text
 {
   bridgeid, bridge_ip, receivedAt,
   lights:  [{ id, name, on, caps[] }],
-  rooms:   [{ id, name, grouped_light_id, light_ids[] }],
+  rooms:   [{ id, name, grouped_light_id, light_ids[], rtype? }],
   scenes:  [{ id, name, group_rtype, group_rid }]
 }
 ```
 
-`grouped_light_id` es el destino de “todo el room”. Las escenas se listan bajo el room/zona cuyo `id` = `group_rid`. El ingest actual (solo luces + nombre de room) **no basta**; hay que ampliarlo.
+`grouped_light_id` es el destino de “todo el room”. Las escenas se listan bajo el room/zona cuyo `id` = `group_rid`. `lights` / `rooms` / `scenes` son **required** (arrays; `[]` es legal si el Bridge está vacío). Omitir el campo es 400; un POST incompleto no debe pisar el árbol.
 
-**Receta / asignación.** Qué hacer cuando un **canal** emite un **evento**. Un XIAO tiene varias recetas: `(channelId, event) → acción Hue + destino`. La define el usuario en la consola. Copia en NVS.
+**Receta / asignación.** Qué hacer cuando un **canal** (simple) o una **página** (Round) emite un **evento**. La define el usuario en la consola. Copia en NVS.
 
-**Evento (lo que se lee del GPIO).** No confundir con la acción Hue (`toggle`, `on`, `off`, `recall_scene`).
+**Evento (lo que se lee del GPIO o del círculo).** No confundir con la acción Hue (`toggle`, `on`, `off`, `recall_scene`).
 
-**NVS.** Flash del ESP32. Guarda IP del Bridge, key de Hue, recetas por canal/evento y `rev`. El GPIO dispara solo esto.
+**NVS.** Flash del ESP32. Guarda IP del Bridge, key de Hue, recetas (y páginas Round) y `rev`. El GPIO / el dedo disparan solo esto.
 
-**`config.h`.** Hoy solo `WIFI_SSID` / `WIFI_PASSWORD`. Cuando la consola pueda emitir API keys, se agregan `CONSOLE_URL` y `CONSOLE_TOKEN`. No lleva IP del Bridge, key de Hue ni UUID de lámpara.
+**`config.h`.** Wi‑Fi y consola:
+
+```
+WIFI_SSID
+WIFI_PASSWORD
+CONSOLE_URL      // https://hue.tineira.com  (dev: http://localhost:3000)
+CONSOLE_TOKEN    // API key de aparato, generada en la UI
+```
+
+El resto (Bridge IP, key de Hue, receta / páginas) se descubre, se empareja o llega por poll, y vive en NVS.
 
 **Cuenta de la consola.** El login (email + contraseña). No es un “Hogar” Hue.
 
@@ -73,12 +89,12 @@ Esta app **no** modela una casa con varios Bridges. Ese “Hogar” es de la app
 
 El contexto de configuración es **un Bridge** (`bridgeid`):
 
-- **Topología = del Bridge**, no del switch. Luces, rooms, zonas, escenas y `grouped_light` son un snapshot de ese Bridge. Varios XIAO emparejados al mismo Bridge **comparten** el mismo árbol; no sube cada uno “su” casa.
-- **Varios switches → un Bridge.** Cada placa se registra (MAC, firmware, lista de canales) contra el `bridgeid` con el que se emparejó. Las recetas son **por canal**; los destinos se eligen en la topología compartida.
+- **Topología = del Bridge**, no del switch. Luces, rooms, zonas, escenas y `grouped_light` son un snapshot de ese Bridge. Varios XIAO emparejados al mismo Bridge **comparten** el mismo árbol.
+- **Varios switches → un Bridge.** Cada placa se registra (MAC, firmware, `product`, lista de canales o `[]`) contra el `bridgeid` con el que se emparejó.
 - Un switch habla con **un** solo Bridge (una IP, una Hue application key). Su receta solo puede apuntar a `rid` de ese `bridgeid`.
-- Si apareciera otro Bridge, sería **otro contexto** (otra pantalla / otro `bridgeid`), no un padre “casa” que los une. V1 asume un Bridge.
+- Si apareciera otro Bridge, sería **otro contexto** (otra pantalla / otro `bridgeid`), no un padre “casa” que los une.
 
-## Eventos que se leen (canal `maintained`)
+## Eventos que se leen (canal `maintained`, simple)
 
 Un interruptor de pared **no es un toggle de firmware**. El contacto tiene estado: cerrado = prendido, abierto = apagado. El XIAO lee **flancos y un patrón corto**, no “invierte la lámpara porque alguien pulsó”.
 
@@ -90,70 +106,65 @@ Eventos v1:
 | `off` | Pasa a **abierto** y se queda | `off` (apagar destino) |
 | `double_click` | Estaba **cerrado**, se **abre** y **vuelve a cerrar** en una ventana corta (p. ej. &lt; 400 ms) | Tercera acción: escena, brillo, otro room |
 
-Eso tiene sentido: `on`/`off` copian el palo de la pared a Hue (sin GET). El doble click es un “extra” sin un segundo palo: un apagón-encendido rápido que termina **prendido**.
+`on`/`off` copian el palo de la pared a Hue (sin GET). El doble click es un “extra” sin un segundo palo.
 
-No hace falta en v1: triple click, long-off, double_off (abrir-cerrar-abrir). Ruido y cables largos se comen el doble click si la ventana es muy corta; se calibra en firmware.
+No hace falta en v1: triple click, long-off, double_off. Ruido y cables largos se comen el doble click si la ventana es muy corta; se calibra en firmware.
 
-**Canal `momentary`** (BOOT del prototipo, pulsador): eventos distintos — `short`, `long`. `long` en BOOT queda reservado para re-pair Hue, no es receta. Un pulsador **no** genera `on`/`off` estables.
+**Canal `momentary`** (BOOT): eventos distintos — `short`, `long`. `long` en BOOT queda reservado para re-pair Hue, no es receta. Un pulsador **no** genera `on`/`off` estables.
 
-## Visualización y receta (por canal y evento)
+**Round:** no usa esta máquina de GPIO. Eventos de receta por página: `short` (tap) y `double_click` (doble tap). **No** hay fallback `double_click` → `on` en el círculo (hueco vacío = no-op). Detalle: `docs/round-pages.md`.
+
+## Visualización y receta (simple: por canal y evento)
 
 Un Bridge a la vez. Dos columnas.
 
-**Izquierda — switches y canales.** XIAO de *este* `bridgeid`. Al elegir uno, cada canal (`kind` + etiqueta). Por canal `maintained` se asignan **hasta tres** recetas: `on`, `off`, `double_click`. Vacías = no hace nada. El XIAO no se dibuja dentro del árbol Hue.
+**Izquierda — switches.** XIAO de *este* `bridgeid`.
 
-**Derecha — topología del Bridge.** Por **room**:
+- **Simple:** canales (`kind` + etiqueta). Por canal `maintained` se asignan **hasta tres** recetas: `on`, `off`, `double_click`. Vacías = no hace nada.
+- **Round:** **páginas**, no GPIO. Grupo room/zona, tap / doble, lista de escenas, theme, eje, timeout. `docs/round-pages.md`.
+
+El XIAO no se dibuja dentro del árbol Hue.
+
+**Derecha — topología del Bridge.** Por **room** (en Round, filtrada al grupo de la página):
 
 1. El room entero (`grouped_light`)
 2. Las lámparas
 3. Las escenas de ese room
 
-Destino habitual de un canal de pared: el **room** (on/off) y opcionalmente una **escena** en el doble click.
-
-**Receta**
+**Receta simple**
 
 ```text
-switch + channelId + event (on | off | double_click)
+switch + channelId + event (on | off | double_click | short)
   → acción Hue: on | off | recall_scene | toggle
   → destino: { rtype, rid }   // light | grouped_light | scene
 ```
 
 `toggle` (GET + invertir) es acción Hue, no evento de GPIO. En un `maintained` el mapeo natural es `on`→`on`, `off`→`off`, no toggle.
 
-Ejemplo: canal D0, room Living:
-
-- `on` → `{ action: on, rtype: grouped_light, rid: Living }`
-- `off` → `{ action: off, … Living }`
-- `double_click` → `{ action: recall_scene, rid: Relax }`
-
 No hay multi-selección suelta de luces. No hay una receta única “del switch”.
 
-Al guardar, `rev` sube. NVS guarda el array `(channelId, event, action, rtype, rid)`. Al registrarse el firmware manda `{ id, gpio, label, kind }[]`.
+Al guardar, `rev` sube. NVS guarda el array. Al registrarse el firmware simple manda `{ id, gpio, label, kind }[]` y `"product": "simple"`. Round manda `"product": "round"` y `channels: []`.
 
 ## Asignar en la app e implementar en el switch
 
-La app **escribe** recetas. El switch **las ejecuta** en la LAN. El GPIO nunca llama a Vercel.
+La app **escribe** recetas / páginas. El switch **las ejecuta** en la LAN. El GPIO / el dedo nunca llama a Vercel.
 
 ### Qué declara el switch (registro)
 
-Al conectarse manda, junto al `bridgeid` y la MAC, los canales que **existen en hardware**:
+`POST /api/device/register` (Bearer del aparato), junto al `bridgeid` y la MAC:
 
-```text
-channels: [
-  { id: "boot", gpio: 9, label: "BOOT", kind: "momentary" },
-  { id: "d0",   gpio: 0, label: "D0",   kind: "maintained" },
-  …
-]
-```
+- Simple: `product: "simple"`, canales GPIO.
+- Round: `product: "round"`, `channels: []`.
+- Snapshot: `lights[]`, `rooms[]`, `scenes[]` (required; `[]` vacío de verdad es legal).
 
 La UI no inventa pines. Si un canal no viene, no se asigna. `kind` decide qué **eventos** se pueden mapear (`on`/`off`/`double_click` vs `short`).
 
-### Cómo asigna el usuario (consola)
+Wipe round→simple **solo** si el body trae `"product": "simple"` explícito. Inferir por canales no borra páginas.
 
-Flujo de la pantalla del Bridge (gastar tiempo aquí: estados vacío / incompleto / guardado).
+### Cómo asigna el usuario (consola, simple)
 
 1. Elegir un **switch** (izquierda).
-2. Ver sus **canales**. Un `maintained` muestra **tres huecos** (copy en inglés: On / Off / Double-click), no un solo combo “action”:
+2. Ver sus **canales**. Un `maintained` muestra **tres huecos** (copy en inglés: On / Off / Double-click):
    - On (`on`)
    - Off (`off`)
    - Double-click (`double_click`) — opcional
@@ -177,24 +188,29 @@ Validar al guardar: `rid` existe en el snapshot de ese `bridgeid`; `recall_scene
 
 `rev` incrementa. Eso es lo que el poll compara.
 
+Round: el Save (PUT páginas) **exige grupo** en todas las páginas. El register del aparato puede crear `p1` sin grupo. Ver `docs/round-pages.md`.
+
 ### Contrato que baja el switch
 
-`GET` de config (Bearer del aparato), mismo `bridgeid`:
+`GET /api/device/config?mac=` (Bearer del aparato). **No** trae la topología.
+
+**Simple:**
 
 ```text
 {
   rev: 12,
   recipes: [
-    { channelId: "d0", event: "on",            action: "on",            target: { rtype: "grouped_light", rid: "…" } },
-    { channelId: "d0", event: "off",           action: "off",           target: { rtype: "grouped_light", rid: "…" } },
-    { channelId: "d0", event: "double_click",  action: "recall_scene",  target: { rtype: "scene",         rid: "…" } }
+    { channelId: "d0", event: "on", action: "on", target: { rtype: "grouped_light", rid: "…" } },
+    …
   ]
 }
 ```
 
-El switch **no** recibe la topología entera en este GET (eso es el POST de registro/snapshot). Solo recetas. Si `rev` local ≥ `rev` remoto, no escribe NVS. Si `rev` es mayor, **sustituye** todo el array local.
+**Round** (`product: "round"`): `rev`, `product`, `pageSwipeAxis`, `screenTimeoutSec`, `pages[]` (con `group` + `dim`), `recipes[]` con `pageId`. Ver `docs/round-pages.md` §11.2 y `docs/device-api.md`.
 
-### Qué tiene que hacer el firmware
+Si `rev` local ≥ `rev` remoto, el firmware **no** escribe NVS. Si el remoto es mayor, **sustituye** todo el array local (y páginas). Nunca se usa `rev = 0` como semáforo de “vacío”: un cambio de `bridgeid` **borra** recetas/páginas y **incrementa** `rev`.
+
+### Qué tiene que hacer el firmware (simple)
 
 Por cada canal `maintained` (contacto a GND = cerrado, pull-up, debounce ~50 ms):
 
@@ -218,80 +234,62 @@ Por cada canal `maintained` (contacto a GND = cerrado, pull-up, debounce ~50 ms)
 
 Canal `momentary` (BOOT): `short` → receta si existe; `long` 3 s → re-pair, no receta.
 
-Al boot: cargar recetas de NVS **antes** de atender GPIO. La primera lectura de cada GPIO **solo fija el estado**; no dispara `on`/`off` (un reboot del XIAO no reescribe las luces). No hay “aplicar el palo al Hue” en el arranque. Luego Wi‑Fi, poll, etc.
+Al boot: cargar recetas de NVS **antes** de atender GPIO. La primera lectura de cada GPIO **solo fija el estado**; no dispara `on`/`off`. Luego Wi‑Fi, poll, etc.
 
 Si el usuario cambia la receta en la app, el switch se entera en el poll (1 min si ninguna receta; si ya hay alguna, al boot y cada 1 h). Reboot = bajar recetas ya; no dispara eventos de GPIO.
 
 **Otras reglas:**
 
 - El `GET` de config **reemplaza** el array de recetas en NVS (no es un patch). Huecos que ya no vienen se borran.
-- Si cambia el `bridgeid` emparejado, se **tiran** las recetas (los `rid` son de otro Bridge).
+- Si cambia el `bridgeid` emparejado: firmware tira recetas en NVS **y** la consola borra + incrementa `rev` (defensa en profundidad).
 - Dos switches (o la app Hue) sobre el mismo destino: **gana el último evento**. No hay 3-way ni sincronizar palos.
 - Chrome de la consola en inglés; los **nombres Hue** (Living, Velador Tomás) se muestran tal cual.
-- Varios POSTs de topología del mismo `bridgeid`: **último snapshot gana**.
+- Varios POSTs de topología del mismo `bridgeid`: **último snapshot bueno gana**. Un register sin `rooms`/`scenes` (omitidos) es 400; no pisa.
 - API key revocada: el poll falla; las recetas en NVS **siguen** ejecutándose en la LAN.
 - Signup público: no. Solo la cuenta sembrada (`USER_EMAIL`).
+- Receta huérfana (el `rid` ya no está en el snapshot): se conserva; el PUT Hue falla; la UI marca stale.
 
 ## Dos puertas
 
 | Quién | Cómo |
 | --- | --- |
-| Usuario en el navegador | Email + contraseña (Supabase Auth) |
+| Usuario en el navegador | Email + contraseña; cookie `hsw_session` |
 | XIAO o `push-from-bridge` | `CONSOLE_TOKEN` (API key de aparato) |
 
-El usuario logueado **genera y administra** las API keys en la consola: crear, nombrar, copiar (una vez), revocar. Cada key es un token de aparato. Varios XIAO pueden compartir una, o usar una por placa (mejor para revocar). No hay un `INGEST_TOKEN` eterno en el server como sustituto de esto.
-
-## Cómo implementar (ambos repos + UI)
-
-Los cambios avanzan **en paralelo** en `hue-switch-console` y `hue-simple-switch`. Un recorte no se da por cerrado si deja al otro repo a medias (p. ej. token en la web sin campo en `config.h`, o poll en el C6 sin endpoint).
-
-La interfaz no es un añadido al final. Copy **en inglés**. En cada pantalla (login, API keys, switches y canales | topología, receta por **canal y evento**):
-
-- Diseñar el flujo y los estados (vacío, error, sin asignar, guardado).
-- Implementar, **usar** la pantalla, criticar (claridad, toques de más, qué pasa si no hay Bridge/switch).
-- Corregir antes de pasar al siguiente recorte.
-
-Gastar tiempo ahí. No fusionar la primera maqueta.
+El usuario logueado **genera y administra** las API keys en la consola: crear, nombrar, copiar (una vez), revocar. Cada key es un token de aparato. Varios XIAO pueden compartir una, o usar una por placa (mejor para revocar). No hay un `INGEST_TOKEN` eterno en el server. `POST /api/ingest` responde `410 gone`; usar `POST /api/device/register`.
 
 ## `config.h`
-
-Hoy (solo Wi‑Fi):
 
 ```
 WIFI_SSID
 WIFI_PASSWORD
-```
-
-Cuando existan keys en la consola, agregar:
-
-```
 CONSOLE_URL      // https://hue.tineira.com
 CONSOLE_TOKEN    // API key de aparato, generada en la UI
 ```
 
-El resto (Bridge IP, Hue key, receta) se descubre, se empareja o llega por poll, y vive en NVS.
+El resto (Bridge IP, Hue key, receta / páginas) se descubre, se empareja o llega por poll, y vive en NVS.
 
 ## Primer arranque del XIAO
 
 No hay receta todavía.
 
-1. Conecta al Wi‑Fi.
+1. Conecta al Wi‑Fi (`config.h`).
 2. Descubre el Bridge (`mDNS _hue._tcp`, luego NVS, `discovery.meethue.com`).
-3. Si no hay key de Hue válida: LED parpadea, `POST /api` hasta que pulsen el botón del Bridge. Key e IP a NVS.
-4. **Registro + upload:** “soy esta MAC, Bridge `bridgeid`” y sube la topología a la consola.
-5. Pregunta recetas → lista vacía.
-6. Los canales no disparan Hue (huecos vacíos). Poll cada ~1 minuto.
+3. Si no hay key de Hue válida: LED / disco parpadea, `POST /api` hasta que pulsen el botón del Bridge. Key e IP a NVS.
+4. **Registro + upload:** MAC, `product`, `bridgeid`, canales o `[]`, snapshot rico a `POST /api/device/register`.
+5. Pregunta config → simple: `recipes: []`; Round: página `p1` vacía, a menudo sin grupo hasta el Save en consola.
+6. Los canales / el círculo no disparan Hue (huecos vacíos). Poll cada ~1 minuto.
 
-El usuario asigna por canal y evento (sección anterior). El poll siguiente escribe NVS y los GPIO empiezan a ejecutar.
+El usuario asigna (canales o páginas). El poll siguiente (si `rev` remoto > local) escribe NVS y empiezan a ejecutar.
 
 ## Polling
 
 | Estado | Ritmo | Qué pide |
 | --- | --- | --- |
-| Ninguna receta en NVS | ~1 min | ¿Hay recetas? (`rev`) |
-| Ya hay alguna receta | Al boot y cada 1 h | Topología si cambió + ¿`rev` nuevo? |
+| Ninguna receta / páginas en NVS | ~1 min | ¿Hay config? (`rev`) |
+| Ya hay alguna receta / páginas | Al boot y cada 1 h | ¿`rev` nuevo? |
 
-Si el usuario cambia recetas en la web, el XIAO puede tardar hasta 1 h salvo reboot (el reboot es “aplicar ya”). El GPIO no usa Vercel: NVS → Bridge.
+Si el usuario cambia recetas en la web, el XIAO puede tardar hasta 1 h salvo reboot (el reboot es “aplicar ya”). El GPIO / el dedo no usan Vercel: NVS → Bridge.
 
 ## Qué no es esto
 
@@ -299,53 +297,37 @@ Si el usuario cambia recetas en la web, el XIAO puede tardar hasta 1 h salvo reb
 - Vercel no alcanza `192.168.x.x`; el IP del Bridge identifica al aparato en la LAN, no abre un túnel.
 - No hay API remota de Hue en el v1.
 - No hay Zigbee, ni impersonar accesorios Hue, ni mezclar este árbol con el sketch Arduino.
+- Web-setup (flash + Wi‑Fi + token desde Chrome) **no** es este v1.
 
-## Infra bloqueada (hacer antes de Auth)
-
-Nada de esto está creado todavía. Sin esto no hay login real ni host público.
+## Infra (hecha)
 
 | Qué | Para qué | Estado |
 | --- | --- | --- |
-| Proyecto **Vercel** (link al repo `hue-switch-console`) | Build y serverless de la consola | Pendiente |
-| Proyecto **Supabase** (Auth + Postgres) | Cuentas, API keys de aparato, topología, recetas | Pendiente |
-| **Cloudflare** DNS: `hue.tineira.com` → Vercel | URL pública que irá en `CONSOLE_URL` del XIAO | Pendiente |
-| Variables en Vercel / Supabase | URL de Supabase, anon/service keys; no un token de ingest fijo | Pendiente |
-| Primera cuenta | Seed desde `.env.local` (`USER_EMAIL`, `USER_PASSWORD`) al activar Auth. **No commitear** esas claves. | Solo local |
+| Proyecto **Vercel** (`hue-switch-console`) | Build y serverless | Hecho |
+| **Neon** Postgres | Cuentas, API keys, topología, recetas, páginas | Hecho (`db/schema.sql`) |
+| **Cloudflare** DNS: `hue.tineira.com` → Vercel | `CONSOLE_URL` del XIAO | Hecho |
+| Auth | Cookie `hsw_session`; seed `USER_EMAIL` / `USER_PASSWORD` | Hecho. No es Supabase Auth |
+| UI de API keys | Crear, copiar una vez, revocar | Hecho |
+| Snapshot rico + pantalla Bridge | Simple = canales; Round = páginas | Hecho |
 
-Host de producción: `https://hue.tineira.com` (no el `*.vercel.app` por defecto). En Cloudflare, CNAME `hue` al target que dé Vercel; TLS en el borde.
+Host de producción: `https://hue.tineira.com`. En Cloudflare, CNAME `hue` al target que dé Vercel; TLS en el borde.
 
-Hasta que exista el proyecto Supabase, no hay signup público: la primera cuenta se crea a mano con `USER_EMAIL` / `USER_PASSWORD` de `.env.local` (ver `.env.example` para los nombres).
+## Cerrado para implementar (no reinventar)
 
-## Cerrado para implementar (no reinventar en el recorte)
-
-- UI **inglés**. Serial del firmware: inglés (ya).
+- UI **inglés**. Serial del firmware: inglés.
 - Switch id = MAC del ESP32 (hex). El API key de aparato pertenece a una cuenta; el switch que registra con esa key queda de esa cuenta.
-- API key: se muestra **una vez**, se guarda hash (SHA-256), en la lista solo nombre + prefijo. CRUD en la consola.
+- API key: se muestra **una vez**, se guarda hash (SHA-256), en la lista solo nombre + prefijo.
 - HTTPS a `hue.tineira.com`: **verificar** el certificado (bundle de Arduino). `setInsecure()` solo contra el Bridge Hue.
-- Poll: sin recetas ~1 min; con recetas al boot y cada **1 h**. GPIO no espera.
-- Receta huérfana (el `rid` ya no está en el snapshot): se conserva; el PUT falla; la UI marca stale.
-- Double-click sin receta → se ejecuta `on`. Boot no sintetiza eventos GPIO. Poll reemplaza el set de recetas. Último evento gana. Cambio de `bridgeid` borra recetas. Sin signup público.
+- Poll: sin recetas ~1 min; con recetas al boot y cada **1 h**. GPIO / dedo no esperan.
+- Receta huérfana: se conserva; el PUT Hue falla; la UI marca stale.
+- Double-click GPIO sin receta → se ejecuta `on`. En el círculo, hueco vacío = no-op. Boot no sintetiza eventos GPIO. Poll reemplaza el set si `rev` remoto > local. Último evento gana. Cambio de `bridgeid` borra recetas/páginas **y sube `rev`**. Sin signup público.
 - API mínima:
-  - Humano (sesión Supabase): login; CRUD API keys; GET topología del Bridge; PUT recetas del switch.
-  - Aparato (Bearer key): `POST` registro (MAC, firmware, `bridgeid`, IP, `channels[]`, snapshot); `GET` config (`rev` + `recipes[]`).
-- Tablas (Supabase): `device_api_keys`, `bridges` (snapshot JSON), `switches`, `recipes`. RLS: el usuario solo ve lo ligado a sus keys.
-
-## Hoyos de producto
-
-Ninguno abierto. Infra (Vercel / Supabase / DNS), el snapshot rico y la UI de API keys **ya están definidos**; faltan **hacerlos**, no decidirlos. SQL, paths REST y el label editable del switch los define quien implemente.
-
-## Estado actual vs este documento
-
-Hoy: `POST /api/ingest` + página de snapshot (archivo local, copy de plantilla). Firmware: Wi‑Fi, mDNS, pair Hue, un BOOT. `config.h` solo SSID/password.
-
-Orden de implementación (paralelo console + firmware, UI en inglés, ciclo diseñar → usar → criticar → corregir):
-
-1. Infra: Supabase + Vercel + `hue.tineira.com`.
-2. Auth + seed de la primera cuenta + **UI de API keys**.
-3. Snapshot rico + pantalla Bridge (switches/canales | topología).
-4. PUT recetas; firmware `CONSOLE_URL` / `CONSOLE_TOKEN`, registro, poll, NVS, GPIO `maintained` + máquina de double-click.
+  - Humano (cookie `hsw_session`): login; CRUD API keys; GET topología; PATCH label del switch; PUT recetas (simple) / PUT páginas (Round).
+  - Aparato (Bearer key): `POST /api/device/register`; `GET /api/device/config?mac=` (`{ rev, recipes[] }` simple; Round añade `pages`, `pageId`, eje, timeout).
+- Tablas (Neon): `users`, `device_api_keys`, `bridges` (snapshot JSON), `switches` (`product`, eje, timeout), `pages`, `recipes`. El server filtra por `user_id`; no hay RLS de Supabase.
 
 ## Repos
 
-- Firmware: `C:\Users\tinei\Arduino\hue-simple-switch` — [github.com/tineira/hue-simple-switch](https://github.com/tineira/hue-simple-switch)
+- Simple: `C:\Users\tinei\Arduino\hue-simple-switch` — [github.com/tineira/hue-simple-switch](https://github.com/tineira/hue-simple-switch)
+- Round: `C:\Users\tinei\Arduino\hue-round-switch` — [github.com/tineira/hue-round-switch](https://github.com/tineira/hue-round-switch)
 - Consola: `C:\Users\tinei\hue-switch-console` — [github.com/tineira/hue-switch-console](https://github.com/tineira/hue-switch-console)

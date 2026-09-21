@@ -2,12 +2,18 @@
 
 Web console (Vercel + Neon Postgres) for Wi-Fi Hue wall switches. **It never talks
 to the Bridge.** A XIAO or `npm run push-from-bridge` uploads topology.
-Humans sign in with email + password. Devices use an API key.
+Humans sign in with email + password (cookie `hsw_session`). Devices use an API key.
 
-Firmware lives in `hue-simple-switch`. Product UI is **English**.
+Two products, one console:
+
+- **Simple** (`hue-simple-switch`, ESP32-C6) — GPIO channels (`boot` / `d0` / `d1` / `d2`), recipes per channel and event.
+- **Round** (`hue-round-switch`, ESP32-S3 + circle) — pages (room/zone group, tap / double-tap, scene lists, dimmer). Not GPIO.
+
+Product UI is **English**.
 
 Device HTTP contract: [`docs/device-api.md`](docs/device-api.md).
 Product model: [`docs/definiciones.md`](docs/definiciones.md).
+Round pages: [`docs/round-pages.md`](docs/round-pages.md).
 
 Production host: `https://hue.tineira.com`.
 
@@ -40,9 +46,10 @@ npm run push-from-bridge
 
 See [`docs/device-api.md`](docs/device-api.md). Short version:
 
-- `POST /api/device/register` — Bearer device key; MAC, firmware, channels, rich snapshot
-- `GET /api/device/config?mac=` — `{ rev, recipes[] }`
-- `PUT /api/switches/{mac}/recipes` — logged-in user
+- `POST /api/device/register` — Bearer device key; MAC, firmware, `product`, channels, rich snapshot
+- `GET /api/device/config?mac=` — Simple: `{ rev, recipes[] }` with `channelId`. Round: `{ rev, product, pageSwipeAxis, screenTimeoutSec, pages[], recipes[] }` with `pageId` (not recipes-only)
+- `PUT /api/switches/{mac}/recipes` — logged-in user, Simple GPIO
+- `PUT /api/switches/{mac}/pages` — logged-in user, Round pages
 
 `POST /api/ingest` is gone (`410`). Postgres replaces the old file / KV store.
 

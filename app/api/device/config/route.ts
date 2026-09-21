@@ -1,6 +1,7 @@
 import {
   getBridge,
   getSwitchByMac,
+  incrementSwitchRev,
   isRoundSwitch,
   listPages,
   listRecipes,
@@ -61,7 +62,8 @@ export async function GET(req: Request) {
       const pages = await listPages(sw.id);
       const rawRecipes = await listRoundRecipes(sw.id);
       const recipes = snapshot ? withSceneNames(rawRecipes, snapshot) : rawRecipes;
-      await persistPageGroupAndDim(sw.id, pages, recipes, snapshot);
+      const persisted = await persistPageGroupAndDim(sw.id, pages, recipes, snapshot);
+      const rev = persisted ? await incrementSwitchRev(sw.id) : sw.rev;
       const filled = await listPages(sw.id);
       const payloadPages = filled.map((page) => {
         const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
@@ -70,11 +72,11 @@ export async function GET(req: Request) {
             inferPageGroup(pageRecipes, snapshot) ??
             page.group)
           : page.group;
-        const dim = computeDim(pageRecipes, group?.groupedLightRid);
+        const dim = computeDim(pageRecipes, group?.groupedLightRid, snapshot);
         return deviceRoundPage({ ...page, group, dim });
       });
       return jsonOk({
-        rev: sw.rev,
+        rev,
         product: "round",
         pageSwipeAxis: sw.page_swipe_axis,
         screenTimeoutSec: sw.screen_timeout_sec,

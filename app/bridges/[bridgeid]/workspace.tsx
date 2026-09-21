@@ -9,6 +9,7 @@ import { formatMac } from "@/lib/mac";
 import {
   DEFAULT_SCREEN_TIMEOUT_SEC,
   MAX_SCENE_LIST,
+  isScreenTimeoutSec,
   clearRoundRecipe,
   clearStaleRoundRecipes,
   defaultRoundActionForTarget,
@@ -555,6 +556,12 @@ export function BridgeWorkspace({
     setNotice(null);
     try {
       if (round && roundDraft) {
+        if (!isScreenTimeoutSec(roundDraft.screenTimeoutSec)) {
+          setError(
+            "Screen timeout must be 0 (always on) or 10–600 seconds.",
+          );
+          return;
+        }
         const res = await fetch(`/api/switches/${selected.mac}/pages`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

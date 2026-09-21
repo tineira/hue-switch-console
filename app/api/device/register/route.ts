@@ -63,7 +63,10 @@ export async function POST(req: Request) {
     return jsonError(400, "mac must be 12 hex digits");
   }
   if (!bridgeid || !lights || !rooms || !scenes) {
-    return jsonError(400, "bridgeid, lights[], rooms[], scenes[] are required");
+    return jsonError(
+      400,
+      "bridgeid, lights[], rooms[], scenes[] are required arrays (empty [] is allowed)",
+    );
   }
   if (!channels) {
     return jsonError(400, "channels[] is invalid");

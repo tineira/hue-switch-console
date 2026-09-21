@@ -43,10 +43,11 @@ const STATEMENTS = [
   rev integer not null default 0,
   last_seen_at timestamptz,
   created_at timestamptz not null default now(),
-  product text not null default 'simple',
-  page_swipe_axis text not null default 'horizontal',
+  product text not null default 'simple' check (product in ('simple', 'round')),
+  page_swipe_axis text not null default 'horizontal' check (page_swipe_axis in ('horizontal', 'vertical')),
   page_seq integer not null default 1,
-  screen_timeout_sec integer not null default 30,
+  screen_timeout_sec integer not null default 30
+    check (screen_timeout_sec = 0 or (screen_timeout_sec >= 10 and screen_timeout_sec <= 600)),
   unique (user_id, mac)
 )`,
   `create index if not exists switches_user_bridge_idx
@@ -55,6 +56,12 @@ const STATEMENTS = [
   `alter table switches add column if not exists page_swipe_axis text not null default 'horizontal'`,
   `alter table switches add column if not exists page_seq integer not null default 1`,
   `alter table switches add column if not exists screen_timeout_sec integer not null default 30`,
+  `alter table switches drop constraint if exists switches_product_check`,
+  `alter table switches add constraint switches_product_check check (product in ('simple', 'round'))`,
+  `alter table switches drop constraint if exists switches_page_swipe_axis_check`,
+  `alter table switches add constraint switches_page_swipe_axis_check check (page_swipe_axis in ('horizontal', 'vertical'))`,
+  `alter table switches drop constraint if exists switches_screen_timeout_sec_check`,
+  `alter table switches add constraint switches_screen_timeout_sec_check check (screen_timeout_sec = 0 or (screen_timeout_sec >= 10 and screen_timeout_sec <= 600))`,
   `create table if not exists pages (
   switch_id uuid not null references switches (id) on delete cascade,
   id text not null,

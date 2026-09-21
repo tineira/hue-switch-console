@@ -9,7 +9,7 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome, no Arduino): `docs/web-setup.md` — requisitos, no implementado.
+Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome, no Arduino): `docs/specs/web-setup.md`. OTA + firmware in the switch list: `docs/specs/ota.md`. Neither implemented.
 
 Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
@@ -31,8 +31,9 @@ The token looks like `hsw_…`. The server stores **SHA-256(token)** only. A
 revoked or unknown key returns `401`. Recipes already in NVS keep running on
 the LAN.
 
-Human UI uses a Supabase Auth session (email + password). No public signup.
-That session is **not** valid as a device Bearer token.
+Human UI uses a session cookie `hsw_session` (email + password against Neon
+`users`, not Supabase Auth). No public signup. That cookie is **not** valid as
+a device Bearer token.
 
 Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
 
@@ -56,7 +57,9 @@ for `bridgeid`. Last snapshot for that `bridgeid` wins. Several XIAOs paired
 to the same bridge share one tree.
 
 If the switch was already registered and `bridgeid` changes, stored recipes
-for that MAC are deleted and `rev` is reset to `0`.
+and pages for that MAC are deleted and `rev` is **incremented** (never reset to
+`0` as an “empty” signal). Firmware writes NVS only when remote `rev` is
+greater than local.
 
 ### Request
 
@@ -106,11 +109,11 @@ Content-Type: application/json
 | Field | Required | Notes |
 | --- | --- | --- |
 | `bridgeid` | yes | Hue bridge id |
-| `lights` | yes | Array; may be empty. Each item needs `id`, `name`. `on`, `caps[]` optional |
-| `rooms` | yes | Array; may be empty. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
-| `scenes` | yes | Array; may be empty. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
+| `lights` | yes | **Required array** (omit or non-array → 400). May be empty `[]` if the Bridge really has no lights. Each item needs `id`, `name`. `on`, `caps[]` optional |
+| `rooms` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
+| `scenes` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
 | `channels` | yes when registering a GPIO board | `{ id, gpio, label, kind }`. `kind` is `maintained` or `momentary`. Empty array allowed. Round Display may send `[]` |
-| `product` | no | `"round"` or `"simple"`. Inferred from empty/`c1` channels if omitted |
+| `product` | current firmware: yes | `"round"` or `"simple"`. Current boards **send** it. If omitted (old boards), inferred from empty/`c1` channels (round) vs GPIO (simple). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string |
 | `label` | no | Console display name on **first** insert only. Later registers do not overwrite a name set in the UI. Not sent to the board |
@@ -128,19 +131,22 @@ the snapshot.
   "mac": "aabbccddeeff",
   "bridgeid": "C42996FFFECA6703",
   "rev": 12,
+  "product": "simple",
   "lights": 1,
   "rooms": 1,
   "scenes": 1
 }
 ```
 
-Without `mac`, `mac` and `rev` are omitted.
+`product` is included when `mac` is present. Without `mac`, `mac`, `rev`, and
+`product` are omitted.
 
 ---
 
-Round Display firmware may send `"product": "round"` and `channels: []`.
+Round Display firmware sends `"product": "round"` and `channels: []`.
 Placeholder `c1` (gpio 0) is still accepted and treated as round. Simple-switch
-boards omit `product` or send `"simple"` with GPIO channels.
+boards send `"simple"` with GPIO channels. Omitted `product` is inferred only
+for old boards.
 
 ---
 
@@ -262,16 +268,17 @@ Used by the console UI. Firmware does not call these.
 | `GET` | `/api/bridges` | snapshots |
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
 | `GET` | `/api/switches` | registered boards |
-| `GET` | `/api/switches/{mac}/recipes` | `{ mac, rev, channels, recipes, … }` |
-| `PUT` | `/api/switches/{mac}/recipes` | replace GPIO recipes; increments `rev` |
+| `PATCH` | `/api/switches/{mac}` | `{ "label": "Kitchen" }` or `{ "label": null }` — console display name |
+| `GET` | `/api/switches/{mac}/recipes` | GPIO recipes. Round Display: `400 round_switch_uses_pages` |
+| `PUT` | `/api/switches/{mac}/recipes` | replace GPIO recipes; increments `rev`. Round: `400 round_switch_uses_pages` |
 | `GET` | `/api/switches/{mac}/pages` | round pages + recipes |
-| `PUT` | `/api/switches/{mac}/pages` | replace pages, swipe axis, and page recipes; increments `rev` |
+| `PUT` | `/api/switches/{mac}/pages` | replace pages, swipe axis, timeout, and page recipes; increments `rev`. Every page must have a group |
 
 ### `PUT /api/switches/{mac}/recipes`
 
 ```
 PUT /api/switches/aabbccddeeff/recipes HTTP/1.1
-Cookie: sb-…-auth-token=…
+Cookie: hsw_session=…
 Content-Type: application/json
 ```
 

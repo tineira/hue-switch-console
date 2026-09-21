@@ -6,6 +6,7 @@ import {
   inferPageGroup,
   inferProduct,
   isPlaceholderRoundChannels,
+  normalizePageName,
   recipeToC1,
   resolvePageGroup,
   withSceneNames,
@@ -292,16 +293,29 @@ export async function upsertSwitch(row: {
   product?: SwitchProduct;
 }) {
   const existing = await getSwitchByMac(row.userId, row.mac);
-  const product = inferProduct(row.product, row.channels);
+  const explicitSimple = row.product === "simple";
+  const explicitRound = row.product === "round";
+  const inferred = inferProduct(row.product, row.channels);
+  let product: SwitchProduct;
+  if (explicitSimple) product = "simple";
+  else if (explicitRound) product = "round";
+  else if (existing?.product === "round") product = "round";
+  else product = inferred;
   const bridgeChanged = Boolean(existing && existing.bridgeid !== row.bridgeid);
-  if (existing && (bridgeChanged || (existing.product === "round" && product === "simple"))) {
+  const wipeToSimple = Boolean(
+    existing && existing.product === "round" && explicitSimple,
+  );
+  if (existing && (bridgeChanged || wipeToSimple)) {
     await sql()`delete from recipes where switch_id = ${existing.id}`;
     await sql()`delete from pages where switch_id = ${existing.id}`;
   }
   const label = existing?.label ?? row.label ?? null;
   const firmware = row.firmware ?? existing?.firmware ?? null;
   const bridgeIp = row.bridgeIp ?? existing?.bridge_ip ?? null;
-  const rev = bridgeChanged ? 0 : (existing?.rev ?? 0);
+  const rev =
+    bridgeChanged || wipeToSimple
+      ? (existing?.rev ?? 0) + 1
+      : (existing?.rev ?? 0);
   const channels = JSON.stringify(row.channels);
   const axis =
     product === "round"
@@ -331,7 +345,10 @@ export async function upsertSwitch(row: {
       api_key_id = excluded.api_key_id,
       rev = excluded.rev,
       last_seen_at = now(),
-      product = excluded.product
+      product = excluded.product,
+      page_swipe_axis = excluded.page_swipe_axis,
+      page_seq = excluded.page_seq,
+      screen_timeout_sec = excluded.screen_timeout_sec
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
               api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
               screen_timeout_sec
@@ -567,7 +584,7 @@ function withGroupAndDim(
   return {
     ...page,
     group,
-    dim: computeDim(pageRecipes, group?.groupedLightRid),
+    dim: computeDim(pageRecipes, group?.groupedLightRid, snapshot),
   };
 }
 
@@ -576,9 +593,14 @@ export async function persistPageGroupAndDim(
   pages: SwitchPage[],
   recipes: RoundRecipe[],
   snapshot: TopologySnapshot | null,
-) {
+): Promise<boolean> {
+  let changed = false;
   for (const page of pages) {
     const next = withGroupAndDim(page, recipes, snapshot);
+    if (groupsEqual(page.group, next.group) && dimsEqual(page.dim, next.dim)) {
+      continue;
+    }
+    changed = true;
     await sql()`
       update pages
       set group_rtype = ${next.group?.rtype ?? null},
@@ -588,6 +610,14 @@ export async function persistPageGroupAndDim(
       where switch_id = ${switchId} and id = ${page.id}
     `;
   }
+  return changed;
+}
+
+export async function incrementSwitchRev(switchId: string): Promise<number> {
+  const rows = await sql()`
+    update switches set rev = rev + 1 where id = ${switchId} returning rev
+  `;
+  return Number((rows[0] as { rev: number }).rev);
 }
 
 async function migrateC1RecipesForSwitch(
@@ -709,7 +739,7 @@ export async function replaceRoundConfig(
       ...page,
       id,
       sortOrder: index,
-      name: page.name.trim(),
+      name: normalizePageName(page.name),
     });
   }
 
@@ -806,24 +836,14 @@ async function migratePageGroupsForSwitch(
   const snapshot = await snapshotForSwitch(userId, bridgeid);
   const pages = await listPages(switchId);
   const recipes = await listRoundRecipes(switchId);
-  let changed = false;
-  for (const page of pages) {
-    const next = withGroupAndDim(page, recipes, snapshot);
-    if (groupsEqual(page.group, next.group) && dimsEqual(page.dim, next.dim)) {
-      continue;
-    }
-    changed = true;
-    await sql()`
-      update pages
-      set group_rtype = ${next.group?.rtype ?? null},
-          group_rid = ${next.group?.rid ?? null},
-          grouped_light_rid = ${next.group?.groupedLightRid ?? null},
-          dim = ${dimJson(next.dim)}::jsonb
-      where switch_id = ${switchId} and id = ${page.id}
-    `;
-  }
+  const changed = await persistPageGroupAndDim(
+    switchId,
+    pages,
+    recipes,
+    snapshot,
+  );
   if (changed) {
-    await sql()`update switches set rev = rev + 1 where id = ${switchId}`;
+    await incrementSwitchRev(switchId);
   }
 }
 

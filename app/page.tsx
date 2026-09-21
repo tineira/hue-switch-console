@@ -34,7 +34,8 @@ export default async function Home() {
         <p className="max-w-2xl text-sm text-muted">
           Configuration is per Bridge — not a Hue Home. Switches paired to the
           same <span className="font-mono text-xs">bridgeid</span> share one
-          topology. Open a Bridge to assign recipes per channel and event.
+          topology. Simple boards get GPIO channels (on / off / double-click).
+          Round Displays get pages (room or zone, tap / double-tap), not pins.
         </p>
       </section>
 
@@ -53,8 +54,8 @@ export default async function Home() {
               from a machine that can reach the Bridge.
             </li>
             <li>
-              Come back here. Rooms, lights, and scenes will appear so you can
-              assign on / off / double-click.
+              Come back here. Rooms, lights, and scenes will appear. Assign GPIO
+              recipes on a Simple switch, or pages on a Round Display.
             </li>
           </ol>
           <p>
