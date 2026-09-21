@@ -1,6 +1,6 @@
 {
   "name": "Hue Round Display",
-  "version": "0.5.14",
+  "version": "0.5.19",
   "new_install_prompt_erase": false,
   "builds": [
     {
