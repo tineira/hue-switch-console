@@ -4,6 +4,7 @@ import { webSerialBlockedReason } from "@/lib/web-setup/browser";
 import { ChipMismatchError, flashProduct } from "@/lib/web-setup/flash";
 import { mintUsbDeviceToken, writeConsoleNvs } from "@/lib/web-setup/hueset";
 import {
+  PING_MISS_COPY,
   provisionWifi,
   scanNetworks,
   type WifiNetwork,
@@ -187,10 +188,22 @@ export function InstallWizard() {
     setStatus("Scanning Wi-Fi…");
     appendUsbLog("— scan —");
     try {
-      const found = await scanNetworks(session, appendUsbLog);
-      setNetworks(found);
-      if (found.length === 0) {
-        setScanHint("No networks reported. Enter the SSID manually.");
+      const result = await scanNetworks(session, appendUsbLog, (state) => {
+        if (state == null) setScanHint(PING_MISS_COPY);
+      });
+      setNetworks(result.networks);
+      if (result.networks.length === 0) {
+        if (result.ping == null) {
+          setScanHint(PING_MISS_COPY);
+        } else if (!result.finished) {
+          setScanHint(
+            "No list from the device (silence, not an empty scan). Enter the SSID manually. See USB debug.",
+          );
+        } else {
+          setScanHint("No networks reported. Enter the SSID manually.");
+        }
+      } else {
+        setScanHint(null);
       }
       setStatus(null);
     } catch (err) {
@@ -461,8 +474,10 @@ export function InstallWizard() {
               USB debug
             </summary>
             <p className="mt-1 text-xs text-muted">
-              Each Improv packet from the XIAO. An empty scan in under ~200 ms
-              means the firmware aborted before Wi-Fi scan finished.
+              Each Improv packet from the XIAO. No current-state reply means
+              this COM may not be the app CDC, or the device is still in
+              setup(). An empty scan in under ~200 ms means the firmware
+              aborted before Wi-Fi scan finished.
             </p>
             <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs text-muted">
               {usbLog.length ? usbLog.join("\n") : "No USB traffic yet. Press Scan."}

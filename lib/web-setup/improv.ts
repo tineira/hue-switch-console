@@ -30,6 +30,18 @@ export type WifiNetwork = {
   auth: string;
 };
 
+export type ImprovLog = (line: string) => void;
+
+export type ScanResult = {
+  networks: WifiNetwork[];
+  ping: number | null;
+  /** True when firmware sent the empty RPC_SCAN terminator. */
+  finished: boolean;
+};
+
+export const PING_MISS_COPY =
+  "No Improv reply. This COM may not be the app CDC, or the device is still in setup(). Select USB Serial/JTAG, wait a few seconds, then Scan again. You can still type the SSID.";
+
 export function encodeImprovPacket(type: number, data: Uint8Array): Uint8Array {
   const packet = new Uint8Array(9 + data.length + 1);
   packet.set(HEADER, 0);
@@ -141,20 +153,27 @@ export async function readImprovPacket(
   return null;
 }
 
-export async function requestCurrentState(port: BytePort): Promise<number | null> {
+export async function requestCurrentState(
+  port: BytePort,
+  onLog?: ImprovLog,
+): Promise<number | null> {
   await port.write(encodeRpc(RPC_CURRENT_STATE));
   const deadline = Date.now() + 4000;
   while (Date.now() < deadline) {
-    const packet = await readImprovPacket(port, deadline - Date.now());
-    if (!packet) break;
+    const remain = deadline - Date.now();
+    if (remain <= 0) break;
+    const packet = await readImprovPacket(port, remain);
+    if (!packet) {
+      onLog?.("silence, still waiting for current-state");
+      continue;
+    }
+    onLog?.(describeImprovPacket(packet));
     if (packet.type === IMPROV_CURRENT_STATE && packet.data.length > 0) {
       return packet.data[0];
     }
   }
   return null;
 }
-
-export type ImprovLog = (line: string) => void;
 
 export function describeImprovPacket(packet: ImprovPacket): string {
   if (packet.type === IMPROV_CURRENT_STATE) {
@@ -170,7 +189,9 @@ export function describeImprovPacket(packet: ImprovPacket): string {
     return `state ${name}`;
   }
   if (packet.type === IMPROV_ERROR_STATE) {
-    return `error 0x${(packet.data[0] ?? 0).toString(16)}`;
+    const code = packet.data[0] ?? 0;
+    if (code === 0) return "ack (error none)";
+    return `error 0x${code.toString(16)}`;
   }
   if (packet.type === IMPROV_RPC_RESULT) {
     const { command, strings } = parseRpcStrings(packet.data);
@@ -179,7 +200,9 @@ export function describeImprovPacket(packet: ImprovPacket): string {
         ? "scan"
         : command === RPC_WIFI
           ? "wifi"
-          : `0x${command.toString(16)}`;
+          : command === RPC_CURRENT_STATE
+            ? "current-state"
+            : `0x${command.toString(16)}`;
     if (strings.length === 0) return `rpc-result ${cmd} empty`;
     return `rpc-result ${cmd} ${strings.join(" | ")}`;
   }
@@ -189,16 +212,24 @@ export function describeImprovPacket(packet: ImprovPacket): string {
 export async function scanNetworks(
   port: BytePort,
   onLog?: ImprovLog,
-): Promise<WifiNetwork[]> {
+  onPing?: (state: number | null) => void,
+): Promise<ScanResult> {
   const t0 = Date.now();
   const log = (line: string) => onLog?.(`+${Date.now() - t0}ms  ${line}`);
   log("send RPC current-state (USB ping)");
-  const ping = await requestCurrentState(port);
+  let ping = await requestCurrentState(port, log);
   if (ping == null) {
-    log("no state reply — port may not be the CDC, or the XIAO is still in setup()");
-  } else {
-    log(`ping ${describeImprovPacket({ type: IMPROV_CURRENT_STATE, data: Uint8Array.of(ping) })}`);
+    log("no state reply — waiting in case the device is still in setup()");
+    await sleep(3000);
+    log("send RPC current-state (USB ping)");
+    ping = await requestCurrentState(port, log);
   }
+  if (ping == null) {
+    log(
+      "no state reply — this COM may not be the app CDC, or the device is still in setup()",
+    );
+  }
+  onPing?.(ping);
   log("send RPC scan 0x04");
   await port.write(encodeRpc(RPC_SCAN));
   const networks: WifiNetwork[] = [];
@@ -221,7 +252,7 @@ export async function scanNetworks(
     if (command !== RPC_SCAN) continue;
     if (strings.length === 0) {
       log(`scan finished, ${networks.length} network(s)`);
-      return networks;
+      return { networks, ping, finished: true };
     }
     for (let i = 0; i + 2 < strings.length; i += 3) {
       const ssid = strings[i];
@@ -230,8 +261,8 @@ export async function scanNetworks(
       networks.push({ ssid, rssi: strings[i + 1], auth: strings[i + 2] });
     }
   }
-  log(`loop ended, ${networks.length} network(s)`);
-  return networks;
+  log(`loop ended in silence, ${networks.length} network(s)`);
+  return { networks, ping, finished: false };
 }
 
 export async function provisionWifi(

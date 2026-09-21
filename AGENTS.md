@@ -18,4 +18,5 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Do not mix this tree with `C:\Users\tinei\Arduino`.
 - Read `docs/definiciones.md` before implementing.
 - Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
-- Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
+- `public/firmware/` (bins + `manifest.json`) is owned by the **firmware** workers. Do not `git restore` or rewrite it if Round/Simple drop new images into this tree; the wizard version is that manifest, not a label you invent.
+- Do **not** use local Playwright to verify login or `/install`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
