@@ -19,7 +19,7 @@ import {
   type ProductId,
   type ProductSpec,
 } from "@/lib/web-setup/products";
-import { BytePort, requestSerialPort } from "@/lib/web-setup/serial";
+import { BytePort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 type Step = "pick" | "flash" | "reconnect" | "wifi" | "token" | "done";
@@ -154,6 +154,9 @@ export function InstallWizard() {
     setStatus("Opening serial port…");
     try {
       await openCdc();
+      // USB-Serial-JTAG toggles DTR on open and the S3 reboots; wait out setup().
+      setStatus("Waiting for the device after USB reset…");
+      await sleep(2000);
       setStep(next);
       setStatus(null);
     } catch (err) {

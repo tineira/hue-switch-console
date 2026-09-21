@@ -192,19 +192,25 @@ export async function scanNetworks(
 ): Promise<WifiNetwork[]> {
   const t0 = Date.now();
   const log = (line: string) => onLog?.(`+${Date.now() - t0}ms  ${line}`);
+  log("send RPC current-state (USB ping)");
+  const ping = await requestCurrentState(port);
+  if (ping == null) {
+    log("no state reply — port may not be the CDC, or the XIAO is still in setup()");
+  } else {
+    log(`ping ${describeImprovPacket({ type: IMPROV_CURRENT_STATE, data: Uint8Array.of(ping) })}`);
+  }
   log("send RPC scan 0x04");
   await port.write(encodeRpc(RPC_SCAN));
   const networks: WifiNetwork[] = [];
   const seen = new Set<string>();
-  const deadline = Date.now() + 20000;
+  const deadline = Date.now() + 25000;
   while (Date.now() < deadline) {
-    const packet = await readImprovPacket(
-      port,
-      Math.min(4000, deadline - Date.now()),
-    );
+    const remain = deadline - Date.now();
+    if (remain <= 0) break;
+    const packet = await readImprovPacket(port, Math.min(3000, remain));
     if (!packet) {
-      log("no packet (timeout waiting on serial)");
-      break;
+      log(`silence ${Date.now() - t0}ms, still waiting…`);
+      continue;
     }
     log(describeImprovPacket(packet));
     if (packet.type === IMPROV_ERROR_STATE && packet.data[0] === ERR_UNKNOWN_RPC) {
