@@ -22,8 +22,13 @@ npx vercel env run -e production -- node scripts/seed-user.mjs
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), sign in, create a device
-API key, copy it once.
+Open [http://localhost:3000](http://localhost:3000) and sign in.
+
+Product boards are flashed from **Install** (`/install`) in Chrome or Edge over
+USB. That screen writes Wi-Fi + a device token; it always points the XIAO at
+`https://hue.tineira.com`, not localhost. Firmware images live under
+`public/firmware/` (see that README). Developers can still create a key and
+copy it into `config.h`.
 
 On a PC that can reach the Bridge:
 

@@ -1,0 +1,167 @@
+name: Sync USB installer bins
+
+on:
+  repository_dispatch:
+    types: [firmware-bins]
+  workflow_dispatch:
+    inputs:
+      product:
+        description: Product images to pull from GitHub Release tag usb-installer
+        required: true
+        default: all
+        type: choice
+        options:
+          - round
+          - simple
+          - all
+      version:
+        description: Manifest version (optional; firmware dispatch sends this per product)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-firmware-bins
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download releases and update manifests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PRODUCT: ${{ github.event.client_payload.product }}
+          DISPATCH_VERSION: ${{ github.event.client_payload.version }}
+          INPUT_PRODUCT: ${{ inputs.product }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            PRODUCT="${DISPATCH_PRODUCT:-}"
+            VERSION="${DISPATCH_VERSION:-}"
+          else
+            PRODUCT="${INPUT_PRODUCT:-all}"
+            VERSION="${INPUT_VERSION:-}"
+          fi
+
+          case "$PRODUCT" in
+            round|simple|all) ;;
+            *)
+              echo "FAILED: unknown product '$PRODUCT' (expected round, simple, or all)" >&2
+              exit 1
+              ;;
+          esac
+
+          REQUIRED="bootloader.bin partitions.bin boot_app0.bin firmware.bin"
+
+          normalize() {
+            local dir="$1"
+            local sketch="$2"
+            if [ ! -f "$dir/bootloader.bin" ] && [ -f "$dir/${sketch}.ino.bootloader.bin" ]; then
+              mv "$dir/${sketch}.ino.bootloader.bin" "$dir/bootloader.bin"
+            fi
+            if [ ! -f "$dir/partitions.bin" ] && [ -f "$dir/${sketch}.ino.partitions.bin" ]; then
+              mv "$dir/${sketch}.ino.partitions.bin" "$dir/partitions.bin"
+            fi
+            if [ ! -f "$dir/firmware.bin" ] && [ -f "$dir/${sketch}.ino.bin" ]; then
+              mv "$dir/${sketch}.ino.bin" "$dir/firmware.bin"
+            fi
+          }
+
+          set_version() {
+            local manifest="$1"
+            local version="$2"
+            [ -n "$version" ] || return 0
+            local tmp
+            tmp="$(mktemp)"
+            jq --arg v "$version" '.version = $v' "$manifest" > "$tmp"
+            mv "$tmp" "$manifest"
+          }
+
+          sync_product() {
+            local product="$1"
+            local repo="$2"
+            local sketch="$3"
+            local dest="public/firmware/${product}"
+            local stage
+            stage="$(mktemp -d)"
+
+            echo "Downloading usb-installer from ${repo}…"
+            if ! gh release download usb-installer --repo "$repo" --dir "$stage" --clobber; then
+              rm -rf "$stage"
+              echo "FAILED: GitHub Release tag usb-installer missing or unreadable in ${repo}. Left public/firmware untouched." >&2
+              exit 1
+            fi
+
+            normalize "$stage" "$sketch"
+
+            local name
+            for name in $REQUIRED; do
+              if [ ! -s "$stage/$name" ]; then
+                echo "FAILED: ${repo} usb-installer is missing ${name}. Left public/firmware untouched." >&2
+                echo "Assets downloaded:" >&2
+                ls -la "$stage" >&2
+                rm -rf "$stage"
+                exit 1
+              fi
+            done
+
+            mkdir -p "$dest"
+            for name in $REQUIRED; do
+              cp -f "$stage/$name" "$dest/$name"
+            done
+            rm -rf "$stage"
+
+            local version_for_product="$VERSION"
+            if [ "$PRODUCT" = "all" ]; then
+              version_for_product=""
+            fi
+            if [ -z "$version_for_product" ]; then
+              local title
+              title="$(gh release view usb-installer --repo "$repo" --json name --jq .name 2>/dev/null || true)"
+              version_for_product="$(printf '%s\n' "$title" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || true)"
+            fi
+            set_version "$dest/manifest.json" "$version_for_product"
+            echo "Synced ${product} version=${version_for_product:-unchanged}"
+          }
+
+          if [ "$PRODUCT" = "round" ] || [ "$PRODUCT" = "all" ]; then
+            sync_product round tineira/hue-round-switch hue-round-switch
+          fi
+          if [ "$PRODUCT" = "simple" ] || [ "$PRODUCT" = "all" ]; then
+            sync_product simple tineira/hue-simple-switch hue-simple-switch
+          fi
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/firmware
+          if git diff --cached --quiet; then
+            echo "No firmware file changes."
+            exit 0
+          fi
+
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            PRODUCT="${{ github.event.client_payload.product }}"
+            VERSION="${{ github.event.client_payload.version }}"
+          else
+            PRODUCT="${{ inputs.product }}"
+            VERSION="${{ inputs.version }}"
+          fi
+          if [ -n "${VERSION:-}" ]; then
+            MSG="chore: USB installer bins ${PRODUCT} ${VERSION}"
+          else
+            MSG="chore: USB installer bins ${PRODUCT}"
+          fi
+          git commit -m "$MSG"
+          git push
