@@ -5,12 +5,16 @@ import {
   MAX_ROUND_PAGES,
   MAX_SCENE_LIST,
   MAX_SCREEN_TIMEOUT_SEC,
+  MIN_SCREEN_TIMEOUT_SEC,
   PAGE_NAME_MAX,
   confirmationForPage,
   findRoundRecipe,
   groupsEqual,
+  isScreenTimeoutSec,
+  normalizePageName,
   pageGroupFromRoom,
   pageNameFromGroup,
+  pageNameWouldTruncate,
   pickableGroups,
   recipesForGroup,
   roundEventLabel,
@@ -87,6 +91,7 @@ export function RoundPagesEditor({
   const [previewOn, setPreviewOn] = useState(true);
   const [addingPage, setAddingPage] = useState(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [nameCut, setNameCut] = useState<Record<string, boolean>>({});
   const [selectedPageId, setSelectedPageId] = useState(
     selectedSlot?.pageId ?? pages[0]?.id ?? "",
   );
@@ -205,31 +210,10 @@ export function RoundPagesEditor({
         </div>
       </div>
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-          Screen timeout
-        </span>
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={MAX_SCREEN_TIMEOUT_SEC}
-          step={1}
-          value={screenTimeoutSec}
-          aria-describedby="screen-timeout-hint"
-          onChange={(event) => {
-            const n = Number.parseInt(event.target.value, 10);
-            onChange({
-              ...draft,
-              screenTimeoutSec: Number.isFinite(n) ? n : 0,
-            });
-          }}
-          className="w-24 rounded-md border border-line bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament"
-        />
-        <span id="screen-timeout-hint" className="text-xs text-muted">
-          Seconds until the display sleeps. 0 = always on.
-        </span>
-      </label>
+      <ScreenTimeoutField
+        value={screenTimeoutSec}
+        onValid={(n) => onChange({ ...draft, screenTimeoutSec: n })}
+      />
 
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
@@ -295,18 +279,21 @@ export function RoundPagesEditor({
                   <span className="sr-only">Page name</span>
                   <input
                     value={page.name}
-                    maxLength={PAGE_NAME_MAX}
                     autoFocus
                     aria-describedby={`page-name-hint-${page.id}`}
-                    onChange={(event) =>
-                      patchPage(page.id, { name: event.target.value })
-                    }
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      setNameCut((current) => ({
+                        ...current,
+                        [page.id]: pageNameWouldTruncate(raw),
+                      }));
+                      patchPage(page.id, { name: normalizePageName(raw) });
+                    }}
                     onBlur={(event) => {
-                      const trimmed = event.currentTarget.value.trim();
-                      if (!trimmed) patchPage(page.id, { name: "Page" });
-                      else if (trimmed !== event.currentTarget.value) {
-                        patchPage(page.id, { name: trimmed });
-                      }
+                      patchPage(
+                        page.id,
+                        { name: normalizePageName(event.currentTarget.value) },
+                      );
                       setEditingPageId(null);
                     }}
                     onKeyDown={(event) => {
@@ -322,6 +309,7 @@ export function RoundPagesEditor({
                     className="shrink-0 text-[11px] text-muted"
                   >
                     {page.name.length}/{PAGE_NAME_MAX}
+                    {nameCut[page.id] ? " — extra is cut" : ""}
                   </span>
                 </label>
               ) : (
@@ -845,6 +833,57 @@ function RoundSlot({
         </ol>
       ) : null}
     </div>
+  );
+}
+
+function ScreenTimeoutField({
+  value,
+  onValid,
+}: {
+  value: number;
+  onValid: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const text = draft ?? String(value);
+  const parsed = Number.parseInt(text, 10);
+  const error =
+    draft !== null && !isScreenTimeoutSec(parsed)
+      ? `Must be 0 (always on) or ${MIN_SCREEN_TIMEOUT_SEC}–${MAX_SCREEN_TIMEOUT_SEC} seconds.`
+      : null;
+
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+        Screen timeout
+      </span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={MAX_SCREEN_TIMEOUT_SEC}
+        step={1}
+        value={text}
+        aria-invalid={Boolean(error)}
+        aria-describedby="screen-timeout-hint"
+        onChange={(event) => {
+          const raw = event.target.value;
+          setDraft(raw);
+          const n = Number.parseInt(raw, 10);
+          if (isScreenTimeoutSec(n)) onValid(n);
+        }}
+        onBlur={() => setDraft(null)}
+        className={`w-24 rounded-md border bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament ${
+          error ? "border-danger" : "border-line"
+        }`}
+      />
+      <span
+        id="screen-timeout-hint"
+        className={`text-xs ${error ? "text-danger" : "text-muted"}`}
+      >
+        {error ??
+          "Seconds until the display sleeps. 0 = always on. Not 1–9."}
+      </span>
+    </label>
   );
 }
 

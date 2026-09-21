@@ -38,6 +38,11 @@ export async function GET(
   try {
     const sw = await getSwitchByMac(user.id, mac);
     if (!sw) return jsonError(404, "not_found");
+    if (isRoundSwitch(sw)) {
+      return jsonError(400, "round_switch_uses_pages", {
+        details: "Round Display recipes are saved with pages",
+      });
+    }
     const recipes = await listRecipes(sw.id);
     return jsonOk({ ...toSwitchPublic(sw), recipes });
   } catch (err) {

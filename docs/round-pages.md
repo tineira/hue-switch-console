@@ -2,9 +2,9 @@
 
 Documento de **requisitos de producto**. Cubre `hue-round-switch` (firmware, círculo) y `hue-switch-console` (web). No es una guía de implementación ni un changelog.
 
-Copia canónica también en `hue-round-switch/docs/pages-requirements.md`. Mantener ambos alineados.
+Esta copia **manda el estado**. Alinear `hue-round-switch/docs/pages-requirements.md` a este archivo, no al revés.
 
-**Estado:** requisitos vigentes. Páginas v1 ya están en consola y firmware. Esta revisión ancla cada página a un **grupo** y redefine el aro (§8.2). La consola persiste `group` + `dim` y lo baja en el poll §11.2.
+**Estado:** `group` + `dim` **ya** están en la consola y en firmware **0.5.13+**. El poll §11.2 los baja. Idle (timeout del disco) e input-durante-Hue están **implementados**: `hue-round-switch/docs/specs/finished/idle-display.md` e `input-during-hue.md`. Páginas v1 corren. Alta USB desde Chrome (`docs/specs/web-setup.md`) **no** es este v1.
 
 **Productos:**
 
@@ -16,7 +16,7 @@ Copia canónica también en `hue-round-switch/docs/pages-requirements.md`. Mante
 
 La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel. El dedo en el círculo **nunca** espera a la web. Eso no cambia.
 
-Alta del aparato (flash + Wi‑Fi + token desde Chrome): `docs/web-setup.md`. Fuera de páginas; no implementado.
+Alta del aparato en este v1: Arduino + `config.h` (`CONSOLE_URL`, `CONSOLE_TOKEN`). Web-setup (`docs/specs/web-setup.md`) queda requisitos, fuera de recorte.
 
 ---
 
@@ -139,8 +139,8 @@ Con 6 puntos a 4+4 el ancho es ~44 px; la cuerda abajo del disco interior es >10
 
 Debajo del nombre de página, **size 1**. Color: tinta mezclada con el fill (no `mute` crudo: en paletas como Night el mute sobre el ámbar no se lee). Una sola línea. No wrap.
 
-- Solo si la página tiene `recall_scene` y hay una escena de esa lista con `status.active` (o el `rid` del último PUT local).
-- Luces off, receta toggle, o ninguna de la lista activa → **no se dibuja** la línea (no “Off”, no “—”).
+- Solo si la página tiene `recall_scene` y hay un `rid` de esa lista para mostrar: el **último PUT local** (NVS), o un GET de `status.active` **solo para refrescar el nombre** (no para elegir el próximo rid del ciclo; §8.1).
+- Luces off, receta toggle, o ninguna de la lista para pintar → **no se dibuja** la línea (no “Off”, no “—”).
 - El nombre viene en el poll (`targets[].name`, el de Hue). El aparato no adivina.
 
 Overflow (en este orden):
@@ -276,19 +276,21 @@ Reglas:
 - El **orden lo edita el usuario** en la consola (agregar, quitar, drag / flechas). Ese orden es el del ciclo.
 - Off **no** entra en la lista. No existe “scene off” en Clip v2 (`recall.action` es `active` \| `dynamic_palette` \| `static`). Apagar es **doble tap** → `off` del `grouped_light` de ese grupo.
 - Smart scenes (`smart_scene` / `deactivate`) quedan fuera de v1.
-- Una escena que desaparece del snapshot se marca stale en la consola; el firmware la salta.
-- El círculo **sí** muestra la escena activa debajo del nombre de página (§5.2). El título sigue siendo el de la página.
+- Una escena que desaparece del snapshot se marca stale en la consola. En `targets[]`, un `rid` que el Bridge responde **404 se SALTA** (siguiente de la lista); no se aborta el gesto.
+- El círculo **sí** muestra una línea de escena debajo del nombre de página (§5.2). El título sigue siendo el de la página.
 
-Al disparar el gesto, el aparato:
+Al disparar el gesto, el aparato **no** GET-ea `status.active` para elegir el rid. El ciclo es **caché NVS** (último PUT local):
 
-1. Mira cuál de la lista está activa en el Bridge (`status.active` distinto de `inactive`). Caso típico: un GET a la última recordada; si sigue activa, no hace falta recorrer las demás.
-2. Si hay una activa → PUT de la **siguiente** en el orden de consola (la última envuelve a la primera).
-3. Si ninguna está activa (luces apagadas, o la app Hue puso otra escena) → PUT de la **primera**.
-4. El PUT es el de siempre: `PUT /clip/v2/resource/scene/{rid}` `{"recall":{"action":"active"}}`.
+1. Si hay un último `rid` de esa lista en NVS → PUT de la **siguiente** en el orden de consola (la última envuelve a la primera).
+2. Si no hay caché (nunca se recorrió, o Off local la limpió) → PUT de la **primera**.
+3. Si el PUT a un `rid` vuelve 404 → **saltar** ese ítem y probar el siguiente. No fallar el gesto entero.
+4. El PUT es el de siempre: `PUT /clip/v2/resource/scene/{rid}` `{"recall":{"action":"active"}}`. Guardar ese `rid` en NVS.
 
-El dedo no espera a Vercel. El GET+PUT al Bridge (LAN) **sí ocurre**; el círculo **no se congela** mientras tanto: tap, doble, aro y swipe siguen vivos. Detalle en el firmware: `hue-round-switch/docs/input-during-hue.md`.
+**Off local** (doble tap → `off` del grupo) **limpia** el rid cacheado. El próximo tap de escenas vuelve a la **primera**.
 
-Índice / último `rid` se puede cachear en NVS para ir rápido; la fuente de verdad de “cuál está puesta” es el Bridge, no el índice local (así un cambio en la app Hue no deja el círculo un paso atrás para siempre). Tras el PUT (o al entrar a la página), se pinta el `name` de ese `rid`.
+Un GET `status.active` al Bridge queda **solo para pintar el nombre** (refresh al entrar a la página / tras el PUT). **No** elige el próximo rid. Cambiar una escena en la app Hue no re-sincroniza el ciclo del disco (puede ir un paso atrasado respecto al teléfono). Eso es el contrato, no un bug.
+
+El dedo no espera a Vercel. El PUT al Bridge (LAN) **sí ocurre**; el círculo **no se congela**: tap, doble, aro y swipe siguen vivos. Detalle: `hue-round-switch/docs/specs/finished/input-during-hue.md`.
 
 ### 8.2 Set de dimmer (aro)
 
@@ -309,7 +311,7 @@ Reglas, en este orden:
 1. **Hay `recall_scene` en tap o doble** → `mode: "group"` (el `grouped_light` de la página). Una escena pinta el cuarto; el aro es el slider de la app Hue.
 2. **No hay escenas, y alguna receta apunta al `grouped_light` del grupo** (p. ej. tap = velador, doble = off Living) → `mode: "group"`.
 3. **No hay escenas ni acción de grupo: solo luces hijas** (p. ej. tap = Velador 1, doble = Velador 2) → `mode: "lights"`, `rids` = esas luces, sin duplicar. El aro **no** toca el plafón ni el resto del room.
-4. Nada dimmable → `null`.
+4. Nada dimmable → `null`. En `mode: "lights"`, dimmable = `caps` del snapshot incluye `"dim"`. Si ninguna luz del set lo tiene, `dim: null`. Un destino `grouped_light` **cuenta como dimmable** (el Bridge resuelve cuáles luces toca).
 
 Comportamiento al soltar el aro (1–100 absoluto):
 
@@ -329,7 +331,7 @@ Al seleccionar un Round Display (no un simple-switch), la columna izquierda **no
 ### 9.1 Ajustes del display (una vez por aparato)
 
 - **Page swipe:** `Left / right` (default) o `Up / down`.
-- **Screen timeout:** segundos hasta reposo del disco (default **30**). **0** = always on. Rango 0 o 10–600. Detalle: `hue-round-switch/docs/idle-display.md`.
+- **Screen timeout:** segundos hasta reposo del disco (default **30**). **0** = always on. Rango 0 o 10–600. Detalle: `hue-round-switch/docs/specs/finished/idle-display.md`.
 - El label del switch (`switches.label`) sigue siendo el nombre del aparato en la lista de la consola. **No** se pinta en el círculo. El círculo muestra el nombre de la **página**.
 
 ### 9.2 Lista de páginas
@@ -341,12 +343,14 @@ Al seleccionar un Round Display (no un simple-switch), la columna izquierda **no
 
 Mínimo 1 página (no se puede borrar la última: queda vacía, asignable). Máximo **6**.
 
-Página nueva: hay que **elegir el grupo** (room/zona). Nombre default = nombre Hue del grupo recortado a 12 / ASCII (editable). Theme `ember`. Tap y doble vacíos. `dim` null hasta que haya recetas.
+Página nueva (en la UI): hay que **elegir el grupo** (room/zona). Nombre default = nombre Hue del grupo recortado a 12 / ASCII (editable; tildes se pliegan). Theme `ember`. Tap y doble vacíos. `dim` null hasta que haya recetas.
+
+El **register** del aparato puede crear `p1` sin grupo. El **Save** humano (PUT páginas) **exige grupo en todas las páginas**. No hay página de producto “sin room” una vez guardada.
 
 ### 9.3 Editor de una página
 
 - **Group** — room o zona, obligatorio. Cambiar el grupo **limpia** recetas que ya no pertenezcan (aviso). La columna de topología **solo** muestra luces hijas y escenas de ese group.
-- **Name** — input, máx. 12 caracteres. Es lo que se ve en el círculo.
+- **Name** — input, ASCII plegado (`Niños` → `Ninos`), máx. 12 caracteres (aviso si se corta; el aparato trunca). Es lo que se ve en el círculo.
 - **Theme** — picker visual de **diales redondos**, el mismo lenguaje que `hue-round-switch/docs/round-themes.html` (no el dropdown CSS del sitio). Una paleta por página: click en el círculo la elige (anillo de seleccionado). On/Off en el preview para ver luz prendida vs apagada. El nombre en el dial de muestra puede ser el de la página. El usuario no edita hex.
 - **Slots de receta** — siempre **Tap** y **Double tap**, asignables o vacíos. Click en la topología filtrada. Defaults según §8. Vacío = no-op; si doble está vacío, el tap no espera.
 - **Lista de escenas** — click en una escena del grupo la agrega; click de nuevo la saca; reordenar. Máx. 8. Off no es ítem de la lista.
@@ -431,11 +435,11 @@ product: "round"
 
 Ya no hace falta inventar un canal `c1` / gpio `0` para satisfacer a la consola. `channels` puede ir `[]`. La consola no asigna recetas a pines en este producto.
 
-`hue-simple-switch` no manda `product` (o manda `"simple"`). Se infiere por canales GPIO si falta el campo.
+`hue-simple-switch` manda `"product": "simple"` (los firmwares actuales mandan `product`). Si un aparato viejo omite el campo, se infiere por canales (`[]` / `c1` → round; GPIO → simple). Wipe round→simple **solo** con `"product": "simple"` explícito; la inferencia no borra páginas.
 
 ### 11.2 Config que baja al Round
 
-Hoy: `{ rev, recipes[] }` con `channelId`. El Round necesita además `pages[]` con **grupo**, `dim`, nombres, themes, eje y recetas. Eso **sí** baja al aparato (el `switches.label` no).
+El GET de un Round **no** es `{ rev, recipes[] }` con `channelId`. Baja `pages[]` con **grupo**, `dim`, nombres, themes, eje, timeout y recetas con `pageId`. Eso **sí** baja al aparato (el `switches.label` no). Simple sigue recibiendo `{ rev, recipes[] }` con `channelId`.
 
 ```text
 {
@@ -522,7 +526,7 @@ Límites que el server valida:
 | Gestos | tap y doble siempre listos; receta opcional | Vacío = no-op; sin checkbox extra |
 | Recetas | ≤ 12 (6×2) | Cabe en NVS; firmware puede dejar `kMaxRecipes` en 16 o bajar |
 | Escenas por lista | 1–8 | Ciclo usable en pared; JSON/NVS |
-| Grupo por página | 1 room o zona, obligatorio | Filtra luces y escenas |
+| Grupo por página | 1 room o zona; PUT humano obligatorio. Register puede dejar `p1` sin grupo | Filtra luces y escenas |
 | Luces en `dim.mode=lights` | las de tap/doble, ≤ 2 | Un PUT por luz on |
 | Screen timeout | 0 o 10–600 s; default 30 | Reposo del disco; 0 = always on |
 
@@ -532,11 +536,11 @@ Límites que el server valida:
 
 - Poll igual: sin recetas/páginas ~1 min; con config al boot y cada 1 h. El dedo no espera.
 - NVS guarda `rev`, eje, `screenTimeoutSec`, páginas (id, nombre, theme, group, `dim`), recetas (listas de escenas con `rid` + `name` ASCII), índice de página activa, último `rid` de escena por gesto (caché).
-- Reposo de pantalla: `hue-round-switch/docs/idle-display.md`. BL off tras timeout; primer toque despierta y no actúa.
+- Reposo de pantalla: `hue-round-switch/docs/specs/finished/idle-display.md`. BL off tras timeout; primer toque despierta y no actúa.
 - Aro `mode: lights`: GET de esos rid + PUT a las on (o prender el set si todas off). No copiar esos GET en el stack del loop.
-- Rotar escenas: GET de estado al Bridge + PUT de la siguiente (LAN). No llama a la consola.
+- Rotar escenas: caché NVS (último PUT) + PUT de la siguiente (LAN). GET `status.active` solo para pintar el nombre. Un 404 en `targets[]` se salta. Off local limpia el rid. No llama a la consola.
 - Al cambiar de página: pintar de inmediato, GET de estado Hue del nuevo destino (on/brillo) en background. Un swipe no se bloquea a la red.
-- GET/PUT de receta y dimmer **tampoco** bloquean el loop de toque. Last-wins si llega otro gesto. Ready no usa `UI_BUSY`. Ver `hue-round-switch/docs/input-during-hue.md`.
+- GET/PUT de receta y dimmer **tampoco** bloquean el loop de toque. Last-wins si llega otro gesto. Ready no usa `UI_BUSY`. Ver `hue-round-switch/docs/specs/finished/input-during-hue.md`.
 - Si el `pageId` de la receta ya no existe: ignorar. Si el índice activo apunta a una página borrada: ir a la primera.
 - Si cambia el `bridgeid` emparejado: tirar páginas y recetas (los `rid` son de otro Bridge), dejar una página vacía default.
 - API key revocada: el poll falla; lo que hay en NVS **sigue** ejecutándose en la LAN.
@@ -594,7 +598,7 @@ Simple-switch: cero migración.
 - Nombre de página editado **en el círculo**.
 - Theme con hex libre.
 - Animación de slide entre páginas.
-- Reloj / screensaver / widgets en una página. El reposo negro (`hue-round-switch/docs/idle-display.md`) no es un screensaver.
+- Reloj / screensaver / widgets en una página. El reposo negro (`hue-round-switch/docs/specs/finished/idle-display.md`) no es un screensaver.
 - Páginas compartidas entre varios aparatos.
 - Un Round hablando con dos Bridges.
 - Cambiar `hue-simple-switch` ni su máquina de double-click de GPIO.
@@ -627,9 +631,9 @@ Estas no son código. Son el default si no se dice lo contrario.
 20. **Nombres en el círculo = ASCII.** Página y escena: tildes/ñ se pliegan (`Niños` → `Ninos`). Fuente built-in 5×7.
 21. **Aro como la app Hue:** solo luces on del destino. Si el destino está todo off, el drag prende a ese %. `mode: lights` usa % absoluto en cada luz on, no un scale relativo.
 22. **Tap = velador y doble = off del grupo** → `dim.mode = group` (regla 2), no las luces sueltas.
-23. **Toques mientras Hue responde:** el disco sigue aceptando input. Ack optimista (invert, fill, escena, aro). Last-wins. Sin `UI_BUSY` en Ready. `hue-round-switch/docs/input-during-hue.md`.
+23. **Toques mientras Hue responde:** el disco sigue aceptando input. Ack optimista (invert, fill, escena, aro). Last-wins. Sin `UI_BUSY` en Ready. `hue-round-switch/docs/specs/finished/input-during-hue.md`.
 24. **Tap = luz A y doble = luz B** (dos `light` distintas): el fill del disco se parte (izquierda = tap, derecha = doble). El área táctil y los gestos no cambian. Cada lado guarda el on de su `rid`; el toggle no usa un bit único de página. Cualquier otro layout: disco entero.
-25. **Reposo de pantalla:** timeout por aparato en consola (default 30 s, 0 = always on). Disco negro; primer toque solo despierta. `hue-round-switch/docs/idle-display.md`.
+25. **Reposo de pantalla:** timeout por aparato en consola (default 30 s, 0 = always on). Disco negro; primer toque solo despierta. `hue-round-switch/docs/specs/finished/idle-display.md`.
 
 ---
 
@@ -655,8 +659,8 @@ Esta feature está **lista** cuando:
 - El círculo muestra el nombre de la página, debajo la escena activa si hay (sin how-to), puntos si hay más de una (lleno = en cuál estoy, sin salirse del disco), y el aro si toca.
 - En la consola, el theme de cada página se elige en un grid de diales redondos (las 20 paletas).
 - Un swipe en el eje configurado cambia de página **sin** llamar a Vercel ni al Bridge.
-- Tap / doble de esa página ejecutan NVS → Bridge **sin** congelar el toque (`hue-round-switch/docs/input-during-hue.md`). Swipe cambia de página. No hay hold de pantalla.
+- Tap / doble de esa página ejecutan NVS → Bridge **sin** congelar el toque (`hue-round-switch/docs/specs/finished/input-during-hue.md`). Swipe cambia de página. No hay hold de pantalla.
 - Un simple-switch en la misma consola sigue viéndose como canales GPIO.
-- Screen timeout en consola; el disco se apaga solo y el primer toque en negro no dispara receta (`hue-round-switch/docs/idle-display.md`).
+- Screen timeout en consola; el disco se apaga solo y el primer toque en negro no dispara receta (`hue-round-switch/docs/specs/finished/idle-display.md`).
 
-La consola ya persiste grupo + `dim.mode`. El firmware consume el poll §11.2. El resto de páginas v1 ya corre.
+La consola persiste grupo + `dim.mode`. Firmware **0.5.13+** consume el poll §11.2. Idle e input-durante-Hue están en `docs/specs/finished/` del firmware. El resto de páginas v1 ya corre.

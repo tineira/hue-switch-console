@@ -21,7 +21,7 @@ import {
   isPageSwipeAxis,
   isRoundEvent,
   isScreenTimeoutSec,
-  PAGE_NAME_MAX,
+  normalizePageName,
 } from "@/lib/pages";
 import { isRoundThemeId, normalizeRoundTheme } from "@/lib/round-themes";
 
@@ -73,7 +73,6 @@ export function parseLights(raw: unknown): Light[] | null {
 }
 
 export function parseRooms(raw: unknown): Room[] | null {
-  if (raw === undefined) return [];
   if (!Array.isArray(raw)) return null;
   const rooms: Room[] = [];
   for (const item of raw) {
@@ -102,7 +101,6 @@ export function parseRooms(raw: unknown): Room[] | null {
 }
 
 export function parseScenes(raw: unknown): Scene[] | null {
-  if (raw === undefined) return [];
   if (!Array.isArray(raw)) return null;
   const scenes: Scene[] = [];
   for (const item of raw) {
@@ -282,8 +280,10 @@ export function parseRoundPages(raw: unknown): SwitchPage[] | null {
   for (const [index, item] of raw.entries()) {
     if (!item || typeof item !== "object") return null;
     const row = item as Record<string, unknown>;
-    const name = asString(row.name);
-    if (!name || name.length > PAGE_NAME_MAX) return null;
+    const rawName = asString(row.name);
+    if (!rawName) return null;
+    const name = normalizePageName(rawName);
+    if (!name) return null;
     const themeRaw = asString(row.theme) ?? "ember";
     const theme = isRoundThemeId(themeRaw) ? themeRaw : null;
     if (!theme) return null;

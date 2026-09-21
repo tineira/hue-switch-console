@@ -117,9 +117,18 @@ export function foldAscii(input: string): string {
     .trim();
 }
 
-export function pageNameFromGroup(name: string): string {
-  const folded = foldAscii(name).slice(0, PAGE_NAME_MAX).trim();
+/** ASCII fold + 12-char disk limit. Empty after fold → "Page". */
+export function normalizePageName(input: string): string {
+  const folded = foldAscii(input).slice(0, PAGE_NAME_MAX).trim();
   return folded || "Page";
+}
+
+export function pageNameWouldTruncate(input: string): boolean {
+  return foldAscii(input).length > PAGE_NAME_MAX;
+}
+
+export function pageNameFromGroup(name: string): string {
+  return normalizePageName(name);
 }
 
 export function pageGroupFromRoom(room: Room): PageGroup | null {
@@ -291,13 +300,27 @@ export function inferPageGroup(
   return groupFromRecipe(short, snapshot) ?? groupFromRecipe(dbl, snapshot);
 }
 
+function lightHasDimCap(
+  snapshot: TopologySnapshot | null | undefined,
+  rid: string,
+): boolean {
+  if (!snapshot) return true;
+  const light = snapshot.lights.find((item) => item.id === rid);
+  if (!light) return true;
+  if (!Array.isArray(light.caps)) return true;
+  return light.caps.includes("dim");
+}
+
 /**
  * Spec §8.2, in order: scene → group; any grouped_light of the page → group;
  * only child lights → those lights; else null. Tap=lamp + double=off group → group.
+ * grouped_light counts as dimmable. lights mode: exclude only when `caps` is an
+ * array that lacks `"dim"`. Missing `caps` (old snapshot) stays dimmable.
  */
 export function computeDim(
   recipes: RoundRecipe[],
   groupedLightRid: string | null | undefined,
+  snapshot?: TopologySnapshot | null,
 ): DimSet | null {
   const tap = recipes.find((recipe) => recipe.event === "short");
   const dbl = recipes.find((recipe) => recipe.event === "double_click");
@@ -323,7 +346,9 @@ export function computeDim(
     if (!rids.includes(recipe.target.rid)) rids.push(recipe.target.rid);
   }
   if (rids.length === 0) return null;
-  return { mode: "lights", rids };
+  const dimmable = rids.filter((rid) => lightHasDimCap(snapshot, rid));
+  if (dimmable.length === 0) return null;
+  return { mode: "lights", rids: dimmable };
 }
 
 export function sceneListItem(
@@ -386,7 +411,7 @@ export function confirmationForPage(
   const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
   const tap = findRoundRecipe(pageRecipes, page.id, "short");
   const dbl = findRoundRecipe(pageRecipes, page.id, "double_click");
-  const dim = computeDim(pageRecipes, page.group?.groupedLightRid);
+  const dim = computeDim(pageRecipes, page.group?.groupedLightRid, snapshot);
   const tapPart = tap
     ? `tap → ${roundActionClause(tap, snapshot)}`
     : "tap → unassigned";
@@ -518,15 +543,13 @@ export function validateRoundConfig(
       return `unknown theme ${page.theme}`;
     }
     const resolved = resolvePageGroup(snapshot, page.group);
-    const hasRecipes = recipes.some((recipe) => recipe.pageId === page.id);
     if (!page.group) {
-      if (hasRecipes) return `page ${page.name} needs a room or zone`;
-    } else if (!resolved) {
+      return `page ${page.name} needs a room or zone`;
+    }
+    if (!resolved) {
       return `unknown room or zone for page ${page.name}`;
-    } else if (
-      page.group.rtype !== "room" &&
-      page.group.rtype !== "zone"
-    ) {
+    }
+    if (page.group.rtype !== "room" && page.group.rtype !== "zone") {
       return `group rtype must be room or zone`;
     }
   }

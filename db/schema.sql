@@ -66,6 +66,7 @@ create table if not exists pages (
   group_rid text,
   grouped_light_rid text,
   dim jsonb,
+  -- leftover from pre-§8.2 dimTarget; unused. Do not read. DROP later if safe.
   dim_target_rtype text,
   dim_target_rid text,
   primary key (switch_id, id)
@@ -109,3 +110,9 @@ alter table recipes add column if not exists page_id text;
 alter table recipes add column if not exists targets jsonb not null default '[]'::jsonb;
 alter table recipes alter column channel_id drop not null;
 alter table recipes drop constraint if exists recipes_switch_id_channel_id_event_key;
+alter table switches drop constraint if exists switches_product_check;
+alter table switches add constraint switches_product_check check (product in ('simple', 'round'));
+alter table switches drop constraint if exists switches_page_swipe_axis_check;
+alter table switches add constraint switches_page_swipe_axis_check check (page_swipe_axis in ('horizontal', 'vertical'));
+alter table switches drop constraint if exists switches_screen_timeout_sec_check;
+alter table switches add constraint switches_screen_timeout_sec_check check (screen_timeout_sec = 0 or (screen_timeout_sec >= 10 and screen_timeout_sec <= 600));
