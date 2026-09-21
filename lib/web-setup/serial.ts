@@ -2,6 +2,13 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export type SerialLog = (line: string) => void;
+
+const OPEN_OPTS = { baudRate: 115200, bufferSize: 8192 } as const;
+const REOPEN_MS = 10000;
+const POST_OPEN_WATCH_MS = 2000;
+const POST_REOPEN_SETUP_MS = 1500;
+
 export async function requestSerialPort(): Promise<SerialPort> {
   if (!("serial" in navigator)) {
     throw new Error("Use Chrome or Edge on a computer");
@@ -17,9 +24,30 @@ export async function requestSerialPort(): Promise<SerialPort> {
   }
 }
 
+function isAlreadyOpen(err: unknown): boolean {
+  return err instanceof DOMException && err.name === "InvalidStateError";
+}
+
+function isDeviceLost(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === "NetworkError") return true;
+  return err instanceof Error && /device has been lost/i.test(err.message);
+}
+
+function portConnected(port: SerialPort): boolean | undefined {
+  if ("connected" in port && typeof (port as SerialPort & { connected?: boolean }).connected === "boolean") {
+    return (port as SerialPort & { connected: boolean }).connected;
+  }
+  return undefined;
+}
+
 /**
  * Exclusive Web Serial reader/writer with a leftover buffer.
  * Used for Improv packets, then ASCII HUESET on the same CDC.
+ *
+ * Opening Web Serial asserts DTR. On XIAO USB-Serial-JTAG that resets the
+ * chip, the USB device re-enumerates, and the original readable stream ends
+ * (done) or hangs with zero bytes. We wait for the device to come back and
+ * reopen streams, then idle DTR/RTS so HWCDC can talk.
  */
 export class BytePort {
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
@@ -27,16 +55,177 @@ export class BytePort {
   private pending: Promise<ReadableStreamReadResult<Uint8Array>> | null = null;
   private buffer = new Uint8Array(0);
   private closed = false;
+  private lost = false;
+  private baudRate = 115200;
+  private recoverPromise: Promise<void> | null = null;
+  private disconnectWaiters: Array<() => void> = [];
 
-  constructor(readonly port: SerialPort) {}
+  constructor(
+    public port: SerialPort,
+    private readonly onLog?: SerialLog,
+  ) {
+    this.port.addEventListener("disconnect", this.onDisconnect);
+  }
+
+  /** True when the USB handle is gone (disconnect, reader.done, or NetworkError). */
+  get dead(): boolean {
+    return this.lost || this.closed || !this.reader;
+  }
+
+  private onDisconnect = (): void => {
+    this.lost = true;
+    this.closed = true;
+    for (const wait of this.disconnectWaiters) wait();
+    this.disconnectWaiters = [];
+  };
 
   async open(baudRate = 115200): Promise<void> {
-    await this.port.open({ baudRate });
+    this.baudRate = baudRate;
+    this.closed = false;
+    this.lost = false;
+    this.buffer = new Uint8Array(0);
+    try {
+      await this.port.open({ ...OPEN_OPTS, baudRate });
+    } catch (err) {
+      if (isAlreadyOpen(err)) {
+        /* reuse an already-open handle */
+      } else if (this.lost || isDeviceLost(err)) {
+        this.onLog?.("port lost");
+        await this.reopen();
+        return;
+      } else {
+        throw err instanceof Error ? err : new Error("Could not open serial port");
+      }
+    }
+    if (this.lost) {
+      this.onLog?.("port lost");
+      await this.reopen();
+      return;
+    }
+    this.grabStreams();
+    await this.armCdc();
+    const dropped = await this.watchAfterOpen();
+    if (dropped) {
+      this.onLog?.("port lost");
+      await this.reopen();
+      return;
+    }
+    await sleep(POST_REOPEN_SETUP_MS);
+  }
+
+  /**
+   * Close the stale handle, wait for USB re-enumeration, open streams again.
+   * Safe to call more than once; overlapping calls share one attempt.
+   */
+  async reopen(): Promise<void> {
+    if (this.recoverPromise) return this.recoverPromise;
+    this.recoverPromise = this.reopenOnce().finally(() => {
+      this.recoverPromise = null;
+    });
+    return this.recoverPromise;
+  }
+
+  private async reopenOnce(): Promise<void> {
+    await this.dropStreams();
+    const next = await waitForUsbReturn(this.port, this.baudRate, REOPEN_MS);
+    if (next !== this.port) {
+      this.port.removeEventListener("disconnect", this.onDisconnect);
+      this.port = next;
+      this.port.addEventListener("disconnect", this.onDisconnect);
+    }
+    this.lost = false;
+    this.closed = false;
+    this.buffer = new Uint8Array(0);
+    this.pending = null;
+    this.grabStreams();
+    await this.armCdc();
+    await sleep(POST_REOPEN_SETUP_MS);
+    this.onLog?.("port reopened");
+  }
+
+  private grabStreams(): void {
     if (!this.port.readable || !this.port.writable) {
       throw new Error("Serial port has no readable/writable streams");
     }
     this.reader = this.port.readable.getReader();
     this.writer = this.port.writable.getWriter();
+  }
+
+  /**
+   * USB-Serial-JTAG: DTR=0 RTS=0 clears download mode; DTR=1 RTS=1 is idle
+   * (no reset). DTR true lets HWCDC send toward the host.
+   */
+  private async armCdc(): Promise<void> {
+    try {
+      await this.port.setSignals({
+        dataTerminalReady: false,
+        requestToSend: false,
+      });
+      await sleep(50);
+      await this.port.setSignals({
+        dataTerminalReady: true,
+        requestToSend: true,
+      });
+    } catch {
+      /* some CDC stacks reject setSignals around re-enumeration */
+    }
+  }
+
+  private async watchAfterOpen(): Promise<boolean> {
+    if (this.lost || this.closed) return true;
+    const eventDrop = this.watchForDrop(POST_OPEN_WATCH_MS);
+    await this.fill(POST_OPEN_WATCH_MS);
+    const dropped = (await eventDrop) || this.lost || this.closed;
+    return dropped;
+  }
+
+  private watchForDrop(ms: number): Promise<boolean> {
+    if (this.lost || this.closed) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.disconnectWaiters = this.disconnectWaiters.filter((w) => w !== notify);
+        resolve(this.lost || this.closed);
+      }, ms);
+      const notify = () => {
+        clearTimeout(timer);
+        resolve(true);
+      };
+      this.disconnectWaiters.push(notify);
+    });
+  }
+
+  private async dropStreams(): Promise<void> {
+    this.closed = true;
+    try {
+      await this.reader?.cancel();
+    } catch {
+      /* already gone */
+    }
+    if (this.pending) {
+      try {
+        await this.pending;
+      } catch {
+        /* cancelled */
+      }
+    }
+    try {
+      this.reader?.releaseLock();
+    } catch {
+      /* already released */
+    }
+    try {
+      this.writer?.releaseLock();
+    } catch {
+      /* already released */
+    }
+    this.reader = null;
+    this.writer = null;
+    this.pending = null;
+    try {
+      await this.port.close();
+    } catch {
+      /* already closed */
+    }
   }
 
   peek(): Uint8Array {
@@ -61,23 +250,36 @@ export class BytePort {
 
   async fill(timeoutMs: number): Promise<boolean> {
     if (this.buffer.length > 0) return true;
-    if (this.closed) return false;
+    if (this.closed || this.lost) return false;
     if (!this.reader) throw new Error("Serial port is not open");
     const start = Date.now();
-    while (!this.closed && Date.now() - start < timeoutMs) {
+    while (!this.closed && !this.lost && Date.now() - start < timeoutMs) {
       if (!this.pending) {
         this.pending = this.reader
           .read()
-          .then((result) => {
-            if (result.value && result.value.length > 0) {
-              const next = new Uint8Array(this.buffer.length + result.value.length);
-              next.set(this.buffer, 0);
-              next.set(result.value, this.buffer.length);
-              this.buffer = next;
-            }
-            if (result.done) this.closed = true;
-            return result;
-          })
+          .then(
+            (result) => {
+              if (result.value && result.value.length > 0) {
+                const next = new Uint8Array(this.buffer.length + result.value.length);
+                next.set(this.buffer, 0);
+                next.set(result.value, this.buffer.length);
+                this.buffer = next;
+              }
+              if (result.done) {
+                this.closed = true;
+                this.lost = true;
+              }
+              return result;
+            },
+            (err: unknown) => {
+              this.closed = true;
+              this.lost = true;
+              if (isDeviceLost(err)) {
+                /* USB re-enumerated under the reader */
+              }
+              return { value: undefined, done: true };
+            },
+          )
           .finally(() => {
             this.pending = null;
           });
@@ -88,6 +290,7 @@ export class BytePort {
         sleep(remain).then(() => "timeout" as const),
       ]);
       if (this.buffer.length > 0) return true;
+      if (this.lost || this.closed) return false;
       if (outcome === "timeout") return false;
     }
     return this.buffer.length > 0;
@@ -105,35 +308,125 @@ export class BytePort {
         return match[1];
       }
       const got = await this.fill(Math.max(1, timeoutMs - (Date.now() - start)));
-      if (!got && this.closed) return null;
+      if (!got && (this.closed || this.lost)) return null;
     }
     return null;
   }
 
   async close(): Promise<void> {
-    this.closed = true;
-    try {
-      await this.reader?.cancel();
-    } catch {
-      /* already gone */
-    }
-    try {
-      this.reader?.releaseLock();
-    } catch {
-      /* already released */
-    }
-    try {
-      this.writer?.releaseLock();
-    } catch {
-      /* already released */
-    }
-    this.reader = null;
-    this.writer = null;
-    try {
-      await this.port.close();
-    } catch {
-      /* already closed */
-    }
+    this.port.removeEventListener("disconnect", this.onDisconnect);
+    await this.dropStreams();
   }
 }
 
+async function waitForUsbReturn(
+  previous: SerialPort,
+  baudRate: number,
+  timeoutMs: number,
+): Promise<SerialPort> {
+  const deadline = Date.now() + timeoutMs;
+  const info = previous.getInfo();
+
+  const tryOpen = async (port: SerialPort): Promise<boolean> => {
+    const connected = portConnected(port);
+    if (connected === false) return false;
+    try {
+      await port.open({ ...OPEN_OPTS, baudRate });
+      return true;
+    } catch (err) {
+      if (isAlreadyOpen(err)) {
+        if (port.readable && port.writable) return true;
+        try {
+          await port.close();
+        } catch {
+          /* retry */
+        }
+      }
+      return false;
+    }
+  };
+
+  if (await tryOpen(previous)) return previous;
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      finish();
+      reject(new Error("USB device did not come back after reset"));
+    }, Math.max(1, deadline - Date.now()));
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      navigator.serial.removeEventListener("connect", onConnect);
+    };
+
+    const onConnect = (ev: Event) => {
+      const next = (ev as Event & { port?: SerialPort }).port;
+      if (!next) return;
+      void (async () => {
+        if (settled) return;
+        if (await tryOpen(next)) {
+          if (settled) {
+            try {
+              await next.close();
+            } catch {
+              /* lost the race */
+            }
+            return;
+          }
+          finish();
+          resolve(next);
+        }
+      })();
+    };
+    navigator.serial.addEventListener("connect", onConnect);
+
+    void (async () => {
+      while (!settled && Date.now() < deadline) {
+        await sleep(200);
+        if (settled) return;
+        if (await tryOpen(previous)) {
+          if (settled) {
+            try {
+              await previous.close();
+            } catch {
+              /* lost the race */
+            }
+            return;
+          }
+          finish();
+          resolve(previous);
+          return;
+        }
+        let ports: SerialPort[] = [];
+        try {
+          ports = await navigator.serial.getPorts();
+        } catch {
+          continue;
+        }
+        const match = ports.find((p) => {
+          const i = p.getInfo();
+          return (
+            i.usbVendorId === info.usbVendorId &&
+            i.usbProductId === info.usbProductId
+          );
+        });
+        if (match && (await tryOpen(match))) {
+          if (settled) {
+            try {
+              await match.close();
+            } catch {
+              /* lost the race */
+            }
+            return;
+          }
+          finish();
+          resolve(match);
+          return;
+        }
+      }
+    })();
+  });
+}

@@ -20,7 +20,7 @@ import {
   type ProductId,
   type ProductSpec,
 } from "@/lib/web-setup/products";
-import { BytePort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
+import { BytePort, requestSerialPort } from "@/lib/web-setup/serial";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 type Step = "pick" | "flash" | "reconnect" | "wifi" | "token" | "done";
@@ -142,9 +142,10 @@ export function InstallWizard() {
   async function openCdc(): Promise<BytePort> {
     await closeSession();
     const port = await requestSerialPort();
-    const session = new BytePort(port);
-    await session.open(115200);
+    const session = new BytePort(port, appendUsbLog);
     sessionRef.current = session;
+    appendUsbLog("— open CDC —");
+    await session.open(115200);
     return session;
   }
 
@@ -152,16 +153,14 @@ export function InstallWizard() {
     if (blocked) return;
     setBusy(true);
     setError(null);
-    setStatus("Opening serial port…");
+    setStatus("Opening serial port (USB may reset)…");
     try {
       await openCdc();
-      // USB-Serial-JTAG toggles DTR on open and the S3 reboots; wait out setup().
-      setStatus("Waiting for the device after USB reset…");
-      await sleep(2000);
       setStep(next);
       setStatus(null);
     } catch (err) {
       setError(errorMessage(err));
+      appendUsbLog(`open error ${errorMessage(err)}`);
     } finally {
       setBusy(false);
     }
@@ -474,10 +473,12 @@ export function InstallWizard() {
               USB debug
             </summary>
             <p className="mt-1 text-xs text-muted">
-              Each Improv packet from the XIAO. No current-state reply means
-              this COM may not be the app CDC, or the device is still in
-              setup(). An empty scan in under ~200 ms means the firmware
-              aborted before Wi-Fi scan finished.
+              Each Improv packet from the XIAO. Opening USB can reset the
+              board (DTR); look for port lost / port reopened before ping.
+              No current-state reply after reopen means this COM may not be
+              the app CDC, or the device is still in setup(). An empty scan
+              in under ~200 ms means the firmware aborted before Wi-Fi scan
+              finished.
             </p>
             <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs text-muted">
               {usbLog.length ? usbLog.join("\n") : "No USB traffic yet. Press Scan."}

@@ -157,13 +157,22 @@ export async function requestCurrentState(
   port: BytePort,
   onLog?: ImprovLog,
 ): Promise<number | null> {
-  await port.write(encodeRpc(RPC_CURRENT_STATE));
+  try {
+    await port.write(encodeRpc(RPC_CURRENT_STATE));
+  } catch {
+    onLog?.("port lost");
+    return null;
+  }
   const deadline = Date.now() + 4000;
   while (Date.now() < deadline) {
     const remain = deadline - Date.now();
     if (remain <= 0) break;
     const packet = await readImprovPacket(port, remain);
     if (!packet) {
+      if (port.dead) {
+        onLog?.("port lost");
+        break;
+      }
       onLog?.("silence, still waiting for current-state");
       continue;
     }
@@ -219,15 +228,24 @@ export async function scanNetworks(
   log("send RPC current-state (USB ping)");
   let ping = await requestCurrentState(port, log);
   if (ping == null) {
-    log("no state reply — waiting in case the device is still in setup()");
-    await sleep(3000);
+    log("no state reply — USB handle may be stale after DTR reset; reopening");
+    try {
+      await port.reopen();
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "reopen failed";
+      log(`port lost (${detail})`);
+      onPing?.(null);
+      return { networks: [], ping: null, finished: false };
+    }
     log("send RPC current-state (USB ping)");
     ping = await requestCurrentState(port, log);
   }
   if (ping == null) {
     log(
-      "no state reply — this COM may not be the app CDC, or the device is still in setup()",
+      "no state reply after reopen — this COM may not be the app CDC, or the device is still in setup()",
     );
+    onPing?.(null);
+    return { networks: [], ping: null, finished: false };
   }
   onPing?.(ping);
   log("send RPC scan 0x04");
@@ -240,6 +258,10 @@ export async function scanNetworks(
     if (remain <= 0) break;
     const packet = await readImprovPacket(port, Math.min(3000, remain));
     if (!packet) {
+      if (port.dead) {
+        log("port lost");
+        break;
+      }
       log(`silence ${Date.now() - t0}ms, still waiting…`);
       continue;
     }
