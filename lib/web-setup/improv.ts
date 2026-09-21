@@ -153,14 +153,25 @@ export async function readImprovPacket(
   return null;
 }
 
+function describeTx(data: Uint8Array): string {
+  const hex = Array.from(data)
+    .slice(0, 20)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  const more = data.length > 20 ? "…" : "";
+  return `TX ${data.length}B ${hex}${more}`;
+}
+
 export async function requestCurrentState(
   port: BytePort,
   onLog?: ImprovLog,
 ): Promise<number | null> {
+  const packet = encodeRpc(RPC_CURRENT_STATE);
+  onLog?.(`send RPC current-state (USB ping) ${describeTx(packet)} ${port.describeHandle()}`);
   try {
-    await port.write(encodeRpc(RPC_CURRENT_STATE));
+    await port.write(packet);
   } catch {
-    onLog?.("port lost");
+    onLog?.(`port lost ${port.describeHandle()}`);
     return null;
   }
   const deadline = Date.now() + 4000;
@@ -170,7 +181,7 @@ export async function requestCurrentState(
     const packet = await readImprovPacket(port, remain);
     if (!packet) {
       if (port.dead) {
-        onLog?.("port lost");
+        onLog?.(`port lost ${port.describeHandle()}`);
         break;
       }
       onLog?.("silence, still waiting for current-state");
@@ -225,31 +236,33 @@ export async function scanNetworks(
 ): Promise<ScanResult> {
   const t0 = Date.now();
   const log = (line: string) => onLog?.(`+${Date.now() - t0}ms  ${line}`);
-  log("send RPC current-state (USB ping)");
   let ping = await requestCurrentState(port, log);
   if (ping == null) {
-    log("no state reply — USB handle may be stale after DTR reset; reopening");
+    log("no state reply — reopening USB (no DTR/RTS pulse)");
     try {
       await port.reopen();
     } catch (err) {
       const detail = err instanceof Error ? err.message : "reopen failed";
-      log(`port lost (${detail})`);
+      log(`port lost (${detail}) ${port.describeHandle()}`);
       onPing?.(null);
       return { networks: [], ping: null, finished: false };
     }
-    log("send RPC current-state (USB ping)");
     ping = await requestCurrentState(port, log);
   }
   if (ping == null) {
     log(
-      "no state reply after reopen — this COM may not be the app CDC, or the device is still in setup()",
+      `no state reply after reopen — sending scan 0x04 anyway ${port.describeHandle()}`,
     );
-    onPing?.(null);
-    return { networks: [], ping: null, finished: false };
   }
   onPing?.(ping);
-  log("send RPC scan 0x04");
-  await port.write(encodeRpc(RPC_SCAN));
+  const scanPkt = encodeRpc(RPC_SCAN);
+  log(`send RPC scan 0x04 ${describeTx(scanPkt)} ${port.describeHandle()}`);
+  try {
+    await port.write(scanPkt);
+  } catch {
+    log(`port lost ${port.describeHandle()}`);
+    return { networks: [], ping, finished: false };
+  }
   const networks: WifiNetwork[] = [];
   const seen = new Set<string>();
   const deadline = Date.now() + 25000;
@@ -259,10 +272,10 @@ export async function scanNetworks(
     const packet = await readImprovPacket(port, Math.min(3000, remain));
     if (!packet) {
       if (port.dead) {
-        log("port lost");
+        log(`port lost ${port.describeHandle()}`);
         break;
       }
-      log(`silence ${Date.now() - t0}ms, still waiting…`);
+      log(`silence ${Date.now() - t0}ms, still waiting… ${port.describeHandle()}`);
       continue;
     }
     log(describeImprovPacket(packet));
