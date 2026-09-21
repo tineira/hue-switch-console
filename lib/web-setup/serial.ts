@@ -77,7 +77,15 @@ export class BytePort {
   describeHandle(): string {
     const connected = portConnected(this.port);
     const conn = connected === undefined ? "?" : connected ? "true" : "false";
-    return `connected=${conn} reader.done=${this.lastReadDone} buf=${this.buffer.length}`;
+    return `connected=${conn} reader.done=${this.lastReadDone} buf=${this.buffer.length} hex=${this.peekHex()}`;
+  }
+
+  /** Leftover bytes as hex (capped) so partial Improv headers or ASCII logs are visible. */
+  peekHex(max = 32): string {
+    const head = Array.from(this.buffer.slice(0, max))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return this.buffer.length > max ? `${head}…` : head || "-";
   }
 
   private logHandle(label: string): void {
@@ -262,8 +270,10 @@ export class BytePort {
     await this.write(new TextEncoder().encode(payload));
   }
 
-  async fill(timeoutMs: number): Promise<boolean> {
-    if (this.buffer.length > 0) return true;
+  /** With needMore, wait for bytes beyond what is already buffered. */
+  async fill(timeoutMs: number, needMore = false): Promise<boolean> {
+    const baseLen = needMore ? this.buffer.length : 0;
+    if (this.buffer.length > baseLen) return true;
     if (this.closed || this.lost) return false;
     if (!this.reader) throw new Error("Serial port is not open");
     const start = Date.now();
@@ -307,11 +317,11 @@ export class BytePort {
         pending.then(() => "data" as const),
         sleep(remain).then(() => "timeout" as const),
       ]);
-      if (this.buffer.length > 0) return true;
+      if (this.buffer.length > baseLen) return true;
       if (this.lost || this.closed) return false;
       if (outcome === "timeout") return false;
     }
-    return this.buffer.length > 0;
+    return this.buffer.length > baseLen;
   }
 
   async readLine(timeoutMs: number): Promise<string | null> {

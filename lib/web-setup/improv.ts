@@ -133,9 +133,29 @@ function indexOfHeader(buffer: Uint8Array): number {
   return -1;
 }
 
+const STUCK_MS = 1000;
+
+/** Logs once per scan when 5+ bytes sit in the buffer without forming a packet. */
+export function createStuckWatch(onLog?: ImprovLog): (port: BytePort) => void {
+  let since: number | null = null;
+  let logged = false;
+  return (port) => {
+    if (port.peek().length < 5) {
+      since = null;
+      return;
+    }
+    since ??= Date.now();
+    if (!logged && Date.now() - since > STUCK_MS) {
+      logged = true;
+      onLog?.(`stuck buf hex=${port.peekHex()} (${port.peek().length}B, no valid Improv packet)`);
+    }
+  };
+}
+
 export async function readImprovPacket(
   port: BytePort,
   timeoutMs: number,
+  onStuck?: (port: BytePort) => void,
 ): Promise<ImprovPacket | null> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -147,8 +167,12 @@ export async function readImprovPacket(
       if (rest.length > 0 && rest[0] === 0x0a) port.consume(1);
       return extracted.packet;
     }
-    const got = await port.fill(Math.max(1, timeoutMs - (Date.now() - start)));
-    if (!got) return null;
+    onStuck?.(port);
+    const got = await port.fill(Math.max(1, timeoutMs - (Date.now() - start)), true);
+    if (!got) {
+      onStuck?.(port);
+      return null;
+    }
   }
   return null;
 }
@@ -165,6 +189,7 @@ function describeTx(data: Uint8Array): string {
 export async function requestCurrentState(
   port: BytePort,
   onLog?: ImprovLog,
+  onStuck?: (port: BytePort) => void,
 ): Promise<number | null> {
   const packet = encodeRpc(RPC_CURRENT_STATE);
   onLog?.(`send RPC current-state (USB ping) ${describeTx(packet)} ${port.describeHandle()}`);
@@ -178,7 +203,7 @@ export async function requestCurrentState(
   while (Date.now() < deadline) {
     const remain = deadline - Date.now();
     if (remain <= 0) break;
-    const packet = await readImprovPacket(port, remain);
+    const packet = await readImprovPacket(port, remain, onStuck);
     if (!packet) {
       if (port.dead) {
         onLog?.(`port lost ${port.describeHandle()}`);
@@ -236,7 +261,8 @@ export async function scanNetworks(
 ): Promise<ScanResult> {
   const t0 = Date.now();
   const log = (line: string) => onLog?.(`+${Date.now() - t0}ms  ${line}`);
-  let ping = await requestCurrentState(port, log);
+  const stuck = createStuckWatch(log);
+  let ping = await requestCurrentState(port, log, stuck);
   if (ping == null) {
     log("no state reply — reopening USB (no DTR/RTS pulse)");
     try {
@@ -247,7 +273,7 @@ export async function scanNetworks(
       onPing?.(null);
       return { networks: [], ping: null, finished: false };
     }
-    ping = await requestCurrentState(port, log);
+    ping = await requestCurrentState(port, log, stuck);
   }
   if (ping == null) {
     log(
@@ -269,7 +295,7 @@ export async function scanNetworks(
   while (Date.now() < deadline) {
     const remain = deadline - Date.now();
     if (remain <= 0) break;
-    const packet = await readImprovPacket(port, Math.min(3000, remain));
+    const packet = await readImprovPacket(port, Math.min(3000, remain), stuck);
     if (!packet) {
       if (port.dead) {
         log(`port lost ${port.describeHandle()}`);
