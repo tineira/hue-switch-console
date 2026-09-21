@@ -17,3 +17,5 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Secrets stay in `.env.local` — never commit it.
 - Do not mix this tree with `C:\Users\tinei\Arduino`.
 - Read `docs/definiciones.md` before implementing.
+- Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
+- Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.

@@ -44,6 +44,10 @@ yarn-error.log*
 .grok/
 .playwright-mcp/
 
+# Scratch working notes (delete after use; never commit)
+docs/_audit-*.md
+docs/_review-*.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
