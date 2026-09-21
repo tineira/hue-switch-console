@@ -54,8 +54,13 @@ export function InstallWizard() {
   const [ssid, setSsid] = useState("");
   const [password, setPassword] = useState("");
   const [scanHint, setScanHint] = useState<string | null>(null);
+  const [usbLog, setUsbLog] = useState<string[]>([]);
   const sessionRef = useRef<BytePort | null>(null);
   const loadGen = useRef(0);
+
+  function appendUsbLog(line: string) {
+    setUsbLog((prev) => [...prev.slice(-80), line]);
+  }
 
   const product: ProductSpec | null = productId ? PRODUCTS[productId] : null;
   const binsReady = Boolean(manifest && manifest.missing.length === 0);
@@ -177,8 +182,9 @@ export function InstallWizard() {
     setScanHint(null);
     setError(null);
     setStatus("Scanning Wi-Fi…");
+    appendUsbLog("— scan —");
     try {
-      const found = await scanNetworks(session);
+      const found = await scanNetworks(session, appendUsbLog);
       setNetworks(found);
       if (found.length === 0) {
         setScanHint("No networks reported. Enter the SSID manually.");
@@ -186,6 +192,7 @@ export function InstallWizard() {
       setStatus(null);
     } catch (err) {
       setScanHint(errorMessage(err));
+      appendUsbLog(`error ${errorMessage(err)}`);
       setStatus(null);
     } finally {
       setBusy(false);
@@ -240,6 +247,7 @@ export function InstallWizard() {
     setSsid("");
     setPassword("");
     setScanHint(null);
+    setUsbLog([]);
   }
 
   return (
@@ -445,6 +453,29 @@ export function InstallWizard() {
               ? "Saving…"
               : "Save Wi-Fi and token"}
           </button>
+          <details open className="rounded-md border border-line bg-background p-3">
+            <summary className="cursor-pointer text-sm font-medium">
+              USB debug
+            </summary>
+            <p className="mt-1 text-xs text-muted">
+              Each Improv packet from the XIAO. An empty scan in under ~200 ms
+              means the firmware aborted before Wi-Fi scan finished.
+            </p>
+            <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs text-muted">
+              {usbLog.length ? usbLog.join("\n") : "No USB traffic yet. Press Scan."}
+            </pre>
+            {usbLog.length ? (
+              <button
+                type="button"
+                className="mt-2 text-xs text-muted underline"
+                onClick={() =>
+                  void navigator.clipboard.writeText(usbLog.join("\n"))
+                }
+              >
+                Copy log
+              </button>
+            ) : null}
+          </details>
         </section>
       ) : null}
 

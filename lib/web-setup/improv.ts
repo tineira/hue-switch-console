@@ -154,31 +154,77 @@ export async function requestCurrentState(port: BytePort): Promise<number | null
   return null;
 }
 
-export async function scanNetworks(port: BytePort): Promise<WifiNetwork[]> {
+export type ImprovLog = (line: string) => void;
+
+export function describeImprovPacket(packet: ImprovPacket): string {
+  if (packet.type === IMPROV_CURRENT_STATE) {
+    const st = packet.data[0] ?? 0;
+    const name =
+      st === STATE_READY
+        ? "ready"
+        : st === STATE_PROVISIONING
+          ? "provisioning"
+          : st === STATE_PROVISIONED
+            ? "provisioned"
+            : `0x${st.toString(16)}`;
+    return `state ${name}`;
+  }
+  if (packet.type === IMPROV_ERROR_STATE) {
+    return `error 0x${(packet.data[0] ?? 0).toString(16)}`;
+  }
+  if (packet.type === IMPROV_RPC_RESULT) {
+    const { command, strings } = parseRpcStrings(packet.data);
+    const cmd =
+      command === RPC_SCAN
+        ? "scan"
+        : command === RPC_WIFI
+          ? "wifi"
+          : `0x${command.toString(16)}`;
+    if (strings.length === 0) return `rpc-result ${cmd} empty`;
+    return `rpc-result ${cmd} ${strings.join(" | ")}`;
+  }
+  return `type=0x${packet.type.toString(16)} len=${packet.data.length}`;
+}
+
+export async function scanNetworks(
+  port: BytePort,
+  onLog?: ImprovLog,
+): Promise<WifiNetwork[]> {
+  const t0 = Date.now();
+  const log = (line: string) => onLog?.(`+${Date.now() - t0}ms  ${line}`);
+  log("send RPC scan 0x04");
   await port.write(encodeRpc(RPC_SCAN));
   const networks: WifiNetwork[] = [];
   const seen = new Set<string>();
   const deadline = Date.now() + 20000;
   while (Date.now() < deadline) {
-    const packet = await readImprovPacket(port, Math.min(4000, deadline - Date.now()));
-    if (!packet) break;
+    const packet = await readImprovPacket(
+      port,
+      Math.min(4000, deadline - Date.now()),
+    );
+    if (!packet) {
+      log("no packet (timeout waiting on serial)");
+      break;
+    }
+    log(describeImprovPacket(packet));
     if (packet.type === IMPROV_ERROR_STATE && packet.data[0] === ERR_UNKNOWN_RPC) {
       throw new Error("This firmware does not support Wi-Fi scan. Enter the SSID manually.");
     }
     if (packet.type !== IMPROV_RPC_RESULT) continue;
     const { command, strings } = parseRpcStrings(packet.data);
     if (command !== RPC_SCAN) continue;
-    if (strings.length === 0) return networks;
+    if (strings.length === 0) {
+      log(`scan finished, ${networks.length} network(s)`);
+      return networks;
+    }
     for (let i = 0; i + 2 < strings.length; i += 3) {
       const ssid = strings[i];
       if (!ssid || seen.has(ssid)) continue;
       seen.add(ssid);
       networks.push({ ssid, rssi: strings[i + 1], auth: strings[i + 2] });
     }
-    if (strings.length >= 3 && strings.length < 6) {
-      // one network per result is common; keep reading until empty list
-    }
   }
+  log(`loop ended, ${networks.length} network(s)`);
   return networks;
 }
 
