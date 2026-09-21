@@ -277,7 +277,7 @@ export class BytePort {
               if (isDeviceLost(err)) {
                 /* USB re-enumerated under the reader */
               }
-              return { value: undefined, done: true };
+              return { value: undefined, done: true as const };
             },
           )
           .finally(() => {
@@ -285,8 +285,10 @@ export class BytePort {
           });
       }
       const remain = Math.max(1, timeoutMs - (Date.now() - start));
+      const pending = this.pending;
+      if (!pending) continue;
       const outcome = await Promise.race([
-        this.pending.then(() => "data" as const),
+        pending.then(() => "data" as const),
         sleep(remain).then(() => "timeout" as const),
       ]);
       if (this.buffer.length > 0) return true;
