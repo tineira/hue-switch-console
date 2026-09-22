@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { firmwareChangelogHref } from "@/lib/changelog-href";
 import { webSerialBlockedReason } from "@/lib/web-setup/browser";
 import {
   classifyImprov,
@@ -31,6 +33,7 @@ import {
   PRODUCT_CONSOLE_URL,
   PRODUCTS,
   usbKeyName,
+  type ProductId,
   type ProductSpec,
 } from "@/lib/web-setup/products";
 import { BytePort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
@@ -61,6 +64,25 @@ type Detected = {
 };
 
 type Panel = "none" | "wifi" | "flash" | "after-flash";
+
+function FirmwareVersion({
+  productId,
+  version,
+}: {
+  productId: ProductId | null;
+  version: string;
+}) {
+  const href = firmwareChangelogHref(productId, version);
+  if (!href) return <span className="font-mono text-xs">{version}</span>;
+  return (
+    <Link
+      href={href}
+      className="font-mono text-xs underline decoration-line underline-offset-2 hover:text-filament"
+    >
+      {version}
+    </Link>
+  );
+}
 
 function errorMessage(err: unknown): string {
   if (err instanceof ChipMismatchError) return err.message;
@@ -127,16 +149,27 @@ function Field({
   label,
   value,
   mono,
+  href,
 }: {
   label: string;
   value: string;
   mono?: boolean;
+  href?: string | null;
 }) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-xs text-muted">{label}</dt>
       <dd className={mono ? "break-all font-mono text-xs" : "break-all text-sm"}>
-        {value}
+        {href ? (
+          <Link
+            href={href}
+            className="underline decoration-line underline-offset-2 hover:text-filament"
+          >
+            {value}
+          </Link>
+        ) : (
+          value
+        )}
       </dd>
     </div>
   );
@@ -646,10 +679,13 @@ export function DevicesPanel() {
                 <p className="text-sm">
                   {detected.improv.name || "Firmware"}
                   {detected.improv.version ? (
-                    <span className="font-mono text-xs">
-                      {" "}
-                      · {detected.improv.version}
-                    </span>
+                    <>
+                      {" · "}
+                      <FirmwareVersion
+                        productId={productId}
+                        version={detected.improv.version}
+                      />
+                    </>
                   ) : null}
                 </p>
               ) : null}
@@ -680,6 +716,14 @@ export function DevicesPanel() {
                     label="Firmware"
                     value={detected.consoleRecord.firmware ?? "—"}
                     mono
+                    href={
+                      detected.consoleRecord.firmware
+                        ? firmwareChangelogHref(
+                            productId,
+                            detected.consoleRecord.firmware,
+                          )
+                        : null
+                    }
                   />
                 </dl>
                 {mismatchText(detected.consoleRecord, reportedVersion(detected)) ? (
@@ -784,15 +828,23 @@ export function DevicesPanel() {
                 {actions.showSaved && detected.huesta ? (
                   <>
                     Board{" "}
-                    <span className="font-mono text-xs">
-                      {detected.huesta.ver || "—"}
-                    </span>
+                    {detected.huesta.ver ? (
+                      <FirmwareVersion
+                        productId={productId}
+                        version={detected.huesta.ver}
+                      />
+                    ) : (
+                      <span className="font-mono text-xs">—</span>
+                    )}
                     {" · published "}
                   </>
                 ) : (
                   "Published firmware "
                 )}
-                <span className="font-mono text-xs">{detected.manifest.version}</span>
+                <FirmwareVersion
+                  productId={productId}
+                  version={detected.manifest.version}
+                />
                 <span className="text-muted"> · {detected.manifest.manifest.name}</span>
               </p>
               {detected.manifest.missing.length > 0 ? (

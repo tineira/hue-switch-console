@@ -44,3 +44,16 @@ export function NavLinks() {
     </nav>
   );
 }
+
+export function ChangelogLink() {
+  const path = usePathname();
+  const active = path === "/changelog" || path.startsWith("/changelog/");
+  return (
+    <Link
+      href="/changelog"
+      className={active ? "text-foreground" : "text-muted hover:text-foreground"}
+    >
+      Changelog
+    </Link>
+  );
+}
