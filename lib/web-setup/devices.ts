@@ -155,7 +155,7 @@ export function flashProductFor(input: {
   if (input.usbKind === "c6" || input.usbKind === "s3") {
     return productForBoard(input.usbKind);
   }
-  if (input.usbKind === "bootloader") {
+  if (input.usbKind === "bootloader" || input.usbKind === "other") {
     const chip = learnedChip(input.improv, input.huesta);
     if (chip) return productForBoard(chip);
     if (input.boardChoice) return productForBoard(input.boardChoice);
