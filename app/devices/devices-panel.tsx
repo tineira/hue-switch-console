@@ -842,9 +842,9 @@ export function DevicesPanel() {
             <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
               <h2 className="text-sm font-medium">Board</h2>
               <p className="text-sm text-muted">
-                Bootloader. This USB id does not say C6 or S3. Choose the board,
-                then install its firmware. The chip read while flashing still has
-                to match, or the write is aborted.
+                {detected.usb.kind === "bootloader"
+                  ? "Bootloader. This USB id does not say C6 or S3. Choose the board, then install its firmware. The chip read while flashing still has to match, or the write is aborted."
+                  : "This port did not identify the board. Choose C6 or S3, then install. The chip read while flashing still has to match, or the write is aborted."}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {([

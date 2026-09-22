@@ -334,8 +334,17 @@ export function decideActions(input: {
   huesta: Huesta | null;
   manifestVersion: string | null;
 }): DeviceActions {
-  if (input.usbKind === "other" || input.usbKind === "s3-plus" || input.usbKind === "c5") {
+  if (input.usbKind === "s3-plus" || input.usbKind === "c5") {
     return { ...NO_ACTIONS, unsupported: true };
+  }
+  // Chrome gave no id, or one we do not list. The person can still name the board.
+  // Install reads the chip and refuses a mismatch.
+  if (input.usbKind === "other") {
+    return {
+      ...NO_ACTIONS,
+      askBoard: true,
+      flash: input.boardChoice ? "install" : "none",
+    };
   }
   // 303A:1001 is the ROM bootloader and also a running sketch on USB Serial/JTAG
   // (our C6, and Round built with Hardware CDC). The sketch's chip wins when it answers.
