@@ -9,7 +9,9 @@ import {
   compareVersions,
   decideActions,
   flashProductFor,
+  boardFromChipName,
   identifyUsb,
+  identityForBoard,
   learnedChip,
   sketchTitle,
   provisioningDone,
@@ -18,7 +20,7 @@ import {
   type ImprovSeen,
   type UsbIdentity,
 } from "@/lib/web-setup/devices";
-import { ChipMismatchError, flashProduct } from "@/lib/web-setup/flash";
+import { ChipMismatchError, flashProduct, readChipName } from "@/lib/web-setup/flash";
 import { hueClear, hueGet, hueGetSettled, huePair } from "@/lib/web-setup/huecmd";
 import { mintUsbDeviceToken, writeConsoleNvs } from "@/lib/web-setup/hueset";
 import {
@@ -334,6 +336,26 @@ export function DevicesPanel() {
         if (usb.kind === "bootloader" && chip) {
           const spec = PRODUCTS[chip === "c6" ? "simple" : "round"];
           const mgen = ++manifestGen.current;
+          void loadManifestFor(spec, mgen);
+        }
+      }
+      if (usb.kind === "other") {
+        setStatus("Detecting chip…");
+        const name = await readChipName(portRef.current ?? port);
+        if (gen !== detectGen.current) return;
+        const board = boardFromChipName(name);
+        if (board) {
+          const spec = PRODUCTS[board === "c6" ? "simple" : "round"];
+          const mgen = ++manifestGen.current;
+          setDetected((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  usb: identityForBoard(prev.usb, board),
+                  manifestLoading: true,
+                }
+              : prev,
+          );
           void loadManifestFor(spec, mgen);
         }
       }
@@ -723,7 +745,7 @@ export function DevicesPanel() {
                   ) : null}
                 </p>
               ) : null}
-              {actions.unsupported ? (
+              {actions.unsupported && status !== "Detecting chip…" ? (
                 <p className="text-sm text-warn">Not supported.</p>
               ) : null}
               {detected.consoleError ? (

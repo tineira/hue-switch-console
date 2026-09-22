@@ -46,6 +46,34 @@ async function hardReset(
   }
 }
 
+/** Connect, read the ROM chip name, and reset back to the sketch. */
+export async function readChipName(port: SerialPort): Promise<string> {
+  const { ESPLoader, Transport } = await import("esptool-js");
+  const transport = new Transport(port, false);
+  const esploader = new ESPLoader({
+    transport,
+    baudrate: 115200,
+    enableTracing: false,
+    terminal: {
+      clean() {},
+      writeLine() {},
+      write() {},
+    },
+  });
+  try {
+    await esploader.main();
+    await esploader.flashId();
+    return String(esploader.chip?.CHIP_NAME ?? "");
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "unknown";
+    throw new Error(
+      `Failed to initialize. Hold BOOT if this is the first flash. (${detail})`,
+    );
+  } finally {
+    await hardReset(transport, esploader);
+  }
+}
+
 export async function flashProduct(options: {
   port: SerialPort;
   product: ProductSpec;
