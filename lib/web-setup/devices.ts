@@ -1,8 +1,6 @@
 // Pure Devices card rules: USB id, HUESTA percent-decoding, and which buttons are on.
 // No browser, serial, or network.
 
-import { chipFamilyMatches } from "@/lib/web-setup/products";
-
 export type UsbKind = "c6" | "s3" | "s3-plus" | "c5" | "bootloader" | "other";
 
 export type BoardChoice = "c6" | "s3";
@@ -125,20 +123,6 @@ export function identifyUsb(vendorId?: number, productId?: number): UsbIdentity 
     return { ...base, kind: "bootloader", title: "Bootloader" };
   }
   return { ...base, kind: "other", title: "Not a supported board" };
-}
-
-/** ROM name from the flasher, when the USB id is missing or not in the table. */
-export function boardFromChipName(name: string): BoardChoice | null {
-  if (chipFamilyMatches(name, "ESP32-C6")) return "c6";
-  if (chipFamilyMatches(name, "ESP32-S3")) return "s3";
-  return null;
-}
-
-export function identityForBoard(previous: UsbIdentity, board: BoardChoice): UsbIdentity {
-  if (board === "c6") {
-    return { ...previous, kind: "c6", title: "XIAO ESP32-C6" };
-  }
-  return { ...previous, kind: "s3", title: "XIAO ESP32-S3" };
 }
 
 export function productForBoard(board: BoardChoice | UsbKind): ProductChoice | null {

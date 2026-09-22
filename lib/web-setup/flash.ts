@@ -46,96 +46,9 @@ async function hardReset(
   }
 }
 
-async function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(label)), ms);
-  });
-  try {
-    return await Promise.race([work, timeout]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
-function portIsOpen(port: SerialPort): boolean {
-  return port.readable !== null || port.writable !== null;
-}
-
 function resetModeFor(port: SerialPort): "usb_reset" | "default_reset" {
   // No product id: this is the C6/S3 USB-Serial/JTAG port. Classic reset never syncs.
   return typeof port.getInfo().usbProductId === "number" ? "default_reset" : "usb_reset";
-}
-
-async function releasePort(
-  port: SerialPort,
-  transport: { setRTS: (level: boolean) => Promise<void>; disconnect: () => Promise<void> },
-  esploader: { after: (mode?: "hard_reset") => Promise<void> },
-): Promise<void> {
-  await withTimeout(hardReset(transport, esploader), 2500, "reset timed out").catch(() => undefined);
-  if (!portIsOpen(port)) return;
-  try {
-    await port.close();
-  } catch {
-    /* stream still locked */
-  }
-}
-
-/**
- * Connect and read the ROM chip name, then reset back to the sketch.
- * A missing USB id uses the USB-JTAG reset. The port is closed before another try.
- */
-export async function readChipName(port: SerialPort): Promise<string> {
-  if (portIsOpen(port)) {
-    try {
-      await port.close();
-    } catch {
-      /* still held by the previous attempt */
-    }
-  }
-  if (portIsOpen(port)) {
-    throw new Error(
-      "Failed to initialize. The serial port is still open. Unplug the board and detect again.",
-    );
-  }
-  const modes =
-    resetModeFor(port) === "usb_reset"
-      ? (["usb_reset", "no_reset"] as const)
-      : (["default_reset"] as const);
-  let last = "the chip did not answer";
-  for (const mode of modes) {
-    if (portIsOpen(port)) break;
-    const { ESPLoader, Transport } = await import("esptool-js");
-    const transport = new Transport(port, false);
-    const esploader = new ESPLoader({
-      transport,
-      baudrate: 115200,
-      enableTracing: false,
-      terminal: {
-        clean() {},
-        writeLine() {},
-        write() {},
-      },
-    });
-    try {
-      const name = await withTimeout(
-        (async () => {
-          await esploader.connect(mode, 3);
-          return String(esploader.chip?.CHIP_NAME ?? "");
-        })(),
-        12000,
-        "Chip detection timed out",
-      );
-      if (name) return name;
-    } catch (err) {
-      if (!(err instanceof Error) || !/already open/i.test(err.message)) {
-        last = err instanceof Error ? err.message : last;
-      }
-    } finally {
-      await releasePort(port, transport, esploader);
-    }
-  }
-  throw new Error(`Failed to initialize. ${last}`);
 }
 
 export async function flashProduct(options: {
