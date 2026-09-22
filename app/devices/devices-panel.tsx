@@ -19,7 +19,7 @@ import {
   type UsbIdentity,
 } from "@/lib/web-setup/devices";
 import { ChipMismatchError, flashProduct } from "@/lib/web-setup/flash";
-import { hueClear, hueGet, huePair } from "@/lib/web-setup/huecmd";
+import { hueClear, hueGet, hueGetSettled, huePair } from "@/lib/web-setup/huecmd";
 import { mintUsbDeviceToken, writeConsoleNvs } from "@/lib/web-setup/hueset";
 import {
   PING_MISS_COPY,
@@ -310,7 +310,9 @@ export function DevicesPanel() {
         if (gen !== detectGen.current) return;
         const improv = deviceInfo ? classifyImprov(deviceInfo) : null;
         appendUsbLog("— HUEGET —");
-        const huesta = await hueGet(session, 6000, appendUsbLog);
+        const huesta = improv
+          ? await hueGetSettled(session, appendUsbLog)
+          : await hueGet(session, 6000, appendUsbLog);
         if (gen !== detectGen.current) return;
         const looked = await readConsole(huesta);
         if (gen !== detectGen.current) return;
@@ -365,7 +367,7 @@ export function DevicesPanel() {
 
   async function reread(session: BytePort) {
     const hadCard = Boolean(detected?.huesta);
-    const card = await hueGet(session, 6000, appendUsbLog);
+    const card = await hueGetSettled(session, appendUsbLog);
     if (!card) {
       if (hadCard) setError("The stored card could not be reread.");
       return;
@@ -592,7 +594,7 @@ export function DevicesPanel() {
     setStatus("Clearing saved data…");
     try {
       await hueClear(session, appendUsbLog);
-      const card = await hueGet(session, 6000, appendUsbLog);
+      const card = await hueGetSettled(session, appendUsbLog);
       const looked = await readConsole(card);
       setDetected((prev) =>
         prev

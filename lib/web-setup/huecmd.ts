@@ -52,6 +52,27 @@ export async function hueGet(
   return null;
 }
 
+/**
+ * Improv can answer while the board is still inside a Hue request and not
+ * reading USB. Keep asking until the stored-card line shows up.
+ */
+export async function hueGetSettled(
+  port: BytePort,
+  onLog?: HueLog,
+  extraMs = 20000,
+): Promise<Huesta | null> {
+  const first = await hueGet(port, 6000, onLog);
+  if (first || port.dead) return first;
+  const deadline = Date.now() + extraMs;
+  while (Date.now() < deadline) {
+    if (port.dead) return null;
+    const remain = deadline - Date.now();
+    const card = await hueGet(port, Math.min(6000, remain), onLog);
+    if (card) return card;
+  }
+  return null;
+}
+
 /** Immediate ack only. The board's 90s button wait is not held open here. */
 export async function huePair(
   port: BytePort,
