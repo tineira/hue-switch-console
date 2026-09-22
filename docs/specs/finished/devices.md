@@ -57,7 +57,7 @@ Una sola línea. Las claves van siempre; el valor va vacío si no hay nada guard
 | `wifi` + `ip` | `up` y la IP si está asociado. `down` e IP vacía si no |
 | `bid` + `bip` | `bridgeid` entero e IP del Bridge, o vacíos. No hay id corto |
 | `url` | La URL guardada, o vacía |
-| `token` | `1` si hay token de consola. El token no sale |
+| `token` | `1` solo si lo guardado es una key de consola (`hsw_…`). Cualquier otro texto cuenta como no. El token no sale |
 | `key` | `1` si hay application key Hue. La key no sale. **Pareado** = `key=1` |
 
 No salen la clave Wi-Fi, el token ni la key Hue. No se pide el árbol Hue, ni páginas, ni recetas. Eso vive en la consola si el aparato ya se registró.
