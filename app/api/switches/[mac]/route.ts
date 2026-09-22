@@ -8,6 +8,32 @@ export const dynamic = "force-dynamic";
 
 const LABEL_MAX = 80;
 
+export async function GET(
+  _req: Request,
+  context: { params: Promise<{ mac: string }> },
+) {
+  if (!isDbConfigured()) {
+    return jsonError(503, "database_not_configured");
+  }
+  const user = await getSessionUser();
+  if (!user) return jsonError(401, "unauthorized");
+  const { mac: rawMac } = await context.params;
+  const mac = normalizeMac(rawMac);
+  if (!mac) return jsonError(400, "mac must be 12 hex digits");
+  try {
+    const sw = await getSwitchByMac(user.id, mac);
+    if (!sw) return jsonOk({ found: false });
+    return jsonOk({
+      found: true,
+      last_seen_at: sw.last_seen_at,
+      firmware: sw.firmware,
+    });
+  } catch (err) {
+    const details = err instanceof Error ? err.message : "unknown";
+    return jsonError(500, "database_error", { details });
+  }
+}
+
 export async function PATCH(
   req: Request,
   context: { params: Promise<{ mac: string }> },

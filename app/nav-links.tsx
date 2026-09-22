@@ -10,9 +10,9 @@ const LINKS = [
     match: (path: string) => path === "/" || path.startsWith("/bridges"),
   },
   {
-    href: "/install",
-    label: "Install",
-    match: (path: string) => path.startsWith("/install"),
+    href: "/devices",
+    label: "Devices",
+    match: (path: string) => path.startsWith("/devices"),
   },
   {
     href: "/keys",

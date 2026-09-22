@@ -10,6 +10,7 @@ export const IMPROV_RPC_RESULT = 0x04;
 
 export const RPC_WIFI = 0x01;
 export const RPC_CURRENT_STATE = 0x02;
+export const RPC_INFO = 0x03;
 export const RPC_SCAN = 0x04;
 
 export const STATE_READY = 0x02;
@@ -245,9 +246,11 @@ export function describeImprovPacket(packet: ImprovPacket): string {
         ? "scan"
         : command === RPC_WIFI
           ? "wifi"
-          : command === RPC_CURRENT_STATE
-            ? "current-state"
-            : `0x${command.toString(16)}`;
+          : command === RPC_INFO
+            ? "info"
+            : command === RPC_CURRENT_STATE
+              ? "current-state"
+              : `0x${command.toString(16)}`;
     if (strings.length === 0) return `rpc-result ${cmd} empty`;
     return `rpc-result ${cmd} ${strings.join(" | ")}`;
   }
@@ -353,4 +356,47 @@ export async function provisionWifi(
     }
   }
   throw new Error("Timed out waiting for Improv provisioned");
+}
+
+export type DeviceInfo = {
+  name: string;
+  version: string;
+  hardware: string;
+  deviceName: string;
+};
+
+/** Improv RPC 0x03. Strings are firmware name, version, hardware, device name. */
+export async function requestDeviceInfo(
+  port: BytePort,
+  onLog?: ImprovLog,
+): Promise<DeviceInfo | null> {
+  const packet = encodeRpc(RPC_INFO);
+  onLog?.(`send RPC info ${describeTx(packet)} ${port.describeHandle()}`);
+  try {
+    await port.write(packet);
+  } catch {
+    onLog?.(`port lost ${port.describeHandle()}`);
+    return null;
+  }
+  const deadline = Date.now() + 4000;
+  while (Date.now() < deadline) {
+    const remain = deadline - Date.now();
+    if (remain <= 0) break;
+    const reply = await readImprovPacket(port, remain);
+    if (!reply) {
+      if (port.dead) onLog?.(`port lost ${port.describeHandle()}`);
+      return null;
+    }
+    onLog?.(describeImprovPacket(reply));
+    if (reply.type !== IMPROV_RPC_RESULT) continue;
+    const parsed = parseRpcStrings(reply.data);
+    if (parsed.command !== RPC_INFO || parsed.strings.length < 2) continue;
+    return {
+      name: parsed.strings[0] ?? "",
+      version: parsed.strings[1] ?? "",
+      hardware: parsed.strings[2] ?? "",
+      deviceName: parsed.strings[3] ?? "",
+    };
+  }
+  return null;
 }

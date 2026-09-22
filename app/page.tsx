@@ -44,7 +44,7 @@ export default async function Home() {
           <h2 className="text-lg font-medium">No Bridge snapshot yet</h2>
           <ol className="flex max-w-xl list-decimal flex-col gap-2 pl-5 text-sm text-muted">
             <li>
-              Plug a virgin XIAO into USB and use Install device (Chrome or
+              Plug a virgin XIAO into USB and use Devices (Chrome or
               Edge). Developers can still put a key in{" "}
               <code className="font-mono text-xs">config.h</code>.
             </li>
@@ -60,10 +60,10 @@ export default async function Home() {
           </ol>
           <p className="flex flex-wrap gap-4">
             <Link
-              href="/install"
+              href="/devices"
               className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
             >
-              Install device
+              Devices
             </Link>
             <Link
               href="/keys"

@@ -9,9 +9,9 @@ Documento de **requisitos de producto**. Cubre `hue-switch-console` (hue.tineira
 
 No es una guía de implementación ni un changelog. La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel.
 
-**Estado:** requisitos, no implementado. Decisiones de grilling (2026-09-20, captain-idle) en §8; no reabrirlas en el recorte.
+**Estado: cerrado y deprecado (2026-09-22).** El ritual ya está en la pantalla Install (flash, reconectar COM, Improv, `HUESET`). No se reabre. La confiabilidad del Scan y del `HUEOK` se ve después, fuera de este documento. La pantalla siguiente quedó implementada: `docs/specs/finished/devices.md`. Este archivo queda solo como referencia del **cómo** del USB (bins, Improv, token).
 
-OTA del aparato ya en Wi‑Fi (versión en la lista, offer por MAC): `docs/specs/ota.md`. Este archivo es el **virgen** por USB (y re-provisionar Wi‑Fi + token con el cable, sin reflash).
+OTA del aparato ya en Wi‑Fi: `docs/specs/ota.md`.
 
 Hoy cada XIAO se configura con `config.h` compilado (`WIFI_SSID`, `WIFI_PASSWORD`, `CONSOLE_URL`, `CONSOLE_TOKEN`) y un PC con Arduino. El Bridge ya es mDNS + BOOT + NVS en ambos. Este documento unifica **flash + Wi‑Fi + token** en **una** pantalla de la consola.
 
@@ -28,7 +28,7 @@ Chrome o Edge de **escritorio**, en `https://hue.tineira.com`, USB al XIAO:
 3. **Improv Serial** escribe la red 2.4 GHz. Arduino **recuerda** esa red (STA persistente del core).
 4. La consola **crea** una API key nueva y, por USB, un **comando nuestro** deja token + URL en NVS. El usuario no copia `hsw_…`.
 
-Misma UI para Round y simple. El usuario elige el producto **antes** de abrir el puerto. El binario y el chip cambian, el ritual no. Si el chip que aparece no es el de ese producto, **no se flashea**.
+Misma mecánica para Round y simple. Qué placa es, y si hay que preguntar el producto, lo define `docs/specs/finished/devices.md` (Detect primero; el selector de firmware solo si esa placa tiene más de un bin). Si el chip que aparece no es el de ese producto, **no se flashea**.
 
 El navegador **no compila**. Los `.bin` los construye CI al pushear `main` de cada firmware y la web los sirve.
 
