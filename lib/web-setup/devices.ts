@@ -131,12 +131,35 @@ export function productForBoard(board: BoardChoice | UsbKind): ProductChoice | n
   return null;
 }
 
-export function flashProductFor(
-  kind: UsbKind,
-  boardChoice: BoardChoice | null,
-): ProductChoice | null {
-  if (kind === "c6" || kind === "s3") return productForBoard(kind);
-  if (kind === "bootloader" && boardChoice) return productForBoard(boardChoice);
+/** Chip named by the sketch. HUESTA wins over Improv. Null when neither answered. */
+export function sketchTitle(chip: ChipChoice | null): string | null {
+  if (chip === "c6") return "XIAO ESP32-C6";
+  if (chip === "s3") return "XIAO ESP32-S3";
+  return null;
+}
+
+export function learnedChip(
+  improv: ImprovSeen | null,
+  huesta: Huesta | null,
+): ChipChoice | null {
+  if (huesta) return huesta.chip;
+  return improv?.chip ?? null;
+}
+
+export function flashProductFor(input: {
+  usbKind: UsbKind;
+  boardChoice: BoardChoice | null;
+  improv: ImprovSeen | null;
+  huesta: Huesta | null;
+}): ProductChoice | null {
+  if (input.usbKind === "c6" || input.usbKind === "s3") {
+    return productForBoard(input.usbKind);
+  }
+  if (input.usbKind === "bootloader") {
+    const chip = learnedChip(input.improv, input.huesta);
+    if (chip) return productForBoard(chip);
+    if (input.boardChoice) return productForBoard(input.boardChoice);
+  }
   return null;
 }
 
@@ -298,17 +321,24 @@ export function decideActions(input: {
   if (input.usbKind === "other" || input.usbKind === "s3-plus" || input.usbKind === "c5") {
     return { ...NO_ACTIONS, unsupported: true };
   }
-  if (input.usbKind === "bootloader") {
-    return {
-      ...NO_ACTIONS,
-      askBoard: true,
-      flash: input.boardChoice ? "install" : "none",
-    };
+  // 303A:1001 is the ROM bootloader and also a running sketch on USB Serial/JTAG
+  // (our C6, and Round built with Hardware CDC). The sketch's chip wins when it answers.
+  let usbKind = input.usbKind;
+  if (usbKind === "bootloader") {
+    const chip = learnedChip(input.improv, input.huesta);
+    if (!chip) {
+      return {
+        ...NO_ACTIONS,
+        askBoard: true,
+        flash: input.boardChoice ? "install" : "none",
+      };
+    }
+    usbKind = chip;
   }
 
-  const expectedProduct = productForBoard(input.usbKind);
+  const expectedProduct = productForBoard(usbKind);
   const expectedChip: ChipChoice | null =
-    input.usbKind === "c6" || input.usbKind === "s3" ? input.usbKind : null;
+    usbKind === "c6" || usbKind === "s3" ? usbKind : null;
   if (!expectedProduct || !expectedChip) return { ...NO_ACTIONS, unsupported: true };
 
   const improv = input.improv;

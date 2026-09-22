@@ -9,6 +9,8 @@ import {
   decideActions,
   flashProductFor,
   identifyUsb,
+  learnedChip,
+  sketchTitle,
   provisioningDone,
   type BoardChoice,
   type Huesta,
@@ -260,7 +262,8 @@ export function DevicesPanel() {
       setUsbLog([]);
       const info = port.getInfo();
       const usb = identifyUsb(info.usbVendorId, info.usbProductId);
-      const needsCdc = usb.kind === "c6" || usb.kind === "s3";
+      const knownBoard = usb.kind === "c6" || usb.kind === "s3";
+      const probe = knownBoard || usb.kind === "bootloader";
       setDetected({
         usb,
         improv: null,
@@ -270,13 +273,15 @@ export function DevicesPanel() {
         boardChoice: null,
         manifest: null,
         manifestError: null,
-        manifestLoading: needsCdc,
+        manifestLoading: knownBoard,
         cdc: false,
       });
-      if (needsCdc) {
+      if (knownBoard) {
         const spec = PRODUCTS[usb.kind === "c6" ? "simple" : "round"];
         const mgen = ++manifestGen.current;
         void loadManifestFor(spec, mgen);
+      }
+      if (probe) {
         setStatus("Reading the device…");
         const session = new BytePort(port, appendUsbLog);
         sessionRef.current = session;
@@ -289,6 +294,11 @@ export function DevicesPanel() {
             await session.close();
           } catch {
             /* open failed before streams were usable */
+          }
+          if (usb.kind === "bootloader") {
+            setError(errorMessage(err));
+            if (gen === detectGen.current) setStatus(null);
+            return;
           }
           throw err;
         }
@@ -303,6 +313,7 @@ export function DevicesPanel() {
         if (gen !== detectGen.current) return;
         const looked = await readConsole(huesta);
         if (gen !== detectGen.current) return;
+        const chip = learnedChip(improv, huesta);
         setDetected((prev) =>
           prev
             ? {
@@ -312,9 +323,16 @@ export function DevicesPanel() {
                 consoleRecord: looked.record,
                 consoleError: looked.error,
                 cdc: true,
+                manifestLoading:
+                  usb.kind === "bootloader" && chip ? true : prev.manifestLoading,
               }
             : prev,
         );
+        if (usb.kind === "bootloader" && chip) {
+          const spec = PRODUCTS[chip === "c6" ? "simple" : "round"];
+          const mgen = ++manifestGen.current;
+          void loadManifestFor(spec, mgen);
+        }
       }
       if (gen === detectGen.current) setStatus(null);
     } catch (err) {
@@ -600,7 +618,12 @@ export function DevicesPanel() {
   }
 
   const productId = detected
-    ? flashProductFor(detected.usb.kind, detected.boardChoice)
+    ? flashProductFor({
+        usbKind: detected.usb.kind,
+        boardChoice: detected.boardChoice,
+        improv: detected.improv,
+        huesta: detected.huesta,
+      })
     : null;
   const product = productId ? PRODUCTS[productId] : null;
   const actions = detected
@@ -674,7 +697,10 @@ export function DevicesPanel() {
             <section className="flex flex-col gap-2 rounded-xl border border-line bg-cream p-4">
               <h2 className="text-sm font-medium">USB</h2>
               <p className="font-mono text-sm">{detected.usb.idText}</p>
-              <p className="font-medium">{detected.usb.title}</p>
+              <p className="font-medium">
+                {sketchTitle(learnedChip(detected.improv, detected.huesta)) ??
+                  detected.usb.title}
+              </p>
               {detected.improv ? (
                 <p className="text-sm">
                   {detected.improv.name || "Firmware"}
@@ -772,7 +798,9 @@ export function DevicesPanel() {
           !actions.askBoard &&
           !actions.cross &&
           !actions.showSaved &&
-          (detected.usb.kind === "c6" || detected.usb.kind === "s3") ? (
+          (detected.usb.kind === "c6" ||
+            detected.usb.kind === "s3" ||
+            detected.cdc) ? (
             <p className="text-sm text-muted">
               {detected.cdc
                 ? "No stored card. Wi-Fi and Install still work."

@@ -32,10 +32,10 @@ Chrome solo entrega `vendorId` y `productId` (`SerialPort.getInfo()`). No hay no
 | Seeed `2886:0056` | XIAO ESP32-S3 |
 | Seeed `2886:0063` | XIAO ESP32-S3 Plus — no soportado |
 | Seeed `2886:0067` | XIAO ESP32-C5 — no soportado |
-| Espressif `303A:1001` | Bootloader ROM. **No** se sabe si es C6 o S3 (el PID es el mismo en esos chips) |
+| Espressif `303A:1001` | USB Serial/JTAG. Lo usa el bootloader ROM **y** el sketch de producto (C6, y Round con Hardware CDC). El PID no distingue C6 de S3 |
 | Otra cosa | No es un XIAO nuestro |
 
-En bootloader la UI **pregunta** qué placa es (C6 o S3). En cualquier otro caso no pregunta: el PID manda. Al flashear, el chip que lee el grabador manda sobre esa respuesta: si no coincide, no se escribe.
+Seeed `2886:0048` / `2886:0056` mandan cuando aparecen. En `303A:1001` Detect abre el puerto y prueba Improv y `HUEGET`. Si el sketch dice el chip, esa es la placa y no se pregunta. Si no contesta, es bootloader: la UI pregunta C6 o S3. Al flashear, el chip que lee el grabador manda sobre esa respuesta: si no coincide, no se escribe.
 
 ### Firmware (solo si el sketch contesta)
 
