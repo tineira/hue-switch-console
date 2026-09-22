@@ -46,32 +46,58 @@ async function hardReset(
   }
 }
 
-/** Connect, read the ROM chip name, and reset back to the sketch. */
-export async function readChipName(port: SerialPort): Promise<string> {
-  const { ESPLoader, Transport } = await import("esptool-js");
-  const transport = new Transport(port, false);
-  const esploader = new ESPLoader({
-    transport,
-    baudrate: 115200,
-    enableTracing: false,
-    terminal: {
-      clean() {},
-      writeLine() {},
-      write() {},
-    },
+async function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(label)), ms);
   });
   try {
-    await esploader.main();
-    await esploader.flashId();
-    return String(esploader.chip?.CHIP_NAME ?? "");
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : "unknown";
-    throw new Error(
-      `Failed to initialize. Hold BOOT if this is the first flash. (${detail})`,
-    );
+    return await Promise.race([work, timeout]);
   } finally {
-    await hardReset(transport, esploader);
+    if (timer) clearTimeout(timer);
   }
+}
+
+/**
+ * Connect and read the ROM chip name, then reset back to the sketch.
+ * Unknown USB ids skip the classic reset. C6 and S3 on USB Serial/JTAG need
+ * the JTAG sequence. A board already held in the bootloader is tried next.
+ */
+export async function readChipName(port: SerialPort): Promise<string> {
+  const modes = ["usb_reset", "no_reset", "default_reset"] as const;
+  let last = "the chip did not answer";
+  for (const mode of modes) {
+    const { ESPLoader, Transport } = await import("esptool-js");
+    const transport = new Transport(port, false);
+    const esploader = new ESPLoader({
+      transport,
+      baudrate: 115200,
+      enableTracing: false,
+      terminal: {
+        clean() {},
+        writeLine() {},
+        write() {},
+      },
+    });
+    try {
+      const name = await withTimeout(
+        (async () => {
+          await esploader.connect(mode, 3);
+          return String(esploader.chip?.CHIP_NAME ?? "");
+        })(),
+        12000,
+        "Chip detection timed out",
+      );
+      if (name) return name;
+    } catch (err) {
+      last = err instanceof Error ? err.message : last;
+    } finally {
+      await withTimeout(hardReset(transport, esploader), 3000, "reset timed out").catch(
+        () => undefined,
+      );
+    }
+  }
+  throw new Error(`Failed to initialize. ${last}`);
 }
 
 export async function flashProduct(options: {
