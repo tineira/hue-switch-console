@@ -1,6 +1,6 @@
 {
   "name": "Hue Simple switch",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "new_install_prompt_erase": false,
   "builds": [
     {
