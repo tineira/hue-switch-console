@@ -399,10 +399,22 @@ export function DevicesPanel() {
       setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
       const port = portRef.current;
       if (!port) throw new Error("Detect the device again.");
+      if (detected.usb.kind === "other") {
+        const board = product.board;
+        const ok = window.confirm(
+          `This writes the ${board} firmware. This port did not identify the chip. If this board is not a ${board}, it can fail to start.`,
+        );
+        if (!ok) {
+          setPanel("none");
+          setStatus(null);
+          return;
+        }
+      }
       await flashProduct({
         port,
         product,
         status: manifest,
+        unidentified: detected.usb.kind === "other",
         onProgress: ({ message, percent: next }) => {
           setStatus(message);
           setPercent(next);
@@ -822,7 +834,7 @@ export function DevicesPanel() {
               <p className="text-sm text-muted">
                 {detected.usb.kind === "bootloader"
                   ? "Bootloader. This USB id does not say C6 or S3. Choose the board, then install its firmware. The chip read while flashing still has to match, or the write is aborted."
-                  : "This port did not identify the board. Choose C6 or S3, then install. The chip read while flashing still has to match, or the write is aborted."}
+                  : "This port did not identify the board. Choose C6 or S3, then install. Install writes that firmware even if the chip does not answer. If the chip does answer and it is the other one, the write is aborted."}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {([
