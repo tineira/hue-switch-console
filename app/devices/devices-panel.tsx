@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { firmwareChangelogHref } from "@/lib/changelog-href";
+import { formatMac } from "@/lib/mac";
 import { webSerialBlockedReason } from "@/lib/web-setup/browser";
 import {
   classifyImprov,
@@ -701,6 +702,11 @@ export function DevicesPanel() {
                 {sketchTitle(learnedChip(detected.improv, detected.huesta)) ??
                   detected.usb.title}
               </p>
+              {detected.huesta?.mac ? (
+                <dl>
+                  <Field label="MAC" value={formatMac(detected.huesta.mac)} mono />
+                </dl>
+              ) : null}
               {detected.improv ? (
                 <p className="text-sm">
                   {detected.improv.name || "Firmware"}
