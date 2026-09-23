@@ -723,7 +723,9 @@ export function DevicesPanel() {
     try {
       const ack = await huePair(session, appendUsbLog);
       if (ack === "no-wifi") {
-        setError("The board is not on Wi-Fi.");
+        setError(
+          "The board is not on Wi-Fi yet. It can take a few seconds after Detect. Wait a moment and try again.",
+        );
         setStatus(null);
         return;
       }

@@ -359,15 +359,16 @@ export function decideActions(input: {
     return { ...NO_ACTIONS, flash: "install", wifi: true };
   }
 
-  const wifiUp = huesta.wifi === "up";
+  // Wi-Fi is read live and is often still joining right after Detect, so it does not
+  // gate buttons. HUEPAIR checks Wi-Fi itself and answers no-wifi; HUESET does not need it.
   return {
     unsupported: false,
     cross: false,
     askBoard: false,
     flash: flashForVersion(huesta.ver, input.manifestVersion),
     wifi: true,
-    token: wifiUp,
-    pair: wifiUp,
+    token: true,
+    pair: huesta.ssid.length > 0,
     clear: true,
     showSaved: true,
   };
