@@ -10,9 +10,18 @@ Docs-only commits, scratch notes, and ignore-file chores are left out.
 
 The web app has no user-facing version. Each heading is the day the change landed.
 
+### 2026-09-23
+
+- How-to explains the Simple switch orange LED.
+- Install asks you to hold BOOT. It does not toggle the USB reset lines that hang on Windows. If the chip does not name itself, the write is aborted.
+
 ### 2026-09-22
 
 - Devices is the USB screen, and /install redirects there. One page detects the XIAO, flashes firmware, writes Wi-Fi, and stores the device token.
+- An unidentified port says the board was not identified. Choose C6 or S3 before Install.
+- Detect does not read the chip with esptool, so Chrome is not killed.
+- 303A:1001 is a running sketch when the board answers HUEGET.
+- The Devices card shows the board MAC.
 
 ### 2026-09-21
 
@@ -38,6 +47,24 @@ The web app has no user-facing version. Each heading is the day the change lande
 ## Round
 
 Headings are FIRMWARE_VERSION on main for the Round Display (XIAO ESP32-S3). 0.4.1 was never tagged. The 0.5.7 commit moved the macro from 0.5.0 to 0.5.7, so 0.5.1 through 0.5.6 were never tagged. 0.5.14 was a web-setup branch build, also copied into an installer image here. On main the macro went from 0.5.13 to 0.5.15, then to 0.5.16.
+
+<!-- ced21c6 -->
+
+### 0.5.25 — 2026-09-23
+
+- The disc stays on Token rejected after the console returns 401, and on No Bridge when the Hue key is refused.
+
+<!-- e4e9ed0 -->
+
+### 0.5.24 — 2026-09-22
+
+- A new Hue key is kept if the first check after pairing fails.
+
+<!-- 8ea396f -->
+
+### 0.5.23 — 2026-09-22
+
+- Only an hsw_ key counts as a console token.
 
 <!-- a8739e5 -->
 
@@ -169,6 +196,18 @@ Headings are FIRMWARE_VERSION on main for the Round Display (XIAO ESP32-S3). 0.4
 ## Simple
 
 Headings are FIRMWARE_VERSION on main for the Simple switch (XIAO ESP32-C6). The first numbered build is 0.1.1.
+
+<!-- 45421a8 -->
+
+### 0.2.10 — 2026-09-22
+
+- The orange LED stays on the new Hue key step if the first check after pairing fails.
+
+<!-- d8ea208 -->
+
+### 0.2.9 — 2026-09-22
+
+- Only an hsw_ key counts as a console token.
 
 <!-- b4412cc -->
 
