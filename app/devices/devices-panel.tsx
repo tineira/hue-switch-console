@@ -826,6 +826,8 @@ export function DevicesPanel() {
       : null;
   const flashBusy = busy && panel === "flash";
   const reading = busy && status === READING;
+  // Hide the last result while a new port is being chosen or read.
+  const choosing = busy && status === PICK_PORT;
   const flashText =
     actions?.flash === "update"
       ? "Update"
@@ -893,7 +895,7 @@ export function DevicesPanel() {
         </section>
       ) : null}
 
-      {detected && actions && !reading ? (
+      {detected && actions && !reading && !choosing ? (
         <>
           {actions.showSaved && detected.huesta && !actions.cross ? (
             <SetupChecklist
