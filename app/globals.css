@@ -441,3 +441,70 @@ option {
   background: var(--t-ink);
   box-shadow: none;
 }
+
+/* Simple switch status LED on /how-to. Timings mirror led.h in hue-simple-switch:
+   pulse 100 ms, gap 200 ms, burst pause 1400 ms, fast 250/250 ms, heartbeat 80/2920 ms. */
+.led {
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #3a2410;
+  box-shadow: inset 0 0 0 1px rgb(255 140 40 / 25%);
+}
+.led::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #ff8a1f;
+  box-shadow: 0 0 8px 2px rgb(255 138 31 / 70%);
+  opacity: 0;
+  animation-timing-function: step-end;
+  animation-iteration-count: infinite;
+}
+.led-solid::after { opacity: 1; }
+.led-fast::after { animation-name: led-fast; animation-duration: 500ms; }
+.led-burst-2::after { animation-name: led-burst-2; animation-duration: 1800ms; }
+.led-burst-3::after { animation-name: led-burst-3; animation-duration: 2100ms; }
+.led-burst-4::after { animation-name: led-burst-4; animation-duration: 2400ms; }
+.led-heart::after { animation-name: led-heart; animation-duration: 3000ms; }
+
+@keyframes led-fast {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes led-burst-2 {
+  0% { opacity: 1; }
+  5.556% { opacity: 0; }
+  16.667% { opacity: 1; }
+  22.222% { opacity: 0; }
+}
+@keyframes led-burst-3 {
+  0% { opacity: 1; }
+  4.762% { opacity: 0; }
+  14.286% { opacity: 1; }
+  19.048% { opacity: 0; }
+  28.571% { opacity: 1; }
+  33.333% { opacity: 0; }
+}
+@keyframes led-burst-4 {
+  0% { opacity: 1; }
+  4.167% { opacity: 0; }
+  12.5% { opacity: 1; }
+  16.667% { opacity: 0; }
+  25% { opacity: 1; }
+  29.167% { opacity: 0; }
+  37.5% { opacity: 1; }
+  41.667% { opacity: 0; }
+}
+@keyframes led-heart {
+  0% { opacity: 1; }
+  2.667% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led::after { animation: none; }
+  .led:not(.led-solid)::after { opacity: 0.5; }
+}
