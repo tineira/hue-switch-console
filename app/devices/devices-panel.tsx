@@ -225,6 +225,8 @@ function ActionRow({
   );
 }
 
+const CONSOLE_QUIET_MIN = 90;
+
 type CheckState = "done" | "warn" | "error" | "todo";
 
 type CheckRow = { label: string; state: CheckState; text: string };
@@ -243,14 +245,18 @@ function SetupChecklist({
   huesta,
   productId,
   manifestVersion,
+  manifestLoading,
   versionCmp,
   lastSeenAt,
+  consoleLookup,
 }: {
   huesta: Huesta;
   productId: ProductId | null;
   manifestVersion: string | null;
+  manifestLoading: boolean;
   versionCmp: -1 | 0 | 1 | null;
   lastSeenAt: string | null;
+  consoleLookup: "found" | "missing" | "error";
 }) {
   const seenMin = minutesSince(lastSeenAt);
   const seenRecently = seenMin !== null && seenMin <= 15;
@@ -264,16 +270,33 @@ function SetupChecklist({
         : "error";
   const linked = huesta.token && huesta.url.length > 0;
   const firmwareOld = versionCmp === -1;
+  const ver = huesta.ver || "Unknown version";
+  const firmwareState: CheckState = manifestLoading
+    ? "todo"
+    : versionCmp === 0 || versionCmp === 1
+      ? "done"
+      : "warn";
+  // Boards check in at start-up and then about once an hour, so allow a margin.
+  const consoleQuiet = seenMin === null || seenMin > CONSOLE_QUIET_MIN;
+  const consoleState: CheckState = !linked
+    ? "todo"
+    : consoleLookup === "found" && !consoleQuiet
+      ? "done"
+      : "warn";
 
   const rows: CheckRow[] = [
     {
       label: "Firmware",
-      state: firmwareOld ? "todo" : "done",
-      text: firmwareOld
-        ? `${huesta.ver} · ${manifestVersion} is available`
-        : versionCmp === 0
-          ? `${huesta.ver} (latest)`
-          : huesta.ver || "Unknown version",
+      state: firmwareState,
+      text: manifestLoading
+        ? `${ver} · checking for updates…`
+        : versionCmp === -1
+          ? `${ver} · ${manifestVersion} is available`
+          : versionCmp === 0
+            ? `${ver} (latest)`
+            : versionCmp === 1
+              ? `${ver} (newer than the latest release)`
+              : `${ver} · can't check for updates`,
     },
     {
       label: "Wi-Fi",
@@ -289,8 +312,16 @@ function SetupChecklist({
     },
     {
       label: "Console",
-      state: linked ? "done" : "todo",
-      text: linked ? "Linked" : "Not linked",
+      state: consoleState,
+      text: !linked
+        ? "Not linked"
+        : consoleLookup === "error"
+          ? "Key saved · couldn't check when the console last heard from it"
+          : consoleLookup === "missing" || seenMin === null
+            ? "Key saved · the console has no record of this board yet"
+            : consoleQuiet
+              ? `Key saved · the console last heard from it ${agoText(seenMin)}`
+              : `Linked · last heard from it ${agoText(seenMin)}`,
     },
     {
       label: "Hue Bridge",
@@ -299,9 +330,7 @@ function SetupChecklist({
     },
   ];
 
-  const next = firmwareOld
-    ? "Update the firmware with Update below."
-    : !wifiSaved
+  const next = !wifiSaved
       ? "Save a Wi-Fi network with Set up Wi-Fi below."
       : wifiState === "error"
         ? "Detect again in a few seconds. If Wi-Fi is still not connected, check the network name and password with Change Wi-Fi below."
@@ -311,11 +340,16 @@ function SetupChecklist({
             ? "Pair with the Hue Bridge: press the button on the Bridge when the board asks, or use Pair with Bridge below."
             : wifiState === "warn"
               ? "Wi-Fi should come back in a few seconds. Detect again to confirm."
-              : null;
+              : consoleState === "warn" && consoleLookup !== "error"
+                ? "If the console still hasn't heard from it after a few minutes on Wi-Fi, its key may have been revoked. Use Replace console key below."
+                : firmwareOld
+                  ? `Update to ${manifestVersion} with Update below when convenient. Settings stay.`
+                  : null;
   const guide = productId === "round" ? "/how-to#round" : "/how-to#simple";
   const guideText = productId === "round" ? "What the screen shows" : "What the LED shows";
   const allDone = rows.every((row) => row.state === "done");
   const anyError = rows.some((row) => row.state === "error");
+  const setUp = rows.every((row) => row.state === "done" || row.state === "warn");
 
   return (
     <section
@@ -328,7 +362,7 @@ function SetupChecklist({
       }`}
     >
       <h2 className="text-sm font-medium">
-        {allDone ? "This board is set up" : anyError ? "Needs attention" : "Setup"}
+        {anyError ? "Needs attention" : setUp ? "This board is set up" : "Setup"}
       </h2>
       <ul className="flex flex-col gap-2 text-sm">
         {rows.map((row) => {
@@ -932,8 +966,12 @@ export function DevicesPanel() {
               huesta={detected.huesta}
               productId={productId}
               manifestVersion={detected.manifest?.version ?? null}
+              manifestLoading={detected.manifestLoading}
               versionCmp={versionCmp}
               lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
+              consoleLookup={
+                detected.consoleRecord ? "found" : detected.consoleError ? "error" : "missing"
+              }
             />
           ) : null}
 
