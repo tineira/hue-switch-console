@@ -225,10 +225,20 @@ function ActionRow({
   );
 }
 
-type CheckRow = { label: string; done: boolean; text: string };
+type CheckState = "done" | "warn" | "error" | "todo";
+
+type CheckRow = { label: string; state: CheckState; text: string };
+
+const CHECK_ICON: Record<CheckState, { mark: string; className: string; sr: string }> = {
+  done: { mark: "✓", className: "bg-ok text-background", sr: "done" },
+  warn: { mark: "!", className: "bg-warn text-background", sr: "warning" },
+  error: { mark: "✕", className: "bg-danger text-background", sr: "problem" },
+  todo: { mark: "", className: "border border-line text-muted", sr: "to do" },
+};
 
 // Setup summary from HUESTA. Wi-Fi is the one live field: it is read at Detect time,
-// and a board that just restarted can still be joining.
+// and a board that just restarted can still be joining. If the console heard from the
+// board recently it is most likely reconnecting (warn); otherwise it is offline (error).
 function SetupChecklist({
   huesta,
   productId,
@@ -245,13 +255,20 @@ function SetupChecklist({
   const seenMin = minutesSince(lastSeenAt);
   const seenRecently = seenMin !== null && seenMin <= 15;
   const wifiSaved = huesta.ssid.length > 0;
+  const wifiState: CheckState = !wifiSaved
+    ? "todo"
+    : huesta.wifi === "up"
+      ? "done"
+      : seenRecently
+        ? "warn"
+        : "error";
   const linked = huesta.token && huesta.url.length > 0;
   const firmwareOld = versionCmp === -1;
 
   const rows: CheckRow[] = [
     {
       label: "Firmware",
-      done: !firmwareOld,
+      state: firmwareOld ? "todo" : "done",
       text: firmwareOld
         ? `${huesta.ver} · ${manifestVersion} is available`
         : versionCmp === 0
@@ -260,67 +277,78 @@ function SetupChecklist({
     },
     {
       label: "Wi-Fi",
-      done: wifiSaved && (huesta.wifi === "up" || seenRecently),
-      text: !wifiSaved
-        ? "No network saved"
-        : huesta.wifi === "up"
-          ? `${huesta.ssid} · connected${huesta.ip ? ` (${huesta.ip})` : ""}`
-          : seenRecently
-            ? `${huesta.ssid} · not connected when read, but the console heard from it ${agoText(seenMin ?? 0)}. A board that just restarted takes a few seconds to join.`
-            : `${huesta.ssid} · not connected when read. A board that just restarted takes a few seconds to join, so Detect again to check.`,
+      state: wifiState,
+      text:
+        wifiState === "todo"
+          ? "No network saved"
+          : wifiState === "done"
+            ? `${huesta.ssid} · connected${huesta.ip ? ` (${huesta.ip})` : ""}`
+            : wifiState === "warn"
+              ? `${huesta.ssid} · reconnecting. It was not connected when read, but the console heard from it ${agoText(seenMin ?? 0)}.`
+              : `${huesta.ssid} · not connected${seenMin !== null ? `, and the console last heard from it ${agoText(seenMin)}` : ""}.`,
     },
     {
       label: "Console",
-      done: linked,
+      state: linked ? "done" : "todo",
       text: linked ? "Linked" : "Not linked",
     },
     {
       label: "Hue Bridge",
-      done: huesta.key,
+      state: huesta.key ? "done" : "todo",
       text: huesta.key ? (huesta.bid ? `Paired with ${huesta.bid}` : "Paired") : "Not paired",
     },
   ];
 
   const next = firmwareOld
-    ? "Update the firmware with the Update button below."
+    ? "Update the firmware with Update below."
     : !wifiSaved
-      ? "Save a Wi-Fi network with the Wi-Fi button below."
-      : !linked
-        ? "Link the board to the console with the Token button below."
-        : !huesta.key
-          ? "Pair with the Hue Bridge: press the button on the Bridge when the board asks, or use Pair below."
-          : null;
+      ? "Save a Wi-Fi network with Set up Wi-Fi below."
+      : wifiState === "error"
+        ? "Detect again in a few seconds. If Wi-Fi is still not connected, check the network name and password with Change Wi-Fi below."
+        : !linked
+          ? "Link the board to the console with Link to console below."
+          : !huesta.key
+            ? "Pair with the Hue Bridge: press the button on the Bridge when the board asks, or use Pair with Bridge below."
+            : wifiState === "warn"
+              ? "Wi-Fi should come back in a few seconds. Detect again to confirm."
+              : null;
   const guide = productId === "round" ? "/how-to#round" : "/how-to#simple";
   const guideText = productId === "round" ? "What the screen shows" : "What the LED shows";
-  const allDone = rows.every((row) => row.done);
+  const allDone = rows.every((row) => row.state === "done");
+  const anyError = rows.some((row) => row.state === "error");
 
   return (
     <section
       className={`flex flex-col gap-3 rounded-xl border p-4 ${
-        allDone ? "border-ok/40 bg-ok-soft" : "border-line bg-cream"
+        allDone
+          ? "border-ok/40 bg-ok-soft"
+          : anyError
+            ? "border-danger/40 bg-cream"
+            : "border-line bg-cream"
       }`}
     >
       <h2 className="text-sm font-medium">
-        {allDone ? "This board is set up" : "Setup"}
+        {allDone ? "This board is set up" : anyError ? "Needs attention" : "Setup"}
       </h2>
       <ul className="flex flex-col gap-2 text-sm">
-        {rows.map((row) => (
-          <li key={row.label} className="flex gap-2">
-            <span
-              aria-hidden="true"
-              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                row.done ? "bg-ok text-background" : "border border-line text-muted"
-              }`}
-            >
-              {row.done ? "✓" : ""}
-            </span>
-            <span className="min-w-0">
-              <span className="font-medium">{row.label}</span>
-              <span className="sr-only">{row.done ? " (done)" : " (to do)"}</span>
-              <span className="text-muted"> · {row.text}</span>
-            </span>
-          </li>
-        ))}
+        {rows.map((row) => {
+          const icon = CHECK_ICON[row.state];
+          return (
+            <li key={row.label} className="flex gap-2">
+              <span
+                aria-hidden="true"
+                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${icon.className}`}
+              >
+                {icon.mark}
+              </span>
+              <span className="min-w-0">
+                <span className="font-medium">{row.label}</span>
+                <span className="sr-only"> ({icon.sr})</span>
+                <span className="text-muted"> · {row.text}</span>
+              </span>
+            </li>
+          );
+        })}
       </ul>
       <p className="text-sm text-muted">
         {next ? (
