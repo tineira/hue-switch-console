@@ -48,6 +48,7 @@ import type {
   TopologySnapshot,
 } from "@/lib/types";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export type WorkspaceSwitch = SwitchPublic & {
@@ -151,7 +152,7 @@ function firstOpenSlot(
 
 function assignHint(slot: SlotRef | null, channel: Channel | undefined): string {
   if (!slot || !channel) {
-    return "Select a slot on the left, then click a room, light, or scene.";
+    return "Select a slot, then click a room, light, or scene.";
   }
   if (slot.event === "double_click") {
     return `Assigning ${channel.label} · Double-click — a scene is typical. A room or light also works.`;
@@ -392,7 +393,7 @@ export function BridgeWorkspace({
   function assignTarget(target: RecipeTarget) {
     setError(null);
     if (!selected) {
-      setNotice("Select a switch on the left first.");
+      setNotice("Select a switch above first.");
       return;
     }
     if (round) {
@@ -468,7 +469,7 @@ export function BridgeWorkspace({
   function assignRoomOnOff(groupedLightId: string, roomName: string) {
     setError(null);
     if (!selected) {
-      setNotice("Select a switch on the left first.");
+      setNotice("Select a switch above first.");
       return;
     }
     if (round) {
@@ -664,6 +665,42 @@ export function BridgeWorkspace({
       : []
     : grouped.rooms;
 
+  function itemDirty(item: WorkspaceSwitch): boolean {
+    if (isRoundItem(item)) {
+      const draft = roundDrafts[item.mac];
+      const base = roundSaved[item.mac];
+      return Boolean(
+        draft &&
+          base &&
+          (draft.pageSwipeAxis !== base.pageSwipeAxis ||
+            draft.screenTimeoutSec !== base.screenTimeoutSec ||
+            !pagesEqual(draft.pages, base.pages) ||
+            !roundRecipesEqual(draft.recipes, base.recipes)),
+      );
+    }
+    return !recipesEqual(drafts[item.mac] ?? [], saved[item.mac] ?? []);
+  }
+
+  function selectBoard(item: WorkspaceSwitch) {
+    if (item.mac === selectedMac) return;
+    setSelectedMac(item.mac);
+    setEditingMac(null);
+    if (isRoundItem(item)) {
+      const draft = roundDrafts[item.mac] ?? roundDraftOf(item);
+      setSelectedSlot(null);
+      setPageSlot(firstOpenPageSlot(draft.pages, draft.recipes));
+    } else {
+      setPageSlot(null);
+      setSelectedSlot(firstOpenSlot(item, drafts[item.mac] ?? item.recipes));
+    }
+    setNotice(null);
+    setError(null);
+  }
+
+  function boardName(item: WorkspaceSwitch): string {
+    return (names[item.mac] || "").trim() || formatMac(item.mac);
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <section className="flex flex-col gap-1">
@@ -687,257 +724,228 @@ export function BridgeWorkspace({
         </p>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)]">
-        <section className="flex flex-col gap-3">
-          <header className="flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-medium uppercase tracking-[0.12em] text-muted">
-              {round ? "Switches and pages" : "Switches and channels"}
-            </h2>
-            <span className="text-xs text-muted">
-              {switches.length === 0
-                ? "None"
-                : `${switches.length} board${switches.length === 1 ? "" : "s"}`}
-            </span>
-          </header>
-
-          {switches.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
-              <p className="font-medium text-foreground">No switches on this Bridge</p>
-              <p className="mt-2">
-                After Wi-Fi and Hue pairing, the XIAO POSTs{" "}
-                <code className="font-mono text-xs">/api/device/register</code>{" "}
-                with its MAC, channels, and a topology snapshot. Topology on
-                the right can still arrive from{" "}
-                <code className="font-mono text-xs">push-from-bridge</code>.
-              </p>
-            </div>
-          ) : (
-            switches.map((item) => {
-              const active = item.mac === selectedMac;
-              const itemRound = isRoundItem(item);
-              const itemRecipes = drafts[item.mac] ?? [];
-              const itemRoundDraft = roundDrafts[item.mac];
-              const itemRoundSaved = roundSaved[item.mac];
-              const itemDirty = itemRound
-                ? Boolean(
-                    itemRoundDraft &&
-                      itemRoundSaved &&
-                      (itemRoundDraft.pageSwipeAxis !==
-                        itemRoundSaved.pageSwipeAxis ||
-                        itemRoundDraft.screenTimeoutSec !==
-                          itemRoundSaved.screenTimeoutSec ||
-                        !pagesEqual(itemRoundDraft.pages, itemRoundSaved.pages) ||
-                        !roundRecipesEqual(
-                          itemRoundDraft.recipes,
-                          itemRoundSaved.recipes,
-                        )),
-                  )
-                : !recipesEqual(itemRecipes, saved[item.mac] ?? []);
-              return (
-                <article
-                  key={item.mac}
-                  className={`rounded-xl border bg-cream ${
-                    active
-                      ? "border-filament/50 shadow-[0_0_0_1px_var(--filament)]"
-                      : "border-line"
-                  }`}
-                >
-                  <div className="flex items-start gap-1 px-3 py-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (item.mac === selectedMac) return;
-                        setSelectedMac(item.mac);
-                        if (isRoundItem(item)) {
-                          const draft =
-                            roundDrafts[item.mac] ?? roundDraftOf(item);
-                          setSelectedSlot(null);
-                          setPageSlot(
-                            firstOpenPageSlot(draft.pages, draft.recipes),
-                          );
-                        } else {
-                          setPageSlot(null);
-                          setSelectedSlot(
-                            firstOpenSlot(item, drafts[item.mac] ?? item.recipes),
-                          );
-                        }
-                        setNotice(null);
-                        setError(null);
-                      }}
-                      className="flex min-w-0 flex-1 flex-col gap-1 px-1 text-left"
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="truncate font-medium">
-                          {(names[item.mac] || "").trim() || formatMac(item.mac)}
-                        </span>
-                        {itemDirty ? (
-                          <span className="shrink-0 rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
-                            Unsaved
-                          </span>
-                        ) : savedAt === item.mac ? (
-                          <span className="shrink-0 rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
-                            Saved
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="text-xs text-muted">
-                        {formatMac(item.mac)}
-                        {item.firmware ? ` · fw ${item.firmware}` : ""}
-                        {itemRound ? " · round" : ""}
-                        {` · rev ${revs[item.mac] ?? item.rev}`}
-                        {item.last_seen_at
-                          ? ` · seen ${formatWhen(item.last_seen_at)}`
-                          : " · never seen"}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="mt-0.5 shrink-0 rounded-md p-1.5 text-muted hover:bg-filament-soft hover:text-filament"
-                      aria-label={`Rename ${formatMac(item.mac)}`}
-                      onClick={() => setEditingMac(item.mac)}
-                    >
-                      <PencilIcon />
-                    </button>
-                  </div>
-                  {editingMac === item.mac ? (
-                    <SwitchRenameForm
-                      mac={item.mac}
-                      initial={(names[item.mac] || "").trim()}
-                      onCancel={() => setEditingMac(null)}
-                      onSaved={(label) => {
-                        setNames((current) => ({ ...current, [item.mac]: label }));
-                        setEditingMac(null);
-                      }}
-                      onError={setError}
+      {switches.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
+          <p className="font-medium text-foreground">No switches on this Bridge</p>
+          <p className="mt-2">
+            Set up a board on{" "}
+            <Link href="/devices" className="text-filament underline underline-offset-2">
+              Devices
+            </Link>
+            . It shows up here once it pairs with this Bridge.
+          </p>
+        </div>
+      ) : (
+        <nav aria-label="Switches" className="flex flex-wrap gap-2">
+          {switches.map((item) => {
+            const active = item.mac === selectedMac;
+            const dirtyItem = itemDirty(item);
+            return (
+              <button
+                key={item.mac}
+                type="button"
+                aria-current={active ? "true" : undefined}
+                onClick={() => selectBoard(item)}
+                className={`flex min-w-0 max-w-full flex-col items-start gap-0.5 rounded-xl border px-3.5 py-2 text-left ${
+                  active
+                    ? "border-filament/60 bg-filament-soft shadow-[0_0_0_1px_var(--filament)]"
+                    : "border-line bg-cream hover:border-filament/40"
+                }`}
+              >
+                <span className="flex max-w-full items-center gap-2">
+                  <span className="truncate text-sm font-medium">{boardName(item)}</span>
+                  {dirtyItem ? (
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full bg-filament"
+                      aria-label="Unsaved changes"
+                      title="Unsaved changes"
                     />
                   ) : null}
+                </span>
+                <span className="text-xs text-muted">
+                  {isRoundItem(item) ? "Round" : "Simple"}
+                  {item.last_seen_at
+                    ? ` · seen ${formatWhen(item.last_seen_at)}`
+                    : " · never seen"}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
-                  {active && itemRound && itemRoundDraft ? (
-                    <RoundPagesEditor
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start">
+        {selected ? (
+          <section
+            aria-label={`${boardName(selected)} settings`}
+            className="rounded-xl border border-line bg-cream"
+          >
+            <header className="flex items-start gap-2 px-4 py-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <h2 className="flex flex-wrap items-center gap-2 text-base font-medium">
+                  <span className="truncate">{boardName(selected)}</span>
+                  <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
+                    {round ? "Round" : "Simple"}
+                  </span>
+                  {dirty ? (
+                    <span className="rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
+                      Unsaved
+                    </span>
+                  ) : savedAt === selected.mac ? (
+                    <span className="rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
+                      Saved
+                    </span>
+                  ) : null}
+                </h2>
+                <p className="text-xs text-muted">
+                  <span className="font-mono">{formatMac(selected.mac)}</span>
+                  {selected.firmware ? ` · firmware ${selected.firmware}` : ""}
+                  {` · rev ${revs[selected.mac] ?? selected.rev}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="mt-0.5 shrink-0 rounded-md p-1.5 text-muted hover:bg-filament-soft hover:text-filament"
+                aria-label={`Rename ${boardName(selected)}`}
+                onClick={() => setEditingMac(selected.mac)}
+              >
+                <PencilIcon />
+              </button>
+            </header>
+            {editingMac === selected.mac ? (
+              <SwitchRenameForm
+                key={selected.mac}
+                mac={selected.mac}
+                initial={(names[selected.mac] || "").trim()}
+                onCancel={() => setEditingMac(null)}
+                onSaved={(label) => {
+                  setNames((current) => ({ ...current, [selected.mac]: label }));
+                  setEditingMac(null);
+                }}
+                onError={setError}
+              />
+            ) : null}
+
+            {round && roundDraft ? (
+              <RoundPagesEditor
+                snapshot={snapshot}
+                draft={roundDraft}
+                selectedSlot={pageSlot}
+                pending={pending}
+                dirty={dirty}
+                savedFlash={savedAt === selected.mac}
+                staleCount={staleCount}
+                onSelectSlot={setPageSlot}
+                onChange={(next) => setRoundDraft(selected.mac, next)}
+                onSave={save}
+                onDiscard={discard}
+                onClearStale={clearStale}
+              />
+            ) : null}
+
+            {!round ? (
+              <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
+                {(selected.channels ?? []).length === 0 ? (
+                  <p className="text-sm text-muted">
+                    This board registered without channels. Re-register
+                    from the firmware so BOOT / D0 / D1 / D2 appear.
+                  </p>
+                ) : (
+                  selected.channels.map((channel) => (
+                    <ChannelCard
+                      key={channel.id}
+                      channel={channel}
+                      recipes={recipes}
                       snapshot={snapshot}
-                      draft={itemRoundDraft}
-                      selectedSlot={pageSlot}
-                      pending={pending}
-                      dirty={itemDirty}
-                      savedFlash={savedAt === item.mac}
-                      staleCount={staleCount}
-                      onSelectSlot={setPageSlot}
-                      onChange={(next) => setRoundDraft(item.mac, next)}
-                      onSave={save}
-                      onDiscard={discard}
-                      onClearStale={clearStale}
+                      selectedSlot={selectedSlot}
+                      onSelectSlot={toggleSlot}
+                      onClearSlot={clearSlot}
+                      onChangeAction={changeAction}
                     />
-                  ) : null}
+                  ))
+                )}
 
-                  {active && !itemRound ? (
-                    <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
-                      {(item.channels ?? []).length === 0 ? (
-                        <p className="text-sm text-muted">
-                          This board registered without channels. Re-register
-                          from the firmware so BOOT / D0 / D1 / D2 appear.
+                {selected.channels.length > 0 ? (
+                  <div className="flex flex-col gap-2 rounded-lg bg-background/70 px-3 py-2">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+                      Confirmation
+                    </p>
+                    {recipes.length === 0 ? (
+                      <p className="text-sm text-muted">
+                        Nothing assigned yet. Empty slots are no-ops on
+                        the switch. Incomplete (on and off without
+                        double-click) is valid.
+                      </p>
+                    ) : null}
+                    <div className="flex flex-col gap-1 text-sm leading-relaxed">
+                      {selected.channels.map((channel) => (
+                        <p key={channel.id}>
+                          {confirmationForChannel(channel, recipes, snapshot)}
                         </p>
-                      ) : (
-                        item.channels.map((channel) => (
-                          <ChannelCard
-                            key={channel.id}
-                            channel={channel}
-                            recipes={itemRecipes}
-                            snapshot={snapshot}
-                            selectedSlot={selectedSlot}
-                            onSelectSlot={toggleSlot}
-                            onClearSlot={clearSlot}
-                            onChangeAction={changeAction}
-                          />
-                        ))
-                      )}
-
-                      {item.channels.length > 0 ? (
-                        <div className="flex flex-col gap-2 rounded-lg bg-background/70 px-3 py-2">
-                          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-                            Confirmation
-                          </p>
-                          {itemRecipes.length === 0 ? (
-                            <p className="text-sm text-muted">
-                              Nothing assigned yet. Empty slots are no-ops on
-                              the switch. Incomplete (on and off without
-                              double-click) is valid.
-                            </p>
-                          ) : null}
-                          <div className="flex flex-col gap-1 text-sm leading-relaxed">
-                            {item.channels.map((channel) => (
-                              <p key={channel.id}>
-                                {confirmationForChannel(
-                                  channel,
-                                  itemRecipes,
-                                  snapshot,
-                                )}
-                              </p>
-                            ))}
-                          </div>
-                          {staleCount > 0 ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-xs text-warn">
-                                {staleCount} assignment
-                                {staleCount === 1 ? " is" : "s are"} missing
-                                from this snapshot. Saving will be rejected
-                                until {staleCount === 1 ? "it is" : "they are"}{" "}
-                                cleared.
-                              </p>
-                              <button
-                                type="button"
-                                onClick={clearStale}
-                                className="text-xs font-medium text-warn hover:underline"
-                              >
-                                Clear stale
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      <div className="sticky bottom-3 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-cream/95 px-3 py-2 backdrop-blur">
-                        <button
-                          type="button"
-                          onClick={save}
-                          disabled={!dirty || pending}
-                          className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50"
-                        >
-                          {pending ? "Saving…" : "Save recipes"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={discard}
-                          disabled={!dirty || pending}
-                          className="rounded-md border border-line px-3 py-1.5 text-sm disabled:opacity-50"
-                        >
-                          Discard
-                        </button>
-                        {!dirty && savedAt === item.mac ? (
-                          <span className="text-xs text-ok">Saved</span>
-                        ) : null}
-                        {dirty ? (
-                          <span className="text-xs text-filament">
-                            Unsaved changes
-                          </span>
-                        ) : null}
-                        {!dirty && savedAt !== item.mac ? (
-                          <span className="text-xs text-muted">
-                            Empty slots stay empty.
-                          </span>
-                        ) : null}
-                      </div>
+                      ))}
                     </div>
-                  ) : null}
-                </article>
-              );
-            })
-          )}
-        </section>
+                    {staleCount > 0 ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs text-warn">
+                          {staleCount} assignment
+                          {staleCount === 1 ? " is" : "s are"} missing
+                          from this snapshot. Saving will be rejected
+                          until {staleCount === 1 ? "it is" : "they are"}{" "}
+                          cleared.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={clearStale}
+                          className="text-xs font-medium text-warn hover:underline"
+                        >
+                          Clear stale
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
 
-        <section className="flex flex-col gap-3">
+                <div className="sticky bottom-3 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-cream/95 px-3 py-2 backdrop-blur">
+                  <button
+                    type="button"
+                    onClick={save}
+                    disabled={!dirty || pending}
+                    className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50"
+                  >
+                    {pending ? "Saving…" : "Save recipes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={discard}
+                    disabled={!dirty || pending}
+                    className="rounded-md border border-line px-3 py-1.5 text-sm disabled:opacity-50"
+                  >
+                    Discard
+                  </button>
+                  {!dirty && savedAt === selected.mac ? (
+                    <span className="text-xs text-ok">Saved</span>
+                  ) : null}
+                  {dirty ? (
+                    <span className="text-xs text-filament">Unsaved changes</span>
+                  ) : null}
+                  {!dirty && savedAt !== selected.mac ? (
+                    <span className="text-xs text-muted">Empty slots stay empty.</span>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <div />
+        )}
+
+        <section
+          aria-label="Lights and scenes"
+          className="flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1"
+        >
           <header className="flex flex-col gap-1">
             <h2 className="text-sm font-medium uppercase tracking-[0.12em] text-muted">
-              Topology
+              Lights and scenes
             </h2>
             <p className="text-sm text-muted">
               {round
