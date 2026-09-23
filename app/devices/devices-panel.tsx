@@ -39,7 +39,13 @@ import {
   type ProductSpec,
 } from "@/lib/web-setup/products";
 import { BytePort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 const PAIR_CONFIRM =
   "This forgets the current Hue link and starts pairing again.";
@@ -238,26 +244,20 @@ const CHECK_ICON: Record<CheckState, { mark: string; className: string; sr: stri
   todo: { mark: "", className: "border border-line text-muted", sr: "to do" },
 };
 
-// Setup summary from HUESTA. Wi-Fi is the one live field: it is read at Detect time,
-// and a board that just restarted can still be joining. If the console heard from the
-// board recently it is most likely reconnecting (warn); otherwise it is offline (error).
-function SetupChecklist({
-  huesta,
-  productId,
-  manifestVersion,
-  manifestLoading,
-  versionCmp,
-  lastSeenAt,
-  consoleLookup,
-}: {
-  huesta: Huesta;
-  productId: ProductId | null;
-  manifestVersion: string | null;
-  manifestLoading: boolean;
-  versionCmp: -1 | 0 | 1 | null;
-  lastSeenAt: string | null;
-  consoleLookup: "found" | "missing" | "error";
-}) {
+type ConsoleLookup = "found" | "missing" | "error";
+
+// Automatic rereads after Detect, on the already-open port (reopening resets the Round).
+const RECHECK_TRIES = 3;
+const RECHECK_SECONDS = 10;
+
+// Wi-Fi and console are the live rows: read at Detect time, and a board that just
+// restarted can still be joining. If the console heard from the board recently it is
+// most likely reconnecting (warn); otherwise it is offline (error).
+function liveChecks(
+  huesta: Huesta,
+  lastSeenAt: string | null,
+  consoleLookup: ConsoleLookup,
+) {
   const seenMin = minutesSince(lastSeenAt);
   const seenRecently = seenMin !== null && seenMin <= 15;
   const wifiSaved = huesta.ssid.length > 0;
@@ -269,18 +269,55 @@ function SetupChecklist({
         ? "warn"
         : "error";
   const linked = huesta.token && huesta.url.length > 0;
-  const firmwareOld = versionCmp === -1;
-  const ver = huesta.ver || "Unknown version";
-  const firmwareState: CheckState = manifestLoading
-    ? "todo"
-    : versionCmp === 0 || versionCmp === 1
-      ? "done"
-      : "warn";
   // Boards check in at start-up and then about once an hour, so allow a margin.
   const consoleQuiet = seenMin === null || seenMin > CONSOLE_QUIET_MIN;
   const consoleState: CheckState = !linked
     ? "todo"
     : consoleLookup === "found" && !consoleQuiet
+      ? "done"
+      : "warn";
+  // Waiting can fix these; the todo rows need the user.
+  const settling =
+    (wifiSaved && wifiState !== "done") || (linked && consoleState === "warn");
+  return { seenMin, wifiSaved, wifiState, linked, consoleQuiet, consoleState, settling };
+}
+
+type Recheck = {
+  countdown: number | null;
+  checking: boolean;
+  tries: number;
+  canCheck: boolean;
+  onStop: () => void;
+  onCheckAgain: () => void;
+};
+
+function SetupChecklist({
+  huesta,
+  productId,
+  manifestVersion,
+  manifestLoading,
+  versionCmp,
+  lastSeenAt,
+  consoleLookup,
+  recheck,
+}: {
+  huesta: Huesta;
+  productId: ProductId | null;
+  manifestVersion: string | null;
+  manifestLoading: boolean;
+  versionCmp: -1 | 0 | 1 | null;
+  lastSeenAt: string | null;
+  consoleLookup: ConsoleLookup;
+  recheck: Recheck;
+}) {
+  const { seenMin, wifiSaved, wifiState, linked, consoleQuiet, consoleState, settling } =
+    liveChecks(huesta, lastSeenAt, consoleLookup);
+  const autoLeft = settling && recheck.tries < RECHECK_TRIES;
+  const firmwareOld = versionCmp === -1;
+  const ver = huesta.ver || "Unknown version";
+  const firmwareState: CheckState = manifestLoading
+    ? "todo"
+    : versionCmp === 0 || versionCmp === 1
       ? "done"
       : "warn";
 
@@ -333,15 +370,21 @@ function SetupChecklist({
   const next = !wifiSaved
       ? "Save a Wi-Fi network with Set up Wi-Fi below."
       : wifiState === "error"
-        ? "Detect again in a few seconds. If Wi-Fi is still not connected, check the network name and password with Change Wi-Fi below."
+        ? autoLeft
+          ? "Wi-Fi can take a few seconds after the board restarts. The console checks again on its own."
+          : "Wi-Fi is still not connected. Check the network name and password with Change Wi-Fi below."
         : !linked
           ? "Link the board to the console with Link to console below."
           : !huesta.key
             ? "Pair with the Hue Bridge: press the button on the Bridge when the board asks, or use Pair with Bridge below."
             : wifiState === "warn"
-              ? "Wi-Fi should come back in a few seconds. Detect again to confirm."
+              ? autoLeft
+                ? "Wi-Fi should come back in a few seconds. The console checks again on its own."
+                : "Wi-Fi has not come back. Check the network with Change Wi-Fi below."
               : consoleState === "warn" && consoleLookup !== "error"
-                ? "If the console still hasn't heard from it after a few minutes on Wi-Fi, its key may have been revoked. Use Replace console key below."
+                ? autoLeft
+                  ? "The board checks in with the console shortly after it joins Wi-Fi. The console checks again on its own."
+                  : "If the console still hasn't heard from it after a few minutes on Wi-Fi, its key may have been revoked. Use Replace console key below."
                 : firmwareOld
                   ? `Update to ${manifestVersion} with Update below when convenient. Settings stay.`
                   : null;
@@ -404,6 +447,31 @@ function SetupChecklist({
         </Link>{" "}
         tells you which step the board is on.
       </p>
+      {recheck.checking ? (
+        <p className="text-sm text-filament" role="status">
+          Checking the board again…
+        </p>
+      ) : recheck.countdown !== null ? (
+        <p className="text-sm text-filament" role="status">
+          Checking again in {recheck.countdown} s (try {recheck.tries + 1} of{" "}
+          {RECHECK_TRIES}).{" "}
+          <button
+            type="button"
+            onClick={recheck.onStop}
+            className="underline underline-offset-2"
+          >
+            Stop
+          </button>
+        </p>
+      ) : settling && recheck.canCheck ? (
+        <button
+          type="button"
+          onClick={recheck.onCheckAgain}
+          className="w-fit rounded-md border border-line px-3 py-2 text-sm font-medium"
+        >
+          Check again
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -425,6 +493,9 @@ export function DevicesPanel() {
   const [password, setPassword] = useState("");
   const [scanHint, setScanHint] = useState<string | null>(null);
   const [usbLog, setUsbLog] = useState<string[]>([]);
+  const [recheckTries, setRecheckTries] = useState(RECHECK_TRIES);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [rechecking, setRechecking] = useState(false);
   const sessionRef = useRef<BytePort | null>(null);
   const portRef = useRef<SerialPort | null>(null);
   const detectGen = useRef(0);
@@ -490,6 +561,7 @@ export function DevicesPanel() {
       setPassword("");
       setScanHint(null);
       setUsbLog([]);
+      setRecheckTries(0);
       const info = port.getInfo();
       const usb = identifyUsb(info.usbVendorId, info.usbProductId);
       const knownBoard = usb.kind === "c6" || usb.kind === "s3";
@@ -596,6 +668,7 @@ export function DevicesPanel() {
     setScanHint(null);
     setUsbLog([]);
     setPercent(null);
+    setRecheckTries(RECHECK_TRIES);
     setStatus("Port released. Other apps can use it now.");
     setBusy(false);
   }
@@ -635,6 +708,31 @@ export function DevicesPanel() {
           }
         : prev,
     );
+  }
+
+  // Reread on the open session only. Opening the port again would reset the Round.
+  async function recheck(auto: boolean) {
+    const session = sessionRef.current;
+    setCountdown(null);
+    if (auto) setRecheckTries((n) => n + 1);
+    if (!session || session.dead) {
+      setRecheckTries(RECHECK_TRIES);
+      setError("Serial port lost. Detect the device again.");
+      return;
+    }
+    setBusy(true);
+    setRechecking(true);
+    setError(null);
+    setStatus(null);
+    appendUsbLog("— check again —");
+    try {
+      await reread(session);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setRechecking(false);
+      setBusy(false);
+    }
   }
 
   async function runFlash() {
@@ -756,6 +854,9 @@ export function DevicesPanel() {
       setPassword("");
       setStatus("Wi-Fi saved.");
       await reread(session);
+      // Close the form so the checklist can follow the board as it joins.
+      setPanel("none");
+      setRecheckTries(0);
     } catch (err) {
       setError(errorMessage(err));
       setStatus(null);
@@ -785,6 +886,7 @@ export function DevicesPanel() {
       }
       setStatus("Token saved.");
       await reread(session);
+      setRecheckTries(0);
     } catch (err) {
       setError(errorMessage(err));
       setStatus(null);
@@ -911,6 +1013,47 @@ export function DevicesPanel() {
     detected?.huesta && detected.manifest
       ? compareVersions(detected.huesta.ver, detected.manifest.version)
       : null;
+  const showChecklist = Boolean(
+    actions?.showSaved && detected?.huesta && !actions.cross,
+  );
+  const consoleLookup: ConsoleLookup = detected?.consoleRecord
+    ? "found"
+    : detected?.consoleError
+      ? "error"
+      : "missing";
+  const settling = Boolean(
+    showChecklist &&
+      detected?.cdc &&
+      detected.huesta &&
+      liveChecks(
+        detected.huesta,
+        detected.consoleRecord?.lastSeenAt ?? null,
+        consoleLookup,
+      ).settling,
+  );
+  const autoRecheck =
+    settling && !busy && panel === "none" && recheckTries < RECHECK_TRIES;
+
+  const fireRecheck = useEffectEvent(() => void recheck(true));
+  useEffect(() => {
+    if (!autoRecheck) return;
+    let left = RECHECK_SECONDS;
+    const timer = setInterval(() => {
+      left -= 1;
+      if (left > 0) {
+        setCountdown(left);
+      } else {
+        clearInterval(timer);
+        fireRecheck();
+      }
+    }, 1000);
+    return () => {
+      clearInterval(timer);
+      // A paused countdown starts over at full length when it resumes.
+      setCountdown(null);
+    };
+  }, [autoRecheck, recheckTries]);
+
   const flashBusy = busy && panel === "flash";
   const reading = busy && status === READING;
   // Hide the last result while a new port is being chosen or read.
@@ -997,7 +1140,7 @@ export function DevicesPanel() {
 
       {detected && actions && !reading && !choosing ? (
         <>
-          {actions.showSaved && detected.huesta && !actions.cross ? (
+          {showChecklist && detected.huesta ? (
             <SetupChecklist
               huesta={detected.huesta}
               productId={productId}
@@ -1005,9 +1148,15 @@ export function DevicesPanel() {
               manifestLoading={detected.manifestLoading}
               versionCmp={versionCmp}
               lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
-              consoleLookup={
-                detected.consoleRecord ? "found" : detected.consoleError ? "error" : "missing"
-              }
+              consoleLookup={consoleLookup}
+              recheck={{
+                countdown: autoRecheck ? (countdown ?? RECHECK_SECONDS) : null,
+                checking: rechecking,
+                tries: recheckTries,
+                canCheck: !busy && Boolean(detected.cdc),
+                onStop: () => setRecheckTries(RECHECK_TRIES),
+                onCheckAgain: () => void recheck(false),
+              }}
             />
           ) : null}
 

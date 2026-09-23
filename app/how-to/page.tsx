@@ -360,6 +360,11 @@ export default async function HowToPage() {
               <b>Link to console</b>.
             </li>
             <li>
+              Right after Detect, Wi-Fi or Console can show amber while the
+              board joins the network. The page reads the board again every 10
+              seconds, up to three times, and then offers <b>Check again</b>.
+            </li>
+            <li>
               When the board asks, press the button on top of the Hue Bridge.
               The Round screen says Press Bridge button, and the Simple LED
               blinks three times. <b>Pair with Bridge</b> starts it again if
