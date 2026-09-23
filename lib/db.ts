@@ -38,6 +38,7 @@ export type DeviceApiKeyRow = {
   last_used_at: string | null;
   last_switch_mac?: string | null;
   last_switch_label?: string | null;
+  last_switch_bridgeid?: string | null;
 };
 
 export type SwitchRow = {
@@ -103,6 +104,7 @@ function mapKey(row: Record<string, unknown>): DeviceApiKeyRow {
     last_used_at: row.last_used_at ? String(row.last_used_at) : null,
     last_switch_mac: row.last_switch_mac ? String(row.last_switch_mac) : null,
     last_switch_label: row.last_switch_label ? String(row.last_switch_label) : null,
+    last_switch_bridgeid: row.last_switch_bridgeid ? String(row.last_switch_bridgeid) : null,
   };
 }
 
@@ -156,6 +158,7 @@ export function toApiKeyPublic(row: DeviceApiKeyRow): ApiKeyPublic {
     last_used_at: row.last_used_at,
     last_switch_mac: row.last_switch_mac ?? null,
     last_switch_label: row.last_switch_label ?? null,
+    last_switch_bridgeid: row.last_switch_bridgeid ?? null,
   };
 }
 
@@ -193,10 +196,11 @@ export async function touchApiKey(id: string) {
 export async function listApiKeys(userId: string) {
   const rows = await sql()`
     select k.id, k.user_id, k.name, k.key_prefix, k.created_at, k.revoked_at, k.last_used_at,
-           s.mac as last_switch_mac, s.label as last_switch_label
+           s.mac as last_switch_mac, s.label as last_switch_label,
+           s.bridgeid as last_switch_bridgeid
     from device_api_keys k
     left join lateral (
-      select mac, label
+      select mac, label, bridgeid
       from switches
       where api_key_id = k.id
       order by last_seen_at desc nulls last

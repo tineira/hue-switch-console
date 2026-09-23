@@ -186,6 +186,7 @@ export function BridgeWorkspace({
   updatedAt,
   snapshot,
   switches,
+  initialMac,
   latestFirmware,
 }: {
   bridgeid: string;
@@ -193,21 +194,21 @@ export function BridgeWorkspace({
   updatedAt: string;
   snapshot: TopologySnapshot;
   switches: WorkspaceSwitch[];
+  initialMac?: string | null;
   latestFirmware: { round: string; simple: string };
 }) {
   const router = useRouter();
   const grouped = useMemo(() => groupTopology(snapshot), [snapshot]);
+  const first = switches.find((item) => item.mac === initialMac) ?? switches[0];
   const [selectedMac, setSelectedMac] = useState<string | null>(
-    switches[0]?.mac ?? null,
+    first?.mac ?? null,
   );
   const [selectedSlot, setSelectedSlot] = useState<SlotRef | null>(() =>
-    isRoundItem(switches[0])
-      ? null
-      : firstOpenSlot(switches[0], switches[0]?.recipes ?? []),
+    isRoundItem(first) ? null : firstOpenSlot(first, first?.recipes ?? []),
   );
   const [pageSlot, setPageSlot] = useState<PageSlotRef | null>(() =>
-    isRoundItem(switches[0])
-      ? firstOpenPageSlot(switches[0].pages ?? [], switches[0].roundRecipes ?? [])
+    isRoundItem(first)
+      ? firstOpenPageSlot(first.pages ?? [], first.roundRecipes ?? [])
       : null,
   );
   const [drafts, setDrafts] = useState<Record<string, Recipe[]>>(() =>

@@ -25,14 +25,17 @@ export const metadata = {
 
 export default async function BridgePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ bridgeid: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const user = await requireSessionUser();
   if (process.env.DATABASE_URL) {
     await ensureSchema();
   }
   const { bridgeid } = await params;
+  const { mac } = await searchParams;
   const [row, allSwitches] = await Promise.all([
     getBridge(user.id, bridgeid),
     listSwitches(user.id),
@@ -89,6 +92,7 @@ export default async function BridgePage({
         updatedAt={row.updated_at}
         snapshot={snapshot}
         switches={switches}
+        initialMac={typeof mac === "string" ? mac : null}
         latestFirmware={{
           round: roundManifest.version,
           simple: simpleManifest.version,

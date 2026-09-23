@@ -100,6 +100,7 @@ export type ApiKeyPublic = {
   /** Switch most recently seen with this key (register or config poll). */
   last_switch_mac: string | null;
   last_switch_label: string | null;
+  last_switch_bridgeid: string | null;
 };
 
 export type SwitchPublic = {

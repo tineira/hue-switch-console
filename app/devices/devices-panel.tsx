@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { firmwareChangelogHref } from "@/lib/changelog-href";
+import { agoText, CONSOLE_QUIET_MIN, minutesSince } from "@/lib/ago";
 import { formatMac } from "@/lib/mac";
 import { webSerialBlockedReason } from "@/lib/web-setup/browser";
 import {
@@ -185,20 +186,6 @@ function Field({
 }
 
 
-function minutesSince(value: string | null): number | null {
-  if (!value) return null;
-  const then = new Date(value).getTime();
-  if (Number.isNaN(then)) return null;
-  return Math.max(0, Math.round((Date.now() - then) / 60000));
-}
-
-function agoText(min: number): string {
-  if (min < 1) return "just now";
-  if (min < 60) return `${min} min ago`;
-  const hr = Math.round(min / 60);
-  return hr < 48 ? `${hr} h ago` : `${Math.round(hr / 24)} days ago`;
-}
-
 function ActionRow({
   label,
   hint,
@@ -230,8 +217,6 @@ function ActionRow({
     </div>
   );
 }
-
-const CONSOLE_QUIET_MIN = 90;
 
 type CheckState = "done" | "warn" | "error" | "todo";
 
@@ -876,7 +861,9 @@ export function DevicesPanel() {
     setError(null);
     setStatus("Saving device token…");
     try {
-      const token = await mintUsbDeviceToken(usbKeyName());
+      const token = await mintUsbDeviceToken(
+        usbKeyName({ mac: detected?.huesta?.mac, productId }),
+      );
       try {
         await writeConsoleNvs(session, token, PRODUCT_CONSOLE_URL);
       } catch (err) {

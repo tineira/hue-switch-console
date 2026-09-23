@@ -431,7 +431,8 @@ export default async function HowToPage() {
             </li>
             <li>
               If a board is lost or given away, revoke its key under{" "}
-              <b>API keys</b> in the menu under your email.
+              <b>API keys</b> in the menu under your email. Keys listed under{" "}
+              <b>Not in use</b> belong to no board and can go too.
             </li>
           </GuideStep>
         </ol>

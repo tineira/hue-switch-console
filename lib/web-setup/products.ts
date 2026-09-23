@@ -1,3 +1,5 @@
+import { formatMac } from "@/lib/mac";
+
 export const PRODUCT_CONSOLE_URL = "https://hue.tineira.com";
 
 export type ProductId = "round" | "simple";
@@ -30,9 +32,22 @@ export const PRODUCTS: Record<ProductId, ProductSpec> = {
   },
 };
 
-export function usbKeyName(at: Date = new Date()): string {
+// Names the key after the board when Devices knows it, so API keys reads as a list of boards.
+export function usbKeyName({
+  mac,
+  productId,
+  at = new Date(),
+}: {
+  mac?: string | null;
+  productId?: ProductId | null;
+  at?: Date;
+} = {}): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `USB ${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  const when = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+  const board = [productId ? PRODUCTS[productId].label : null, mac ? formatMac(mac) : null]
+    .filter(Boolean)
+    .join(" ");
+  return board ? `${board} · ${when}` : `USB ${when}`;
 }
 
 export function chipFamilyMatches(detected: string, expected: string): boolean {
