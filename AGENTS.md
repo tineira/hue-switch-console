@@ -42,6 +42,8 @@ Source of truth for anything a switch and the console both depend on:
 
 Firmware repos implement these docs; they do not redefine them. A firmware session that needs a protocol change proposes it here, not in its own tree.
 
+Switches share the **contract**, not code. Do not extract a library across all firmwares: the C6 (single core, tight RAM, no PSRAM) and the S3 (PSRAM, two cores) need different console, Hue and USB-setup layers. Code is shared per chip family, and only once a second switch on that chip exists (e.g. an S3 library pulled from Round when an S3 Simple starts).
+
 ### Cross-repo changes
 
 A change is cross-repo if it touches a device endpoint, a payload field, NVS keys the console writes over USB (`HUESET`, Improv), or the installer. Order:
