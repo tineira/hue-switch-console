@@ -98,9 +98,8 @@ function subscribeNoop() {
 
 function formatSeen(value: string | null): string {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  const min = minutesSince(value);
+  return min === null ? value : agoText(min);
 }
 
 function reportedVersion(detected: Detected): string {
@@ -190,6 +189,38 @@ function agoText(min: number): string {
   if (min < 60) return `${min} min ago`;
   const hr = Math.round(min / 60);
   return hr < 48 ? `${hr} h ago` : `${Math.round(hr / 24)} days ago`;
+}
+
+function ActionRow({
+  label,
+  hint,
+  onClick,
+  disabled,
+  primary,
+}: {
+  label: string;
+  hint: string;
+  onClick: () => void;
+  disabled: boolean;
+  primary?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-lg px-2 py-2 sm:flex-row sm:items-center sm:gap-4">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        className={`w-fit shrink-0 rounded-md px-3 py-2 text-sm disabled:opacity-60 sm:w-44 ${
+          primary
+            ? "bg-filament font-medium text-filament-ink"
+            : "border border-line bg-background"
+        }`}
+      >
+        {label}
+      </button>
+      <p className="text-sm text-muted">{hint}</p>
+    </div>
+  );
 }
 
 type CheckRow = { label: string; done: boolean; text: string };
@@ -848,111 +879,61 @@ export function DevicesPanel() {
             />
           ) : null}
 
-          <div
-            className={
-              detected.consoleRecord ? "grid gap-3 lg:grid-cols-2" : "grid gap-3"
-            }
-          >
-            <section className="flex flex-col gap-2 rounded-xl border border-line bg-cream p-4">
-              <h2 className="text-sm font-medium">USB</h2>
-              <p className="font-mono text-sm">{detected.usb.idText}</p>
-              <p className="font-medium">
-                {sketchTitle(learnedChip(detected.improv, detected.huesta)) ??
-                  detected.usb.title}
-              </p>
-              {detected.huesta?.mac ? (
-                <dl>
-                  <Field label="MAC" value={formatMac(detected.huesta.mac)} mono />
-                </dl>
-              ) : null}
+          <section className="flex flex-col gap-1 rounded-xl border border-line bg-cream p-4">
+            <h2 className="font-medium">
+              {sketchTitle(learnedChip(detected.improv, detected.huesta)) ??
+                detected.usb.title}
+            </h2>
+            <p className="text-sm text-muted">
               {detected.improv ? (
-                <p className="text-sm">
+                <>
                   {detected.improv.name || "Firmware"}
                   {detected.improv.version ? (
                     <>
-                      {" · "}
+                      {" "}
                       <FirmwareVersion
                         productId={productId}
                         version={detected.improv.version}
                       />
                     </>
                   ) : null}
-                </p>
+                </>
+              ) : product && detected.manifest && !actions.showSaved ? (
+                <>
+                  Latest firmware{" "}
+                  <FirmwareVersion
+                    productId={productId}
+                    version={detected.manifest.version}
+                  />{" "}
+                  · {detected.manifest.manifest.name}
+                </>
+              ) : (
+                "No switch firmware detected"
+              )}
+              {detected.huesta?.mac ? (
+                <>
+                  {" · MAC "}
+                  <span className="font-mono text-xs">
+                    {formatMac(detected.huesta.mac)}
+                  </span>
+                </>
               ) : null}
-              {actions.unsupported && status !== "Detecting chip…" ? (
-                <p className="text-sm text-warn">Not supported.</p>
-              ) : null}
-              {detected.consoleError ? (
-                <p className="text-sm text-muted">
-                  Could not read the console record for this MAC.
-                </p>
-              ) : null}
-            </section>
-
-            {detected.consoleRecord ? (
-              <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
-                <div className="flex flex-col gap-1">
-                  <h2 className="text-sm font-medium">Console record</h2>
-                  <p className="text-sm text-muted">
-                    Stored for this login. It does not replace the USB card.
-                  </p>
-                </div>
-                <dl className="grid gap-3">
-                  <Field
-                    label="Last seen"
-                    value={formatSeen(detected.consoleRecord.lastSeenAt)}
-                  />
-                  <Field
-                    label="Firmware"
-                    value={detected.consoleRecord.firmware ?? "—"}
-                    mono
-                    href={
-                      detected.consoleRecord.firmware
-                        ? firmwareChangelogHref(
-                            productId,
-                            detected.consoleRecord.firmware,
-                          )
-                        : null
-                    }
-                  />
-                </dl>
-                {mismatchText(detected.consoleRecord, reportedVersion(detected)) ? (
-                  <p className="text-sm text-warn">
-                    {mismatchText(detected.consoleRecord, reportedVersion(detected))}
-                  </p>
-                ) : null}
-              </section>
+            </p>
+            {actions.unsupported && status !== "Detecting chip…" ? (
+              <p className="text-sm text-warn">Not supported.</p>
             ) : null}
-          </div>
-
-          {actions.showSaved && detected.huesta ? (
-            <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-sm font-medium">Details</h2>
-                <p className="text-sm text-muted">
-                  What the board reported when you clicked Detect. Wi-Fi and IP
-                  are its connection at that moment; the rest is saved on the
-                  board.
-                </p>
-              </div>
-              <dl className="grid gap-3 sm:grid-cols-2">
-                <Field label="SSID" value={detected.huesta.ssid || "—"} />
-                <Field
-                  label="Wi-Fi"
-                  value={
-                    detected.huesta.wifi === "up" ? "Connected" : "Not connected when read"
-                  }
-                />
-                <Field label="IP" value={detected.huesta.ip || "—"} mono />
-                <Field label="Bridge id" value={detected.huesta.bid || "—"} mono />
-                <Field label="Bridge IP" value={detected.huesta.bip || "—"} mono />
-                <Field label="URL" value={detected.huesta.url || "—"} mono />
-                <Field label="Token" value={detected.huesta.token ? "Yes" : "No"} />
-                <Field label="Paired" value={detected.huesta.key ? "Yes" : "No"} />
-              </dl>
-            </section>
-          ) : null}
-
+            {detected.consoleError ? (
+              <p className="text-sm text-muted">
+                Could not read the console record for this board.
+              </p>
+            ) : null}
+            {detected.consoleRecord &&
+            mismatchText(detected.consoleRecord, reportedVersion(detected)) ? (
+              <p className="text-sm text-warn">
+                {mismatchText(detected.consoleRecord, reportedVersion(detected))}
+              </p>
+            ) : null}
+          </section>
 
           {actions.cross ? (
             <p className="text-sm text-warn">
@@ -970,8 +951,8 @@ export function DevicesPanel() {
             detected.cdc) ? (
             <p className="text-sm text-muted">
               {detected.cdc
-                ? "No stored card. Wi-Fi and Install still work."
-                : "No stored card."}
+                ? "This board has no switch settings yet. Install firmware, then save Wi-Fi."
+                : "This board has no switch settings yet."}
             </p>
           ) : null}
 
@@ -1010,60 +991,30 @@ export function DevicesPanel() {
           ) : null}
 
           {product && detected.manifestLoading ? (
-            <p className="text-sm text-muted">Loading firmware manifest…</p>
+            <p className="text-sm text-muted">Loading firmware…</p>
           ) : null}
           {product && detected.manifestError ? (
             <p className="text-sm text-danger" role="alert">
               {detected.manifestError}
             </p>
           ) : null}
-          {product && detected.manifest ? (
-            <div className="flex flex-col gap-1 text-sm">
-              <p>
-                {actions.showSaved && detected.huesta ? (
-                  <>
-                    Board{" "}
-                    {detected.huesta.ver ? (
-                      <FirmwareVersion
-                        productId={productId}
-                        version={detected.huesta.ver}
-                      />
-                    ) : (
-                      <span className="font-mono text-xs">—</span>
-                    )}
-                    {" · published "}
-                  </>
-                ) : (
-                  "Published firmware "
-                )}
-                <FirmwareVersion
-                  productId={productId}
-                  version={detected.manifest.version}
-                />
-                <span className="text-muted"> · {detected.manifest.manifest.name}</span>
-              </p>
-              {detected.manifest.missing.length > 0 ? (
-                <p className="text-warn">
-                  Firmware images are not published yet (
-                  {detected.manifest.missing.join(", ")}). Flash is unavailable
-                  until CI exports bootloader, partitions, boot_app0, and app.
-                  {actions.wifi
-                    ? " Wi-Fi still works on a board that already has firmware."
-                    : ""}
-                </p>
-              ) : actions.flash !== "none" ? (
-                <p className="text-muted">Images ready. Flash does not erase NVS.</p>
-              ) : null}
-            </div>
+          {product && detected.manifest && detected.manifest.missing.length > 0 ? (
+            <p className="text-sm text-warn">
+              Firmware images are not published yet (
+              {detected.manifest.missing.join(", ")}). Install is unavailable
+              until CI exports bootloader, partitions, boot_app0, and app.
+              {actions.wifi
+                ? " Wi-Fi still works on a board that already has firmware."
+                : ""}
+            </p>
           ) : null}
-
           {actions.showSaved &&
           detected.manifest &&
           !detected.manifestLoading &&
           versionCmp === 1 ? (
             <p className="text-sm text-muted">
-              This board is newer than the published firmware. There is no update
-              and no reinstall.
+              This board is newer than the published firmware, so there is
+              nothing to update or reinstall.
             </p>
           ) : null}
           {actions.showSaved &&
@@ -1077,73 +1028,142 @@ export function DevicesPanel() {
           ) : null}
 
           {actions.flash !== "none" || actions.wifi || actions.token || actions.pair ? (
-            <div className="flex flex-wrap gap-3">
+            <section className="flex flex-col gap-1 rounded-xl border border-line bg-cream p-2">
+              <h2 className="px-2 pt-1 text-sm font-medium">Actions</h2>
               {actions.flash === "install" || actions.flash === "update" ? (
-                <button
-                  type="button"
+                <ActionRow
+                  primary
+                  label={flashBusy ? "Installing…" : flashText}
                   disabled={Boolean(blocked) || busy || !product || !binsReady}
                   onClick={() => void runFlash()}
-                  className="rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60"
-                >
-                  {flashBusy ? "Flashing…" : flashText}
-                </button>
+                  hint={
+                    actions.flash === "update"
+                      ? `Install ${detected.manifest?.version ?? "the latest firmware"}. Wi-Fi, the console link, and ${productId === "round" ? "pages" : "buttons"} stay.`
+                      : `Install the ${productId === "round" ? "Round" : "Simple"} switch firmware${detected.manifest ? `, version ${detected.manifest.version}` : ""}.`
+                  }
+                />
               ) : null}
               {actions.wifi && detected.cdc ? (
-                <button
-                  type="button"
+                <ActionRow
+                  label={detected.huesta?.ssid ? "Change Wi-Fi" : "Set up Wi-Fi"}
                   disabled={Boolean(blocked) || busy}
                   onClick={openWifi}
-                  className="rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-60"
-                >
-                  Wi-Fi
-                </button>
+                  hint="Scan for a 2.4 GHz network and save it on the board."
+                />
               ) : null}
               {actions.token ? (
-                <button
-                  type="button"
+                <ActionRow
+                  label={
+                    busy && status === "Saving device token…"
+                      ? "Saving…"
+                      : detected.huesta?.token
+                        ? "Replace console key"
+                        : "Link to console"
+                  }
                   disabled={Boolean(blocked) || busy}
                   onClick={() => void runToken()}
-                  className="rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-60"
-                >
-                  {busy && status === "Saving device token…" ? "Saving…" : "Token"}
-                </button>
+                  hint={
+                    detected.huesta?.token
+                      ? "Make a new key for this board. Only needed if the old one was revoked."
+                      : "Make a key for this board and save it, so it can talk to the console."
+                  }
+                />
               ) : null}
               {actions.pair ? (
-                <button
-                  type="button"
+                <ActionRow
+                  label={
+                    busy && status === PAIR_PROMPT
+                      ? "Pairing…"
+                      : detected.huesta?.key
+                        ? "Pair again"
+                        : "Pair with Bridge"
+                  }
                   disabled={Boolean(blocked) || busy}
                   onClick={() => void runPair()}
-                  className="rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-60"
-                >
-                  {busy && status === PAIR_PROMPT ? "Pairing…" : "Pair"}
-                </button>
+                  hint={
+                    detected.huesta?.key
+                      ? "Forget the current Hue link and pair from scratch. Press the button on the Bridge when asked."
+                      : "Press the button on the Hue Bridge when asked."
+                  }
+                />
               ) : null}
               {actions.flash === "reinstall" ? (
-                <button
-                  type="button"
+                <ActionRow
+                  label={flashBusy ? "Installing…" : "Reinstall"}
                   disabled={Boolean(blocked) || busy || !product || !binsReady}
                   onClick={() => void runFlash()}
-                  className="rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-60"
-                >
-                  {flashBusy ? "Flashing…" : "Reinstall"}
-                </button>
+                  hint={`Install ${detected.manifest?.version ?? "this version"} again. Settings stay.`}
+                />
               ) : null}
-            </div>
+            </section>
+          ) : null}
+
+          {actions.showSaved && detected.huesta ? (
+            <details className="group rounded-xl border border-line bg-cream p-4">
+              <summary className="cursor-pointer text-sm font-medium">Details</summary>
+              <p className="mt-2 text-sm text-muted">
+                What the board reported when you clicked Detect. Wi-Fi and IP are
+                its connection at that moment; the rest is saved on the board.
+              </p>
+              <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                <Field label="SSID" value={detected.huesta.ssid || "—"} />
+                <Field
+                  label="Wi-Fi"
+                  value={
+                    detected.huesta.wifi === "up" ? "Connected" : "Not connected when read"
+                  }
+                />
+                <Field label="IP" value={detected.huesta.ip || "—"} mono />
+                <Field label="Bridge id" value={detected.huesta.bid || "—"} mono />
+                <Field label="Bridge IP" value={detected.huesta.bip || "—"} mono />
+                <Field label="Console URL" value={detected.huesta.url || "—"} mono />
+                <Field label="Console key" value={detected.huesta.token ? "Yes" : "No"} />
+                <Field label="Hue key" value={detected.huesta.key ? "Yes" : "No"} />
+                <Field label="USB id" value={detected.usb.idText} mono />
+                {detected.consoleRecord ? (
+                  <>
+                    <Field
+                      label="Console last heard from it"
+                      value={formatSeen(detected.consoleRecord.lastSeenAt)}
+                    />
+                    <Field
+                      label="Firmware the console has on record"
+                      value={detected.consoleRecord.firmware ?? "—"}
+                      mono
+                      href={
+                        detected.consoleRecord.firmware
+                          ? firmwareChangelogHref(
+                              productId,
+                              detected.consoleRecord.firmware,
+                            )
+                          : null
+                      }
+                    />
+                  </>
+                ) : null}
+              </dl>
+            </details>
           ) : null}
 
           {actions.clear ? (
-            <div className="flex">
+            <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/40 p-4">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <h2 className="text-sm font-medium text-danger">Reset board</h2>
+                <p className="text-sm text-muted">
+                  Erase Wi-Fi, the console link, the Hue link, and{" "}
+                  {productId === "round" ? "pages" : "recipes"}. The firmware stays.
+                </p>
+              </div>
               <button
                 type="button"
                 disabled={Boolean(blocked) || busy}
                 onClick={() => void runClear()}
-                className="rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-60"
+                className="rounded-md border border-danger/60 px-3 py-2 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-60"
               >
-                {busy && status === "Clearing saved data…" ? "Clearing…" : "Clear"}
+                {busy && status === "Clearing saved data…" ? "Erasing…" : "Erase settings"}
               </button>
-            </div>
+            </section>
           ) : null}
-
         </>
       ) : null}
 
