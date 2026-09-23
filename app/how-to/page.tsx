@@ -369,6 +369,11 @@ export default async function HowToPage() {
               When the card turns green and says <b>This board is set up</b>,
               unplug it and mount it.
             </li>
+            <li>
+              The console holds the USB port while a board is detected.{" "}
+              <b>Disconnect</b> releases it so Arduino IDE or a serial monitor
+              can open it.
+            </li>
           </GuideStep>
 
           <GuideStep n={2} title="Choose what it does" where="Bridge" href="/">

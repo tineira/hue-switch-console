@@ -577,6 +577,29 @@ export function DevicesPanel() {
   }
 
 
+  async function disconnect() {
+    ++detectGen.current;
+    ++manifestGen.current;
+    setBusy(true);
+    setError(null);
+    try {
+      await closeSession();
+    } catch {
+      /* port already gone; nothing left to release */
+    }
+    portRef.current = null;
+    setDetected(null);
+    setPanel("none");
+    setNetworks([]);
+    setSsid("");
+    setPassword("");
+    setScanHint(null);
+    setUsbLog([]);
+    setPercent(null);
+    setStatus("Port released. Other apps can use it now.");
+    setBusy(false);
+  }
+
   async function chooseBoard(choice: BoardChoice) {
     const spec = PRODUCTS[choice === "c6" ? "simple" : "round"];
     const mgen = ++manifestGen.current;
@@ -917,16 +940,29 @@ export function DevicesPanel() {
           Plug the board in with a USB-C cable that carries data, then choose
           its port. It is usually listed as a USB serial or JTAG device.
         </p>
-        <button
-          type="button"
-          disabled={Boolean(blocked) || busy}
-          onClick={() => void detect()}
-          className="w-fit rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60"
-        >
-          {busy && (status === PICK_PORT || status === READING)
-            ? "Detecting…"
-            : "Detect device"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={Boolean(blocked) || busy}
+            onClick={() => void detect()}
+            className="w-fit rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60"
+          >
+            {busy && (status === PICK_PORT || status === READING)
+              ? "Detecting…"
+              : detected
+                ? "Detect another device"
+                : "Detect device"}
+          </button>
+          {detected && !busy ? (
+            <button
+              type="button"
+              onClick={() => void disconnect()}
+              className="w-fit rounded-md border border-line px-3 py-2 text-sm font-medium"
+            >
+              Disconnect
+            </button>
+          ) : null}
+        </div>
         {busy && status === PICK_PORT ? (
           <p className="text-sm text-filament" role="status">
             {PICK_PORT}
