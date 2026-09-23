@@ -48,6 +48,12 @@ The web app has no user-facing version. Each heading is the day the change lande
 
 Headings are FIRMWARE_VERSION on main for the Round Display (XIAO ESP32-S3). 0.4.1 was never tagged. The 0.5.7 commit moved the macro from 0.5.0 to 0.5.7, so 0.5.1 through 0.5.6 were never tagged. 0.5.14 was a web-setup branch build, also copied into an installer image here. On main the macro went from 0.5.13 to 0.5.15, then to 0.5.16.
 
+<!-- 2deb44b -->
+
+### 0.5.26 — 2026-09-23
+
+- After a restart, the board uses the Wi-Fi network saved by Improv instead of showing No Wi-Fi.
+
 <!-- ced21c6 -->
 
 ### 0.5.25 — 2026-09-23
