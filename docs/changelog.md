@@ -13,7 +13,6 @@ The web app has no user-facing version. Each heading is the day the change lande
 ### 2026-09-23
 
 - How-to explains the Simple switch orange LED.
-- /devices/force writes the C6 or S3 firmware after you pick the USB port, without Detect.
 - Install asks you to hold BOOT. It does not toggle the USB reset lines that hang on Windows. If the chip does not name itself, the write is aborted.
 
 ### 2026-09-22
