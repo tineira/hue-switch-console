@@ -1,6 +1,6 @@
 # <Feature name>
 
-Cross-repo spec. Copy to `docs/specs/<feature>.md`. Body may be Spanish; product copy quoted here is English. Process: `AGENTS.md` → "Cross-repo changes".
+Cross-repo spec. Copy to `docs/specs/<feature>.md`. Write it in English. Process: `AGENTS.md` → "Cross-repo changes".
 
 **Status:** draft | approved | in progress | done (move to `finished/`)
 

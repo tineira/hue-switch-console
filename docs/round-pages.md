@@ -1,302 +1,301 @@
-# Round Display — páginas
+# Round Display — pages
 
-Documento de **requisitos de producto**. Cubre `hue-round-switch` (firmware, círculo) y `hue-switch-console` (web). No es una guía de implementación ni un changelog.
+**Product requirements** document. Covers `hue-round-switch` (firmware, circle) and `hue-switch-console` (web). Not an implementation guide or a changelog.
 
-Esta copia **manda el estado**. Alinear `hue-round-switch/docs/pages-requirements.md` a este archivo, no al revés.
+This is the **only** copy. `hue-round-switch/docs/pages-requirements.md` points here; do not fork it again.
 
-**Estado:** `group` + `dim` **ya** están en la consola y en firmware **0.5.13+**. El poll §11.2 los baja. Idle (timeout del disco) e input-durante-Hue están **implementados**: `hue-round-switch/docs/specs/finished/idle-display.md` e `input-during-hue.md`. Páginas v1 corren. Alta USB desde Chrome (`docs/specs/web-setup.md`) **no** es este v1.
+**Status:** `group` + `dim` are **already** in the console and in firmware **0.5.13+**. The §11.2 poll delivers them. Idle (display timeout) and input-during-Hue are **implemented**: `hue-round-switch/docs/specs/finished/idle-display.md` and `input-during-hue.md`. Pages v1 run.
 
-**Productos:**
+**Products:**
 
-| Repo | Rol en esta feature |
+| Repo | Role in this feature |
 | --- | --- |
-| `hue-round-switch` | Círculo 240×240. Una página activa a la vez. Gestos de centro + aro de brillo. Swipe cambia de página. |
-| `hue-switch-console` | CRUD de páginas (grupo room/zona, recetas, listas de escenas, eje, theme, nombre). Baja `group` + destinos de dimmer en el poll. |
-| `hue-simple-switch` | **Fuera de alcance.** Sigue siendo GPIO + canales. La UI de la consola se ramifica por producto. |
+| `hue-round-switch` | 240×240 circle. One active page at a time. Center gestures + brightness ring. Swipe changes page. |
+| `hue-switch-console` | Page CRUD (room/zone group, recipes, scene lists, axis, theme, name). Sends `group` + dimmer targets in the poll. |
+| `hue-simple-switch` | **Out of scope.** Still GPIO + channels. The console UI branches by product. |
 
-La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel. El dedo en el círculo **nunca** espera a la web. Eso no cambia.
+The console **never** calls the Bridge. The Bridge **never** sees Vercel. A finger on the circle **never** waits for the web. That does not change.
 
-Alta del aparato en este v1: Arduino + `config.h` (`CONSOLE_URL`, `CONSOLE_TOKEN`). Web-setup (`docs/specs/web-setup.md`) queda requisitos, fuera de recorte.
-
----
-
-## 1. Veredicto
-
-**Sí: el concepto tiene sentido.** Un Round Display es un solo disco físico. Hoy es un canal (`c1` / tap → `short`) más un aro de dimmer. Sin páginas, cada habitación extra exige otro aparato o recargar la receta. Las páginas son la forma de que **un** círculo controle varias cosas, sin dibujar botones que no caben.
-
-**Sí: cabe en la pantalla**, con límites estrictos de copy. El disco útil del centro (radio 88 px, diámetro 176 px) muestra el **nombre de página** (size 2, ≤12) y, debajo, la **escena activa** si aplica (size 1, ellipsis). Puntos de página abajo. **Sin textos de ayuda** (`Tap to toggle`, `Drag ring to dim`, etc.).
-
-El chip táctil (CHSC6X) **no** entrega gestos. Tap, doble y swipe se infieren en firmware a partir de INT + (x, y). **No hay hold** en el círculo: pelea con el swipe y con el lift poco fiable del chip.
+Device onboarding: the web console flashes over USB and writes Wi‑Fi (Improv) and token/url (`HUESET`) into NVS. `config.h` no longer holds credentials.
 
 ---
 
-## 2. Problema
+## 1. Verdict
 
-Hoy el Round Display es un interruptor de **una** receta. La consola espera canales estilo pared (`{ id, gpio, label, kind }`). El círculo no es un GPIO: es una superficie. Para controlar living + pasillo + velador hay que o bien poner tres discos, o bien cambiar la receta en el teléfono.
+**Yes: the concept makes sense.** A Round Display is a single physical disc. Without pages it would be one gesture plus a ring, and every extra room would need another device or reloading the recipe. Pages are how **one** circle controls several things, without drawing buttons that don't fit.
 
-El usuario está de pie, a un brazo, tocando un círculo de 39 mm. La UI tiene que ser un estado a la vez, legible, con pocos gestos y sin menús.
+**Yes: it fits on the screen**, with strict copy limits. The usable center disc (radius 88 px, diameter 176 px) shows the **page name** (size 2, ≤12) and, below it, the **active scene** if any (size 1, ellipsis). Page dots at the bottom. **No help text** (`Tap to toggle`, `Drag ring to dim`, etc.).
+
+The touch chip (CHSC6X) does **not** deliver gestures. Tap, double and swipe are inferred in firmware from INT + (x, y). **There is no hold** on the circle: it fights the swipe and the chip's unreliable lift.
+
+---
+
+## 2. Problem
+
+A single-recipe Round Display is a one-thing switch. The console expected wall-style channels (`{ id, gpio, label, kind }`). The circle is not a GPIO: it's a surface. To control living room + hallway + bedside lamp you'd need three discs, or change the recipe on the phone.
+
+The user is standing, at arm's length, touching a 39 mm circle. The UI has to be one state at a time, readable, with few gestures and no menus.
 
 ---
 
 ## 3. Idea
 
-Una **página** está anclada a **un grupo Hue** (`room` o `zone`). Nombre, theme, tap y doble viven ahí. Luces y escenas de las recetas **solo** salen de ese grupo. El aro dimmea según §8.2 (el grupo, o solo las luces de las acciones).
+A **page** is anchored to **one Hue group** (`room` or `zone`). Name, theme, tap and double live there. Lights and scenes in the recipes come **only** from that group. The ring dims according to §8.2 (the group, or only the lights in the actions).
 
-Varias páginas viven en el mismo aparato. El swipe (eje elegido **por display** en la consola) pasa de una a otra. No es una receta Hue: es navegación local.
+Several pages live on the same device. The swipe (axis chosen **per display** in the console) moves between them. It is not a Hue recipe: it's local navigation.
 
 ```text
-Página 1 "Living" (room Living)
+Page 1 "Living" (room Living)
  tap → cycle Relax, Bright, Night
  double → off Living
- aro → dim Living (grupo; solo luces on)
+ ring → dim Living (group; on lights only)
 
-Página 2 "Patio" (room Patio)
+Page 2 "Patio" (room Patio)
  tap → toggle Patio
  double → off Patio
- aro → dim Patio (grupo)
+ ring → dim Patio (group)
 
-Página 3 "Lamps" (room Living)
- tap → toggle Velador 1
- double → toggle Velador 2
- aro → dim solo Velador 1 y 2 (las que estén on)
+Page 3 "Lamps" (room Living)
+ tap → toggle Bedside 1
+ double → toggle Bedside 2
+ ring → dim only Bedside 1 and 2 (whichever are on)
 ```
 
-Un gesto de escena es una **lista ordenada** de escenas **de ese grupo**. Off no es una escena: es `off` del `grouped_light` del grupo, en **doble tap**.
+A scene gesture is an **ordered list** of scenes **from that group**. Off is not a scene: it's `off` on the group's `grouped_light`, on **double tap**.
 
 ---
 
-## 4. Conceptos
+## 4. Concepts
 
-**Página.** Configuración activa, **siempre** de un `room` o `zone`. No es un canal GPIO. La consola las crea, nombra, ancla al grupo, ordena, colorea y borra. El firmware **no** declara cuántas hay: las recibe en el poll.
+**Page.** Active configuration, **always** of a `room` or `zone`. Not a GPIO channel. The console creates, names, anchors to a group, orders, colors and deletes them. The firmware does **not** declare how many there are: it receives them in the poll.
 
-**Grupo de la página.** `room` o `zone` del snapshot + su `grouped_light`. Filtra la topología: luces hijas y escenas de ese group. No se mezclan Living y Patio. Una bombilla suelta no es un grupo (no hay página “sin room”).
+**Page group.** `room` or `zone` from the snapshot + its `grouped_light`. Filters the topology: child lights and scenes of that group. Living and Patio are not mixed. A loose bulb is not a group (there is no page "without a room").
 
-**Página activa.** La que se ve y la que recibe gestos. Una sola. El swipe la cambia. Se recuerda en NVS (reboot vuelve a la última).
+**Active page.** The one shown and the one receiving gestures. Only one. The swipe changes it. Remembered in NVS (reboot returns to the last one).
 
-**Puntos de página.** Abajo del disco interior (como en `docs/round-themes.html`). Un punto por página, en el orden de la consola. El punto **lleno** es la página activa; los demás, apagados. Con una sola página no se dibujan. Cerrado: no es un adorno del prototipo, es el chrome del círculo. **Nunca overflow:** la fila entera queda dentro del disco interior; no se recorta contra el borde redondo ni se mete al aro. Una sola fila, nunca wrap. Ver §5.1.
+**Page dots.** At the bottom of the inner disc (as in `docs/round-themes.html`). One dot per page, in console order. The **filled** dot is the active page; the others are dim. With a single page they are not drawn. Settled: not a prototype ornament, it's the circle's chrome. **Never overflow:** the whole row stays inside the inner disc; it is not clipped against the round edge nor pushed into the ring. A single row, never wrapped. See §5.1.
 
-**Gesto de centro.** Ocurre en el disco interior (radio ≤ 88). Eventos de receta: `short` (tap) y `double_click` (doble tap). En la consola **los dos huecos siempre están**; el usuario asigna receta o los deja vacíos. Vacío = no-op. Si doble no tiene receta, el tap no espera la ventana del segundo toque. **No hay hold** en pantalla.
+**Center gesture.** Happens on the inner disc (radius ≤ 88). Recipe events: `short` (tap) and `double_click` (double tap). In the console **both slots are always there**; the user assigns a recipe or leaves them empty. Empty = no-op. If double has no recipe, the tap does not wait for the second-touch window. **No hold** on screen.
 
-**Aro / dimmer.** Disco exterior (radio ~96–118). No es receta. Drag + PUT de brillo al soltar. Destino: el **grupo** o **las luces de las acciones**, según §8.2. Como la app Hue: solo luces que están **on**; si todas las del destino están off, el drag las **prende** a ese %.
+**Ring / dimmer.** Outer disc (radius ~96–118). Not a recipe. Drag + brightness PUT on release. Target: the **group** or **the lights in the actions**, per §8.2. Like the Hue app: only lights that are **on**; if all of the target's lights are off, the drag **turns them on** at that %.
 
-**Lista de escenas.** Receta `recall_scene` con 1–8 escenas del **grupo de la página**, en el orden que el usuario fija en la consola. Un ítem = el recall de hoy. Varios = rotar. El Bridge no rota: cada toque es un PUT a un `rid`; el aparato elige el siguiente.
+**Scene list.** `recall_scene` recipe with 1–8 scenes from the **page's group**, in the order the user sets in the console. One item = a plain recall. Several = rotate. The Bridge does not rotate: each touch is a PUT to one `rid`; the device picks the next.
 
-**Swipe de página.** Gesto de navegación, no de Hue. Eje `horizontal` (left/right) o `vertical` (up/down), **por aparato**, no por página. Configurable en consola.
+**Page swipe.** Navigation gesture, not Hue. Axis `horizontal` (left/right) or `vertical` (up/down), **per device**, not per page. Configurable in the console.
 
-**Theme de página.** Paleta RGB565 del círculo (fondo, tinta, apagado, acento, aro). No es el theme CSS de la web (`ember`, `paper`, …). La consola muestra un preview circular al elegir.
+**Page theme.** RGB565 palette for the circle (background, ink, off, accent, ring). Not the web CSS theme (`ember`, `paper`, …). The console shows a round preview when choosing.
 
-**Nombre de página.** Texto principal **en el círculo**. Lo edita el usuario en la consola. Puede ser “Living”, “Patio”, un apodo.
+**Page name.** Main text **on the circle**. Edited by the user in the console. Can be "Living", "Patio", a nickname.
 
-**Escena activa.** Línea debajo del nombre, solo si esa página tiene lista de escenas y el Bridge (o el último recall) dice cuál está puesta. Es el nombre Hue de esa escena, no un hint. Si no hay escena activa (apagado, toggle, custom), esa línea **no se pinta**.
+**Active scene.** Line under the name, only if that page has a scene list and the Bridge (or the last recall) says which one is set. It is that scene's Hue name, not a hint. If there is no active scene (off, toggle, custom), that line is **not painted**.
 
-**Canal GPIO `c1`.** Placeholder actual para que la consola acepte el registro. Con páginas deja de ser el modelo de producto del Round. El simple-switch no se toca.
+**GPIO channel `c1`.** Only for migrating old boards. The current register sends `product: "round"` and `channels: []`. The Simple switch is not touched.
 
 ---
 
-## 5. Cabe en el círculo
+## 5. Fitting on the circle
 
-Pantalla: 240×240, círculo completo. Centro (120, 120).
+Screen: 240×240, full circle. Center (120, 120).
 
-| Zona | Radio | Uso |
+| Zone | Radius | Use |
 | --- | --- | --- |
-| Disco interior | 0–88 | Nombre de página, escena activa (si hay), puntos, tap / doble / swipe |
-| Muerto | 88–96 | No es tap ni aro |
-| Aro | 96–118 | Dimmer. No cambia de página |
+| Inner disc | 0–88 | Page name, active scene (if any), dots, tap / double / swipe |
+| Dead | 88–96 | Neither tap nor ring |
+| Ring | 96–118 | Dimmer. Does not change page |
 
-Fuente built-in Arduino (celda 6×8 en size 1):
+Arduino built-in font (6×8 cell at size 1):
 
-| Size | Px / carácter | Caracteres en ~140 px útiles |
+| Size | Px / char | Chars in ~140 usable px |
 | --- | --- | --- |
-| 1 | 6×8 | ~23 — poco legible a un brazo |
-| 2 | 12×16 | **~12** — nombre de página |
-| 3 | 18×24 | ~7 — nombres cortos, opcional |
-| 4 | 24×32 | ~5 — hoy el `1`; demasiado para un nombre |
+| 1 | 6×8 | ~23 — hard to read at arm's length |
+| 2 | 12×16 | **~12** — page name |
+| 3 | 18×24 | ~7 — short names, optional |
+| 4 | 24×32 | ~5 — too big for a name |
 
-Ancho de cuerda del disco interior a la altura actual del título (y ≈ 92, 28 px sobre el centro): ~167 px. Con margen, **12 caracteres a size 2 caben**. “Living Room” (11) cabe; “Master bedroom” (14) no, se corta con ellipsis.
+Chord width of the inner disc at the title height (y ≈ 92, 28 px above center): ~167 px. With margin, **12 characters at size 2 fit**. "Living Room" (11) fits; "Master bedroom" (14) does not and is cut with an ellipsis.
 
-### 5.1 Puntos: caben, o se achican
+### 5.1 Dots: they fit, or they shrink
 
-El máximo de producto sigue siendo **6 páginas**. Aun así el firmware **no** dibuja a tamaños fijos que se salgan del círculo.
+The product maximum stays **6 pages**. Even so, the firmware does **not** draw at fixed sizes that leave the circle.
 
-Colocación:
+Placement:
 
-- Una fila, centrada en X, cerca del borde **inferior del disco interior** (radio 88), no en el aro.
-- Margen mínimo ~8 px al borde del disco (la cuerda en esa Y es el presupuesto).
-- Encima van nombre de página y, si cabe, escena activa. No hay hints de gesto ni de dimmer que empujen esta fila.
+- One row, centered on X, near the **bottom edge of the inner disc** (radius 88), not on the ring.
+- Minimum ~8 px margin to the disc edge (the chord at that Y is the budget).
+- Above it go the page name and, if it fits, the active scene. No gesture or dimmer hints push this row.
 
-Encaje (en este orden; parar en el primer que entre):
+Fit (in this order; stop at the first that fits):
 
-1. Ideal: diámetro 6 px, gap 10 px.
-2. Bajar el **gap** hasta 4 px.
-3. Bajar el **diámetro** hasta 4 px (gap 4).
-4. Último recurso (no debería dispararse con N ≤ 6): no dibujar puntos que se clippen; pintar `2/6` en size 1 centrado en esa fila. No segunda fila. No carrusel de puntos (el swipe ya es el carrusel).
+1. Ideal: 6 px diameter, 10 px gap.
+2. Shrink the **gap** down to 4 px.
+3. Shrink the **diameter** down to 4 px (gap 4).
+4. Last resort (should not trigger with N ≤ 6): do not draw dots that would clip; paint `2/6` at size 1 centered on that row. No second row. No dot carousel (the swipe already is the carousel).
 
-La fila se centra. El punto activo se llena con `ink`. Los otros: `ink` atenuado sobre el fill (mismo truco que la escena; `mute` sobre ámbar no contrasta). Al swipe, solo cambia cuál está lleno (y el nombre/theme).
+The row is centered. The active dot is filled with `ink`. The others: `ink` dimmed over the fill (same trick as the scene; `mute` on amber has no contrast). On swipe, only which one is filled changes (and the name/theme).
 
-Con 6 puntos a 4+4 el ancho es ~44 px; la cuerda abajo del disco interior es >100 px. El recorte 2–3 existe para no romper si el layout vertical empuja la fila hacia el borde (cuerda más estrecha).
+With 6 dots at 4+4 the width is ~44 px; the chord at the bottom of the inner disc is >100 px. Steps 2–3 exist so nothing breaks if the vertical layout pushes the row toward the edge (narrower chord).
 
-### 5.2 Escena activa: una línea, o nada
+### 5.2 Active scene: one line, or nothing
 
-Debajo del nombre de página, **size 1**. Color: tinta mezclada con el fill (no `mute` crudo: en paletas como Night el mute sobre el ámbar no se lee). Una sola línea. No wrap.
+Under the page name, **size 1**. Color: ink blended with the fill (not raw `mute`: in palettes like Night, mute on amber is unreadable). A single line. No wrap.
 
-- Solo si la página tiene `recall_scene` y hay un `rid` de esa lista para mostrar: el **último PUT local** (NVS), o un GET de `status.active` **solo para refrescar el nombre** (no para elegir el próximo rid del ciclo; §8.1).
-- Luces off, receta toggle, o ninguna de la lista para pintar → **no se dibuja** la línea (no “Off”, no “—”).
-- El nombre viene en el poll (`targets[].name`, el de Hue). El aparato no adivina.
+- Only if the page has `recall_scene` and there is a `rid` from that list to show: the **last local PUT** (NVS), or a `status.active` GET **only to refresh the name** (not to pick the next rid in the cycle; §8.1).
+- Lights off, toggle recipe, or none of the list to paint → the line is **not drawn** (no "Off", no "—").
+- The name comes in the poll (`targets[].name`, the Hue one). The device does not guess.
 
-Overflow (en este orden):
+Overflow (in this order):
 
-1. Pintar size 1, centrado, en la cuerda de esa Y menos 8 px de margen.
-2. Si el string no entra, truncar y poner ellipsis (`Relax eveni…`). Típico: ~16–18 caracteres.
-3. NVS guarda como mucho 24 caracteres; el paint recorta a lo que cabe.
-4. Si ni 8 caracteres + ellipsis entran (casi imposible): omitir la línea. El nombre de página y los puntos no se achican para hacerle sitio.
+1. Paint size 1, centered, within that Y's chord minus 8 px margin.
+2. If the string doesn't fit, truncate and add an ellipsis (`Relax eveni…`). Typical: ~16–18 characters.
+3. NVS stores at most 24 characters; painting trims to what fits.
+4. If not even 8 characters + ellipsis fit (almost impossible): omit the line. The page name and dots do not shrink to make room.
 
-No se usa size 2 para la escena (el título es la página). No segunda línea.
+Size 2 is not used for the scene (the title is the page). No second line.
 
-**Layout v1 del estado Ready:**
+**v1 layout of the Ready state:**
 
 ```text
-        · nombre de página (size 2, máx. 12)
-        · escena activa (size 1, ellipsis) — solo si hay una puesta
-        · puntos de página (2+ páginas)
-        · aro de brillo si el destino del dimmer es light / grouped_light
+        · page name (size 2, max 12)
+        · active scene (size 1, ellipsis) — only if one is set
+        · page dots (2+ pages)
+        · brightness ring if the dimmer target is light / grouped_light
 ```
 
-**Sin copy de instrucciones** en Ready: nada de `Tap to toggle`, `Tap to cycle scenes`, `Drag ring to dim`, `Double-tap to turn off`, `Assign in console`. El disco no enseña a usarse. Los estados de sistema (Wi-Fi, pairing, error) sí llevan una línea de estado, no un how-to.
+**No instruction copy** in Ready: no `Tap to toggle`, `Tap to cycle scenes`, `Drag ring to dim`, `Double-tap to turn off`, `Assign in console`. The disc does not teach its own use. System states (Wi‑Fi, pairing, error) do get a status line, not a how-to.
 
-Al hacer swipe, los puntos se actualizan **ya** (el lleno se corre). No hace falta animar el resto del disco.
+On swipe, the dots update **immediately** (the filled one moves). The rest of the disc need not animate.
 
-Estados de sistema (Wi-Fi, pairing, error) **no** son páginas. Siguen a pantalla completa, sin swipe ni puntos.
+System states (Wi‑Fi, pairing, error) are **not** pages. They stay full screen, without swipe or dots.
 
-Una sola página: no se dibujan puntos, el swipe no hace nada visible (gesto ignorado). El nombre igual se muestra (deja de ser el `1` del canal).
+A single page: no dots are drawn, the swipe does nothing visible (gesture ignored). The name is still shown.
 
 ---
 
-## 6. Gestos
+## 6. Gestures
 
-El CHSC6X entrega INT + un punto. Todo lo de esta sección es firmware.
+The CHSC6X delivers INT + one point. Everything in this section is firmware.
 
-### 6.1 Clasificación por zona de **inicio**
+### 6.1 Classification by **start** zone
 
-| Dónde empieza el dedo | Qué es |
+| Where the finger starts | What it is |
 | --- | --- |
-| Disco interior | Tap, doble, o swipe de página |
-| Aro | Dimmer. Nunca cambia de página, aunque el dedo se cuele al centro |
+| Inner disc | Tap, double, or page swipe |
+| Ring | Dimmer. Never changes page, even if the finger slides into the center |
 
-Un trazo se clasifica al bajar. No se reconvierte a mitad de gesto.
+A stroke is classified on touch-down. It is not reclassified mid-gesture.
 
-### 6.2 Centro — recetas
+### 6.2 Center — recipes
 
-| Gesto | Evento de receta | Condición |
+| Gesture | Recipe event | Condition |
 | --- | --- | --- |
-| Tap | `short` | Poco movimiento al soltar. Si doble **tiene receta**, espera ~350 ms por un segundo tap |
-| Doble tap | `double_click` | Segundo tap en la ventana, mismo disco. Solo si doble tiene receta |
+| Tap | `short` | Little movement on release. If double **has a recipe**, waits ~350 ms for a second tap |
+| Double tap | `double_click` | Second tap within the window, same disc. Only if double has a recipe |
 
-Hueco sin receta: no-op. **No** hay fallback `double_click` → `on` en el círculo (eso es del contacto `maintained` de pared).
+Slot without a recipe: no-op. There is **no** `double_click` → `on` fallback on the circle (that belongs to the wall's `maintained` contact).
 
-Si `double_click` **no tiene receta**, el tap no espera la ventana del segundo toque. Tener receta en doble es lo que retrasa el tap ~350 ms. No hay checkbox aparte de “activar gesto”.
+If `double_click` **has no recipe**, the tap does not wait for the second-touch window. Having a recipe on double is what delays the tap ~350 ms. There is no separate "enable gesture" checkbox.
 
-El tap **deja de dispararse al down**. Hoy `uiOnTap()` corre al poner el dedo; con doble/swipe eso es incorrecto. Disparo al **up**.
+The tap fires on **release**, never on touch-down.
 
-**No hay hold en el círculo.** Un reloj de “quieto ≥ 600 ms” pelea con el swipe lento y con el CHSC6X (el firmware ya tiene que adivinar el lift: sin punto 80 ms, INT alto 400 ms). El swipe se decide **solo por desplazamiento** en el eje, en cuanto cruza el umbral, sin esperar un timer. Off va en `double_click`. El hold de **3 s en BOOT** (re-pair) no cambia: es el botón físico del XIAO.
+**No hold on the circle.** A "still ≥ 600 ms" timer fights slow swipes and the CHSC6X (the firmware already has to guess the lift: no point for 80 ms, INT high for 400 ms). The swipe is decided **by displacement only** along the axis, as soon as it crosses the threshold, without waiting for a timer. Off lives on `double_click`. The **3 s BOOT** hold (re-pair) does not change: it's the XIAO's physical button.
 
-### 6.3 Centro — swipe de página
+### 6.3 Center — page swipe
 
-No es receta. No llama al Bridge.
+Not a recipe. Does not call the Bridge.
 
-- Eje del **aparato**: `horizontal` (default) o `vertical`.
-- Recorrido mínimo en el eje ≈ 40 px. En cuanto se cruza, es swipe (no se espera a soltar ni a ningún hold). El eje ortogonal se ignora (un tap tembloroso no pasa de página).
-- Dirección: swipe **left** → página siguiente (índice +1); right → anterior. Si el eje es vertical: up → siguiente, down → anterior.
-- Wrap: última +1 → primera, y al revés.
-- Una página: el gesto no hace nada.
-- Feedback: al cambiar, se pinta la página nueva de inmediato. Animación de slide: no es requisito v1.
-- El índice activo se guarda en NVS.
+- **Device** axis: `horizontal` (default) or `vertical`.
+- Minimum travel along the axis ≈ 40 px. As soon as it's crossed, it's a swipe (no waiting for release or any hold). The orthogonal axis is ignored (a shaky tap does not change page).
+- Direction: swipe **left** → next page (index +1); right → previous. If the axis is vertical: up → next, down → previous.
+- Wrap: last +1 → first, and the reverse.
+- One page: the gesture does nothing.
+- Feedback: on change, the new page is painted immediately. Slide animation: not a v1 requirement.
+- The active index is stored in NVS.
 
-### 6.4 Aro — dimmer
+### 6.4 Ring — dimmer
 
-Posición angular 1–100, PUT al soltar. Destino = **set de dimmer de la página** (§8.2), no un slot extra.
+Angular position 1–100, PUT on release. Target = the page's **dimmer set** (§8.2), not an extra slot.
 
-- Destino **grupo**: un PUT a `grouped_light` (el Bridge, como la app, suele tocar solo las on; si el grupo está off, el drag prende).
-- Destino **luces de las acciones**: GET de esas luces; PUT de `dimming` solo a las `on`. Si ninguna está on, PUT `on` + `dimming` a todas las del set. El % del aro es **absoluto** (todas las on quedan en el mismo 1–100), no un scale relativo.
-- Sin destino → no hay aro.
+- **Group** target: one PUT to `grouped_light` (the Bridge, like the app, usually touches only the lights that are on; if the group is off, the drag turns it on).
+- **Action lights** target: GET those lights; PUT `dimming` only to the ones that are `on`. If none is on, PUT `on` + `dimming` to all of the set. The ring % is **absolute** (all lights that are on end at the same 1–100), not a relative scale.
+- No target → no ring.
 
-El swipe de página **no** vive en el aro. El aro no se “configura” como gesto de receta.
+The page swipe does **not** live on the ring. The ring is not "configured" as a recipe gesture.
 
-### 6.5 Fuera de páginas
+### 6.5 Outside pages
 
-- BOOT físico del XIAO, hold 3 s → re-pair Hue. No es gesto de pantalla. No es receta.
-- Estados Wi-Fi / pairing / error: el disco no ejecuta recetas ni cambia de página.
+- The XIAO's physical BOOT, 3 s hold → Hue re-pair. Not a screen gesture. Not a recipe.
+- Wi‑Fi / pairing / error states: the disc does not run recipes or change page.
 
 ---
 
-## 7. Qué se ve
+## 7. What is shown
 
-El disco en Ready **no** lleva frases de ayuda. Solo nombre, escena si hay, puntos, aro.
+The disc in Ready has **no** help sentences. Only name, scene if any, dots, ring.
 
-| Situación | Título | Debajo |
+| Situation | Title | Below |
 | --- | --- | --- |
-| Tap → toggle / on / off | nombre de página | (nada) |
-| Lista de escenas, una activa | nombre de página | nombre Hue de esa escena (ellipsis) |
-| Lista de escenas, ninguna activa / luces off | nombre de página | (nada) |
-| Página sin recetas | nombre de página | (nada) |
-| Varias páginas | nombre + puntos (lleno = activa) | escena si aplica |
+| Tap → toggle / on / off | page name | (nothing) |
+| Scene list, one active | page name | that scene's Hue name (ellipsis) |
+| Scene list, none active / lights off | page name | (nothing) |
+| Page without recipes | page name | (nothing) |
+| Several pages | name + dots (filled = active) | scene if applicable |
 
-El dígito `1` del canal deja de ser el título.
+Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. ASCII: accents/ñ are folded. No line breaks.
 
-Nombres de página > 12 caracteres: la consola avisa; el aparato trunca con ellipsis. Escenas: §5.2. ASCII: tildes/ñ se pliegan. Sin saltos de línea.
-
-Estados de sistema (inglés, una línea): `Wi-Fi...`, `No Wi-Fi`, `No Bridge`, `Press Bridge button`, `Hue error`. No son páginas.
+System states (English, one line): `Wi-Fi...`, `No Wi-Fi`, `No Bridge`, `Press Bridge button`, `Hue error`. They are not pages.
 
 ---
 
-## 8. Recetas por página
+## 8. Recipes per page
 
-Una receta sigue siendo acción Hue + destino(s). La clave deja de ser `(channelId, event)` en el Round y pasa a ser `(pageId, event)`.
+A recipe is still a Hue action + target(s). On Round the key is `(pageId, event)` instead of `(channelId, event)`.
 
-| Evento | Default de acción Hue | Destinos (siempre del grupo de la página) |
+| Event | Default Hue action | Targets (always from the page's group) |
 | --- | --- | --- |
-| `short` | `toggle` | `grouped_light` del grupo; o una luz **hija**; o lista de escenas del grupo |
-| `double_click` | `off` | `grouped_light` del grupo (típico); o una luz hija; o otra lista de escenas del grupo |
+| `short` | `toggle` | the group's `grouped_light`; or a **child** light; or a scene list from the group |
+| `double_click` | `off` | the group's `grouped_light` (typical); or a child light; or another scene list from the group |
 
-Vacío = no hace nada. Guardar incompleto es válido (solo tap, sin doble). Un destino fuera del grupo lo rechaza la consola.
+Empty = does nothing. Saving incomplete is valid (tap only, no double). A target outside the group is rejected by the console.
 
-**Dimmer:** el usuario no elige un slot “aro”. La consola calcula el set al guardar (§8.2).
+**Dimmer:** the user does not pick a "ring" slot. The console computes the set on save (§8.2).
 
-### 8.1 Lista de escenas (rotar)
+### 8.1 Scene list (rotate)
 
-Clip v2 no tiene “siguiente escena”. `recall_scene` en Round es **una lista ordenada** de 1–8 `rid` de tipo `scene`.
+Clip v2 has no "next scene". On Round, `recall_scene` is **an ordered list** of 1–8 `rid`s of type `scene`.
 
-| Lista | Comportamiento al usar el gesto |
+| List | Behavior when the gesture is used |
 | --- | --- |
-| 1 escena | PUT `recall.active` a ese `rid` (igual que hoy) |
-| 2–8 escenas | aplica la **siguiente** de la lista (wrap a la primera) |
+| 1 scene | PUT `recall.active` to that `rid` |
+| 2–8 scenes | applies the **next** one in the list (wraps to the first) |
 
-Reglas:
+Rules:
 
-- Todas las escenas de una lista pertenecen al **grupo de la página**. La consola no muestra (ni deja) escenas de otro room/zona.
-- El **orden lo edita el usuario** en la consola (agregar, quitar, drag / flechas). Ese orden es el del ciclo.
-- Off **no** entra en la lista. No existe “scene off” en Clip v2 (`recall.action` es `active` \| `dynamic_palette` \| `static`). Apagar es **doble tap** → `off` del `grouped_light` de ese grupo.
-- Smart scenes (`smart_scene` / `deactivate`) quedan fuera de v1.
-- Una escena que desaparece del snapshot se marca stale en la consola. En `targets[]`, un `rid` que el Bridge responde **404 se SALTA** (siguiente de la lista); no se aborta el gesto.
-- El círculo **sí** muestra una línea de escena debajo del nombre de página (§5.2). El título sigue siendo el de la página.
+- All scenes in a list belong to the **page's group**. The console does not show (or allow) scenes from another room/zone.
+- The **order is edited by the user** in the console (add, remove, drag / arrows). That order is the cycle order.
+- Off does **not** go in the list. There is no "scene off" in Clip v2 (`recall.action` is `active` \| `dynamic_palette` \| `static`). Turning off is **double tap** → `off` on that group's `grouped_light`.
+- Smart scenes (`smart_scene` / `deactivate`) are out of v1.
+- A scene that disappears from the snapshot is marked stale in the console; the firmware skips it.
+- The circle **does** show the active scene under the page name (§5.2). The title stays the page's.
 
-Al disparar el gesto, el aparato **no** GET-ea `status.active` para elegir el rid. El ciclo es **caché NVS** (último PUT local):
+When the gesture fires, the device:
 
-1. Si hay un último `rid` de esa lista en NVS → PUT de la **siguiente** en el orden de consola (la última envuelve a la primera).
-2. Si no hay caché (nunca se recorrió, o Off local la limpió) → PUT de la **primera**.
-3. Si el PUT a un `rid` vuelve 404 → **saltar** ese ítem y probar el siguiente. No fallar el gesto entero.
-4. El PUT es el de siempre: `PUT /clip/v2/resource/scene/{rid}` `{"recall":{"action":"active"}}`. Guardar ese `rid` en NVS.
+1. Cycles from the **last `rid` set by this circle** (NVS, `pagesLastSceneRid`). It does not GET `status.active` to pick the next one.
+2. If there is a last rid in the list → PUT the **next** one in console order (wrap).
+3. If there is none (a **local** off / double tap cleared the rid, or it was never used) → PUT the **first**.
+4. A `rid` the Bridge answers with **404** is skipped; the next in the list is tried. No `UI_ERROR` for the whole gesture if another PUT succeeds. If all fail, it is an error.
+5. The PUT is the usual one: `PUT /clip/v2/resource/scene/{rid}` `{"recall":{"action":"active"}}`. That `rid` is saved in NVS.
 
-**Off local** (doble tap → `off` del grupo) **limpia** el rid cacheado. El próximo tap de escenas vuelve a la **primera**.
+The `status.active` GET is only for **painting the name** in Ready (refresh on entering the page / after the PUT / ~20 s poll), not for picking the next rid in the cycle. Changing a scene in the Hue app does not re-sync the disc's cycle (it may be one step behind the phone). That is the contract, not a bug.
 
-Un GET `status.active` al Bridge queda **solo para pintar el nombre** (refresh al entrar a la página / tras el PUT). **No** elige el próximo rid. Cambiar una escena en la app Hue no re-sincroniza el ciclo del disco (puede ir un paso atrasado respecto al teléfono). Eso es el contrato, no un bug.
+After the PUT (or on entering the page), that `rid`'s `name` is painted. A local off clears the cached rid → the next cycle starts at the first.
 
-El dedo no espera a Vercel. El PUT al Bridge (LAN) **sí ocurre**; el círculo **no se congela**: tap, doble, aro y swipe siguen vivos. Detalle: `hue-round-switch/docs/specs/finished/input-during-hue.md`.
+The finger does not wait for Vercel. The PUT to the Bridge (LAN) **does happen**; the circle **does not freeze** meanwhile: tap, double, ring and swipe stay live. Details: `hue-round-switch/docs/specs/finished/input-during-hue.md`.
 
-### 8.2 Set de dimmer (aro)
+### 8.2 Dimmer set (ring)
 
-La consola lo calcula **al guardar** (snapshot). El firmware no infiere el room a partir de una escena.
+The console computes it **on save** (snapshot). The firmware does not infer the room from a scene.
 
-En cada página el poll baja `dim`:
+On each page, the poll sends `dim`:
 
 ```text
 dim: null
@@ -304,93 +303,93 @@ dim: null
   | { mode: "lights", rids: ["<light>", "<light>"] }
 ```
 
-`null` → sin aro.
+`null` → no ring.
 
-Reglas, en este orden:
+Rules, in this order:
 
-1. **Hay `recall_scene` en tap o doble** → `mode: "group"` (el `grouped_light` de la página). Una escena pinta el cuarto; el aro es el slider de la app Hue.
-2. **No hay escenas, y alguna receta apunta al `grouped_light` del grupo** (p. ej. tap = velador, doble = off Living) → `mode: "group"`.
-3. **No hay escenas ni acción de grupo: solo luces hijas** (p. ej. tap = Velador 1, doble = Velador 2) → `mode: "lights"`, `rids` = esas luces, sin duplicar. El aro **no** toca el plafón ni el resto del room.
-4. Nada dimmable → `null`. En `mode: "lights"`, dimmable = `caps` del snapshot incluye `"dim"`. Si ninguna luz del set lo tiene, `dim: null`. Un destino `grouped_light` **cuenta como dimmable** (el Bridge resuelve cuáles luces toca).
+1. **There is a `recall_scene` on tap or double** → `mode: "group"` (the page's `grouped_light`). A scene paints the room; the ring is the Hue app's slider.
+2. **No scenes, and some recipe targets the group's `grouped_light`** (e.g. tap = bedside lamp, double = off Living) → `mode: "group"`.
+3. **No scenes and no group action: only child lights** (e.g. tap = Bedside 1, double = Bedside 2) → `mode: "lights"`, `rids` = those lights, without duplicates. The ring does **not** touch the ceiling light or the rest of the room.
+4. Nothing dimmable → `null`. In `mode: "lights"`, dimmable = the snapshot's `caps` includes `"dim"`. If no light in the set has it, `dim: null`. A `grouped_light` target **counts as dimmable** (the Bridge decides which lights it touches).
 
-Comportamiento al soltar el aro (1–100 absoluto):
+Behavior on ring release (1–100 absolute):
 
 | `dim.mode` | PUT |
 | --- | --- |
-| `group` | un PUT `dimming` al `grouped_light`. El Bridge deja off las que ya están off; si el grupo está todo off, el drag **prende**. |
-| `lights` | GET de esos `rid`. PUT `dimming` solo a las `on`. Si **ninguna** está on → PUT `on` + `dimming` a todas las del set. |
+| `group` | one `dimming` PUT to the `grouped_light`. The Bridge leaves the off ones off; if the whole group is off, the drag **turns it on**. |
+| `lights` | GET those `rid`s. PUT `dimming` only to the `on` ones. If **none** is on → PUT `on` + `dimming` to all of the set. |
 
-Un rid stale (404) se salta, igual que una receta huérfana. Dos luces: como mucho dos PUT a `/light` (cabe en el límite del Bridge).
-
----
-
-## 9. Consola
-
-Al seleccionar un Round Display (no un simple-switch), la columna izquierda **no** lista GPIO. Lista **páginas** de ese aparato.
-
-### 9.1 Ajustes del display (una vez por aparato)
-
-- **Page swipe:** `Left / right` (default) o `Up / down`.
-- **Screen timeout:** segundos hasta reposo del disco (default **30**). **0** = always on. Rango 0 o 10–600. Detalle: `hue-round-switch/docs/specs/finished/idle-display.md`.
-- El label del switch (`switches.label`) sigue siendo el nombre del aparato en la lista de la consola. **No** se pinta en el círculo. El círculo muestra el nombre de la **página**.
-
-### 9.2 Lista de páginas
-
-- Agregar página.
-- Eliminar (con confirmación). Se van las recetas de esa página.
-- Reordenar (drag o flechas). El orden de la lista **es** el orden del swipe.
-- Elegir una página para editarla.
-
-Mínimo 1 página (no se puede borrar la última: queda vacía, asignable). Máximo **6**.
-
-Página nueva (en la UI): hay que **elegir el grupo** (room/zona). Nombre default = nombre Hue del grupo recortado a 12 / ASCII (editable; tildes se pliegan). Theme `ember`. Tap y doble vacíos. `dim` null hasta que haya recetas.
-
-El **register** del aparato puede crear `p1` sin grupo. El **Save** humano (PUT páginas) **exige grupo en todas las páginas**. No hay página de producto “sin room” una vez guardada.
-
-### 9.3 Editor de una página
-
-- **Group** — room o zona, obligatorio. Cambiar el grupo **limpia** recetas que ya no pertenezcan (aviso). La columna de topología **solo** muestra luces hijas y escenas de ese group.
-- **Name** — input, ASCII plegado (`Niños` → `Ninos`), máx. 12 caracteres (aviso si se corta; el aparato trunca). Es lo que se ve en el círculo.
-- **Theme** — picker visual de **diales redondos**, el mismo lenguaje que `hue-round-switch/docs/round-themes.html` (no el dropdown CSS del sitio). Una paleta por página: click en el círculo la elige (anillo de seleccionado). On/Off en el preview para ver luz prendida vs apagada. El nombre en el dial de muestra puede ser el de la página. El usuario no edita hex.
-- **Slots de receta** — siempre **Tap** y **Double tap**, asignables o vacíos. Click en la topología filtrada. Defaults según §8. Vacío = no-op; si doble está vacío, el tap no espera.
-- **Lista de escenas** — click en una escena del grupo la agrega; click de nuevo la saca; reordenar. Máx. 8. Off no es ítem de la lista.
-- Frase de confirmación, p. ej. *“Living · tap → cycle Relax, Bright, Night · double-tap → turn off Living · ring dims Living (on lights)”* o *“Lamps · tap → Velador 1 · double-tap → Velador 2 · ring dims those lights”*.
-
-### 9.4 Simple-switch
-
-Sin cambios de UI: canales `boot` / `d0` / `d1` / `d2`, eventos `on` / `off` / `double_click` / `short`. El círculo no añade `hold` al schema compartido.
-
-La consola distingue el producto por lo que registra el firmware (`product: "round"` vs canales GPIO). Un Round viejo que aún manda solo `c1` se trata como Round de una página (migración, §13).
+A stale rid (404) is skipped, like an orphan recipe. Two lights: at most two PUTs to `/light` (within the Bridge's rate limit).
 
 ---
 
-## 10. Themes del círculo
+## 9. Console
 
-Conjunto **cerrado** de **20 paletas** para el GC9A01. Cada paleta nombra colores RGB565, no un CSS de la web. Las 20 quedan; no se recorta el set.
+When a Round Display is selected (not a Simple switch), the left column does **not** list GPIO. It lists that device's **pages**.
 
-Especificación visual del picker (y de las hex de prototipo): `hue-round-switch/docs/round-themes.html`. En la consola es el **mismo dial**: fondo, disco interior, aro de dimmer 270°, nombre de página, escena de muestra si aplica, puntos. **Sin** `Tap to cycle scenes` ni otros how-to. En el prototipo los 3 puntos son de muestra; **en el aparato son de verdad**: N puntos = N páginas, el lleno = página activa. Diferencias respecto al HTML suelto:
+### 9.1 Display settings (once per device)
 
-| Prototipo | Consola (editor de página) |
+- **Page swipe:** `Left / right` (default) or `Up / down`.
+- **Screen timeout:** seconds until the disc sleeps (default **30**). **0** = always on. Range 0 or 10–600. Details: `hue-round-switch/docs/specs/finished/idle-display.md`.
+- The switch label (`switches.label`) is still the device name in the console list. It is **not** painted on the circle. The circle shows the **page** name.
+
+### 9.2 Page list
+
+- Add page.
+- Delete (with confirmation). That page's recipes go with it.
+- Reorder (drag or arrows). The list order **is** the swipe order.
+- Pick a page to edit it.
+
+Minimum 1 page (the last one cannot be deleted: it stays empty, assignable). Maximum **6**.
+
+New page (in the UI): the **group must be chosen** (room/zone). Default name = the group's Hue name trimmed to 12 / ASCII (editable; accents are folded). Theme `ember`. Tap and double empty. `dim` null until there are recipes.
+
+The device **register** may create `p1` without a group. The human **Save** (PUT pages) **requires a group on every page**. Once saved, there is no product page "without a room".
+
+### 9.3 Page editor
+
+- **Group** — room or zone, required. Changing the group **clears** recipes that no longer belong (with a warning). The topology column **only** shows child lights and scenes of that group.
+- **Name** — input, ASCII-folded (`Niños` → `Ninos`), max 12 characters (warning if cut; the device truncates). It's what the circle shows.
+- **Theme** — visual picker of **round dials**, the same language as `hue-round-switch/docs/round-themes.html` (not the site's CSS dropdown). One palette per page: clicking a circle picks it (selection ring). On/Off in the preview to see lights on vs off. The name on the sample dial can be the page's. The user does not edit hex.
+- **Recipe slots** — always **Tap** and **Double tap**, assignable or empty. Click in the filtered topology. Defaults per §8. Empty = no-op; if double is empty, the tap does not wait.
+- **Scene list** — clicking a scene of the group adds it; clicking again removes it; reorder. Max 8. Off is not a list item.
+- Confirmation sentence, e.g. *"Living · tap → cycle Relax, Bright, Night · double-tap → turn off Living · ring dims Living (on lights)"* or *"Lamps · tap → Bedside 1 · double-tap → Bedside 2 · ring dims those lights"*.
+
+### 9.4 Simple switch
+
+No UI changes: channels `boot` / `d0` / `d1` / `d2`, events `on` / `off` / `double_click` / `short`. The circle does not add `hold` to the shared schema.
+
+The console tells products apart by what the firmware registers (`product: "round"` vs GPIO channels). An old Round that still sends only `c1` is treated as a one-page Round (migration, §14).
+
+---
+
+## 10. Circle themes
+
+A **closed** set of **20 palettes** for the GC9A01. Each palette names RGB565 colors, not web CSS. All 20 stay; the set is not trimmed.
+
+Visual spec for the picker (and the prototype hex values): `hue-round-switch/docs/round-themes.html`. In the console it's the **same dial**: background, inner disc, 270° dimmer ring, page name, sample scene if applicable, dots. **No** `Tap to cycle scenes` or other how-tos. In the prototype the 3 dots are samples; **on the device they are real**: N dots = N pages, the filled one = active page. Differences from the standalone HTML:
+
+| Prototype | Console (page editor) |
 | --- | --- |
-| Keep / varios a la vez | **Una** paleta por página. Click = elegir. El seleccionado lleva el anillo |
-| Copy kept ids | no existe |
-| Título “Living” fijo | usa el **nombre de la página** si ya hay |
-| All On / All Off | un toggle On/Off de preview (o por dial), para juzgar luz prendida |
-| Página standalone | embebido en el editor de página, diales un poco más chicos si hace falta |
+| Keep / several at once | **One** palette per page. Click = pick. The selected one has the ring |
+| Copy kept ids | does not exist |
+| Fixed "Living" title | uses the **page name** if there is one |
+| All On / All Off | one On/Off preview toggle (or per dial), to judge lights on |
+| Standalone page | embedded in the page editor, slightly smaller dials if needed |
 
-Campos por paleta:
+Fields per palette:
 
-| Rol | Dónde se usa |
+| Role | Where it's used |
 | --- | --- |
-| `bg` | Fondo |
-| `ink` | Texto e iconos con luz on |
-| `mute` | Texto secundario, luz off |
-| `fillOn` / `fillOff` | Disco interior |
-| `accent` | Aro y estado “on” / pressed |
-| `ringTrack` | Pista vacía del dimmer |
-| `error` | Wi-Fi fail, Hue error (puede ser compartido) |
+| `bg` | Background |
+| `ink` | Text and icons with the light on |
+| `mute` | Secondary text, light off |
+| `fillOn` / `fillOff` | Inner disc |
+| `accent` | Ring and "on" / pressed state |
+| `ringTrack` | Empty dimmer track |
+| `error` | Wi‑Fi fail, Hue error (can be shared) |
 
-Lista v1 (id estable, copy en inglés):
+v1 list (stable id, English copy):
 
 | id | Name | Blurb |
 | --- | --- | --- |
@@ -415,37 +414,37 @@ Lista v1 (id estable, copy en inglés):
 | `sky` | Sky | Pale blue, azure. |
 | `porcelain` | Porcelain | Blush, rose. |
 
-Página nueva: `ember`. El usuario no edita hex. Un `theme` desconocido en config se trata como `ember`.
+New page: `ember`. The user does not edit hex. An unknown `theme` in the config is treated as `ember`.
 
-Estados de sistema (pairing, error) pueden ignorar el theme de página y usar la paleta de sistema (`ember` + rojo de error), para no pintar un error “bonito” que no se lea.
+System states (pairing, error) may ignore the page theme and use the system palette (`ember` + error red), so an error is never painted "pretty" and unreadable.
 
 ---
 
-## 11. Contrato aparato ↔ consola
+## 11. Device ↔ console contract
 
-Sigue habiendo `POST /api/device/register` y `GET /api/device/config?mac=`. El GPIO (simple) no espera este GET. El círculo tampoco: NVS → Bridge.
+There is still `POST /api/device/register` and `GET /api/device/config?mac=`. The GPIO (Simple) does not wait for this GET. Neither does the circle: NVS → Bridge.
 
-### 11.1 Registro (Round)
+### 11.1 Register (Round)
 
-Además de MAC, firmware, bridge, snapshot:
+In addition to MAC, firmware, bridge, snapshot:
 
 ```text
 product: "round"
 ```
 
-Ya no hace falta inventar un canal `c1` / gpio `0` para satisfacer a la consola. `channels` puede ir `[]`. La consola no asigna recetas a pines en este producto.
+No need to invent a `c1` / gpio `0` channel to satisfy the console. `channels` can be `[]`. The console does not assign recipes to pins for this product.
 
-`hue-simple-switch` manda `"product": "simple"` (los firmwares actuales mandan `product`). Si un aparato viejo omite el campo, se infiere por canales (`[]` / `c1` → round; GPIO → simple). Wipe round→simple **solo** con `"product": "simple"` explícito; la inferencia no borra páginas.
+`hue-simple-switch` sends `"product": "simple"` (current firmwares send `product`). If an old device omits the field, it is inferred from channels (`[]` / `c1` → round; GPIO → simple). Wipe round→simple **only** with an explicit `"product": "simple"`; inference does not delete pages.
 
-### 11.2 Config que baja al Round
+### 11.2 Config sent to the Round
 
-El GET de un Round **no** es `{ rev, recipes[] }` con `channelId`. Baja `pages[]` con **grupo**, `dim`, nombres, themes, eje, timeout y recetas con `pageId`. Eso **sí** baja al aparato (el `switches.label` no). Simple sigue recibiendo `{ rev, recipes[] }` con `channelId`.
+A Round's GET is **not** `{ rev, recipes[] }` with `channelId`. It sends `pages[]` with **group**, `dim`, names, themes, axis, timeout, and recipes with `pageId`. That **does** reach the device (the `switches.label` does not). Simple still receives `{ rev, recipes[] }` with `channelId`.
 
 ```text
 {
   rev: 12,
   product: "round",
-  pageSwipeAxis: "horizontal",          // o "vertical"
+  pageSwipeAxis: "horizontal",          // or "vertical"
   screenTimeoutSec: 30,                 // 0 = always on; default 30
   pages: [
     {
@@ -460,7 +459,7 @@ El GET de un Round **no** es `{ rev, recipes[] }` con `channelId`. Baja `pages[]
       name: "Lamps",
       theme: "night",
       group: { rtype: "room", rid: "living-room-…", groupedLightRid: "living-gl-…" },
-      dim: { mode: "lights", rids: ["velador-1-…", "velador-2-…"] }
+      dim: { mode: "lights", rids: ["bedside-1-…", "bedside-2-…"] }
     }
   ],
   recipes: [
@@ -475,192 +474,194 @@ El GET de un Round **no** es `{ rev, recipes[] }` con `channelId`. Baja `pages[]
       ]
     },
     { pageId: "p1", event: "double_click", action: "off", target: { rtype: "grouped_light", rid: "living-gl-…" } },
-    { pageId: "p3", event: "short", action: "toggle", target: { rtype: "light", rid: "velador-1-…" } },
-    { pageId: "p3", event: "double_click", action: "toggle", target: { rtype: "light", rid: "velador-2-…" } }
+    { pageId: "p3", event: "short", action: "toggle", target: { rtype: "light", rid: "bedside-1-…" } },
+    { pageId: "p3", event: "double_click", action: "toggle", target: { rtype: "light", rid: "bedside-2-…" } }
   ]
 }
 ```
 
-El orden de `pages[]` **es** el orden del swipe. El orden de `targets[]` en un `recall_scene` **es** el orden del ciclo. `id` de página estable (no se recicla al borrar). `rev` sube al guardar páginas, recetas, grupo, theme, nombre o eje.
+The order of `pages[]` **is** the swipe order. The order of `targets[]` in a `recall_scene` **is** the cycle order. Page `id` is stable (not reused after deletion). `rev` goes up when pages, recipes, group, theme, name or axis are saved.
 
-`recall_scene` usa `targets` (1–8 escenas del `group` de la página, con `name`). `on` / `off` / `toggle` usan un `target` que es el `grouped_light` de la página o una luz hija. El firmware no acepta `target` suelto en `recall_scene`.
+`recall_scene` uses `targets` (1–8 scenes from the page's `group`, with `name`). `on` / `off` / `toggle` use a `target` that is the page's `grouped_light` or a child light. The firmware does not accept a bare `target` on `recall_scene`.
 
-El firmware, si `rev` remoto > local, **reemplaza** páginas + recetas + eje (no es un patch). Igual que hoy con el array de recetas.
+If remote `rev` > local, the firmware **replaces** pages + recipes + axis (not a patch).
 
-Simple-switch: el GET sigue siendo `{ rev, recipes[] }` con `channelId`. Ignora `pages` si algún día viniera.
+Simple switch: the GET is still `{ rev, recipes[] }` with `channelId`. It ignores `pages` if they ever came.
 
-### 11.3 Eventos legales
+### 11.3 Legal events
 
-| Producto | Eventos de receta |
+| Product | Recipe events |
 | --- | --- |
-| Round, por página | `short`, `double_click` |
-| Simple, por canal `maintained` | `on`, `off`, `double_click` |
-| Simple, por canal `momentary` | `short` |
+| Round, per page | `short`, `double_click` |
+| Simple, per `maintained` channel | `on`, `off`, `double_click` |
+| Simple, per `momentary` channel | `short` |
 
-Round no introduce eventos nuevos respecto al schema actual. `double_click` en el círculo es el hueco de off (u otra receta), no un hold.
+Round introduces no new events compared to the shared schema. `double_click` on the circle is the off slot (or another recipe), not a hold.
 
 ---
 
-## 12. Datos (consola)
+## 12. Data (console)
 
-Hoy `recipes` es unique `(switch_id, channel_id, event)` y `event` está checkeado a `on | off | double_click | short`. Eso no modela páginas.
+Before pages, `recipes` was unique on `(switch_id, channel_id, event)` and `event` was checked to `on | off | double_click | short`. That does not model pages.
 
-Necesario:
+Required:
 
-- Discriminar producto en `switches` (`product` text: `simple` | `round`).
-- Ajustes de Round en el switch: `page_swipe_axis`, `screen_timeout_sec` (default 30; 0 = always on).
-- Tabla (o JSON) de **páginas** por switch: `id`, `name`, `sort_order`, `theme`, `group` (room/zone + grouped_light rid), `dim` (`group` \| `lights` \| null).
-- Recetas del Round ligadas a `page_id` + `event` (`short` | `double_click`).
-- `recall_scene` en Round guarda **varios** `rid` ordenados (tabla hija o JSON), no un solo `target_rid`.
-- Recetas del simple-switch se quedan como están (un `rid` por receta; no rotan).
+- Product discriminator on `switches` (`product` text: `simple` | `round`).
+- Round settings on the switch: `page_swipe_axis`, `screen_timeout_sec` (default 30; 0 = always on).
+- A **pages** table (or JSON) per switch: `id`, `name`, `sort_order`, `theme`, `group` (room/zone + grouped_light rid), `dim` (`group` \| `lights` \| null).
+- Round recipes tied to `page_id` + `event` (`short` | `double_click`).
+- `recall_scene` on Round stores **several** ordered `rid`s (child table or JSON), not a single `target_rid`.
+- Simple switch recipes stay as they are (one `rid` per recipe; they don't rotate).
 
-El detalle SQL lo define quien implemente; este documento exige el modelo, no el DDL.
+The SQL detail is up to the implementer; this document requires the model, not the DDL.
 
-Límites que el server valida:
+Limits the server validates:
 
-| Límite | Valor | Por qué |
+| Limit | Value | Why |
 | --- | --- | --- |
-| Páginas por Round | 1–6 | Puntos + NVS + uso de pared |
-| Nombre | 1–12 caracteres | Ancho del disco a size 2 |
-| Theme | id del set cerrado | RGB565 predecible |
-| Gestos | tap y doble siempre listos; receta opcional | Vacío = no-op; sin checkbox extra |
-| Recetas | ≤ 12 (6×2) | Cabe en NVS; firmware puede dejar `kMaxRecipes` en 16 o bajar |
-| Escenas por lista | 1–8 | Ciclo usable en pared; JSON/NVS |
-| Grupo por página | 1 room o zona; PUT humano obligatorio. Register puede dejar `p1` sin grupo | Filtra luces y escenas |
-| Luces en `dim.mode=lights` | las de tap/doble, ≤ 2 | Un PUT por luz on |
-| Screen timeout | 0 o 10–600 s; default 30 | Reposo del disco; 0 = always on |
+| Pages per Round | 1–6 | Dots + NVS + wall use |
+| Name | 1–12 characters | Disc width at size 2 |
+| Theme | id from the closed set | Predictable RGB565 |
+| Gestures | tap and double always ready; recipe optional | Empty = no-op; no extra checkbox |
+| Recipes | ≤ 12 (6×2) | Fits NVS; firmware can keep `kMaxRecipes` at 16 or lower it |
+| Scenes per list | 1–8 | Usable cycle on the wall; JSON/NVS |
+| Group per page | 1 room or zone; required on the human PUT. Register may leave `p1` without a group | Filters lights and scenes |
+| Lights in `dim.mode=lights` | those of tap/double, ≤ 2 | One PUT per light that is on |
+| Screen timeout | 0 or 10–600 s; default 30 | Disc sleep; 0 = always on |
 
 ---
 
 ## 13. Firmware (Round)
 
-- Poll igual: sin recetas/páginas ~1 min; con config al boot y cada 1 h. El dedo no espera.
-- NVS guarda `rev`, eje, `screenTimeoutSec`, páginas (id, nombre, theme, group, `dim`), recetas (listas de escenas con `rid` + `name` ASCII), índice de página activa, último `rid` de escena por gesto (caché).
-- Reposo de pantalla: `hue-round-switch/docs/specs/finished/idle-display.md`. BL off tras timeout; primer toque despierta y no actúa.
-- Aro `mode: lights`: GET de esos rid + PUT a las on (o prender el set si todas off). No copiar esos GET en el stack del loop.
-- Rotar escenas: caché NVS (último PUT) + PUT de la siguiente (LAN). GET `status.active` solo para pintar el nombre. Un 404 en `targets[]` se salta. Off local limpia el rid. No llama a la consola.
-- Al cambiar de página: pintar de inmediato, GET de estado Hue del nuevo destino (on/brillo) en background. Un swipe no se bloquea a la red.
-- GET/PUT de receta y dimmer **tampoco** bloquean el loop de toque. Last-wins si llega otro gesto. Ready no usa `UI_BUSY`. Ver `hue-round-switch/docs/specs/finished/input-during-hue.md`.
-- Si el `pageId` de la receta ya no existe: ignorar. Si el índice activo apunta a una página borrada: ir a la primera.
-- Si cambia el `bridgeid` emparejado: tirar páginas y recetas (los `rid` son de otro Bridge), dejar una página vacía default.
-- API key revocada: el poll falla; lo que hay en NVS **sigue** ejecutándose en la LAN.
-- `kMaxRecipes` hoy es 16; con 6×2 (tap + doble) 16 sigue sobrando.
+- Same poll: without recipes/pages ~1 min; with config at boot and every 1 h. The finger does not wait.
+- Snapshot / register / console poll run **outside** the touch loop. Recipe / ring / page refresh are in `hue_job`.
+- NVS stores `rev`, axis, `screenTimeoutSec`, pages (id, name, theme, group, `dim`), recipes (scene lists with `rid` + ASCII `name`), active page index, last scene `rid` per gesture (cache).
+- The poll's `dim` is authoritative. `dim: null` = no ring. The firmware does not infer the set from recipes.
+- Screen sleep: `hue-round-switch/docs/specs/finished/idle-display.md`. Backlight off after the timeout; the first touch wakes and does not act.
+- Ring `mode: lights`: GET those rids + PUT to the ones that are on (or turn the set on if all are off). Do not put those GETs on the loop's stack.
+- Rotating scenes: next rid from NVS (last local PUT) + PUT (LAN). `status.active` GET only for the name. A 404 in `targets[]` is skipped. A local off clears the rid. Does not call the console.
+- On page change: paint immediately, GET the new target's Hue state (on/brightness) in the background. A swipe never blocks on the network. Unknown = off; the first tap sends **on**.
+- Recipe and dimmer GET/PUT **also** do not block the touch loop. Last-wins if another gesture arrives. Ready does not use `UI_BUSY`. See `hue-round-switch/docs/specs/finished/input-during-hue.md`.
+- If a recipe's `pageId` no longer exists: ignore it. If the active index points to a deleted page: go to the first.
+- If the paired `bridgeid` changes: drop pages, recipes and `rev` in NVS **before** the poll (the `rid`s belong to another Bridge), leave one default empty page. Do not treat remote `rev` 0 as "don't replace" if the bid changed.
+- Revoked API key: the poll fails; what's in NVS **keeps** running on the LAN.
+- `kMaxRecipes` is 16; with 6×2 (tap + double), 16 is plenty.
 
-### Capacidad medida (XIAO ESP32-S3, `default_8MB`)
+### Measured capacity (XIAO ESP32-S3, `default_8MB`)
 
-Compilación actual (`arduino-cli compile --profile xiao-s3`, firmware 0.3.0), **antes** de páginas:
+Build at the time (`arduino-cli compile --profile xiao-s3`, firmware 0.3.0), **before** pages:
 
-| Recurso | Usado | Tope | Margen |
+| Resource | Used | Cap | Headroom |
 | --- | --- | --- | --- |
-| App flash (`app0`) | 1 188 458 B (35%) | 3 342 336 B (0x330000) | ~2,05 MB |
-| SRAM estática (Arduino “globales”) | 57 964 B (17%) | 327 680 B | ~270 KB heap |
-| PSRAM OPI 8 MB | 0 (no se usa) | 8 MB | no hace falta |
-| NVS | IP/key Hue + JSON de recetas + Wi‑Fi del core | 20 KB (`0x5000`) | el único sitio justo |
+| App flash (`app0`) | 1,188,458 B (35%) | 3,342,336 B (0x330000) | ~2.05 MB |
+| Static SRAM (Arduino "globals") | 57,964 B (17%) | 327,680 B | ~270 KB heap |
+| PSRAM OPI 8 MB | 0 (unused) | 8 MB | not needed |
+| NVS | Hue IP/key + recipes JSON + core Wi‑Fi | 20 KB (`0x5000`) | the only tight spot |
 
-Partición: `nvs` 20 KB, `app0`/`app1` 3,19 MB c/u (OTA cabe con el binario actual), `spiffs` 1,5 MB vacío.
+Partitions: `nvs` 20 KB, `app0`/`app1` 3.19 MB each (OTA fits with the current binary), `spiffs` 1.5 MB empty.
 
-Extra estimado de páginas (6 páginas, 12 recetas, listas de hasta 8 escenas, paletas, máquina de gestos, UI de nombre/puntos):
+Estimated extra for pages (6 pages, 12 recipes, lists of up to 8 scenes, palettes, gesture state machine, name/dots UI):
 
-| Recurso | Extra | ¿Cabe? |
+| Resource | Extra | Fits? |
 | --- | --- | --- |
-| Flash de código | ~20–40 KB | sí, sigue ~36% |
-| SRAM estática | ~2 KB (páginas + recetas 24 × ~100 B) | sí |
-| Heap en poll | JSON de config ~4–6 KB con listas de escenas; snapshot de registro ya era el pico | sí |
-| NVS `putString` | un string ≤ **4000 B** (límite `nvs_set_str`) | sí si se parte: recetas en `json`, páginas en otra key. Listas de escenas pueden empujar el JSON; partir por página si se acerca a 4000 B |
+| Code flash | ~20–40 KB | yes, still ~36% |
+| Static SRAM | ~2 KB (pages + recipes 24 × ~100 B) | yes |
+| Heap during poll | config JSON ~4–6 KB with scene lists; the register snapshot was already the peak | yes |
+| NVS `putString` | one string ≤ **4000 B** (`nvs_set_str` limit) | yes if split: recipes in `json`, pages in another key. Scene lists can push the JSON; split per page if it gets close to 4000 B |
 
-El S3 **tiene espacio de sobra** en flash y RAM. No hace falta framebuffer ni PSRAM. El único cuidado de implementación: no meter páginas+recetas en **un** `Preferences.putString` que se acerque a 4000 B; dos keys. El cuello de producto sigue siendo el disco de 176 px, no el chip.
-
----
-
-## 14. Migración
-
-Aparatos Round que ya registraron `c1` + receta `short`:
-
-1. La consola los marca `product: round`.
-2. Crea una página `p1`, theme `ember`, tap/doble según la receta migrada.
-3. Copia `c1`/`short` a `p1`/`short`. Infere `group` del target (luz → su room; escena → su `group`; `grouped_light` → ese). Si no se puede inferir, la página queda sin grupo hasta que el usuario elija uno en consola (sin aro, recetas stale). `dim` según §8.2.
-4. El siguiente poll con `rev` nuevo baja el objeto de §11.2.
-5. Firmware viejo (sin parser de `pages`): **no se le puede mandar solo recipes con `pageId`**. Hasta flashear, o bien se dual-escribe `{ channelId: "c1", … }` (compat) o el aparato se queda con NVS viejo hasta el flash. v1 asume **flash de firmware junto con el corte de consola**. No hay requisito de dual-stack largo.
-
-Simple-switch: cero migración.
+The S3 has **plenty of room** in flash and RAM. No framebuffer or PSRAM needed. The only implementation caveat: don't put pages+recipes in **one** `Preferences.putString` close to 4000 B; use two keys. The product bottleneck is still the 176 px disc, not the chip.
 
 ---
 
-## 15. Fuera de alcance (v1)
+## 14. Migration
+
+Round devices that already registered `c1` + a `short` recipe:
+
+1. The console marks them `product: round`.
+2. Creates a page `p1`, theme `ember`, tap/double per the migrated recipe.
+3. Copies `c1`/`short` to `p1`/`short`. Infers `group` from the target (light → its room; scene → its `group`; `grouped_light` → that one). If it can't be inferred, the page stays without a group until the user picks one in the console (no ring, stale recipes). `dim` per §8.2.
+4. The next poll with a new `rev` delivers the §11.2 object.
+5. No `c1` dual-write. v1 assumes **flashing the firmware together with the console cut**. There are no pre-pages boards in the field.
+
+Simple switch: zero migration.
+
+---
+
+## 15. Out of scope (v1)
 
 - Triple tap.
-- Hold en el círculo (gesto de receta). Off es doble tap. El hold de 3 s en BOOT (re-pair) se queda.
-- Swipe como receta Hue. El swipe **solo** cambia de página. Rotar escenas es el gesto de receta (`recall_scene` con lista), no un swipe.
-- Meter “Off” como ítem del carrusel de escenas.
-- Smart scenes (`smart_scene`) en la lista.
-- Pinch / multi-touch (el chip es un dedo).
-- Más de 6 páginas.
-- Nombre de página editado **en el círculo**.
-- Theme con hex libre.
-- Animación de slide entre páginas.
-- Reloj / screensaver / widgets en una página. El reposo negro (`hue-round-switch/docs/specs/finished/idle-display.md`) no es un screensaver.
-- Páginas compartidas entre varios aparatos.
-- Un Round hablando con dos Bridges.
-- Cambiar `hue-simple-switch` ni su máquina de double-click de GPIO.
+- Hold on the circle (recipe gesture). Off is double tap. The 3 s BOOT hold (re-pair) stays.
+- Swipe as a Hue recipe. The swipe **only** changes page. Rotating scenes is the recipe gesture (`recall_scene` with a list), not a swipe.
+- Putting "Off" as an item in the scene carousel.
+- Smart scenes (`smart_scene`) in the list.
+- Pinch / multi-touch (the chip is single-finger).
+- More than 6 pages.
+- Editing the page name **on the circle**.
+- Free-hex themes.
+- Slide animation between pages.
+- Clock / screensaver / widgets on a page. The black sleep (`hue-round-switch/docs/specs/finished/idle-display.md`) is not a screensaver.
+- Pages shared between several devices.
+- One Round talking to two Bridges.
+- Changing `hue-simple-switch` or its GPIO double-click state machine.
 
 ---
 
-## 16. Decisiones propuestas (para no dejar el doc hueco)
+## 16. Proposed decisions (so the doc has no gaps)
 
-Estas no son código. Son el default si no se dice lo contrario.
+These are not code. They are the default unless said otherwise.
 
-1. **Páginas ≠ canales GPIO.** La consola inventa páginas; el firmware no declara pines falsos.
-2. **Máximo 6 páginas.** El disco muestra puntos; 8 ya aprieta.
-3. **Nombre ≤ 12 caracteres**, size 2. Más largo → ellipsis.
-4. **Eje de swipe por aparato**, default horizontal.
-5. **Swipe left = siguiente** (índice +1). Right = anterior. Vertical: up = siguiente, down = anterior.
-6. **Wrap** en el carrusel.
-7. **Última página activa** se recuerda en NVS. Un reboot vuelve a esa.
-8. **Página = un room o zona.** Recetas solo de ese grupo. **`dim` al guardar** (§8.2): escena o acción de grupo → `grouped_light`; solo luces hijas → esas luces; si no, sin aro. El aro no es un slot.
-9. **Sin fallback** `double_click` → otra receta en el círculo.
-10. **Themes = las 20 paletas del prototipo**, set cerrado. Picker = grid de diales redondos (como `docs/round-themes.html`). Una por página. Default `ember`. No es el theme CSS del sitio.
-11. **Sin hold en el círculo.** Off vive en `double_click`. El swipe se decide por desplazamiento, no por reloj. BOOT hold 3 s (re-pair) no cambia.
-12. **Tap al soltar**, nunca al down.
-13. **Clasificación por zona de inicio** (centro vs aro) para no pelear swipe con dimmer.
-14. **`recall_scene` = lista ordenada** (1–8) del mismo room/zona. Repetir el gesto rota. Off es `grouped_light` en doble tap, no una escena.
-15. **Orden de las escenas = orden en la consola.** El usuario lo edita (drag / flechas).
-16. **Debajo del nombre de página, la escena activa** (size 1, ellipsis, o nada si no hay). El título sigue siendo la página. El poll manda `targets[].name`.
-17. **Puntos abajo = páginas.** Un punto por página, orden de consola. El lleno es la activa. Una página → sin puntos. Una fila dentro del disco interior: se achica gap, luego diámetro; nunca overflow ni dos filas.
-18. **Sin textos explicativos en Ready.** Nada de `Tap to toggle` ni `Drag ring to dim`. El disco no enseña gestos. Estados de sistema sí tienen una línea de estado.
-19. **Página nueva: tap y doble visibles y vacíos.** Se asigna en consola o se deja vacío. Sin checkbox de gesto. El tap espera doble solo si doble tiene receta.
-20. **Nombres en el círculo = ASCII.** Página y escena: tildes/ñ se pliegan (`Niños` → `Ninos`). Fuente built-in 5×7.
-21. **Aro como la app Hue:** solo luces on del destino. Si el destino está todo off, el drag prende a ese %. `mode: lights` usa % absoluto en cada luz on, no un scale relativo.
-22. **Tap = velador y doble = off del grupo** → `dim.mode = group` (regla 2), no las luces sueltas.
-23. **Toques mientras Hue responde:** el disco sigue aceptando input. Ack optimista (invert, fill, escena, aro). Last-wins. Sin `UI_BUSY` en Ready. `hue-round-switch/docs/specs/finished/input-during-hue.md`.
-24. **Tap = luz A y doble = luz B** (dos `light` distintas): el fill del disco se parte (izquierda = tap, derecha = doble). El área táctil y los gestos no cambian. Cada lado guarda el on de su `rid`; el toggle no usa un bit único de página. Cualquier otro layout: disco entero.
-25. **Reposo de pantalla:** timeout por aparato en consola (default 30 s, 0 = always on). Disco negro; primer toque solo despierta. `hue-round-switch/docs/specs/finished/idle-display.md`.
-
----
-
-## 17. Preguntas abiertas
-
-Ninguna. Cerradas:
-
-1. Swipe left = siguiente.
-2. Página nueva: tap y doble siempre asignables (vacíos al crear).
-3. Reboot vuelve a la última página.
-4. ASCII en el círculo.
+1. **Pages ≠ GPIO channels.** The console defines pages; the firmware does not declare fake pins.
+2. **Maximum 6 pages.** The disc shows dots; 8 is already tight.
+3. **Name ≤ 12 characters**, size 2. Longer → ellipsis.
+4. **Swipe axis per device**, default horizontal.
+5. **Swipe left = next** (index +1). Right = previous. Vertical: up = next, down = previous.
+6. **Wrap** in the carousel.
+7. **Last active page** is remembered in NVS. A reboot returns to it.
+8. **Page = one room or zone.** Recipes only from that group. **`dim` on save** (§8.2): scene or group action → `grouped_light`; only child lights → those lights; otherwise no ring. The ring is not a slot.
+9. **No fallback** `double_click` → another recipe on the circle.
+10. **Themes = the prototype's 20 palettes**, closed set. Picker = grid of round dials (like `docs/round-themes.html`). One per page. Default `ember`. Not the site's CSS theme.
+11. **No hold on the circle.** Off lives on `double_click`. The swipe is decided by displacement, not a timer. BOOT 3 s hold (re-pair) does not change.
+12. **Tap on release**, never on touch-down.
+13. **Classification by start zone** (center vs ring) so swipe and dimmer don't fight.
+14. **`recall_scene` = ordered list** (1–8) from the same room/zone. Repeating the gesture rotates. Off is `grouped_light` on double tap, not a scene.
+15. **Scene order = console order.** The user edits it (drag / arrows).
+16. **Under the page name, the active scene** (size 1, ellipsis, or nothing if none). The title stays the page. The poll sends `targets[].name`.
+17. **Dots at the bottom = pages.** One dot per page, console order. The filled one is active. One page → no dots. One row inside the inner disc: shrink the gap, then the diameter; never overflow or two rows.
+18. **No explanatory text in Ready.** No `Tap to toggle` or `Drag ring to dim`. The disc does not teach gestures. System states do have a status line.
+19. **New page: tap and double visible and empty.** Assigned in the console or left empty. No gesture checkbox. The tap waits for double only if double has a recipe.
+20. **Names on the circle = ASCII.** Page and scene: accents/ñ are folded (`Niños` → `Ninos`). Built-in 5×7 font.
+21. **Ring like the Hue app:** only the target's lights that are on. If the whole target is off, the drag turns it on at that %. `mode: lights` uses an absolute % on each light that is on, not a relative scale.
+22. **Tap = bedside lamp and double = group off** → `dim.mode = group` (rule 2), not the individual lights.
+23. **Touches while Hue answers:** the disc keeps accepting input. Optimistic ack (invert, fill, scene, ring). Last-wins. No `UI_BUSY` in Ready. `hue-round-switch/docs/specs/finished/input-during-hue.md`.
+24. **Tap = light A and double = light B** (two different `light`s): the disc fill is split (left = tap, right = double). The touch area and gestures do not change. Each side keeps the on state of its `rid`; the toggle does not use a single per-page bit. Any other layout: whole disc.
+25. **Screen sleep:** per-device timeout in the console (default 30 s, 0 = always on). Black disc; the first touch only wakes. `hue-round-switch/docs/specs/finished/idle-display.md`.
 
 ---
 
-## 18. Criterio de hecho
+## 17. Open questions
 
-Esta feature está **lista** cuando:
+None. Closed:
 
-- En la consola, un Round tiene páginas ancladas a un room/zona, que se agregan, borra, reordenan, nombran y colorean.
-- Tap y doble solo ven luces/escenas de ese grupo.
-- Un gesto de escena acepta una lista ordenable de **ese** grupo; cada uso aplica la siguiente. Off es el grupo en doble tap, no una escena.
-- El aro dimmea el grupo si hay escenas o acción de grupo; si solo hay luces hijas, dimmea esas (on only).
-- El círculo muestra el nombre de la página, debajo la escena activa si hay (sin how-to), puntos si hay más de una (lleno = en cuál estoy, sin salirse del disco), y el aro si toca.
-- En la consola, el theme de cada página se elige en un grid de diales redondos (las 20 paletas).
-- Un swipe en el eje configurado cambia de página **sin** llamar a Vercel ni al Bridge.
-- Tap / doble de esa página ejecutan NVS → Bridge **sin** congelar el toque (`hue-round-switch/docs/specs/finished/input-during-hue.md`). Swipe cambia de página. No hay hold de pantalla.
-- Un simple-switch en la misma consola sigue viéndose como canales GPIO.
-- Screen timeout en consola; el disco se apaga solo y el primer toque en negro no dispara receta (`hue-round-switch/docs/specs/finished/idle-display.md`).
+1. Swipe left = next.
+2. New page: tap and double always assignable (empty on creation).
+3. Reboot returns to the last page.
+4. ASCII on the circle.
 
-La consola persiste grupo + `dim.mode`. Firmware **0.5.13+** consume el poll §11.2. Idle e input-durante-Hue están en `docs/specs/finished/` del firmware. El resto de páginas v1 ya corre.
+---
+
+## 18. Definition of done
+
+This feature is **done** when:
+
+- In the console, a Round has pages anchored to a room/zone, which can be added, deleted, reordered, named and colored.
+- Tap and double only see lights/scenes from that group.
+- A scene gesture takes an orderable list from **that** group; each use applies the next. Off is the group on double tap, not a scene.
+- The ring dims the group if there are scenes or a group action; if there are only child lights, it dims those (on only).
+- The circle shows the page name, the active scene below it if any (no how-to), dots if there is more than one (filled = where I am, never leaving the disc), and the ring when applicable.
+- In the console, each page's theme is picked from a grid of round dials (the 20 palettes).
+- A swipe on the configured axis changes page **without** calling Vercel or the Bridge.
+- That page's tap / double run NVS → Bridge **without** freezing touch (`hue-round-switch/docs/specs/finished/input-during-hue.md`). Swipe changes page. No screen hold.
+- A Simple switch in the same console still shows as GPIO channels.
+- Screen timeout in the console; the disc turns off by itself and the first touch on black does not fire a recipe (`hue-round-switch/docs/specs/finished/idle-display.md`).
+
+The console persists group + `dim.mode`. Firmware **0.5.13+** consumes the §11.2 poll. Idle and input-during-Hue are in the firmware's `docs/specs/finished/`. The rest of pages v1 already runs.

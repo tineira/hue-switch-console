@@ -24,8 +24,9 @@ tag `usb-installer`. If the firmware repo has `CONSOLE_REPO_TOKEN` (PAT with
 updates `manifest.json` `version`, and commits.
 
 The firmware repos are private, so the sync also needs `FIRMWARE_REPO_TOKEN` in
-**this** repo: a token with Contents read on `hue-round-switch` and
-`hue-simple-switch`. Without it, the download fails with `release not found`.
+**this** repo. Without it, the download fails with `release not found`. Token
+setup, rotation and troubleshooting: the root `README.md`, "Firmware release
+pipeline".
 
 Without that secret: run **Sync USB installer bins** by hand (`workflow_dispatch`),
 or copy `dist/installer/` from a local compile into

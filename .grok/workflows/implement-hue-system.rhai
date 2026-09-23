@@ -55,7 +55,7 @@ fn blocker_text(items) {
     json_encode(items)
 }
 
-let spec = "C:\\Users\\tinei\\hue-switch-console\\docs\\definiciones.md";
+let spec = "C:\\Users\\tinei\\hue-switch-console\\docs\\definitions.md";
 let console_root = "C:\\Users\\tinei\\hue-switch-console";
 let fw_root = "C:\\Users\\tinei\\Arduino\\hue-simple-switch";
 let site = "https://hue.tineira.com";

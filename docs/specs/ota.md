@@ -1,107 +1,107 @@
-# Hue Switch — OTA y versión en consola
+# Hue Switch — OTA and version in the console
 
-Documento de **requisitos de producto**. Cubre `hue-switch-console` y el firmware de **los dos** aparatos (Round S3, simple C6).
+**Product requirements** document. Covers `hue-switch-console` and the firmware of **both** devices (Round S3, Simple C6).
 
-No es una guía de implementación. La consola **nunca** llama al Bridge. El Bridge **nunca** ve Vercel.
+Not an implementation guide. The console **never** calls the Bridge. The Bridge **never** sees Vercel.
 
-**Estado:** requisitos, no implementado.
+**Status:** requirements, not implemented.
 
-Relacionado: `docs/specs/web-setup.md` (USB + Chrome = aparato **virgen**). Este spec es el aparato **ya en la pared**: ver qué firmware corre, ofrecer un binario nuevo, comprobar que el rollout **llegó**.
-
----
-
-## 1. Veredicto
-
-1. **Cada aparato reporta su versión** en cada poll (y en register). La consola la muestra y la **compara** con el binario publicado para ese producto.
-2. **OTA no es automático.** El usuario (en hue.tineira.com) elige qué MAC debe bajar qué versión. El poll solo entonces incluye una oferta `ota`. Sin oferta, el aparato no descarga nada.
-3. **USB no se sustituye.** Un XIAO sin Wi‑Fi sigue el instalador web. OTA es el update.
-
-El C6 está al límite de RAM: el cliente OTA tiene que ser el HTTP que **ya** usa para la consola (TLS verificado), no un stack nuevo. Si el C6 no puede bajar el binario, se documenta y el simple se queda en USB; el Round no espera al C6 para OTA.
+Related: `docs/specs/web-setup.md` (USB + Chrome = **blank** device). This spec is the device **already on the wall**: see which firmware runs, offer a new binary, confirm the rollout **arrived**.
 
 ---
 
-## 2. Qué hay hoy
+## 1. Verdict
 
-- Register ya manda `firmware` (string libre). Postgres `switches.firmware`. La lista muestra `· fw 0.5.13` si vino en el último register.
-- El poll **GET config** no manda versión → entre registers la consola no se entera de un USB/OTA.
-- Particiones **ya** son dual OTA (`app0`/`app1`) en Round (`default_8MB`, ~3,2 MB) y simple (`min_spiffs`, ~1,9 MB). El sketch no descarga.
-- NVS (SSID, token, Bridge, recetas, páginas) sobrevive un OTA bien hecho.
+1. **Every device reports its version** on every poll (and on register). The console shows it and **compares** it with the published binary for that product.
+2. **OTA is not automatic.** The user (on hue.tineira.com) chooses which MAC gets which version. Only then does the poll include an `ota` offer. Without an offer, the device downloads nothing.
+3. **USB is not replaced.** A XIAO without Wi‑Fi still goes through the web installer. OTA is the update path.
 
-Eso no basta para **controlar un rollout**: no hay catálogo de “lo publicado”, ni oferta por MAC, ni señal de “sigue en 0.5.12”.
+The C6 is at its RAM limit: the OTA client must be the HTTP it **already** uses for the console (verified TLS), not a new stack. If the C6 cannot download the binary, that is documented and Simple stays on USB; Round does not wait for the C6 to get OTA.
 
 ---
 
-## 3. Resultado esperado
+## 2. What exists today
 
-En la lista de switches (y en el detalle del aparato), copy en **inglés**:
+- Register already sends `firmware` (free string). Postgres `switches.firmware`. The list shows `· fw 0.5.13` if it came in the last register.
+- The **GET config** poll does not send the version → between registers the console doesn't learn about a USB/OTA update.
+- Partitions are **already** dual OTA (`app0`/`app1`) on Round (`default_8MB`, ~3.2 MB) and Simple (`min_spiffs`, ~1.9 MB). The sketch does not download.
+- NVS (SSID, token, Bridge, recipes, pages) survives a proper OTA.
 
-| Se ve | Significa |
+That is not enough to **control a rollout**: there is no catalog of "what's published", no per-MAC offer, and no "still on 0.5.12" signal.
+
+---
+
+## 3. Expected result
+
+In the switch list (and in the device detail), English copy:
+
+| Shown | Means |
 | --- | --- |
-| `fw 0.5.13` | Lo último que **reportó** el aparato |
-| `latest 0.5.14` | Binario publicado para ese producto (`round` / `simple`) |
-| `current` | Reportado = latest (o = el target que le pedimos) |
-| `behind` | Reportado &lt; latest y **no** hay oferta pendiente |
-| `offered 0.5.14` | Le mandamos OTA en el poll; aún no reporta esa versión |
-| `failed` | Oferta caducó o el aparato reportó otra vez la versión vieja tras un `seen` reciente |
-| `seen …` | Ya existe (`last_seen_at`). Sirve para no confundir “no actualizó” con “está apagado” |
+| `fw 0.5.13` | What the device last **reported** |
+| `latest 0.5.14` | Published binary for that product (`round` / `simple`) |
+| `current` | Reported = latest (or = the target we asked for) |
+| `behind` | Reported &lt; latest and there is **no** pending offer |
+| `offered 0.5.14` | We sent OTA in the poll; it doesn't report that version yet |
+| `failed` | The offer expired, or the device reported the old version again after a recent `seen` |
+| `seen …` | Already exists (`last_seen_at`). Keeps "didn't update" apart from "is off" |
 
-Acciones (mismo usuario logueado, no el Bearer del aparato):
+Actions (same signed-in user, not the device Bearer):
 
-- **Offer update** a este MAC (o “a todos los Round / todos los simple” = N ofertas, no un broadcast mágico).
-- **Cancel offer** (el siguiente poll ya no trae `ota`).
-- No hay “auto-update all at 04:00” en v1.
+- **Offer update** to this MAC (or "to all Rounds / all Simples" = N offers, not a magic broadcast).
+- **Cancel offer** (the next poll no longer carries `ota`).
+- No "auto-update all at 04:00" in v1.
 
-Tras un OTA ok: el aparato reboot, poll/register con `firmware: "0.5.14"`, la fila pasa a `current`. Eso **es** la prueba de rollout. No hace falta un ack extra si el report + `last_seen_at` son frescos.
-
----
-
-## 4. Versión
-
-Mismo string que `FIRMWARE_VERSION` hoy: `major.minor.patch` (ej. `0.5.13`). Obligatorio en register y poll. Rechazar vacío en firmware de producto (dev puede seguir mandando lo que sea).
-
-Comparar como semver, no como texto libre. Round y simple tienen **líneas distintas** (un 0.5.13 Round no es un 0.5.13 simple).
+After a successful OTA: the device reboots, polls/registers with `firmware: "0.5.14"`, and the row becomes `current`. That **is** the rollout proof. No extra ack is needed if the report + `last_seen_at` are fresh.
 
 ---
 
-## 5. Consola
+## 4. Version
 
-### 5.1 Catálogo de binarios
+Same string as `FIRMWARE_VERSION` today: `major.minor.patch` (e.g. `0.5.13`). Required on register and poll. Reject empty in product firmware (dev can keep sending anything).
 
-Por producto (`round` | `simple`):
+Compare as semver, not free text. Round and Simple have **separate lines** (a Round 0.5.13 is not a Simple 0.5.13).
+
+---
+
+## 5. Console
+
+### 5.1 Binary catalog
+
+Per product (`round` | `simple`):
 
 - `version`
-- URL HTTPS del `.bin` de **app** (el slot OTA; no hace falta reenviar bootloader)
+- HTTPS URL of the **app** `.bin` (the OTA slot; no need to resend the bootloader)
 - `sha256`
 - `size` (bytes)
 - `publishedAt`
 
-Fuente: CI al pushear `main` de cada repo, o carga del maintainer. La URL es del mismo host de confianza que `CONSOLE_URL` (o un origin listado). Nunca HTTP plano en producción.
+Source: CI on push to each repo's `main`, or a maintainer upload. The URL is on the same trusted host as the console URL (or a listed origin). Never plain HTTP in production.
 
-“Latest” = el publicado más nuevo para ese producto.
+"Latest" = the newest published for that product.
 
-### 5.2 Oferta por MAC
+### 5.2 Per-MAC offer
 
-Tabla (o columnas) p. ej. `ota_target_version`, `ota_offered_at` en `switches`.
+A table (or columns), e.g. `ota_target_version`, `ota_offered_at` on `switches`.
 
-Offer: guarda target = latest (o una versión pinneada). Cancel: limpia target.
+Offer: store target = latest (or a pinned version). Cancel: clear the target.
 
-El GET config **solo** incluye bloque `ota` si ese MAC tiene target **y** `target != firmware reportado`.
+The GET config includes an `ota` block **only** if that MAC has a target **and** `target != reported firmware`.
 
-### 5.3 Poll reporta versión
+### 5.3 Poll reports the version
 
-Hoy: `GET /api/device/config?mac=…`
+Today: `GET /api/device/config?mac=…`
 
-Añadir query **obligatoria en firmware nuevo**:
+Add a query parameter, **required in new firmware**:
 
 ```
 GET /api/device/config?mac=aabbccddeeff&firmware=0.5.13
 ```
 
-El server actualiza `switches.firmware` y `last_seen_at` en **cada** poll, no solo en register. Firmware viejo sin query: se conserva la columna; la UI puede mostrar `fw unknown` si `last_seen` es reciente y no hay string.
+The server updates `switches.firmware` and `last_seen_at` on **every** poll, not only on register. Old firmware without the parameter: the column is kept; the UI can show `fw unknown` if `last_seen` is recent and there is no string.
 
-### 5.4 Respuesta `ota` (solo si hay oferta)
+### 5.4 `ota` response (only if there is an offer)
 
-Junto a `rev` / `recipes` / `pages`:
+Alongside `rev` / `recipes` / `pages`:
 
 ```json
 "ota": {
@@ -112,85 +112,85 @@ Junto a `rev` / `recipes` / `pages`:
 }
 ```
 
-Sin oferta, **omitir** `ota`. El aparato no interpreta “ausente” como “borra firmware”.
+Without an offer, **omit** `ota`. The device does not interpret "absent" as "erase firmware".
 
-Round y simple: el mismo campo; el `url` apunta al binario de **ese** producto. Flashear el binario del otro es error de catálogo, no del gesto.
+Round and Simple: the same field; the `url` points to **that** product's binary. Flashing the other product's binary is a catalog error, not a gesture error.
 
 ### 5.5 UI
 
-En la fila del switch (junto a MAC · fw · round · rev · seen):
+In the switch row (next to MAC · fw · round · rev · seen):
 
-- Versión reportada **siempre** visible (hoy se pierde si `firmware` es null).
-- Badge `current` / `behind` / `offered` / `failed` según §3.
-- Botón `Offer update` si behind o si latest &gt; reported. `Cancel` si offered.
+- Reported version **always** visible (today it is lost if `firmware` is null).
+- Badge `current` / `behind` / `offered` / `failed` per §3.
+- `Offer update` button if behind or if latest &gt; reported. `Cancel` if offered.
 
-No hace falta una pantalla de “flota” en v1: la lista del bridge **es** el tablero de rollout.
+No "fleet" screen in v1: the bridge list **is** the rollout board.
 
-Copy inglés.
-
----
-
-## 6. Firmware (ambos)
-
-### 6.1 Reportar
-
-Cada GET config lleva `firmware=<FIRMWARE_VERSION>`. Register sigue mandando el campo JSON `firmware`.
-
-### 6.2 Aplicar OTA
-
-Si el JSON trae `ota` y `ota.version` ≠ la local:
-
-- No empezar si hay receta/dimmer en vuelo, ni touch down, ni (Round) drag del aro.
-- Round: puede estar en **reposo** (BL off); mejor así (radio sí, panel no).
-- HTTPS GET del `url` con **el mismo** trust que el poll (bundle; no `setInsecure()`).
-- Comprobar `size` / `sha256` antes de marcar el slot booteable.
-- Escribir el slot **inactivo**; al ok, `otadata` + reboot.
-- NVS no se borra.
-- Un solo intento por oferta. Si falla (TLS, espacio, sha, corte): **no** ladrar en loop. El siguiente poll, si la oferta sigue, puede reintentar con backoff (mín. minutos). La consola ve `offered` + `fw` viejo + `seen` fresco → el humano decide cancelar o dejar reintentar.
-
-C6: si el download no cabe en RAM, el firmware **ignora** `ota` y sigue reportando la versión vieja. La consola no miente: sigue `offered` / `behind`. No inventar un SoftAP ni un segundo HTTP stack.
-
-### 6.3 Hue / toque
-
-OTA no bloquea el disco más de lo que ya bloquea un poll largo. Preferir worker o la misma tarea que el poll de consola (el loop de toque Round **no** debe hacer el download síncrono: ver `docs/specs/finished/input-during-hue.md`). Simple: el loop GPIO puede tolerar un download; igual no mezclar con un PUT Hue.
-
-### 6.4 Fallo de boot
-
-Dual slot: si el nuevo app no arranca, el ROM vuelve al anterior. Al volver, poll con la versión **vieja** → consola `failed` / `offered` según §3.
+English copy.
 
 ---
 
-## 7. Relación con web-setup
+## 6. Firmware (both)
 
-| | USB (`web-setup`) | OTA (este spec) |
+### 6.1 Report
+
+Every GET config carries `firmware=<FIRMWARE_VERSION>`. Register keeps sending the JSON `firmware` field.
+
+### 6.2 Apply OTA
+
+If the JSON carries `ota` and `ota.version` ≠ the local one:
+
+- Do not start if a recipe/dimmer is in flight, a touch is down, or (Round) the ring is being dragged.
+- Round: may be **asleep** (backlight off); better that way (radio on, panel off).
+- HTTPS GET of the `url` with **the same** trust as the poll (bundle; no `setInsecure()`).
+- Check `size` / `sha256` before marking the slot bootable.
+- Write the **inactive** slot; on success, `otadata` + reboot.
+- NVS is not erased.
+- One attempt per offer. If it fails (TLS, space, sha, power cut): **do not** retry in a tight loop. The next poll, if the offer is still there, may retry with backoff (minimum minutes). The console sees `offered` + old `fw` + fresh `seen` → the human decides to cancel or let it retry.
+
+C6: if the download does not fit in RAM, the firmware **ignores** `ota` and keeps reporting the old version. The console does not lie: it stays `offered` / `behind`. Do not invent a SoftAP or a second HTTP stack.
+
+### 6.3 Hue / touch
+
+OTA must not block the disc more than a long poll already does. Prefer a worker or the same task as the console poll (the Round touch loop must **not** do the download synchronously: see `hue-round-switch/docs/specs/finished/input-during-hue.md`). Simple: the GPIO loop can tolerate a download; still, don't mix it with a Hue PUT.
+
+### 6.4 Boot failure
+
+Dual slot: if the new app doesn't boot, the ROM falls back to the previous one. On return, it polls with the **old** version → console `failed` / `offered` per §3.
+
+---
+
+## 7. Relation to web-setup
+
+| | USB (`web-setup`) | OTA (this spec) |
 | --- | --- | --- |
-| Aparato nuevo | Sí | No |
-| Ya en Wi‑Fi | Posible, incómodo | Sí |
-| Quién elige el binario | Página Install | Offer por MAC |
-| Prueba de que corrió | Register `firmware` | Poll `firmware` + seen |
+| New device | Yes | No |
+| Already on Wi‑Fi | Possible, awkward | Yes |
+| Who picks the binary | Install page | Per-MAC offer |
+| Proof it ran | Register `firmware` | Poll `firmware` + seen |
 
-Mismos artefactos CI. El manifiesto USB puede incluir bootloader; OTA solo el app.
-
----
-
-## 8. Fuera de alcance (v1)
-
-- Auto-update silencioso / horario fijo.
-- Delta updates, compress raro, A/B de spiffs.
-- Firmar con llave distinta a TLS del host (v1 = HTTPS + sha256).
-- Eventstream, portal SoftAP, Improv (siguen en sus specs).
-- Forzar OTA al simple si el binario no entra en RAM.
-- Borrar NVS o recetas al actualizar.
-- Mostrar el `.bin` a un switch del producto contrario.
+Same CI artifacts. The USB manifest may include the bootloader; OTA only the app.
 
 ---
 
-## 9. Criterio de hecho
+## 8. Out of scope (v1)
 
-- La lista de un bridge muestra **fw reportado** de cada MAC, actualizado en el **poll**, no solo al register.
-- Se ve **latest** por producto y un badge current / behind / offered / failed.
-- Offer update a un Round en campo: el poll trae `ota`; tras reboot, esa fila muestra la versión nueva y `current` (con `seen` fresco).
-- Cancel offer: el poll deja de traer `ota`; el aparato no descarga.
-- Sin offer, ningún aparato baja un binario solo porque CI publicó.
-- USB install (`web-setup`) sigue siendo el camino virgen.
-- Un desarrollador con `config.h` + arduino-cli no se rompe; al conectar, el poll igual actualiza `firmware` en la lista.
+- Silent auto-update / fixed schedule.
+- Delta updates, unusual compression, SPIFFS A/B.
+- Signing with a key other than the host's TLS (v1 = HTTPS + sha256).
+- Eventstream, SoftAP portal, Improv (they stay in their own specs).
+- Forcing OTA on Simple if the binary doesn't fit in RAM.
+- Erasing NVS or recipes on update.
+- Offering a `.bin` to a switch of the other product.
+
+---
+
+## 9. Definition of done
+
+- A bridge's list shows each MAC's **reported fw**, updated on the **poll**, not only on register.
+- **Latest** per product is visible, with a current / behind / offered / failed badge.
+- Offer update to a Round in the field: the poll carries `ota`; after reboot, that row shows the new version and `current` (with a fresh `seen`).
+- Cancel offer: the poll stops carrying `ota`; the device does not download.
+- Without an offer, no device downloads a binary just because CI published one.
+- USB install (`web-setup`) is still the path for blank devices.
+- A developer build with arduino-cli does not break; once connected, the poll still updates `firmware` in the list.

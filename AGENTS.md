@@ -12,11 +12,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 
-- Product UI is **English** (labels, errors, auth emails). Spec in `docs/definiciones.md` may stay Spanish.
+- **English everywhere**, in all three repos: product UI (labels, errors, auth emails), docs, specs, READMEs, code comments, commit messages. Do not write new Spanish; translate Spanish you touch.
 - Topology arrives from the LAN (switch or `push-from-bridge`); this app never calls the Hue Bridge.
 - Secrets stay in `.env.local` — never commit it.
 - Do not mix this tree with `C:\Users\tinei\Arduino`.
-- Read `docs/definiciones.md` before implementing.
+- Read `docs/definitions.md` before implementing.
 - Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
 - `public/firmware/` (bins + `manifest.json`) is owned by the **firmware** workers. Do not `git restore` or rewrite it if Round/Simple drop new images into this tree; the wizard version is that manifest, not a label you invent.
 - Do **not** use local Playwright to verify login or `/install`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
@@ -36,7 +36,7 @@ More switch firmwares may join; each gets a row here and the same `## Contract` 
 Source of truth for anything a switch and the console both depend on:
 
 - `docs/device-api.md`: endpoints, auth, payloads, error codes.
-- `docs/definiciones.md`: product model (recipes, channels, pages).
+- `docs/definitions.md`: product model (recipes, channels, pages).
 - `docs/changelog.md`: user-facing release notes, one section per product.
 - `public/firmware/<product>/manifest.json`: what `/install` flashes (firmware-owned, see above).
 
