@@ -15,6 +15,11 @@ const LINKS = [
     match: (path: string) => path.startsWith("/devices"),
   },
   {
+    href: "/how-to",
+    label: "How-to",
+    match: (path: string) => path.startsWith("/how-to"),
+  },
+  {
     href: "/keys",
     label: "API keys",
     match: (path: string) => path.startsWith("/keys"),
