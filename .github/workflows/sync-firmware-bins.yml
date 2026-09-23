@@ -35,7 +35,8 @@ jobs:
 
       - name: Download releases and update manifests
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Firmware repos are private: GITHUB_TOKEN cannot read their releases.
+          GH_TOKEN: ${{ secrets.FIRMWARE_REPO_TOKEN || secrets.GITHUB_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
           DISPATCH_PRODUCT: ${{ github.event.client_payload.product }}
           DISPATCH_VERSION: ${{ github.event.client_payload.version }}
