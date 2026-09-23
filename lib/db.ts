@@ -36,6 +36,8 @@ export type DeviceApiKeyRow = {
   created_at: string;
   revoked_at: string | null;
   last_used_at: string | null;
+  last_switch_mac?: string | null;
+  last_switch_label?: string | null;
 };
 
 export type SwitchRow = {
@@ -99,6 +101,8 @@ function mapKey(row: Record<string, unknown>): DeviceApiKeyRow {
     created_at: String(row.created_at),
     revoked_at: row.revoked_at ? String(row.revoked_at) : null,
     last_used_at: row.last_used_at ? String(row.last_used_at) : null,
+    last_switch_mac: row.last_switch_mac ? String(row.last_switch_mac) : null,
+    last_switch_label: row.last_switch_label ? String(row.last_switch_label) : null,
   };
 }
 
@@ -150,6 +154,8 @@ export function toApiKeyPublic(row: DeviceApiKeyRow): ApiKeyPublic {
     prefix: row.key_prefix,
     created_at: row.created_at,
     last_used_at: row.last_used_at,
+    last_switch_mac: row.last_switch_mac ?? null,
+    last_switch_label: row.last_switch_label ?? null,
   };
 }
 
@@ -186,10 +192,18 @@ export async function touchApiKey(id: string) {
 
 export async function listApiKeys(userId: string) {
   const rows = await sql()`
-    select id, user_id, name, key_prefix, created_at, revoked_at, last_used_at
-    from device_api_keys
-    where user_id = ${userId} and revoked_at is null
-    order by created_at desc
+    select k.id, k.user_id, k.name, k.key_prefix, k.created_at, k.revoked_at, k.last_used_at,
+           s.mac as last_switch_mac, s.label as last_switch_label
+    from device_api_keys k
+    left join lateral (
+      select mac, label
+      from switches
+      where api_key_id = k.id
+      order by last_seen_at desc nulls last
+      limit 1
+    ) s on true
+    where k.user_id = ${userId} and k.revoked_at is null
+    order by k.created_at desc
   `;
   return rows.map((row) => mapKey(row as Record<string, unknown>));
 }
@@ -378,8 +392,11 @@ export async function updateSwitchLabel(
   return mapSwitch(rows[0] as Record<string, unknown>);
 }
 
-export async function touchSwitch(id: string) {
-  await sql()`update switches set last_seen_at = now() where id = ${id}`;
+export async function touchSwitch(id: string, apiKeyId: string) {
+  await sql()`
+    update switches set last_seen_at = now(), api_key_id = ${apiKeyId}
+    where id = ${id}
+  `;
 }
 
 export async function listRecipes(switchId: string): Promise<Recipe[]> {

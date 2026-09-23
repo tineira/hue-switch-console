@@ -97,6 +97,9 @@ export type ApiKeyPublic = {
   prefix: string;
   created_at: string;
   last_used_at: string | null;
+  /** Switch most recently seen with this key (register or config poll). */
+  last_switch_mac: string | null;
+  last_switch_label: string | null;
 };
 
 export type SwitchPublic = {

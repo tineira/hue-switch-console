@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-23
 
+- API keys shows the name and MAC of the last switch that used each key.
 - How-to shows what the Simple switch LED and the Round screen mean, with an animated LED and a drawing of each screen, and what to do next.
 - The Bridge page shows one switch at a time. Switches are tabs across the top, and the lights and scenes list stays in view while you edit.
 - A switch running older firmware than the latest release is flagged on the Bridge page, with a link to update it from Devices.

@@ -54,7 +54,7 @@ export async function GET(req: Request) {
   try {
     const sw = await getSwitchByMac(device.userId, mac);
     if (!sw) return jsonError(404, "not_found");
-    await touchSwitch(sw.id);
+    await touchSwitch(sw.id, device.keyId);
 
     if (isRoundSwitch(sw)) {
       const bridge = await getBridge(device.userId, sw.bridgeid);

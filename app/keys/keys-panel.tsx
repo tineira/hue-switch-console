@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { formatMac } from "@/lib/mac";
 import type { ApiKeyPublic } from "@/lib/types";
 
 function formatWhen(value: string | null) {
@@ -47,6 +48,8 @@ export function KeysPanel({ initialKeys }: { initialKeys: ApiKeyPublic[] }) {
           prefix: body.prefix,
           created_at: body.created_at,
           last_used_at: body.last_used_at,
+          last_switch_mac: null,
+          last_switch_label: null,
         },
         ...current,
       ]);
@@ -165,13 +168,14 @@ export function KeysPanel({ initialKeys }: { initialKeys: ApiKeyPublic[] }) {
         </section>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line bg-cream">
-          <table className="w-full min-w-[36rem] text-left text-sm">
+          <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="text-xs uppercase tracking-[0.08em] text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Name</th>
                 <th className="px-3 py-2 font-medium">Prefix</th>
                 <th className="px-3 py-2 font-medium">Created</th>
                 <th className="px-3 py-2 font-medium">Last used</th>
+                <th className="px-3 py-2 font-medium">Last board</th>
                 <th className="px-3 py-2 font-medium" />
               </tr>
             </thead>
@@ -185,6 +189,20 @@ export function KeysPanel({ initialKeys }: { initialKeys: ApiKeyPublic[] }) {
                   </td>
                   <td className="px-3 py-2 text-muted">
                     {formatWhen(key.last_used_at)}
+                  </td>
+                  <td className="px-3 py-2">
+                    {key.last_switch_mac ? (
+                      <div className="flex flex-col">
+                        {key.last_switch_label ? (
+                          <span>{key.last_switch_label}</span>
+                        ) : null}
+                        <span className="font-mono text-xs text-muted">
+                          {formatMac(key.last_switch_mac)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <button
