@@ -801,6 +801,13 @@ export function BridgeWorkspace({
                   <span className="font-mono">{formatMac(selected.mac)}</span>
                   {selected.firmware ? ` · firmware ${selected.firmware}` : ""}
                   {` · rev ${revs[selected.mac] ?? selected.rev}`}
+                  {" · "}
+                  <Link
+                    href={round ? "/how-to#round" : "/how-to#simple"}
+                    className="text-filament underline underline-offset-2"
+                  >
+                    {round ? "What the screen shows" : "What the LED shows"}
+                  </Link>
                 </p>
               </div>
               <button

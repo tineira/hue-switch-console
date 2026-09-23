@@ -1003,8 +1003,14 @@ export function DevicesPanel() {
                 Wi-Fi and the console token are saved.
               </p>
               <p className="mt-2 text-muted">
-                Pairing with the Hue Bridge is separate. This page does not wait
-                for the switch list.
+                Next, the board pairs with the Hue Bridge.{" "}
+                <Link
+                  href={productId === "round" ? "/how-to#round" : "/how-to#simple"}
+                  className="text-filament underline underline-offset-2"
+                >
+                  {productId === "round" ? "What the screen shows" : "What the LED shows"}
+                </Link>{" "}
+                tells you which step it is on.
               </p>
             </section>
           ) : null}
