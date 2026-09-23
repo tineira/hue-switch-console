@@ -160,16 +160,21 @@ export async function flashProduct(options: {
   const { ESPLoader, Transport } = await import("esptool-js");
   let current = loaderFor(options.port, ESPLoader, Transport);
 
-  // USB-JTAG setSignals never returns on this Windows port, and the reader
-  // stays locked, so a second connect in the same click cannot open it.
-  // no_reset does not toggle DTR/RTS. The person holds BOOT instead.
+  // The S3 enters the bootloader when DTR/RTS toggle. The C6 USB-JTAG
+  // setSignals call never returns on Windows and locks the reader, so that
+  // board skips the toggle and waits in the bootloader (hold BOOT).
+  const autoReset = options.product.chipFamily === "ESP32-S3";
   options.onProgress({
-    message: "Connecting without reset… hold BOOT.",
+    message: autoReset ? "Connecting…" : "Connecting without reset… hold BOOT.",
     percent: null,
   });
   let detected: string;
   try {
-    detected = await attachWithin(current.esploader, "no_reset", options.product);
+    detected = await attachWithin(
+      current.esploader,
+      autoReset ? "default_reset" : "no_reset",
+      options.product,
+    );
   } catch (err) {
     try {
       await releaseHungPort(options.port, current.transport);
@@ -178,10 +183,32 @@ export async function flashProduct(options: {
       throw releaseErr;
     }
     if (err instanceof ChipMismatchError) throw err;
-    const detail = err instanceof Error ? err.message : "unknown";
-    throw new Error(
-      `Failed to initialize. Hold BOOT, tap RESET, and click Install again. (${detail})`,
-    );
+    if (!autoReset) {
+      const detail = err instanceof Error ? err.message : "unknown";
+      throw new Error(
+        `Failed to initialize. Hold BOOT, tap RESET, and click Install again. (${detail})`,
+      );
+    }
+    current = loaderFor(options.port, ESPLoader, Transport);
+    options.onProgress({
+      message: "Connecting without reset… hold BOOT.",
+      percent: null,
+    });
+    try {
+      detected = await attachWithin(current.esploader, "no_reset", options.product);
+    } catch (retryErr) {
+      try {
+        await releaseHungPort(options.port, current.transport);
+      } catch (releaseErr) {
+        if (retryErr instanceof ChipMismatchError) throw retryErr;
+        throw releaseErr;
+      }
+      if (retryErr instanceof ChipMismatchError) throw retryErr;
+      const detail = retryErr instanceof Error ? retryErr.message : "unknown";
+      throw new Error(
+        `Failed to initialize. Hold BOOT, tap RESET, and click Install again. (${detail})`,
+      );
+    }
   }
   if (!detected) {
     try {
