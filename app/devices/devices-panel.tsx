@@ -814,8 +814,8 @@ export function DevicesPanel() {
       <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
         <h2 className="text-sm font-medium">Detect</h2>
         <p className="text-sm text-muted">
-          Choose the USB serial port. The card shows what this board has saved,
-          not a live probe.
+          Plug the board in with a USB-C cable that carries data, then choose
+          its port. It is usually listed as a USB serial or JTAG device.
         </p>
         <button
           type="button"
