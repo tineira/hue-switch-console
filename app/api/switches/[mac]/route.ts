@@ -1,5 +1,10 @@
 import { getSessionUser } from "@/lib/auth";
-import { getSwitchByMac, toSwitchPublic, updateSwitchLabel } from "@/lib/db";
+import {
+  getSwitchByMac,
+  isApiKeyRevoked,
+  toSwitchPublic,
+  updateSwitchLabel,
+} from "@/lib/db";
 import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
 import { normalizeMac } from "@/lib/tokens";
@@ -27,6 +32,7 @@ export async function GET(
       found: true,
       last_seen_at: sw.last_seen_at,
       firmware: sw.firmware,
+      key_revoked: sw.api_key_id ? await isApiKeyRevoked(sw.api_key_id) : false,
     });
   } catch (err) {
     const details = err instanceof Error ? err.message : "unknown";

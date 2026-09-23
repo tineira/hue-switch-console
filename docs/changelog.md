@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-23
 
+- Devices flags a board whose key was revoked on API keys, instead of calling it set up, and points you to Replace console key.
 - API keys lists each key by the board that uses it, with a link to that board on its Bridge page. Keys no board uses are grouped under Not in use.
 - API keys shows when each key was last used, with a green or amber dot for whether the board is still checking in.
 - Revoking a key names the board that will stop getting changes, instead of a generic browser prompt.

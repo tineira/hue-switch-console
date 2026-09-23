@@ -189,6 +189,14 @@ export async function findActiveApiKeyByHash(hash: string) {
   return mapKey(rows[0] as Record<string, unknown>);
 }
 
+// A switch remembers the key it last used; true when that key has since been revoked.
+export async function isApiKeyRevoked(id: string): Promise<boolean> {
+  const rows = await sql()`
+    select revoked_at from device_api_keys where id = ${id} limit 1
+  `;
+  return Boolean(rows[0] && (rows[0] as Record<string, unknown>).revoked_at);
+}
+
 export async function touchApiKey(id: string) {
   await sql()`update device_api_keys set last_used_at = now() where id = ${id}`;
 }

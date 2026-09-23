@@ -59,6 +59,8 @@ const CLEAR_CONFIRM =
 type ConsoleRecord = {
   lastSeenAt: string | null;
   firmware: string | null;
+  // The key this board last used was revoked on API keys.
+  keyRevoked: boolean;
 };
 
 type Detected = {
@@ -134,11 +136,13 @@ async function lookupConsole(
       found?: unknown;
       last_seen_at?: unknown;
       firmware?: unknown;
+      key_revoked?: unknown;
     };
     if (body.found !== true) return "missing";
     return {
       lastSeenAt: typeof body.last_seen_at === "string" ? body.last_seen_at : null,
       firmware: typeof body.firmware === "string" ? body.firmware : null,
+      keyRevoked: body.key_revoked === true,
     };
   } catch {
     return "error";
@@ -229,7 +233,9 @@ const CHECK_ICON: Record<CheckState, { mark: string; className: string; sr: stri
   todo: { mark: "", className: "border border-line text-muted", sr: "to do" },
 };
 
-type ConsoleLookup = "found" | "missing" | "error";
+// revoked: the board's last key was revoked. replacing: a new key was saved here and the
+// board has not checked in with it yet.
+type ConsoleLookup = "found" | "missing" | "error" | "revoked" | "replacing";
 
 // Automatic rereads after Detect, on the already-open port (reopening resets the Round).
 const RECHECK_TRIES = 3;
@@ -258,9 +264,11 @@ function liveChecks(
   const consoleQuiet = seenMin === null || seenMin > CONSOLE_QUIET_MIN;
   const consoleState: CheckState = !linked
     ? "todo"
-    : consoleLookup === "found" && !consoleQuiet
-      ? "done"
-      : "warn";
+    : consoleLookup === "revoked"
+      ? "error"
+      : consoleLookup === "found" && !consoleQuiet
+        ? "done"
+        : "warn";
   // Waiting can fix these; the todo rows need the user.
   const settling =
     (wifiSaved && wifiState !== "done") || (linked && consoleState === "warn");
@@ -337,7 +345,11 @@ function SetupChecklist({
       state: consoleState,
       text: !linked
         ? "Not linked"
-        : consoleLookup === "error"
+        : consoleLookup === "revoked"
+          ? "Key revoked · the console rejects this board"
+          : consoleLookup === "replacing"
+            ? "New key saved · waiting for the board to check in with it"
+            : consoleLookup === "error"
           ? "Key saved · couldn't check when the console last heard from it"
           : consoleLookup === "missing" || seenMin === null
             ? "Key saved · the console has no record of this board yet"
@@ -360,6 +372,8 @@ function SetupChecklist({
           : "Wi-Fi is still not connected. Check the network name and password with Change Wi-Fi below."
         : !linked
           ? "Link the board to the console with Link to console below."
+          : consoleState === "error"
+            ? "This board's key was revoked on API keys. Give it a new one with Replace console key below."
           : !huesta.key
             ? "Pair with the Hue Bridge: press the button on the Bridge when the board asks, or use Pair with Bridge below."
             : wifiState === "warn"
@@ -481,6 +495,7 @@ export function DevicesPanel() {
   const [recheckTries, setRecheckTries] = useState(RECHECK_TRIES);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [rechecking, setRechecking] = useState(false);
+  const [replacedKeyMac, setReplacedKeyMac] = useState<string | null>(null);
   const sessionRef = useRef<BytePort | null>(null);
   const portRef = useRef<SerialPort | null>(null);
   const detectGen = useRef(0);
@@ -872,6 +887,7 @@ export function DevicesPanel() {
         );
       }
       setStatus("Token saved.");
+      setReplacedKeyMac(detected?.huesta?.mac ?? null);
       await reread(session);
       setRecheckTries(0);
     } catch (err) {
@@ -1004,7 +1020,11 @@ export function DevicesPanel() {
     actions?.showSaved && detected?.huesta && !actions.cross,
   );
   const consoleLookup: ConsoleLookup = detected?.consoleRecord
-    ? "found"
+    ? detected.consoleRecord.keyRevoked
+      ? replacedKeyMac === detected.huesta?.mac
+        ? "replacing"
+        : "revoked"
+      : "found"
     : detected?.consoleError
       ? "error"
       : "missing";
@@ -1385,7 +1405,16 @@ export function DevicesPanel() {
                 <Field label="Bridge id" value={detected.huesta.bid || "—"} mono />
                 <Field label="Bridge IP" value={detected.huesta.bip || "—"} mono />
                 <Field label="Console URL" value={detected.huesta.url || "—"} mono />
-                <Field label="Console key" value={detected.huesta.token ? "Yes" : "No"} />
+                <Field
+                  label="Console key"
+                  value={
+                    !detected.huesta.token
+                      ? "No"
+                      : consoleLookup === "revoked"
+                        ? "Yes · revoked"
+                        : "Yes"
+                  }
+                />
                 <Field label="Hue key" value={detected.huesta.key ? "Yes" : "No"} />
                 <Field label="USB id" value={detected.usb.idText} mono />
                 {detected.consoleRecord ? (
