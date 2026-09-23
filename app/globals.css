@@ -508,3 +508,94 @@ option {
   .led::after { animation: none; }
   .led:not(.led-solid)::after { opacity: 0.5; }
 }
+
+/* Round switch screen on /how-to. Ring states and pulse rates mirror uiRingColor in
+   hue-round-switch ui.h: loading 400 ms, pairing 280 ms (yellow / accent). Fixed device
+   colours, since the real screen follows the page theme, not the console theme. */
+.round-face {
+  --rf-bg: #0d0d10;
+  --rf-ink: #f2f2f0;
+  --rf-mute: #8e8e96;
+  --rf-accent: #ff9f1c;
+  --rf-error: #ff5a5a;
+  --rf-yellow: #ffe000;
+  --rf-ring: var(--rf-mute);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  padding: 14px;
+  border-radius: 50%;
+  background: var(--rf-bg);
+  box-shadow: 0 0 0 2px var(--rf-ring), 0 6px 14px rgb(0 0 0 / 35%);
+  color: var(--rf-ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+  line-height: 1.15;
+}
+.round-face-line { font-size: 10px; font-weight: 600; }
+.round-face-sub { font-size: 8px; color: var(--rf-mute); }
+.round-face-name { position: relative; font-size: 11px; font-weight: 700; }
+.round-face-ready .round-face-sub { position: relative; color: #ffe2b8; }
+.round-face-wait { --rf-ring: var(--rf-mute); }
+.round-face-error { --rf-ring: var(--rf-error); }
+.round-face-mute { --rf-ring: var(--rf-mute); }
+.round-face-loading { animation: round-face-loading 800ms step-end infinite; }
+.round-face-pairing { animation: round-face-pairing 560ms step-end infinite; }
+.round-face-ready {
+  box-shadow: 0 6px 14px rgb(0 0 0 / 35%);
+}
+/* Brightness ring: 270° track from the lower left, about two thirds lit. */
+.round-face-ready::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 225deg,
+    var(--rf-accent) 0 180deg,
+    #3a3a42 180deg 270deg,
+    transparent 270deg 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+}
+.round-face-disc {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: #6b3f0e;
+}
+.round-face-dots {
+  position: absolute;
+  bottom: 16px;
+  display: flex;
+  gap: 3px;
+}
+.round-face-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 35%);
+}
+.round-face-dots i.on { background: var(--rf-ink); }
+
+@keyframes round-face-loading {
+  0% { box-shadow: 0 0 0 2px #7a4a10, 0 6px 14px rgb(0 0 0 / 35%); }
+  50% { box-shadow: 0 0 0 2px var(--rf-mute), 0 6px 14px rgb(0 0 0 / 35%); }
+}
+@keyframes round-face-pairing {
+  0% { box-shadow: 0 0 0 2px var(--rf-accent), 0 6px 14px rgb(0 0 0 / 35%); }
+  50% { box-shadow: 0 0 0 2px var(--rf-yellow), 0 6px 14px rgb(0 0 0 / 35%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .round-face-loading,
+  .round-face-pairing { animation: none; }
+  .round-face-pairing { --rf-ring: var(--rf-yellow); }
+}
