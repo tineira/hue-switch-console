@@ -191,6 +191,41 @@ function FaceReady() {
   );
 }
 
+function GuideStep({
+  n,
+  title,
+  where,
+  href,
+  children,
+}: {
+  n: number;
+  title: string;
+  where?: string;
+  href?: string;
+  children: ReactNode;
+}) {
+  return (
+    <li className="flex gap-4 rounded-xl border border-line bg-cream p-4">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-filament-soft text-xs font-semibold text-filament tabular-nums">
+        {n}
+      </span>
+      <div className="flex min-w-0 flex-col gap-2 text-sm">
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className="font-semibold">{title}</span>
+          {where && href ? (
+            <Link href={href} className={`text-xs ${LINK}`}>
+              {where}
+            </Link>
+          ) : null}
+        </p>
+        <ul className="flex list-disc flex-col gap-1.5 pl-4 text-muted marker:text-line [&_b]:font-medium [&_b]:text-foreground">
+          {children}
+        </ul>
+      </div>
+    </li>
+  );
+}
+
 function FixLine({ fix }: { fix: Fix }) {
   return (
     <p className="text-foreground">
@@ -284,14 +319,117 @@ export default async function HowToPage() {
         <h1 className="text-2xl font-semibold tracking-tight">How-to</h1>
         <p className="text-sm text-muted">
           Jump to{" "}
+          <a href="#console" className={LINK}>
+            Using the console
+          </a>
+          ,{" "}
           <a href="#simple" className={LINK}>
-            Simple switch
-          </a>{" "}
-          or{" "}
+            Simple switch lights
+          </a>
+          , or{" "}
           <a href="#round" className={LINK}>
-            Round switch
+            Round switch screens
           </a>
           .
+        </p>
+      </section>
+
+      <section id="console" className="flex max-w-2xl scroll-mt-6 flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-medium">Using the console</h2>
+          <p className="text-sm text-muted">
+            Set up a board once on Devices, then choose what its buttons or
+            pages do on Bridge.
+          </p>
+        </div>
+
+        <ol className="flex flex-col gap-3">
+          <GuideStep n={1} title="Set up a board" where="Devices" href="/devices">
+            <li>
+              Plug the board into this computer with a USB-C cable that carries
+              data, and use Chrome or Edge.
+            </li>
+            <li>
+              Click <b>Detect device</b> and choose the board&apos;s port in the
+              window Chrome opens. On a new Simple switch, hold BOOT while you
+              click Install.
+            </li>
+            <li>
+              Follow the <b>Setup</b> checklist. On a new board that means{" "}
+              <b>Install</b>, <b>Set up Wi-Fi</b> (a 2.4 GHz network), and{" "}
+              <b>Link to console</b>.
+            </li>
+            <li>
+              When the board asks, press the button on top of the Hue Bridge.
+              The Round screen says Press Bridge button, and the Simple LED
+              blinks three times. <b>Pair with Bridge</b> starts it again if
+              you missed it.
+            </li>
+            <li>
+              When the card turns green and says <b>This board is set up</b>,
+              unplug it and mount it.
+            </li>
+          </GuideStep>
+
+          <GuideStep n={2} title="Choose what it does" where="Bridge" href="/">
+            <li>
+              Pick the switch from the tabs at the top. The pencil renames it;
+              the name is only used in the console.
+            </li>
+            <li>
+              <b>Simple switch:</b> each button has slots. BOOT has{" "}
+              <b>Short press</b>; the wired buttons D0, D1, and D2 have{" "}
+              <b>On</b>, <b>Off</b>, and <b>Double-click</b>. Click a slot, then
+              click a room, light, or scene under Lights and scenes.{" "}
+              <b>Use this room for on and off</b> fills both slots at once. The
+              menu on a slot switches between Toggle, Turn on, and Turn off.
+            </li>
+            <li>
+              <b>Round switch:</b> click <b>Add page</b> and pick the page&apos;s
+              room or zone. Then select <b>Tap</b> or <b>Double tap</b> and click
+              a light or scene on the right. Several scenes make a list that the
+              press steps through, up to 8 from the same room.{" "}
+              <b>Use this room for tap and double-tap</b> makes tap toggle the
+              room and double tap turn it off. The dimmer ring follows the
+              page&apos;s lights.
+            </li>
+            <li>
+              For a Round you can also set the page swipe direction, the screen
+              timeout, and each page&apos;s name and colours.
+            </li>
+          </GuideStep>
+
+          <GuideStep n={3} title="Save and check">
+            <li>
+              Read the <b>Confirmation</b> box, which says in words what each
+              press will do, then click <b>Save pages</b> (Round) or{" "}
+              <b>Save recipes</b> (Simple).
+            </li>
+            <li>
+              The switch picks up changes the next time it checks in, which can
+              take up to an hour. To apply them now, restart the board: unplug it
+              and plug it back in.
+            </li>
+          </GuideStep>
+
+          <GuideStep n={4} title="Keep it up to date">
+            <li>
+              A switch tab on Bridge says <b>update</b> when newer firmware is
+              out. Plug the board in, detect it on Devices, and click{" "}
+              <b>Update</b>. Wi-Fi, the console link, and its buttons or pages
+              stay.
+            </li>
+            <li>
+              If a board is lost or given away, revoke its key under{" "}
+              <b>API keys</b> in the menu under your email.
+            </li>
+          </GuideStep>
+        </ol>
+
+        <p className="text-sm text-muted">
+          Something not working? The guides below say what the Simple
+          switch&apos;s light and the Round switch&apos;s screen mean, and what to
+          do about each.
         </p>
       </section>
 
