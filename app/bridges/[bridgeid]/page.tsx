@@ -14,6 +14,8 @@ import {
 import { ensureSchema } from "@/lib/ensure-schema";
 import { withSceneNames } from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
+import roundManifest from "@/public/firmware/round/manifest.json";
+import simpleManifest from "@/public/firmware/simple/manifest.json";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +89,10 @@ export default async function BridgePage({
         updatedAt={row.updated_at}
         snapshot={snapshot}
         switches={switches}
+        latestFirmware={{
+          round: roundManifest.version,
+          simple: simpleManifest.version,
+        }}
       />
     </Shell>
   );

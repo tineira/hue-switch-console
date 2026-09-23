@@ -6,6 +6,7 @@ import {
   type RoundDraft,
 } from "@/app/bridges/[bridgeid]/round-pages-editor";
 import { formatMac } from "@/lib/mac";
+import { compareVersions } from "@/lib/web-setup/devices";
 import {
   DEFAULT_SCREEN_TIMEOUT_SEC,
   MAX_SCENE_LIST,
@@ -185,12 +186,14 @@ export function BridgeWorkspace({
   updatedAt,
   snapshot,
   switches,
+  latestFirmware,
 }: {
   bridgeid: string;
   bridgeIp: string | null;
   updatedAt: string;
   snapshot: TopologySnapshot;
   switches: WorkspaceSwitch[];
+  latestFirmware: { round: string; simple: string };
 }) {
   const router = useRouter();
   const grouped = useMemo(() => groupTopology(snapshot), [snapshot]);
@@ -697,6 +700,12 @@ export function BridgeWorkspace({
     setError(null);
   }
 
+  // Newer firmware in public/firmware for this board's product, or null when it is current.
+  function updateFor(item: WorkspaceSwitch): string | null {
+    const latest = latestFirmware[isRoundItem(item) ? "round" : "simple"];
+    return compareVersions(item.firmware ?? "", latest) === -1 ? latest : null;
+  }
+
   function boardName(item: WorkspaceSwitch): string {
     return (names[item.mac] || "").trim() || formatMac(item.mac);
   }
@@ -767,6 +776,9 @@ export function BridgeWorkspace({
                   {item.last_seen_at
                     ? ` · seen ${formatWhen(item.last_seen_at)}`
                     : " · never seen"}
+                  {updateFor(item) ? (
+                    <span className="text-filament"> · update</span>
+                  ) : null}
                 </span>
               </button>
             );
@@ -795,6 +807,15 @@ export function BridgeWorkspace({
                     <span className="rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
                       Saved
                     </span>
+                  ) : null}
+                  {updateFor(selected) ? (
+                    <Link
+                      href="/devices"
+                      title="Plug the board in over USB and install from Devices"
+                      className="rounded-full border border-filament/50 px-2 py-0.5 text-[11px] font-medium text-filament hover:bg-filament-soft"
+                    >
+                      Update to {updateFor(selected)}
+                    </Link>
                   ) : null}
                 </h2>
                 <p className="text-xs text-muted">
