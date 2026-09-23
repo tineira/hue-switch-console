@@ -12,7 +12,6 @@ import {
   identifyUsb,
   learnedChip,
   sketchTitle,
-  provisioningDone,
   type BoardChoice,
   type Huesta,
   type ImprovSeen,
@@ -178,6 +177,141 @@ function Field({
   );
 }
 
+
+function minutesSince(value: string | null): number | null {
+  if (!value) return null;
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) return null;
+  return Math.max(0, Math.round((Date.now() - then) / 60000));
+}
+
+function agoText(min: number): string {
+  if (min < 1) return "just now";
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.round(min / 60);
+  return hr < 48 ? `${hr} h ago` : `${Math.round(hr / 24)} days ago`;
+}
+
+type CheckRow = { label: string; done: boolean; text: string };
+
+// Setup summary from HUESTA. Wi-Fi is the one live field: it is read at Detect time,
+// and a board that just restarted can still be joining.
+function SetupChecklist({
+  huesta,
+  productId,
+  manifestVersion,
+  versionCmp,
+  lastSeenAt,
+}: {
+  huesta: Huesta;
+  productId: ProductId | null;
+  manifestVersion: string | null;
+  versionCmp: -1 | 0 | 1 | null;
+  lastSeenAt: string | null;
+}) {
+  const seenMin = minutesSince(lastSeenAt);
+  const seenRecently = seenMin !== null && seenMin <= 15;
+  const wifiSaved = huesta.ssid.length > 0;
+  const linked = huesta.token && huesta.url.length > 0;
+  const firmwareOld = versionCmp === -1;
+
+  const rows: CheckRow[] = [
+    {
+      label: "Firmware",
+      done: !firmwareOld,
+      text: firmwareOld
+        ? `${huesta.ver} · ${manifestVersion} is available`
+        : versionCmp === 0
+          ? `${huesta.ver} (latest)`
+          : huesta.ver || "Unknown version",
+    },
+    {
+      label: "Wi-Fi",
+      done: wifiSaved && (huesta.wifi === "up" || seenRecently),
+      text: !wifiSaved
+        ? "No network saved"
+        : huesta.wifi === "up"
+          ? `${huesta.ssid} · connected${huesta.ip ? ` (${huesta.ip})` : ""}`
+          : seenRecently
+            ? `${huesta.ssid} · not connected when read, but the console heard from it ${agoText(seenMin ?? 0)}. A board that just restarted takes a few seconds to join.`
+            : `${huesta.ssid} · not connected when read. A board that just restarted takes a few seconds to join, so Detect again to check.`,
+    },
+    {
+      label: "Console",
+      done: linked,
+      text: linked ? "Linked" : "Not linked",
+    },
+    {
+      label: "Hue Bridge",
+      done: huesta.key,
+      text: huesta.key ? (huesta.bid ? `Paired with ${huesta.bid}` : "Paired") : "Not paired",
+    },
+  ];
+
+  const next = firmwareOld
+    ? "Update the firmware with the Update button below."
+    : !wifiSaved
+      ? "Save a Wi-Fi network with the Wi-Fi button below."
+      : !linked
+        ? "Link the board to the console with the Token button below."
+        : !huesta.key
+          ? "Pair with the Hue Bridge: press the button on the Bridge when the board asks, or use Pair below."
+          : null;
+  const guide = productId === "round" ? "/how-to#round" : "/how-to#simple";
+  const guideText = productId === "round" ? "What the screen shows" : "What the LED shows";
+  const allDone = rows.every((row) => row.done);
+
+  return (
+    <section
+      className={`flex flex-col gap-3 rounded-xl border p-4 ${
+        allDone ? "border-ok/40 bg-ok-soft" : "border-line bg-cream"
+      }`}
+    >
+      <h2 className="text-sm font-medium">
+        {allDone ? "This board is set up" : "Setup"}
+      </h2>
+      <ul className="flex flex-col gap-2 text-sm">
+        {rows.map((row) => (
+          <li key={row.label} className="flex gap-2">
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                row.done ? "bg-ok text-background" : "border border-line text-muted"
+              }`}
+            >
+              {row.done ? "✓" : ""}
+            </span>
+            <span className="min-w-0">
+              <span className="font-medium">{row.label}</span>
+              <span className="sr-only">{row.done ? " (done)" : " (to do)"}</span>
+              <span className="text-muted"> · {row.text}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-sm text-muted">
+        {next ? (
+          <>
+            <span className="font-medium text-foreground">Next: </span>
+            {next}{" "}
+          </>
+        ) : (
+          <>
+            Edit its {productId === "round" ? "pages" : "buttons"} on{" "}
+            <Link href="/" className="text-filament underline underline-offset-2">
+              Bridge
+            </Link>
+            .{" "}
+          </>
+        )}
+        <Link href={guide} className="text-filament underline underline-offset-2">
+          {guideText}
+        </Link>{" "}
+        tells you which step the board is on.
+      </p>
+    </section>
+  );
+}
 
 export function DevicesPanel() {
   const blocked = useSyncExternalStore(
@@ -704,6 +838,16 @@ export function DevicesPanel() {
 
       {detected && actions ? (
         <>
+          {actions.showSaved && detected.huesta && !actions.cross ? (
+            <SetupChecklist
+              huesta={detected.huesta}
+              productId={productId}
+              manifestVersion={detected.manifest?.version ?? null}
+              versionCmp={versionCmp}
+              lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
+            />
+          ) : null}
+
           <div
             className={
               detected.consoleRecord ? "grid gap-3 lg:grid-cols-2" : "grid gap-3"
@@ -784,17 +928,20 @@ export function DevicesPanel() {
           {actions.showSaved && detected.huesta ? (
             <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
               <div className="flex flex-col gap-1">
-                <h2 className="text-sm font-medium">Saved</h2>
+                <h2 className="text-sm font-medium">Details</h2>
                 <p className="text-sm text-muted">
-                  What this board has stored. No console call and no Bridge call
-                  are made to fill this card.
+                  What the board reported when you clicked Detect. Wi-Fi and IP
+                  are its connection at that moment; the rest is saved on the
+                  board.
                 </p>
               </div>
               <dl className="grid gap-3 sm:grid-cols-2">
                 <Field label="SSID" value={detected.huesta.ssid || "—"} />
                 <Field
                   label="Wi-Fi"
-                  value={detected.huesta.wifi === "up" ? "Up" : "Down"}
+                  value={
+                    detected.huesta.wifi === "up" ? "Connected" : "Not connected when read"
+                  }
                 />
                 <Field label="IP" value={detected.huesta.ip || "—"} mono />
                 <Field label="Bridge id" value={detected.huesta.bid || "—"} mono />
@@ -997,23 +1144,6 @@ export function DevicesPanel() {
             </div>
           ) : null}
 
-          {actions.showSaved && detected.huesta && provisioningDone(detected.huesta) ? (
-            <section className="rounded-xl border border-ok/40 bg-ok-soft p-4 text-sm text-ok">
-              <p className="font-medium text-foreground">
-                Wi-Fi and the console token are saved.
-              </p>
-              <p className="mt-2 text-muted">
-                Next, the board pairs with the Hue Bridge.{" "}
-                <Link
-                  href={productId === "round" ? "/how-to#round" : "/how-to#simple"}
-                  className="text-filament underline underline-offset-2"
-                >
-                  {productId === "round" ? "What the screen shows" : "What the LED shows"}
-                </Link>{" "}
-                tells you which step it is on.
-              </p>
-            </section>
-          ) : null}
         </>
       ) : null}
 

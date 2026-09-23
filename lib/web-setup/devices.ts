@@ -259,10 +259,6 @@ export function compareVersions(device: string, manifest: string): -1 | 0 | 1 | 
   return 0;
 }
 
-export function provisioningDone(card: Huesta): boolean {
-  return card.ssid.length > 0 && card.token;
-}
-
 function productFromImprov(name: string, deviceName: string): ProductChoice | null {
   const blob = `${name}\n${deviceName}`.toLowerCase();
   const simple = blob.includes("hue-simple") || blob.includes("hue simple");
