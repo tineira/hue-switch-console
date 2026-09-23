@@ -22,32 +22,10 @@ export type FlashProgress = {
   percent: number | null;
 };
 
-async function hardReset(
-  transport: {
-    setRTS: (level: boolean) => Promise<void>;
-    disconnect: () => Promise<void>;
-  },
-  esploader: { after: (mode?: "hard_reset") => Promise<void> },
-) {
-  try {
-    await transport.setRTS(true);
-    await sleep(100);
-    await esploader.after("hard_reset");
-  } catch {
-    try {
-      await esploader.after("hard_reset");
-    } catch {
-      /* reset is best-effort after a failed connect */
-    }
-  }
-  try {
-    await transport.disconnect();
-  } catch {
-    /* already dropped */
-  }
-}
-
 type ResetMode = "usb_reset" | "no_reset" | "default_reset";
+
+const RELOAD_HOLD_BOOT =
+  "The USB port is still in use. Reload the page, hold BOOT, tap RESET, and click Install again.";
 
 const CONNECT_DEADLINE_MS = 8000;
 const PORT_UNLOCK_MS = 2000;
@@ -57,11 +35,6 @@ class ConnectTimeoutError extends Error {
     super("Connecting timed out");
     this.name = "ConnectTimeoutError";
   }
-}
-
-function resetModeFor(port: SerialPort): "usb_reset" | "default_reset" {
-  // No product id: this is the C6/S3 USB-Serial/JTAG port. Classic reset never syncs.
-  return typeof port.getInfo().usbProductId === "number" ? "default_reset" : "usb_reset";
 }
 
 function streamsLocked(port: SerialPort): boolean {
@@ -87,7 +60,7 @@ async function releaseHungPort(port: SerialPort, transport: object): Promise<voi
     await sleep(Math.min(50, deadline - Date.now()));
   }
   if (streamsLocked(port)) {
-    throw new Error("The USB port is still in use. Reload the page and try Install again.");
+    throw new Error(RELOAD_HOLD_BOOT);
   }
   try {
     await port.close();
@@ -95,7 +68,7 @@ async function releaseHungPort(port: SerialPort, transport: object): Promise<voi
     if (!streamsLocked(port) && err instanceof DOMException && err.name === "InvalidStateError") {
       return;
     }
-    throw new Error("The USB port is still in use. Reload the page and try Install again.");
+    throw new Error(RELOAD_HOLD_BOOT);
   }
 }
 
@@ -167,15 +140,6 @@ function loaderFor(
   return { transport, esploader };
 }
 
-async function attach(
-  esploader: EspLoaderType,
-  mode: ResetMode,
-  product: ProductSpec,
-): Promise<string> {
-  await esploader.connect(mode, 2);
-  return afterConnect(esploader, product);
-}
-
 async function attachWithin(
   esploader: EspLoaderType,
   mode: ResetMode,
@@ -196,42 +160,35 @@ export async function flashProduct(options: {
   const { ESPLoader, Transport } = await import("esptool-js");
   let current = loaderFor(options.port, ESPLoader, Transport);
 
-  options.onProgress({ message: "Connecting…", percent: null });
+  // USB-JTAG setSignals never returns on this Windows port, and the reader
+  // stays locked, so a second connect in the same click cannot open it.
+  // no_reset does not toggle DTR/RTS. The person holds BOOT instead.
+  options.onProgress({
+    message: "Connecting without reset… hold BOOT.",
+    percent: null,
+  });
   let detected: string;
   try {
-    detected = await attachWithin(current.esploader, resetModeFor(options.port), options.product);
+    detected = await attachWithin(current.esploader, "no_reset", options.product);
   } catch (err) {
-    if (err instanceof ChipMismatchError) {
-      await hardReset(current.transport, current.esploader);
-      throw err;
-    }
-    if (err instanceof ConnectTimeoutError) {
-      await releaseHungPort(options.port, current.transport);
-    } else {
-      await hardReset(current.transport, current.esploader);
-      if (!options.unidentified) {
-        const detail = err instanceof Error ? err.message : "unknown";
-        throw new Error(`Failed to initialize. Hold BOOT if this is the first flash. (${detail})`);
-      }
-    }
-    current = loaderFor(options.port, ESPLoader, Transport);
-    options.onProgress({
-      message: "Connecting without reset… hold BOOT.",
-      percent: null,
-    });
     try {
-      detected = await attach(current.esploader, "no_reset", options.product);
-    } catch (retryErr) {
-      await hardReset(current.transport, current.esploader);
-      if (retryErr instanceof ChipMismatchError) throw retryErr;
-      const detail = retryErr instanceof Error ? retryErr.message : "unknown";
-      throw new Error(
-        `Failed to initialize. Hold BOOT, then try Install again. (${detail})`,
-      );
+      await releaseHungPort(options.port, current.transport);
+    } catch (releaseErr) {
+      if (err instanceof ChipMismatchError) throw err;
+      throw releaseErr;
     }
+    if (err instanceof ChipMismatchError) throw err;
+    const detail = err instanceof Error ? err.message : "unknown";
+    throw new Error(
+      `Failed to initialize. Hold BOOT, tap RESET, and click Install again. (${detail})`,
+    );
   }
   if (!detected) {
-    await hardReset(current.transport, current.esploader);
+    try {
+      await releaseHungPort(options.port, current.transport);
+    } catch {
+      /* the refusal below is the point */
+    }
     throw new Error("The chip did not identify itself. The write was aborted.");
   }
   const esploader = current.esploader;
@@ -242,7 +199,11 @@ export async function flashProduct(options: {
   try {
     fileArray = await fetchFirmwareParts(options.status.partUrls);
   } catch (err) {
-    await hardReset(transport, esploader);
+    try {
+      await releaseHungPort(options.port, transport);
+    } catch {
+      /* keep the download error */
+    }
     throw err;
   }
 
@@ -273,12 +234,23 @@ export async function flashProduct(options: {
       },
     });
   } catch (err) {
-    await hardReset(transport, esploader);
+    try {
+      await releaseHungPort(options.port, transport);
+    } catch {
+      /* keep the write error */
+    }
     const detail = err instanceof Error ? err.message : "write failed";
     throw new Error(`Flash failed: ${detail}`);
   }
 
-  options.onProgress({ message: "Resetting device…", percent: 100 });
-  await hardReset(transport, esploader);
+  options.onProgress({
+    message: "Flash finished. Press RESET on the board.",
+    percent: 100,
+  });
+  try {
+    await releaseHungPort(options.port, transport);
+  } catch {
+    /* the bytes are already written */
+  }
   return detected;
 }

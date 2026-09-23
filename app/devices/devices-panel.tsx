@@ -402,7 +402,7 @@ export function DevicesPanel() {
       if (detected.usb.kind === "other") {
         const board = product.board;
         const ok = window.confirm(
-          `This writes the ${board} firmware. This port did not identify the chip. If this board is not a ${board}, it can fail to start.`,
+          `This writes the ${board} firmware. Hold BOOT, then click OK. If the chip does not answer, tap RESET while holding BOOT and try again. If this board is not a ${board}, it can fail to start.`,
         );
         if (!ok) {
           setPanel("none");
@@ -834,7 +834,7 @@ export function DevicesPanel() {
               <p className="text-sm text-muted">
                 {detected.usb.kind === "bootloader"
                   ? "Bootloader. This USB id does not say C6 or S3. Choose the board, then install its firmware. The chip read while flashing still has to match, or the write is aborted."
-                  : "This port did not identify the board. Choose C6 or S3, then install. Install reads the chip before it writes. If it does not answer, hold BOOT and try again. If it answers and it is the other chip, the write is aborted."}
+                  : "This port did not identify the board. Choose C6 or S3. Hold BOOT, then click Install. If it does not answer, tap RESET while holding BOOT and try again. If it answers and it is the other chip, the write is aborted."}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {([
