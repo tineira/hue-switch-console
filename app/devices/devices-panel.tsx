@@ -44,6 +44,8 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 const PAIR_CONFIRM =
   "This forgets the current Hue link and starts pairing again.";
 const PAIR_PROMPT = "Press the button on the Hue Bridge.";
+const PICK_PORT = "Choose the board's port in the window Chrome opened.";
+const READING = "Reading the board…";
 const CLEAR_CONFIRM =
   "This forgets Wi-Fi, the console token, the Hue link, and saved recipes or pages. The firmware stays.";
 
@@ -413,7 +415,7 @@ export function DevicesPanel() {
     const gen = ++detectGen.current;
     setBusy(true);
     setError(null);
-    setStatus("Select the USB serial port");
+    setStatus(PICK_PORT);
     setPanel("none");
     try {
       const port = await requestSerialPort();
@@ -448,7 +450,7 @@ export function DevicesPanel() {
         void loadManifestFor(spec, mgen);
       }
       if (probe) {
-        setStatus("Reading the device…");
+        setStatus(READING);
         const session = new BytePort(port, appendUsbLog);
         sessionRef.current = session;
         appendUsbLog("— open CDC —");
@@ -823,6 +825,7 @@ export function DevicesPanel() {
       ? compareVersions(detected.huesta.ver, detected.manifest.version)
       : null;
   const flashBusy = busy && panel === "flash";
+  const reading = busy && status === READING;
   const flashText =
     actions?.flash === "update"
       ? "Update"
@@ -854,8 +857,15 @@ export function DevicesPanel() {
           onClick={() => void detect()}
           className="w-fit rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60"
         >
-          {busy && status === "Reading the device…" ? "Detecting…" : "Detect device"}
+          {busy && (status === PICK_PORT || status === READING)
+            ? "Detecting…"
+            : "Detect device"}
         </button>
+        {busy && status === PICK_PORT ? (
+          <p className="text-sm text-filament" role="status">
+            {PICK_PORT}
+          </p>
+        ) : null}
       </section>
 
       {panel === "after-flash" ? (
@@ -867,7 +877,23 @@ export function DevicesPanel() {
         </section>
       ) : null}
 
-      {detected && actions ? (
+      {reading ? (
+        <section
+          className="flex items-center gap-3 rounded-xl border border-line bg-cream p-4"
+          role="status"
+        >
+          <span
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-line border-t-filament"
+          />
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-medium">{READING}</p>
+            <p className="text-sm text-muted">This takes a few seconds. Keep it plugged in.</p>
+          </div>
+        </section>
+      ) : null}
+
+      {detected && actions && !reading ? (
         <>
           {actions.showSaved && detected.huesta && !actions.cross ? (
             <SetupChecklist
@@ -1254,7 +1280,7 @@ export function DevicesPanel() {
         </section>
       ) : null}
 
-      {status && panel !== "flash" ? (
+      {status && panel !== "flash" && status !== PICK_PORT && status !== READING ? (
         <p className="text-sm text-muted" role="status">
           {status}
         </p>
