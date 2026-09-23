@@ -1,283 +1,283 @@
 # Changelog
 
-What shipped on main for the console, the Round Display, and the Simple switch. Rebuilt from git history on 2026-09-22. Newest first.
+What changed in the console, the Round switch, and the Simple switch. Newest first.
 
-A firmware heading is the FIRMWARE_VERSION that landed on main. Add the next heading in the same change that bumps that version. Copies of installer images into this repo are listed under the firmware.
-
-Docs-only commits, scratch notes, and ignore-file chores are left out.
+<!-- Contributors: write each entry as what changed for the person using it, not how the code changed. -->
+<!-- A firmware heading is the FIRMWARE_VERSION that landed on main. Add the next heading in the same change that bumps that version. -->
+<!-- Rebuilt from git history on 2026-09-22. Docs-only commits, scratch notes, and ignore-file chores are left out. -->
 
 ## Console
 
-The web app has no user-facing version. Each heading is the day the change landed.
+The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-23
 
-- How-to explains the Simple switch orange LED.
-- Install asks you to hold BOOT on a C6. It does not toggle the USB reset lines that hang on Windows. An S3 is reset into the bootloader over DTR. If the chip does not name itself, the write is aborted.
+- How-to shows what the Simple switch LED and the Round screen mean, with an animated LED and a drawing of each screen, and what to do next.
+- The Bridge page shows one switch at a time. Switches are tabs across the top, and the lights and scenes list stays in view while you edit.
+- A switch running older firmware than the latest release is flagged on the Bridge page, with a link to update it from Devices.
+- Devices and the Bridge page link straight to the matching How-to section.
+- API keys, Changelog, and Sign out moved into a menu under your email. Page intros are shorter, and browser tabs show the page name.
+- Installing on a Simple switch asks you to hold BOOT first, which avoids a hang on Windows. A Round switch restarts into install mode on its own. If the board cannot be identified, the install stops before writing anything.
 
 ### 2026-09-22
 
-- Devices is the USB screen, and /install redirects there. One page detects the XIAO, flashes firmware, writes Wi-Fi, and stores the device token.
-- An unidentified port says the board was not identified. Choose C6 or S3 before Install.
-- Detect does not read the chip with esptool, so Chrome is not killed.
-- 303A:1001 is a running sketch when the board answers HUEGET.
-- The Devices card shows the board MAC.
+- Devices is the one page for USB setup: it finds the board, installs firmware, saves Wi-Fi, and links the board to the console. The old Install address opens Devices.
+- If Devices cannot tell which board is plugged in, it asks you to choose Simple or Round before installing.
+- Finding a board no longer crashes the Chrome tab.
+- Devices recognises a board that is already running switch firmware, and shows its MAC address.
 
 ### 2026-09-21
 
-- The installer waits for a full Improv frame and logs leftover USB bytes.
-- Opening the serial port no longer pulses DTR.
-- After a DTR reset drops the COM port, the page opens Web Serial again.
+- USB setup is more reliable. Opening the connection no longer restarts the board, and the page reconnects if the board restarts during setup.
 
 ### 2026-09-20
 
-- Chrome can install a switch: flash, an Improv Wi-Fi list, and HUESET for the console token. The wizard shows Improv packets, waits out the scan, and pings the board before listing networks.
-- Round pages have an editor, inline names, a dim target, and a room or zone anchor. Device config GET fills in the group and the dim set.
-- Round screen timeout is stored with the device config.
-- Device config carries the contract fields for revision, product, and dim caps.
-- A channel can run a scene on short press, on, and off. The Hue action menu uses the console theme.
-- The theme picker has 17 palettes, drawn as swatches, collapsed until opened, including on a narrow screen.
-- A switch can have a display name that exists only in the console.
-- Sign-in, API keys, and Bridge assignment. Persistence moved from Supabase to Neon.
+- You can set up a switch from Chrome: install firmware, pick a Wi-Fi network, and link the board to the console.
+- Round pages have an editor: name each page, pick its room or zone, and choose what the dimmer ring controls.
+- You can set how long a Round screen stays on before it sleeps.
+- A Simple switch button can recall a scene on a short press, on, or off.
+- The console has 17 colour themes.
+- You can give each switch a name. The name is only used in the console.
+- Sign-in, API keys, and assigning switches to a Bridge.
 
 ### 2026-09-19
 
-- A switch can post its topology, and the console shows that Bridge's lights, rooms, and scenes.
+- A switch can send its Bridge's rooms, lights, and scenes, and the console lists them.
 
 ## Round
 
-Headings are FIRMWARE_VERSION on main for the Round Display (XIAO ESP32-S3). 0.4.1 was never tagged. The 0.5.7 commit moved the macro from 0.5.0 to 0.5.7, so 0.5.1 through 0.5.6 were never tagged. 0.5.14 was a web-setup branch build, also copied into an installer image here. On main the macro went from 0.5.13 to 0.5.15, then to 0.5.16.
+The Round switch (XIAO ESP32-S3 with the round display). Each heading is the firmware version shown on the screen at start-up.
+
+<!-- 0.4.1 was never tagged. The 0.5.7 commit moved the macro from 0.5.0 to 0.5.7, so 0.5.1 through 0.5.6 were never tagged. 0.5.14 was a web-setup branch build, also copied into an installer image here. On main the macro went from 0.5.13 to 0.5.15, then to 0.5.16. -->
 
 <!-- 2deb44b -->
 
 ### 0.5.26 — 2026-09-23
 
-- After a restart, the board uses the Wi-Fi network saved by Improv instead of showing No Wi-Fi.
+- The switch remembers the Wi-Fi network you saved during setup after it restarts, instead of showing No Wi-Fi.
 
 <!-- ced21c6 -->
 
 ### 0.5.25 — 2026-09-23
 
-- The disc stays on Token rejected after the console returns 401, and on No Bridge when the Hue key is refused.
+- The screen keeps showing Token rejected or No Bridge until the problem is fixed, instead of flickering back.
 
 <!-- e4e9ed0 -->
 
 ### 0.5.24 — 2026-09-22
 
-- A new Hue key is kept if the first check after pairing fails.
+- Pairing with the Bridge no longer fails if the first check right after pairing does not go through.
 
 <!-- 8ea396f -->
 
 ### 0.5.23 — 2026-09-22
 
-- Only an hsw_ key counts as a console token.
+- The switch ignores a console token that is not a real API key.
 
 <!-- a8739e5 -->
 
 ### 0.5.22 — 2026-09-22
 
-- The board answers HUEGET, HUEPAIR, and HUECLR over USB.
+- Devices can read the switch's status, start pairing, and clear its saved settings over USB.
 
 <!-- 26d918d -->
 
 ### 0.5.21 — 2026-09-21
 
-- A Wi-Fi scan retries when the radio reports FAILED.
+- The Wi-Fi network list during setup tries again if the first scan fails.
 
 <!-- 04fe9c1 -->
 
 ### 0.5.20 — 2026-09-21
 
-- Boot pushes Improv READY without calling Serial.flush.
+- USB setup responds sooner after the switch starts.
 
 <!-- f60fde6 -->
 
 ### 0.5.19 — 2026-09-20
 
-- An Improv Wi-Fi scan is acknowledged over USB, and the board keeps polling during boot.
+- The Wi-Fi network list during setup is more reliable while the switch is starting.
 
 <!-- 59becd3 -->
 
 ### 0.5.18 — 2026-09-20
 
-- An Improv scan is acknowledged as soon as the request arrives.
+- The switch answers a Wi-Fi scan request during setup straight away.
 
 <!-- cdcae20 -->
 
 ### 0.5.17 — 2026-09-20
 
-- The board waits until the Wi-Fi scan finishes before answering Improv with an empty list.
+- The Wi-Fi network list during setup is no longer empty when the scan is slow.
 
 <!-- 6a0cd0d -->
 
 ### 0.5.16 — 2026-09-20
 
-- Improv Serial and HUESET for USB setup from the console. The product build keeps CDC logs off, stores Wi-Fi through the Arduino STA API, and keeps the console token and URL in NVS.
+- You can set up the switch from the console over USB: Wi-Fi and the console link are saved on the switch.
 
 <!-- be53698 -->
 
 ### 0.5.15 — 2026-09-20
 
-- Touch and pages stay live while the board polls the console, and dimming follows the console dim set.
+- Touch and page swipes keep working while the switch checks in with the console, and the dimmer ring follows the lights chosen in the console.
 
 <!-- ce79b2c -->
 
 ### 0.5.13 — 2026-09-20
 
-- Idle holds the backlight PWM at zero, so the panel actually goes dark.
+- The screen goes fully dark when it sleeps.
 
 <!-- 068f269 -->
 
 ### 0.5.12 — 2026-09-20
 
-- The backlight pin leaves the UART matrix, so idle can turn it off.
+- Fixed the screen staying lit when it should sleep.
 
 <!-- fe6e100 -->
 
 ### 0.5.11 — 2026-09-20
 
-- The display sleeps after the idle timeout. The first touch only wakes it.
+- The screen sleeps after a set time without a touch. The first touch only wakes it, so it never changes a light by accident.
 
 <!-- a1571e8 -->
 
 ### 0.5.10 — 2026-09-20
 
-- After a scene recall, the dimmer ring refreshes from the Bridge.
+- After a scene is recalled, the dimmer ring shows the new brightness.
 
 <!-- db42f61 -->
 
 ### 0.5.9 — 2026-09-20
 
-- The Ready fill splits when tap and double-tap target two different child lights.
+- When tap and double tap control two different lights, the disc is split in half to show each one.
 
 <!-- f95cd58 -->
 
 ### 0.5.8 — 2026-09-20
 
-- Ready keeps taking touch while a Hue request runs on a worker.
+- The screen keeps responding to touch while a command is on its way to the Bridge.
 
 <!-- bf39161 -->
 
 ### 0.5.7 — 2026-09-20
 
-- HWCDC flashing, SERIAL_DEBUG, the original double-tap, and the dim fallback are restored.
-- This commit moved the version macro from 0.5.0 to 0.5.7.
+- Restored double tap and dimming behaviour that an earlier build had broken.
 
 <!-- a80af98 -->
 
 ### 0.5.0 — 2026-09-20
 
-- Each page is anchored to a Hue group. Dimming targets that group or the action lights.
+- Each page belongs to a room or zone, and the dimmer ring controls that group or the page's lights.
 
 <!-- b0c9fc9 -->
 
 ### 0.4.2 — 2026-09-20
 
-- Config backups no longer stack. USB CDC uses TinyUSB.
+- More reliable saving of settings and USB connection.
 
 <!-- 3c2de1d -->
 
 ### 0.4.0 — 2026-09-20
 
-- Pages, swipe between them, and themed scene cycling.
+- Pages: swipe between rooms, each with its own colours and scene cycling.
 
 <!-- c09a679 -->
 
 ### 0.3.0 — 2026-09-20
 
-- The center button follows Hue on/off, and the dimmer ring stays in sync.
+- The centre button shows whether the lights are on, and the dimmer ring stays in sync with the Hue app.
 
 <!-- 8f12724 -->
 
 ### 0.2.0 — 2026-09-20
 
-- Brightness ring, loading screen, and touch mapping.
+- Brightness ring, a loading screen, and better touch.
 
 <!-- 1879448 -->
 
 ### 0.1.0 — 2026-09-20
 
-- First Round Display firmware for the XIAO ESP32-S3.
+- First Round switch firmware.
 
 ## Simple
 
-Headings are FIRMWARE_VERSION on main for the Simple switch (XIAO ESP32-C6). The first numbered build is 0.1.1.
+The Simple switch (XIAO ESP32-C6 with wired buttons). Each heading is the firmware version Devices shows.
 
 <!-- 45421a8 -->
 
 ### 0.2.10 — 2026-09-22
 
-- The orange LED stays on the new Hue key step if the first check after pairing fails.
+- Pairing with the Bridge no longer fails if the first check right after pairing does not go through.
 
 <!-- d8ea208 -->
 
 ### 0.2.9 — 2026-09-22
 
-- Only an hsw_ key counts as a console token.
+- The switch ignores a console token that is not a real API key.
 
 <!-- b4412cc -->
 
 ### 0.2.8 — 2026-09-22
 
-- The board answers HUEGET, HUEPAIR, and HUECLR over USB.
+- Devices can read the switch's status, start pairing, and clear its saved settings over USB.
 
 <!-- 851ee76 -->
 
 ### 0.2.7 — 2026-09-22
 
-- The orange LED plays a counted burst and is driven active-low.
+- The orange LED shows the setup step as a count of blinks. See How-to.
 
 <!-- 05ee847 -->
 
 ### 0.2.6 — 2026-09-21
 
-- A Wi-Fi scan retries when the radio reports FAILED.
+- The Wi-Fi network list during setup tries again if the first scan fails.
 
 <!-- 7e00bcf -->
 
 ### 0.2.5 — 2026-09-21
 
-- USB CDC stays up for Improv. Serial.printf goes through LOG, so a product build stays quiet.
+- USB setup stays connected while you pick a Wi-Fi network.
 
 <!-- 79bbc18 -->
 
 ### 0.2.4 — 2026-09-21
 
-- Boot keeps pumping USB so Improv still answers after a DTR reset.
+- USB setup still works right after the switch restarts.
 
 <!-- 70c0f8e -->
 
 ### 0.2.3 — 2026-09-20
 
-- An Improv Wi-Fi scan is acknowledged over USB, and the board keeps polling during boot.
+- The Wi-Fi network list during setup is more reliable while the switch is starting.
 
 <!-- 288f3e5 -->
 
 ### 0.2.2 — 2026-09-20
 
-- An Improv scan is acknowledged as soon as the request arrives.
+- The switch answers a Wi-Fi scan request during setup straight away.
 
 <!-- 405b53f -->
 
 ### 0.2.1 — 2026-09-20
 
-- The board waits until the Wi-Fi scan finishes before answering Improv with an empty list.
+- The Wi-Fi network list during setup is no longer empty when the scan is slow.
 
 <!-- 9fa2611 -->
 
 ### 0.2.0 — 2026-09-20
 
-- Improv Serial and HUESET for USB setup from the console. The product build keeps CDC logs off, stores Wi-Fi through the Arduino STA API, and keeps the console token and URL in NVS.
+- You can set up the switch from the console over USB: Wi-Fi and the console link are saved on the switch.
 
 <!-- d256757 -->
 
 ### 0.1.1 — 2026-09-20
 
-- Console polling runs off the GPIO path. A failed poll keeps the last good snapshot.
+- Buttons stay responsive while the switch checks in with the console. If a check-in fails, the switch keeps its last good settings.
 
 <!-- 337e20c -->
 
 ### before 0.1.1 — 2026-09-19
 
-- First sketch for the XIAO ESP32-C6, with no version macro.
-- BOOT toggles one Clip v2 light. The board discovers the Bridge, stores its address and application key, and can pair when the Bridge button is pressed.
+- First Simple switch firmware. The BOOT button toggles a light, and the switch finds and pairs with the Hue Bridge.
