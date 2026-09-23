@@ -20,3 +20,36 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
 - `public/firmware/` (bins + `manifest.json`) is owned by the **firmware** workers. Do not `git restore` or rewrite it if Round/Simple drop new images into this tree; the wizard version is that manifest, not a label you invent.
 - Do **not** use local Playwright to verify login or `/install`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
+
+## Multi-repo: this repo owns the contract
+
+The product is three repos. This one is the hub.
+
+| Repo | Path | Role |
+| --- | --- | --- |
+| `hue-switch-console` | `C:\Users\tinei\hue-switch-console` | Console, device API, contract docs, installer bins |
+| `hue-round-switch` | `C:\Users\tinei\Arduino\hue-round-switch` | XIAO ESP32-S3 + Round Display firmware (`product: "round"`) |
+| `hue-simple-switch` | `C:\Users\tinei\Arduino\hue-simple-switch` | XIAO ESP32-C6 wall-contact firmware (`product: "simple"`) |
+
+More switch firmwares may join; each gets a row here and the same `## Contract` section in its own AGENTS.md.
+
+Source of truth for anything a switch and the console both depend on:
+
+- `docs/device-api.md`: endpoints, auth, payloads, error codes.
+- `docs/definiciones.md`: product model (recipes, channels, pages).
+- `docs/changelog.md`: user-facing release notes, one section per product.
+- `public/firmware/<product>/manifest.json`: what `/install` flashes (firmware-owned, see above).
+
+Firmware repos implement these docs; they do not redefine them. A firmware session that needs a protocol change proposes it here, not in its own tree.
+
+### Cross-repo changes
+
+A change is cross-repo if it touches a device endpoint, a payload field, NVS keys the console writes over USB (`HUESET`, Improv), or the installer. Order:
+
+1. **Spec.** `docs/specs/<feature>.md` from `docs/specs/TEMPLATE.md`, with a checklist per repo. The user approves it before code.
+2. **Console first, backward compatible.** Accept both old and new device behavior. Never ship a console that breaks boards already on the wall; they update by USB (or OTA, when it exists) on the user's schedule.
+3. **Update `docs/device-api.md`** in the same commit as the endpoint change.
+4. **Each firmware** adopts the change and bumps `FIRMWARE_VERSION`.
+5. **Retire the old path** only once no registered switch reports an older `firmware` (check `switches.firmware`), and only with the user's OK.
+
+One session per repo does that repo's checklist, reading that repo's AGENTS.md. A coordinating session (usually one in this repo) writes the spec, hands each repo its section, and ticks the checklist. It does not edit firmware trees itself unless the user says so. Flashing, USB and Web Serial are done by the user.
