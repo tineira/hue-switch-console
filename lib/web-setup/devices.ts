@@ -102,7 +102,7 @@ export function identifyUsb(vendorId?: number, productId?: number): UsbIdentity 
       productId: null,
       kind: "other",
       idText: "Unknown",
-      title: "Not a supported board",
+      title: "Board not identified",
     };
   }
   const idText = `${hexId(vendorId)}:${hexId(productId)}`;
@@ -122,7 +122,7 @@ export function identifyUsb(vendorId?: number, productId?: number): UsbIdentity 
   if (vendorId === ESPRESSIF_VID && productId === PID_BOOTLOADER) {
     return { ...base, kind: "bootloader", title: "Bootloader" };
   }
-  return { ...base, kind: "other", title: "Not a supported board" };
+  return { ...base, kind: "other", title: "Board not identified" };
 }
 
 export function productForBoard(board: BoardChoice | UsbKind): ProductChoice | null {
