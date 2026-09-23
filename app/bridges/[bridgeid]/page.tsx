@@ -17,6 +17,10 @@ import { snapshotFromJson } from "@/lib/recipes";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Bridge",
+};
+
 export default async function BridgePage({
   params,
 }: {
@@ -40,10 +44,9 @@ export default async function BridgePage({
             Bridge not found
           </h1>
           <p className="max-w-xl text-sm text-muted">
-            No snapshot for <span className="font-mono text-foreground">{bridgeid}</span>{" "}
-            in this account. Topology is uploaded by a switch or{" "}
-            <code className="font-mono text-xs">push-from-bridge</code> — this
-            app never calls the Hue Bridge.
+            <span className="font-mono text-foreground">{bridgeid}</span> is not
+            in this account yet. It appears once a switch paired with it checks
+            in.
           </p>
           <Link href="/" className="text-sm font-medium text-filament hover:underline">
             Back to bridges

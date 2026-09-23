@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hue switch console",
+  title: {
+    template: "%s · Hue switch console",
+    default: "Hue switch console",
+  },
   description: "Commissioning UI for Wi-Fi Hue wall switches",
 };
 

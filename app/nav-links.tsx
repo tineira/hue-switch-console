@@ -19,11 +19,6 @@ const LINKS = [
     label: "How-to",
     match: (path: string) => path.startsWith("/how-to"),
   },
-  {
-    href: "/keys",
-    label: "API keys",
-    match: (path: string) => path.startsWith("/keys"),
-  },
 ];
 
 export function NavLinks() {
@@ -47,18 +42,5 @@ export function NavLinks() {
         );
       })}
     </nav>
-  );
-}
-
-export function ChangelogLink() {
-  const path = usePathname();
-  const active = path === "/changelog" || path.startsWith("/changelog/");
-  return (
-    <Link
-      href="/changelog"
-      className={active ? "text-foreground" : "text-muted hover:text-foreground"}
-    >
-      Changelog
-    </Link>
   );
 }

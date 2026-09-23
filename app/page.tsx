@@ -8,6 +8,10 @@ import type { TopologySnapshot } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Bridges",
+};
+
 function snapshotCounts(snapshot: TopologySnapshot | null) {
   if (!snapshot) return "No snapshot";
   const lights = snapshot.lights?.length ?? 0;
@@ -32,30 +36,20 @@ export default async function Home() {
       <section className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Bridges</h1>
         <p className="max-w-2xl text-sm text-muted">
-          Configuration is per Bridge — not a Hue Home. Switches paired to the
-          same <span className="font-mono text-xs">bridgeid</span> share one
-          topology. Simple boards get GPIO channels (on / off / double-click).
-          Round Displays get pages (room or zone, tap / double-tap), not pins.
+          Each Hue Bridge has its own rooms, lights, scenes, and switches. Open
+          one to set up its switches.
         </p>
       </section>
 
       {bridges.length === 0 ? (
         <section className="flex flex-col gap-4 rounded-xl border border-dashed border-line bg-cream p-6">
-          <h2 className="text-lg font-medium">No Bridge snapshot yet</h2>
+          <h2 className="text-lg font-medium">No Bridge yet</h2>
           <ol className="flex max-w-xl list-decimal flex-col gap-2 pl-5 text-sm text-muted">
+            <li>Set up a board on Devices, in Chrome or Edge.</li>
+            <li>When the board asks, press the button on the Hue Bridge.</li>
             <li>
-              Plug a virgin XIAO into USB and use Devices (Chrome or
-              Edge). Developers can still put a key in{" "}
-              <code className="font-mono text-xs">config.h</code>.
-            </li>
-            <li>
-              Let the XIAO pair with Hue on the LAN, then register. Or run{" "}
-              <code className="font-mono text-xs">npm run push-from-bridge</code>{" "}
-              from a machine that can reach the Bridge.
-            </li>
-            <li>
-              Come back here. Rooms, lights, and scenes will appear. Assign GPIO
-              recipes on a Simple switch, or pages on a Round Display.
+              Come back here. The Bridge&apos;s rooms, lights, and scenes appear
+              once the board checks in.
             </li>
           </ol>
           <p className="flex flex-wrap gap-4">
@@ -63,20 +57,14 @@ export default async function Home() {
               href="/devices"
               className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
             >
-              Devices
-            </Link>
-            <Link
-              href="/keys"
-              className="self-center text-sm font-medium text-filament hover:underline"
-            >
-              Manage API keys
+              Go to Devices
             </Link>
           </p>
           {switches.length > 0 ? (
             <p className="text-sm text-muted">
-              {switches.length} switch{switches.length === 1 ? "" : "es"}{" "}
-              registered, but no topology row yet. Re-register so the snapshot
-              lands.
+              {switches.length} switch{switches.length === 1 ? " is" : "es are"}{" "}
+              registered but no Bridge has arrived yet. Restart a board so it
+              checks in again.
             </p>
           ) : null}
         </section>

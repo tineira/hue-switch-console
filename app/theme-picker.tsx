@@ -113,10 +113,12 @@ export function ThemePicker() {
         type="button"
         className="min-h-11 touch-manipulation rounded-md border border-line bg-cream px-3 py-1.5 text-sm text-foreground sm:min-h-0 sm:px-2.5 sm:py-1"
         aria-haspopup="dialog"
+        aria-label={`Theme: ${current.name}`}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        Theme · {current.name}
+        <span className="hidden sm:inline">Theme · </span>
+        {current.name}
       </button>
       {open ? (
         <>

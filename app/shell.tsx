@@ -1,5 +1,6 @@
-import { ChangelogLink, NavLinks } from "@/app/nav-links";
-import { SignOutButton } from "@/app/sign-out-button";
+import Link from "next/link";
+import { AccountMenu } from "@/app/account-menu";
+import { NavLinks } from "@/app/nav-links";
 import { ThemePicker } from "@/app/theme-picker";
 
 export function Shell({
@@ -17,18 +18,16 @@ export function Shell({
         wide ? "max-w-7xl" : "max-w-5xl"
       }`}
     >
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted">
-            Hue switch console
-          </p>
+      <header className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <Link href="/" className="text-sm font-semibold tracking-tight">
+          Hue switch console
+        </Link>
+        <div className="order-last w-full sm:order-none sm:w-auto">
           <NavLinks />
         </div>
-        <div className="flex flex-wrap items-center gap-3 text-sm">
+        <div className="ml-auto flex items-center gap-2">
           <ThemePicker />
-          <ChangelogLink />
-          {email ? <span className="text-muted">{email}</span> : null}
-          <SignOutButton />
+          <AccountMenu email={email} />
         </div>
       </header>
       {children}

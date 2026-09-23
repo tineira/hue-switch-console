@@ -961,11 +961,10 @@ export function BridgeWorkspace({
 
           {topologyEmpty ? (
             <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
-              <p className="font-medium text-foreground">No topology yet</p>
+              <p className="font-medium text-foreground">No lights yet</p>
               <p className="mt-2">
-                The console never calls the Hue Bridge. A switch (or{" "}
-                <code className="font-mono text-xs">npm run push-from-bridge</code>{" "}
-                on the LAN) must upload rooms, lights, and scenes.
+                A switch paired with this Bridge sends its rooms, lights, and
+                scenes when it checks in.
               </p>
             </div>
           ) : (
