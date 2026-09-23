@@ -18,7 +18,7 @@ export function Shell({
         wide ? "max-w-7xl" : "max-w-5xl"
       }`}
     >
-      <header className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-6">
         <Link href="/" className="text-sm font-semibold tracking-tight">
           Hue switch console
         </Link>

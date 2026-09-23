@@ -41,7 +41,7 @@ export function AccountMenu({ email }: { email?: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={`flex min-h-11 max-w-[10rem] sm:max-w-[16rem] touch-manipulation items-center gap-1.5 rounded-md px-2.5 py-1 text-sm sm:min-h-0 ${
+        className={`flex min-h-11 max-w-[7.5rem] sm:max-w-[16rem] touch-manipulation items-center gap-1.5 rounded-md px-2.5 py-1 text-sm sm:min-h-0 ${
           active || open ? "bg-filament-soft text-foreground" : "text-muted hover:text-foreground"
         }`}
       >
