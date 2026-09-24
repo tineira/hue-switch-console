@@ -12,7 +12,7 @@ import { bearerToken, jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
-// Firmware CI uploads a release here (docs/specs/firmware-uploads.md §2.2).
+// Firmware CI uploads a release here (docs/specs/finished/firmware-uploads.md §2.2).
 export async function POST(req: Request, context: { params: Promise<{ product: string }> }) {
   const auth = uploadTokenMatches(bearerToken(req));
   if (auth === null) return jsonError(503, "upload_not_configured");

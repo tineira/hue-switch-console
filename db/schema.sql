@@ -97,7 +97,7 @@ create unique index if not exists recipes_round_uniq
 
 create index if not exists recipes_switch_id_idx on recipes (switch_id);
 
--- Firmware releases uploaded by firmware CI (docs/specs/firmware-uploads.md).
+-- Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
 create table if not exists firmware_releases (
   id uuid primary key default gen_random_uuid(),
   product text not null check (product in ('round', 'simple')),

@@ -3,7 +3,7 @@
 What changed in the console, the Round switch, and the Simple switch. Newest first.
 
 <!-- Contributors: write each entry as what changed for the person using it, not how the code changed. -->
-<!-- Round and Simple versions are not written here: each firmware repo keeps them in its own CHANGELOG.md, and they reach /changelog with the firmware upload (docs/specs/firmware-uploads.md). This file keeps the console entries and each product intro. -->
+<!-- Round and Simple versions are not written here: each firmware repo keeps them in its own CHANGELOG.md, and they reach /changelog with the firmware upload (docs/specs/finished/firmware-uploads.md). This file keeps the console entries and each product intro. -->
 <!-- Rebuilt from git history on 2026-09-22. Docs-only commits, scratch notes, and ignore-file chores are left out. -->
 
 ## Console

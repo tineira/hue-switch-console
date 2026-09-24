@@ -83,7 +83,7 @@ push to main (hue-round-switch / hue-simple-switch)
 Bumping it is what makes Devices offer **Update**. A rebuild without a bump is
 answered `409 version_exists`: the bins stay as they were (their URLs are cached
 forever) and only the notes are updated. Spec:
-[`docs/specs/firmware-uploads.md`](docs/specs/firmware-uploads.md).
+[`docs/specs/finished/firmware-uploads.md`](docs/specs/finished/firmware-uploads.md).
 
 The console checks every upload: all four parts, a `major.minor.patch` version,
 non-empty notes, and the chip id inside `bootloader.bin` / `firmware.bin`

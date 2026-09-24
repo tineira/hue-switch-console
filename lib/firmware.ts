@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { sql } from "@/lib/sql";
 import type { ProductId } from "@/lib/web-setup/products";
 
-// Firmware releases uploaded by firmware CI (docs/specs/firmware-uploads.md).
+// Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
 
 export const PART_NAMES = [
   "bootloader.bin",

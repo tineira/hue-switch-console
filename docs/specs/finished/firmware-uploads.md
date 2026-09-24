@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress
+**Status:** done
 
 ## 1. What and why
 
@@ -137,7 +137,7 @@ Firmware release notes travel **with the upload**, so a release needs no console
 
 ### Cleanup
 
-- [ ] `CONSOLE_REPO_TOKEN` (both firmware repos) and `FIRMWARE_REPO_TOKEN` (this repo) deleted — by the user
+- [x] `CONSOLE_REPO_TOKEN` (both firmware repos) and `FIRMWARE_REPO_TOKEN` (this repo) deleted — by the user, with the fine-grained token behind them
 
 ## 5. Limits (free tiers, checked 2026-09-24)
 

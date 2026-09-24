@@ -1,4 +1,4 @@
-// Uploads a local build to the console, the same way firmware CI does (docs/specs/firmware-uploads.md).
+// Uploads a local build to the console, the same way firmware CI does (docs/specs/finished/firmware-uploads.md).
 //
 //   node scripts/upload-firmware.mjs <round|simple> <dir> --version 0.5.28 --notes <file>
 //
