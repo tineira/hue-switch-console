@@ -39,7 +39,7 @@ import {
   type ProductId,
   type ProductSpec,
 } from "@/lib/web-setup/products";
-import { BytePort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
+import { BytePort, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
 import {
   useEffect,
   useEffectEvent,
@@ -747,8 +747,15 @@ export function DevicesPanel() {
     try {
       await closeSession();
       setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
-      const port = portRef.current;
-      if (!port) throw new Error("Detect the device again.");
+      const picked = portRef.current;
+      if (!picked) throw new Error("Detect the device again.");
+      const port = await reattachPort(picked);
+      if (!port) {
+        throw new Error(
+          "The board came back on a new USB port after RESET. Click Detect, pick it, then Install.",
+        );
+      }
+      portRef.current = port;
       if (detected.usb.kind === "other") {
         const board = product.board;
         const ok = window.confirm(

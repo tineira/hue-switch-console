@@ -41,6 +41,28 @@ function portConnected(port: SerialPort): boolean | undefined {
 }
 
 /**
+ * BOOT+RESET makes the C6 drop off USB and come back as a new SerialPort, so the
+ * port picked at Detect is dead. Finds the same board (vendor/product id) among the
+ * ports this page may already use, waiting a moment for it to re-enumerate.
+ */
+export async function reattachPort(port: SerialPort, waitMs = 3000): Promise<SerialPort | null> {
+  if (portConnected(port) !== false) return port;
+  const { usbVendorId, usbProductId } = port.getInfo();
+  const deadline = Date.now() + waitMs;
+  for (;;) {
+    const ports = await navigator.serial.getPorts();
+    const match = ports.find((candidate) => {
+      if (candidate === port || portConnected(candidate) === false) return false;
+      const info = candidate.getInfo();
+      return info.usbVendorId === usbVendorId && info.usbProductId === usbProductId;
+    });
+    if (match) return match;
+    if (Date.now() >= deadline) return null;
+    await sleep(250);
+  }
+}
+
+/**
  * Exclusive Web Serial reader/writer with a leftover buffer.
  * Used for Improv packets, then ASCII HUESET on the same CDC.
  *
