@@ -104,12 +104,36 @@ async function connectWithDeadline(
   }
 }
 
+// ESP32-C6 on USB-Serial-JTAG: the RTC watchdog and the super watchdog keep running in
+// download mode and reset the chip mid-flash. Python esptool disables them after connect
+// (esp32c6.py disable_watchdogs); esptool-js 0.6.1 does not, so it is done here.
+const USB_JTAG_SERIAL_PID = 0x1001;
+const C6_LP_WDT_BASE = 0x600b1c00;
+const C6_RWDT_CONFIG0 = C6_LP_WDT_BASE + 0x0;
+const C6_RWDT_WPROTECT = C6_LP_WDT_BASE + 0x18;
+const C6_SWD_CONFIG = C6_LP_WDT_BASE + 0x1c;
+const C6_SWD_WPROTECT = C6_LP_WDT_BASE + 0x20;
+const C6_WDT_WKEY = 0x50d83aa1;
+const C6_SWD_AUTO_FEED_EN = 1 << 18;
+
+async function disableC6Watchdogs(esploader: EspLoaderType): Promise<void> {
+  if (esploader.transport.getPid() !== USB_JTAG_SERIAL_PID) return;
+  await esploader.writeReg(C6_RWDT_WPROTECT, C6_WDT_WKEY);
+  await esploader.writeReg(C6_RWDT_CONFIG0, 0);
+  await esploader.writeReg(C6_RWDT_WPROTECT, 0);
+  await esploader.writeReg(C6_SWD_WPROTECT, C6_WDT_WKEY);
+  const swd = await esploader.readReg(C6_SWD_CONFIG);
+  await esploader.writeReg(C6_SWD_CONFIG, (swd | C6_SWD_AUTO_FEED_EN) >>> 0);
+  await esploader.writeReg(C6_SWD_WPROTECT, 0);
+}
+
 async function afterConnect(esploader: EspLoaderType, product: ProductSpec): Promise<string> {
   const detected = String(esploader.chip?.CHIP_NAME ?? "");
   if (detected && !chipFamilyMatches(detected, product.chipFamily)) {
     throw new ChipMismatchError(product.chipFamily, detected, product.mismatch);
   }
   if (!detected) return "";
+  if (product.chipFamily === "ESP32-C6") await disableC6Watchdogs(esploader);
   await esploader.runStub();
   await esploader.changeBaud();
   await esploader.flashId();
