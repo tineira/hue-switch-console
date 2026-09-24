@@ -127,6 +127,19 @@ async function disableC6Watchdogs(esploader: EspLoaderType): Promise<void> {
   await esploader.writeReg(C6_SWD_WPROTECT, 0);
 }
 
+// HUEBOOT (Simple 0.2.11+) sets this always-on flag to restart into the ROM download mode.
+// A RESET may not clear it, so it is cleared after the write and RESET boots the new app.
+// soc/esp32c6/register/soc/lp_aon_reg.h: LP_AON_SYS_CFG_REG (DR_REG_LP_AON_BASE + 0x34),
+// LP_AON_FORCE_DOWNLOAD_BOOT (BIT(30)), DR_REG_LP_AON_BASE 0x600B1000.
+const C6_LP_AON_SYS_CFG = 0x600b1000 + 0x34;
+const C6_FORCE_DOWNLOAD_BOOT = 1 << 30;
+
+async function clearC6ForceDownload(esploader: EspLoaderType): Promise<void> {
+  const cfg = await esploader.readReg(C6_LP_AON_SYS_CFG);
+  if (!(cfg & C6_FORCE_DOWNLOAD_BOOT)) return;
+  await esploader.writeReg(C6_LP_AON_SYS_CFG, (cfg & ~C6_FORCE_DOWNLOAD_BOOT) >>> 0);
+}
+
 async function afterConnect(esploader: EspLoaderType, product: ProductSpec): Promise<string> {
   const detected = String(esploader.chip?.CHIP_NAME ?? "");
   if (detected && !chipFamilyMatches(detected, product.chipFamily)) {
@@ -314,6 +327,14 @@ export async function flashProduct(options: {
     }
     const detail = err instanceof Error ? err.message : "write failed";
     throw new Error(`Flash failed: ${detail}`);
+  }
+
+  if (options.product.chipFamily === "ESP32-C6") {
+    try {
+      await clearC6ForceDownload(esploader);
+    } catch {
+      /* the write is done; a stuck flag only means one more RESET into the bootloader */
+    }
   }
 
   options.onProgress({
