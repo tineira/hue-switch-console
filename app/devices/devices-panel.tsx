@@ -39,7 +39,7 @@ import {
   type ProductId,
   type ProductSpec,
 } from "@/lib/web-setup/products";
-import { BytePort, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
+import { BytePort, portConnected, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
 import {
   useEffect,
   useEffectEvent,
@@ -749,10 +749,29 @@ export function DevicesPanel() {
       setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
       const picked = portRef.current;
       if (!picked) throw new Error("Detect the device again.");
-      const port = await reattachPort(picked);
+      // The console cannot reset the C6 into its bootloader on Windows. When Detect
+      // found the firmware running, the person does it now, after the port is released.
+      const needsBoot =
+        product.chipFamily === "ESP32-C6" && (detected.improv !== null || detected.huesta !== null);
+      if (needsBoot) {
+        const ok = window.confirm(
+          "Put the Simple in download mode: hold BOOT, tap RESET, then release BOOT. Click OK when done.",
+        );
+        if (!ok) {
+          setPanel("none");
+          setStatus(null);
+          return;
+        }
+      }
+      const port = await reattachPort(picked, needsBoot ? 6000 : 3000);
       if (!port) {
         throw new Error(
           "The board came back on a new USB port after RESET. Click Detect, pick it, then Install.",
+        );
+      }
+      if (needsBoot && port === picked && portConnected(picked) === true) {
+        throw new Error(
+          "The Simple is still running its firmware, so it did not reset. Hold BOOT, tap RESET, release BOOT, and click Install again.",
         );
       }
       portRef.current = port;

@@ -33,7 +33,7 @@ function isDeviceLost(err: unknown): boolean {
   return err instanceof Error && /device has been lost/i.test(err.message);
 }
 
-function portConnected(port: SerialPort): boolean | undefined {
+export function portConnected(port: SerialPort): boolean | undefined {
   if ("connected" in port && typeof (port as SerialPort & { connected?: boolean }).connected === "boolean") {
     return (port as SerialPort & { connected: boolean }).connected;
   }
