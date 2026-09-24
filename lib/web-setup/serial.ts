@@ -45,12 +45,30 @@ export function portConnected(port: SerialPort): boolean | undefined {
  * port picked at Detect is dead. Finds the same board (vendor/product id) among the
  * ports this page may already use, waiting a moment for it to re-enumerate.
  */
-export async function reattachPort(port: SerialPort, waitMs = 3000): Promise<SerialPort | null> {
-  if (portConnected(port) !== false) return port;
+export async function reattachPort(
+  port: SerialPort,
+  waitMs = 3000,
+  onLog?: SerialLog,
+): Promise<SerialPort | null> {
+  const before = portConnected(port);
+  onLog?.(`picked port connected=${before === undefined ? "?" : before}`);
+  if (before !== false) return port;
   const { usbVendorId, usbProductId } = port.getInfo();
   const deadline = Date.now() + waitMs;
+  let lastSeen = "";
   for (;;) {
     const ports = await navigator.serial.getPorts();
+    const seen = ports
+      .map((candidate) => {
+        const info = candidate.getInfo();
+        const id = `${info.usbVendorId?.toString(16) ?? "?"}:${info.usbProductId?.toString(16) ?? "?"}`;
+        return `${id}${candidate === port ? "(picked)" : ""} connected=${portConnected(candidate) ?? "?"}`;
+      })
+      .join(", ");
+    if (seen !== lastSeen) {
+      onLog?.(`ports: ${seen || "none"}`);
+      lastSeen = seen;
+    }
     const match = ports.find((candidate) => {
       if (candidate === port || portConnected(candidate) === false) return false;
       const info = candidate.getInfo();

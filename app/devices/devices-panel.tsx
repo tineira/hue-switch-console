@@ -763,7 +763,8 @@ export function DevicesPanel() {
           return;
         }
       }
-      const port = await reattachPort(picked, needsBoot ? 6000 : 3000);
+      appendUsbLog(needsBoot ? "— install: after BOOT+RESET —" : "— install: port check —");
+      const port = await reattachPort(picked, needsBoot ? 6000 : 3000, appendUsbLog);
       if (!port) {
         throw new Error(
           "The board came back on a new USB port after RESET. Click Detect, pick it, then Install.",
