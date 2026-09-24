@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved
+**Status:** in progress
 
 ## 1. What and why
 
@@ -112,27 +112,28 @@ Firmware release notes travel **with the upload**, so a release needs no console
 
 ### Console (`hue-switch-console`)
 
-- [ ] Phase A: schema, `POST /api/firmware/{product}`, `POST /api/firmware/{product}/current`, image checks, retention
-- [ ] `scripts/upload-firmware.mjs`
-- [ ] `FIRMWARE_UPLOAD_TOKEN` set on Vercel (Production) — by the user
-- [ ] `/changelog` reads Round / Simple from `firmware_releases`; one-time import of the existing firmware entries, then remove them from `docs/changelog.md`
-- [ ] Seed both products; check `select product, version from firmware_releases`
-- [ ] Phase B: manifest and part routes, `HEAD` supported, runtime version reads, part fetches cacheable
-- [ ] Phase B: delete `public/firmware/*/*.bin` + `manifest.json`, `.github/workflows/sync-firmware-bins.yml`; rewrite `public/firmware/README.md` into the root `README.md` "Firmware release pipeline"
-- [ ] Update `AGENTS.md`: the `public/firmware/` ownership paragraph, and the source-of-truth list (`docs/changelog.md` becomes console-only; firmware notes live in each firmware repo); also `docs/specs/TEMPLATE.md` ("Installer bins synced" → "Release uploaded")
-- [ ] Deployed; on production: `/firmware/round/manifest.json` shows the uploaded version, a USB install by the user succeeds, a second part download is a CDN hit (`x-vercel-cache: HIT`)
+- [x] Phase A: schema, `POST /api/firmware/{product}`, `POST /api/firmware/{product}/current`, image checks, retention
+- [x] `scripts/upload-firmware.mjs`
+- [x] `FIRMWARE_UPLOAD_TOKEN` set on Vercel (Production) — by the user
+- [x] `/changelog` reads Round / Simple from `firmware_releases`; one-time import of the existing firmware entries, then remove them from `docs/changelog.md`
+- [x] Seed both products; check `select product, version from firmware_releases`
+- [x] Phase B: manifest and part routes, `HEAD` supported, runtime version reads, part fetches cacheable
+- [x] Phase B: delete `public/firmware/*/*.bin` + `manifest.json`, `.github/workflows/sync-firmware-bins.yml`; rewrite `public/firmware/README.md` into the root `README.md` "Firmware release pipeline"
+- [x] Update `AGENTS.md`: the `public/firmware/` ownership paragraph, and the source-of-truth list (`docs/changelog.md` becomes console-only; firmware notes live in each firmware repo); also `docs/specs/TEMPLATE.md` ("Installer bins synced" → "Release uploaded")
+- [x] Deployed; on production: `/firmware/round/manifest.json` shows the uploaded version, a second part download is a CDN hit (`x-vercel-cache: HIT`)
+- [ ] A USB install from Devices by the user succeeds
 
 ### Round (`hue-round-switch`)
 
-- [ ] `firmware.yml`: after compile, `curl` the four bins to `POST /api/firmware/round` with `FIRMWARE_UPLOAD_TOKEN`; warn-only until phase B, then fail the run on non-2xx
-- [ ] `CHANGELOG.md` at the repo root, starting with the current version; CI sends that version's section as `notes`
-- [ ] `FIRMWARE_UPLOAD_TOKEN` secret set — by the user
-- [ ] Cleanup: remove the `usb-installer` release step (optional, keep if you want a download link) and the dispatch step
-- [ ] AGENTS.md: release section says "push = upload to the console"
+- [x] `firmware.yml`: after compile, `curl` the four bins to `POST /api/firmware/round` with `FIRMWARE_UPLOAD_TOKEN`; warn-only until phase B, then fail the run on non-2xx
+- [x] `CHANGELOG.md` at the repo root, starting with the current version; CI sends that version's section as `notes`
+- [x] `FIRMWARE_UPLOAD_TOKEN` secret set — by the user
+- [x] Cleanup: dispatch step removed; upload runs before the `usb-installer` release, which stays as a download link; upload failures fail the run (409 warns)
+- [x] AGENTS.md: release section says "push = upload to the console"
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] Same items as Round, with `product = simple`
+- [x] Same items as Round, with `product = simple`
 
 ### Cleanup
 
