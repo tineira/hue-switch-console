@@ -242,7 +242,12 @@ The disc in Ready has **no** help sentences. Only name, scene if any, dots, ring
 
 Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. ASCII: accents/ñ are folded. No line breaks.
 
-System states (English, one line): `Wi-Fi...`, `No Wi-Fi`, `No Bridge`, `Press Bridge button`, `Hue error`. They are not pages.
+System states (English, one line): `Wi-Fi...`, `No Wi-Fi`, `No Bridge`, `Press Bridge button`, `Token rejected`. They are not pages.
+
+- `No Bridge`: the Bridge does not answer. The switch retries by itself and reconnects after a short Bridge or Wi-Fi outage without asking for the Bridge button.
+- `Press Bridge button`: no saved key, a BOOT 3 s hold, or the Bridge rejected the saved key twice. The switch pairs again by itself once the button is pressed.
+- `Token rejected` (console 401): full screen only when the switch has no recipes. With recipes, Ready stays and works, and a small error-colored dot at 6 o'clock (in the dimmer ring's gap) marks the rejected token.
+- A failed command is not a screen: the button ring flashes the theme's error color for about 0.7 s and Ready stays on the page. There is no `Hue error` screen (firmware 0.5.27 and later).
 
 ---
 
@@ -387,7 +392,7 @@ Fields per palette:
 | `fillOn` / `fillOff` | Inner disc |
 | `accent` | Ring and "on" / pressed state |
 | `ringTrack` | Empty dimmer track |
-| `error` | Wi‑Fi fail, Hue error (can be shared) |
+| `error` | Wi‑Fi fail, failed-command ring flash, rejected-token dot (can be shared) |
 
 v1 list (stable id, English copy):
 

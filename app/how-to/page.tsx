@@ -113,7 +113,8 @@ const ROUND_STEPS: (Step & { ring: Ring; face: ReactNode })[] = [
     face: <FaceText line="Press Bridge button" sub="on the Hue Bridge" />,
     see: "Press Bridge button, ring flashes yellow",
     state: "Needs pairing",
-    means: "The board found the Bridge and is waiting for you to approve it.",
+    means:
+      "The board found the Bridge and is waiting for you to approve it. It also shows this when the Bridge rejects the saved key twice, and then pairs again by itself.",
     fix: {
       text: "Press the round button on top of the Hue Bridge. To pair again later, hold BOOT for about 3 seconds.",
     },
@@ -125,9 +126,9 @@ const ROUND_STEPS: (Step & { ring: Ring; face: ReactNode })[] = [
     see: "No Bridge, same LAN as Bridge",
     state: "Bridge not reachable",
     means:
-      "The board cannot find the Bridge on this network, or the Bridge rejected the board.",
+      "The board cannot find the Bridge on this network. It keeps retrying, and after a short Bridge or Wi-Fi outage it reconnects by itself.",
     fix: {
-      text: "Put the board on the same network as the Bridge. If the Bridge was reset, hold BOOT for about 3 seconds to pair again.",
+      text: "Check that the Bridge is on and on the same network as the board.",
     },
   },
   {
@@ -155,9 +156,23 @@ function Led({ pattern, label }: { pattern: Pattern; label: string }) {
   return <span role="img" aria-label={label} className={`led led-${pattern}`} />;
 }
 
-function Face({ ring, label, children }: { ring: Ring; label: string; children: ReactNode }) {
+function Face({
+  ring,
+  flash,
+  label,
+  children,
+}: {
+  ring: Ring;
+  flash?: boolean;
+  label: string;
+  children: ReactNode;
+}) {
   return (
-    <div role="img" aria-label={label} className={`round-face round-face-${ring}`}>
+    <div
+      role="img"
+      aria-label={label}
+      className={`round-face round-face-${ring}${flash ? " round-face-flash" : ""}`}
+    >
       {children}
     </div>
   );
@@ -176,7 +191,7 @@ function FaceEmpty() {
   return <span className="round-face-name">Page</span>;
 }
 
-function FaceReady() {
+function FaceReady({ tokenDot }: { tokenDot?: boolean }) {
   return (
     <>
       <span className="round-face-disc" />
@@ -187,6 +202,7 @@ function FaceReady() {
         <i />
         <i />
       </span>
+      {tokenDot ? <span className="round-face-token" /> : null}
     </>
   );
 }
@@ -512,16 +528,16 @@ export default async function HowToPage() {
         <ErrorCard
           wide
           visual={
-            <Face ring="error" label="Token rejected">
-              <FaceText line="Token rejected" sub="Set a new one in Devices" />
+            <Face ring="ready" label="Ready with a red dot at the bottom">
+              <FaceReady tokenDot />
             </Face>
           }
           title="Token rejected"
-          see="Stays until fixed"
+          see="Red dot at the bottom, stays until fixed"
         >
           <p className="text-muted">
-            The console rejected the device token. Presses do nothing until
-            this is fixed.
+            The console rejected the device token. The switch keeps working
+            with the recipes it already has, but it cannot get new ones.
           </p>
           <FixLine fix={{ text: "Save a new token on", href: "/devices", link: "Devices" }} />
         </ErrorCard>
@@ -529,17 +545,35 @@ export default async function HowToPage() {
         <ErrorCard
           wide
           visual={
-            <Face ring="error" label="Hue error">
-              <FaceText line="Hue error" />
+            <Face ring="error" label="Token rejected">
+              <FaceText line="Token rejected" sub="Set a new one in Devices" />
             </Face>
           }
-          title="Hue error"
-          see="About 2 seconds"
+          title="Token rejected, no recipes"
+          see="Stays until fixed"
         >
           <p className="text-muted">
-            A press did not reach the Bridge. The screen goes back to the page
-            by itself. If it keeps happening, check that the Bridge is on and on
-            the same network.
+            The full screen only shows when the console rejected the token and
+            this Round has no recipes yet, so presses have nothing to run.
+          </p>
+          <FixLine fix={{ text: "Save a new token on", href: "/devices", link: "Devices" }} />
+        </ErrorCard>
+
+        <ErrorCard
+          wide
+          visual={
+            <Face ring="ready" flash label="Ring flashes red">
+              <FaceReady />
+            </Face>
+          }
+          title="Command failed"
+          see="Ring flashes red, about 0.7 seconds"
+        >
+          <p className="text-muted">
+            A press did not reach the Bridge. The screen stays on the page and
+            shows what the Bridge reports a moment later, so you can tap again
+            right away. If it keeps happening, check that the Bridge is on and
+            on the same network.
           </p>
         </ErrorCard>
       </section>

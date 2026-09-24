@@ -584,6 +584,17 @@ option {
   background: rgb(255 255 255 / 35%);
 }
 .round-face-dots i.on { background: var(--rf-ink); }
+/* Rejected console token: a dot at 6 o'clock, in the gap of the brightness ring. */
+.round-face-token {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--rf-error);
+}
+/* Failed command: the ring flashes the error colour for 700 ms. */
+.round-face-flash { animation: round-face-flash 1400ms step-end infinite; }
 
 @keyframes round-face-loading {
   0% { box-shadow: 0 0 0 2px #7a4a10, 0 6px 14px rgb(0 0 0 / 35%); }
@@ -594,8 +605,15 @@ option {
   50% { box-shadow: 0 0 0 2px var(--rf-yellow), 0 6px 14px rgb(0 0 0 / 35%); }
 }
 
+@keyframes round-face-flash {
+  0% { box-shadow: 0 0 0 2px var(--rf-error), 0 6px 14px rgb(0 0 0 / 35%); }
+  50% { box-shadow: 0 6px 14px rgb(0 0 0 / 35%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .round-face-loading,
-  .round-face-pairing { animation: none; }
+  .round-face-pairing,
+  .round-face-flash { animation: none; }
   .round-face-pairing { --rf-ring: var(--rf-yellow); }
+  .round-face-flash { box-shadow: 0 0 0 2px var(--rf-error), 0 6px 14px rgb(0 0 0 / 35%); }
 }

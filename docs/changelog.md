@@ -56,6 +56,19 @@ The Round switch (XIAO ESP32-S3 with the round display). Each heading is the fir
 
 <!-- 0.4.1 was never tagged. The 0.5.7 commit moved the macro from 0.5.0 to 0.5.7, so 0.5.1 through 0.5.6 were never tagged. 0.5.14 was a web-setup branch build, also copied into an installer image here. On main the macro went from 0.5.13 to 0.5.15, then to 0.5.16. -->
 
+<!-- commit -->
+
+### 0.5.27 — 2026-09-23
+
+- Tapping right after the screen wakes, or right after a swipe, changes the lights at once instead of after a few seconds.
+- Tapping quickly through a scene list moves to the next scene on every tap, and the new scene's name shows as you tap.
+- A toggle does the right thing even if the lights were just changed from the Hue app or another switch.
+- If the Bridge or Wi-Fi drops for a while, the switch reconnects by itself. It no longer asks you to press the Bridge button or needs a restart after a short outage.
+- If the Bridge really stops accepting the switch, the screen asks you to press the Bridge button and pairs again by itself.
+- A rejected console token no longer stops the switch. The lights keep working, and a small red dot at the bottom of the screen shows the token needs replacing in Devices.
+- A command that fails makes the ring flash red briefly instead of showing Hue error, so the next tap is not lost.
+- Touches near the edge of the button are no longer ignored.
+
 <!-- 2deb44b -->
 
 ### 0.5.26 — 2026-09-23
