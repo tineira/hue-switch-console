@@ -99,3 +99,20 @@ export async function hueClear(port: BytePort, onLog?: HueLog): Promise<void> {
   if (!line) throw new Error("Timed out waiting for HUEOK clear");
   throw new Error(line);
 }
+
+/**
+ * Asks the Simple to restart into its ROM download mode (docs/specs/usb-download-mode.md).
+ * Firmware before Simple 0.2.11 answers HUEERR unknown; the caller then asks for BOOT+RESET.
+ */
+export async function hueBoot(
+  port: BytePort,
+  onLog?: HueLog,
+): Promise<"ok" | "unknown" | "timeout"> {
+  discard(port);
+  onLog?.("TX HUEBOOT");
+  await port.writeLine("HUEBOOT");
+  const line = await nextHueLine(port, 1500, onLog);
+  if (line === "HUEOK boot") return "ok";
+  if (!line) return "timeout";
+  return "unknown";
+}

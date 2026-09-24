@@ -19,7 +19,7 @@ import {
   type UsbIdentity,
 } from "@/lib/web-setup/devices";
 import { ChipMismatchError, flashProduct } from "@/lib/web-setup/flash";
-import { hueClear, hueGet, hueGetSettled, huePair } from "@/lib/web-setup/huecmd";
+import { hueBoot, hueClear, hueGet, hueGetSettled, huePair } from "@/lib/web-setup/huecmd";
 import { mintUsbDeviceToken, writeConsoleNvs } from "@/lib/web-setup/hueset";
 import {
   PING_MISS_COPY,
@@ -745,14 +745,26 @@ export function DevicesPanel() {
     setPercent(null);
     setStatus("Flashing…");
     try {
+      // The console cannot reset the C6 into its bootloader on Windows. When Detect found
+      // the firmware running, Simple 0.2.11+ restarts into it on HUEBOOT; older firmware
+      // answers HUEERR unknown and the person does BOOT+RESET instead.
+      const firmwareRunning =
+        product.chipFamily === "ESP32-C6" && (detected.improv !== null || detected.huesta !== null);
+      let booted = false;
+      const session = sessionRef.current;
+      if (firmwareRunning && session && !session.dead) {
+        appendUsbLog("— HUEBOOT —");
+        try {
+          booted = (await hueBoot(session, appendUsbLog)) === "ok";
+        } catch {
+          booted = false;
+        }
+      }
       await closeSession();
       setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
       const picked = portRef.current;
       if (!picked) throw new Error("Detect the device again.");
-      // The console cannot reset the C6 into its bootloader on Windows. When Detect
-      // found the firmware running, the person does it now, after the port is released.
-      const needsBoot =
-        product.chipFamily === "ESP32-C6" && (detected.improv !== null || detected.huesta !== null);
+      const needsBoot = firmwareRunning && !booted;
       if (needsBoot) {
         const ok = window.confirm(
           "Hold BOOT on the Simple and keep holding it. Tap RESET, then click OK. Release BOOT only when the page says Writing firmware.",
@@ -763,10 +775,13 @@ export function DevicesPanel() {
           return;
         }
       }
-      // Give the COM port time to come back after RESET; opening it mid re-enumeration stalls.
-      if (needsBoot) await sleep(1500);
-      appendUsbLog(needsBoot ? "— install: after BOOT+RESET —" : "— install: port check —");
-      const port = await reattachPort(picked, needsBoot ? 6000 : 3000, appendUsbLog);
+      // Give the COM port time to come back after the restart; opening it mid re-enumeration stalls.
+      const restarted = needsBoot || booted;
+      if (restarted) await sleep(1500);
+      appendUsbLog(
+        booted ? "— install: after HUEBOOT —" : needsBoot ? "— install: after BOOT+RESET —" : "— install: port check —",
+      );
+      const port = await reattachPort(picked, restarted ? 6000 : 3000, appendUsbLog);
       if (!port) {
         throw new Error(
           "The board came back on a new USB port after RESET. Click Detect, pick it, then Install.",

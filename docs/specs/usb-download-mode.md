@@ -6,7 +6,7 @@ Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
 ## 1. What and why
 
-Installing firmware on the Simple from Devices needs no button presses. Today the console cannot reset the ESP32-C6 into its bootloader on Windows (the USB-Serial-JTAG `setSignals` call hangs there), so Install asks the person to hold BOOT, tap RESET, and keep holding BOOT while it connects, and to press RESET again when the write ends. Afterwards: click Install, watch it write, and the Simple restarts on the new firmware by itself.
+Installing firmware on the Simple from Devices needs no button presses. Today the console cannot reset the ESP32-C6 into its bootloader on Windows (the USB-Serial-JTAG `setSignals` call hangs there), so Install asks the person to hold BOOT, tap RESET, and keep holding BOOT while it connects, and to press RESET again when the write ends. Afterwards: click Install and watch it write; the only button left is RESET once the write ends (see §2.2 step 3).
 
 The Round already resets into its bootloader over DTR/RTS and is out of scope.
 
@@ -35,9 +35,7 @@ For a Simple whose firmware answered at Detect:
 2. Flash as today (watchdogs off, no baud change).
 3. After the write:
    - Clear the force-download-boot flag with a register write (in case the ROM keeps it set, so the next reset boots the app).
-   - Restart the chip with a watchdog reset, the way Python esptool does for USB-Serial-JTAG (`--after watchdog-reset`: LP_WDT RWDT with a short timeout that resets the system). Values copied from esptool's `esp32c6.py` / `esp32c3.py` and checked.
-   - The page then says the board is restarting and to click Detect when it is back, instead of "Press RESET on the board".
-   - If the watchdog reset fails, keep today's text ("Press RESET on the board").
+   - Keep "Press RESET on the board". **Decided during implementation:** no watchdog reset. Python esptool deliberately skips it on the ESP32-C6 (`esp32c6.py` `watchdog_reset`: a USB-Serial/JTAG bug can make the port disappear after a watchdog reset), and the DTR/RTS hard reset hangs on Windows. So the Simple still needs one RESET press after the write.
 
 A Simple that did not answer at Detect (blank chip, or already in the bootloader) keeps today's dialog.
 
@@ -45,7 +43,6 @@ A Simple that did not answer at Detect (blank chip, or already in the bootloader
 
 - Console with a Simple that has **not** updated (`< 0.2.11`): `HUEERR unknown` → today's dialog. Nothing breaks. The first update to `0.2.11` still needs the buttons once.
 - Firmware before the console deploys: nobody sends `HUEBOOT`; the command is inert.
-- The post-write watchdog reset needs no firmware support; it works for every Simple once the console ships.
 - Old path: the BOOT dialog stays as the fallback for blank boards and old firmware. It is never removed.
 
 ## 4. Checklist
@@ -54,9 +51,9 @@ A Simple that did not answer at Detect (blank chip, or already in the bootloader
 
 - [ ] `lib/web-setup/huecmd.ts`: `hueBoot(session)` → `"ok" | "unknown" | "timeout"`
 - [ ] Devices Install: `HUEBOOT` first, dialog as the fallback (§2.2)
-- [ ] `lib/web-setup/flash.ts`: after the write, clear the flag and watchdog-reset the C6; new end text; keep the RESET text when it fails
+- [ ] `lib/web-setup/flash.ts`: after the write, clear the force-download flag (address from the firmware header); keep the RESET text
 - [ ] `docs/specs/finished/devices.md` §6: `HUEBOOT` row
-- [ ] Deployed; the user installs a Simple on `0.2.11`+ with no buttons, and a Simple on `0.2.10` still works with the dialog
+- [ ] Deployed; the user installs a Simple on `0.2.11`+ without BOOT (RESET once at the end), and a Simple on `0.2.10` still works with the dialog
 
 ### Simple (`hue-simple-switch`)
 

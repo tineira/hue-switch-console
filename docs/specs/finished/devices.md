@@ -141,6 +141,7 @@ In addition to Improv and `HUESET`, on Simple and Round:
 | `HUEGET` | one `HUESTA` line (§2) | Read-only view of what is stored. No HTTP |
 | `HUEPAIR` | `HUEOK pair` or `HUEERR no-wifi` | Starts the same re-pair as BOOT 3 s and returns immediately |
 | `HUECLR` | `HUEOK clear` | Erases what §3 lists, RAM included, without rebooting |
+| `HUEBOOT` | `HUEOK boot` | Simple 0.2.11+: restarts into the ROM download mode so Install needs no BOOT button (`docs/specs/usb-download-mode.md`). Older firmware answers `HUEERR unknown` |
 
 `HUEPAIR` with Wi‑Fi and no Bridge IP looks for the Bridge like the existing re-pair. If it doesn't find it, the key doesn't appear and the card stays unpaired.
 
