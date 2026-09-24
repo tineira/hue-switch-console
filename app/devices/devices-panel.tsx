@@ -39,7 +39,7 @@ import {
   type ProductId,
   type ProductSpec,
 } from "@/lib/web-setup/products";
-import { BytePort, portConnected, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
+import { BytePort, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
 import {
   useEffect,
   useEffectEvent,
@@ -768,11 +768,6 @@ export function DevicesPanel() {
       if (!port) {
         throw new Error(
           "The board came back on a new USB port after RESET. Click Detect, pick it, then Install.",
-        );
-      }
-      if (needsBoot && port === picked && portConnected(picked) === true) {
-        throw new Error(
-          "The Simple is still running its firmware, so it did not reset. Hold BOOT, tap RESET, release BOOT, and click Install again.",
         );
       }
       portRef.current = port;
