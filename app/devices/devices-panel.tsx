@@ -760,7 +760,16 @@ export function DevicesPanel() {
           booted = false;
         }
       }
-      await closeSession();
+      // HUEBOOT restarts the chip without dropping USB. Keep that port open for esptool:
+      // opening the C6 port again resets the chip and undoes the restart into download mode.
+      let openPort: SerialPort | null = null;
+      if (booted && session) {
+        sessionRef.current = null;
+        openPort = await session.detach();
+        portRef.current = openPort;
+      } else {
+        await closeSession();
+      }
       setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
       const picked = portRef.current;
       if (!picked) throw new Error("Detect the device again.");
@@ -775,13 +784,17 @@ export function DevicesPanel() {
           return;
         }
       }
-      // Give the COM port time to come back after the restart; opening it mid re-enumeration stalls.
-      const restarted = needsBoot || booted;
-      if (restarted) await sleep(1500);
-      appendUsbLog(
-        booted ? "— install: after HUEBOOT —" : needsBoot ? "— install: after BOOT+RESET —" : "— install: port check —",
-      );
-      const port = await reattachPort(picked, restarted ? 6000 : 3000, appendUsbLog);
+      let port: SerialPort | null;
+      if (openPort) {
+        appendUsbLog("— install: after HUEBOOT (port kept open) —");
+        await sleep(300);
+        port = openPort;
+      } else {
+        // Give the COM port time to come back after RESET; opening it mid re-enumeration stalls.
+        if (needsBoot) await sleep(1500);
+        appendUsbLog(needsBoot ? "— install: after BOOT+RESET —" : "— install: port check —");
+        port = await reattachPort(picked, needsBoot ? 6000 : 3000, appendUsbLog);
+      }
       if (!port) {
         throw new Error(
           "The board came back on a new USB port after RESET. Click Detect, pick it, then Install.",
@@ -805,6 +818,7 @@ export function DevicesPanel() {
         product,
         status: manifest,
         unidentified: detected.usb.kind === "other",
+        alreadyOpen: openPort !== null,
         onLog: appendUsbLog,
         onProgress: ({ message, percent: next }) => {
           setStatus(message);

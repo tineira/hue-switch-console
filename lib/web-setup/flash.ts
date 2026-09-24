@@ -170,8 +170,23 @@ function loaderFor(
   }) => InstanceType<typeof import("esptool-js").ESPLoader>,
   Transport: typeof import("esptool-js").Transport,
   log: (line: string) => void,
+  alreadyOpen = false,
 ) {
   const transport = new Transport(port, false);
+  if (alreadyOpen) {
+    // The port is still open from Detect (after HUEBOOT). esptool opens it on connect, and
+    // reopening the C6 port resets the chip, so the first connect only takes the rate.
+    const open = transport.connect.bind(transport);
+    let skipped = false;
+    transport.connect = async (baud = 115200, serialOptions = {}) => {
+      if (!skipped && port.readable) {
+        skipped = true;
+        transport.baudrate = baud;
+        return;
+      }
+      return open(baud, serialOptions);
+    };
+  }
   // esptool's own lines (sync attempts, the boot mode it saw) go to the USB log on Devices.
   const esploader = new ESPLoader({
     transport,
@@ -208,6 +223,8 @@ export async function flashProduct(options: {
   unidentified?: boolean;
   onProgress: (progress: FlashProgress) => void;
   onLog?: (line: string) => void;
+  /** The port is already open (kept from Detect after HUEBOOT); do not reopen it. */
+  alreadyOpen?: boolean;
 }): Promise<string> {
   const { ESPLoader, Transport } = await import("esptool-js");
   // Only the connect is logged; the write would flood the log.
@@ -215,7 +232,7 @@ export async function flashProduct(options: {
   const log = (line: string) => {
     if (logging) options.onLog?.(line);
   };
-  let current = loaderFor(options.port, ESPLoader, Transport, log);
+  let current = loaderFor(options.port, ESPLoader, Transport, log, options.alreadyOpen);
 
   // The S3 enters the bootloader when DTR/RTS toggle. The C6 USB-JTAG
   // setSignals call never returns on Windows and locks the reader, so that

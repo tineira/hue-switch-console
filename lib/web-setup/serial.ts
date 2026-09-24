@@ -251,7 +251,7 @@ export class BytePort {
     });
   }
 
-  private async dropStreams(): Promise<void> {
+  private async dropStreams(closePort = true): Promise<void> {
     this.dropping = true;
     this.closed = true;
     try {
@@ -280,10 +280,12 @@ export class BytePort {
       this.reader = null;
       this.writer = null;
       this.pending = null;
-      try {
-        await this.port.close();
-      } catch {
-        /* already closed */
+      if (closePort) {
+        try {
+          await this.port.close();
+        } catch {
+          /* already closed */
+        }
       }
     } finally {
       this.dropping = false;
@@ -384,6 +386,16 @@ export class BytePort {
   async close(): Promise<void> {
     this.port.removeEventListener("disconnect", this.onDisconnect);
     await this.dropStreams();
+  }
+
+  /**
+   * Releases the streams but leaves the port open, for esptool to take over. Opening the
+   * C6 port again resets the chip, which would undo a HUEBOOT restart into download mode.
+   */
+  async detach(): Promise<SerialPort> {
+    this.port.removeEventListener("disconnect", this.onDisconnect);
+    await this.dropStreams(false);
+    return this.port;
   }
 }
 
