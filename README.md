@@ -37,8 +37,8 @@ Boards are flashed and provisioned from **Devices** (`/devices`; `/install`
 redirects there) in Chrome or Edge over USB. That screen writes Wi-Fi (Improv)
 and a device token (`HUESET`); it always points the XIAO at
 `https://hue.tineira.com`, not localhost. Nothing is compiled into the firmware:
-`config.h` holds only `SERIAL_DEBUG`, in dev too. Firmware images live under
-`public/firmware/` (see below).
+`config.h` holds only `SERIAL_DEBUG`, in dev too. Firmware images are uploaded by
+firmware CI and served from the database (see below).
 
 On a PC that can reach the Bridge:
 
@@ -66,68 +66,86 @@ Firmware TLS against `https://hue.tineira.com` must **verify** the certificate.
 
 ## Firmware release pipeline
 
-A push to `main` in a firmware repo **is a release**: the Devices screen offers
-that build to every board plugged in over USB.
+A push to `main` in a firmware repo **is a release**: it is uploaded to the
+console, and Devices offers that build to every board plugged in over USB at
+once. No commit lands in this repo and nothing redeploys.
 
 ```text
 push to main (hue-round-switch / hue-simple-switch)
   → .github/workflows/firmware.yml: build (SERIAL_DEBUG 0), read FIRMWARE_VERSION
-  → GitHub Release "usb-installer" in that repo (rolling, four bins)
-  → repository_dispatch "firmware-bins" to this repo      [CONSOLE_REPO_TOKEN]
-  → .github/workflows/sync-firmware-bins.yml: download the release    [FIRMWARE_REPO_TOKEN]
-  → copy into public/firmware/<product>/, set manifest.json version, bot commit
-  → Vercel deploy → /devices serves the new version
+  → notes = that version's section of the firmware repo's CHANGELOG.md
+  → POST https://hue.tineira.com/api/firmware/<product>      [FIRMWARE_UPLOAD_TOKEN]
+  → Postgres: firmware_releases + firmware_parts, firmware_current = this release
+  → /firmware/<product>/manifest.json and /changelog show it on the next request
 ```
 
 `FIRMWARE_VERSION` in the firmware source is the version the wizard shows.
-Bumping it is what makes Devices offer **Update**. Offsets and file layout:
-[`public/firmware/README.md`](public/firmware/README.md).
+Bumping it is what makes Devices offer **Update**. A rebuild without a bump is
+answered `409 version_exists`: the bins stay as they were (their URLs are cached
+forever) and only the notes are updated. Spec:
+[`docs/specs/firmware-uploads.md`](docs/specs/firmware-uploads.md).
 
-### Tokens
+The console checks every upload: all four parts, a `major.minor.patch` version,
+non-empty notes, and the chip id inside `bootloader.bin` / `firmware.bin`
+(ESP32-S3 for `round`, ESP32-C6 for `simple`). It keeps the bins of the last 5
+releases per product plus the current one. Release rows and their notes are
+kept for the changelog.
 
-All three repos are private, so each hop needs a token. It is **one**
-fine-grained GitHub token, stored as three secrets:
+### Flash layout
 
-| Secret | Repo | Used for |
+The console serves the four parts at fixed offsets, never taken from an
+upload. Same on both boards (Arduino-ESP32 3.3.12):
+
+| Part | Offset | Source |
 | --- | --- | --- |
-| `CONSOLE_REPO_TOKEN` | `hue-round-switch` | Trigger this repo's sync |
-| `CONSOLE_REPO_TOKEN` | `hue-simple-switch` | Trigger this repo's sync |
-| `FIRMWARE_REPO_TOKEN` | `hue-switch-console` | Download the firmware repos' releases |
+| `bootloader.bin` | `0x0` | `boards.txt` `build.bootloader_addr` for XIAO_ESP32S3 and XIAO_ESP32C6 |
+| `partitions.bin` | `0x8000` | ESP32 image layout |
+| `boot_app0.bin` | `0xe000` | `otadata` in `default_8MB.csv` (Round) and `hue-simple-switch/partitions.csv` |
+| `firmware.bin` | `0x10000` | `app0` in the same tables |
 
-Token settings (github.com → Settings → Developer settings → Fine-grained tokens):
+The wizard never erases flash. NVS (Hue, recipes, pages, `console`) must
+survive a reflash.
 
-- **Repository access:** `hue-switch-console`, `hue-round-switch`, `hue-simple-switch`.
-- **Permissions:** Contents **read and write** (write is needed on this repo;
-  the permission applies to every selected repo).
-- **Expiration:** your choice. Put the date in a calendar.
+### Token
 
-Set or rotate it by copying the token and running, in PowerShell:
+One random secret, `FIRMWARE_UPLOAD_TOKEN`, stored in three places: Vercel
+(Production) and the Actions secrets of both firmware repos. To set or rotate
+it, run in PowerShell from this repo, then redeploy the console:
 
-```bash
-Get-Clipboard | gh secret set CONSOLE_REPO_TOKEN -R tineira/hue-round-switch
-Get-Clipboard | gh secret set CONSOLE_REPO_TOKEN -R tineira/hue-simple-switch
-Get-Clipboard | gh secret set FIRMWARE_REPO_TOKEN -R tineira/hue-switch-console
+```powershell
+$t = -join ((1..48) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) }); $t | npx vercel env add FIRMWARE_UPLOAD_TOKEN production; $t | gh secret set FIRMWARE_UPLOAD_TOKEN -R tineira/hue-round-switch; $t | gh secret set FIRMWARE_UPLOAD_TOKEN -R tineira/hue-simple-switch; Remove-Variable t
 ```
 
-The `gh secret set` prompt hides input, so a paste that didn't take saves an
-empty secret silently. Piping from the clipboard avoids that.
+(To rotate, remove the old Vercel value first with
+`npx vercel env rm FIRMWARE_UPLOAD_TOKEN production`.)
+
+### Rollback and local builds
+
+Point the installer at an older stored release:
+
+```bash
+curl -X POST https://hue.tineira.com/api/firmware/round/current -H "Authorization: Bearer $FIRMWARE_UPLOAD_TOKEN" -H "Content-Type: application/json" -d '{"version":"0.5.27"}'
+```
+
+Upload a local build (a folder with the four bins) with
+`scripts/upload-firmware.mjs <product> <dir> --version x.y.z --notes <file>`.
 
 ### When it breaks
 
 | Symptom | Cause |
 | --- | --- |
-| Firmware run log: `CONSOLE_REPO_TOKEN missing; skip repository_dispatch` | Secret missing or empty in that firmware repo |
-| Firmware "Notify console" step fails with 401/403 | Token expired, or lost access to this repo |
-| "Sync USB installer bins" fails with `release not found` | `FIRMWARE_REPO_TOKEN` missing, expired, or lost access to that firmware repo |
-| Sync succeeds, "No firmware file changes" | Nothing new; expected when the source didn't change |
-
-Manual fallback: run **Sync USB installer bins** from this repo's Actions tab
-(`workflow_dispatch`, product `round` / `simple` / `all`).
+| Firmware run log: `FIRMWARE_UPLOAD_TOKEN missing; skip console upload` | Secret missing or empty in that firmware repo |
+| Upload answers `401` | The firmware repo's secret and Vercel's differ; set both again |
+| Upload answers `503 upload_not_configured` | No `FIRMWARE_UPLOAD_TOKEN` on Vercel, or no redeploy since it was set |
+| Upload answers `400 missing_notes` | No `### <version>` section in that repo's `CHANGELOG.md` |
+| Upload answers `400 invalid_image` | A part is missing, empty, or built for the other chip |
+| Upload answers `409 version_exists` | Same version, new bins: bump `FIRMWARE_VERSION` |
 
 ### Adding a switch
 
-A new firmware repo needs: a `firmware.yml` like the existing two (publishing
-`usb-installer` and dispatching `firmware-bins` with its `product`), the repo
-added to the token, its own `CONSOLE_REPO_TOKEN` secret, a `sync_product` line
-in `sync-firmware-bins.yml`, a `public/firmware/<product>/` folder, and a row
-in `AGENTS.md` ("Multi-repo").
+A new firmware repo needs: a `firmware.yml` upload step like the existing two,
+a `CHANGELOG.md`, the `FIRMWARE_UPLOAD_TOKEN` secret, its product id in
+`lib/firmware.ts` (chip id, family) and `lib/web-setup/products.ts`, the id in
+the `firmware_releases` / `firmware_current` checks in `db/schema.sql` and
+`lib/ensure-schema.ts`, a `## <Product>` intro in `docs/changelog.md`, and a
+row in `AGENTS.md` ("Multi-repo").

@@ -18,7 +18,7 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Do not mix this tree with `C:\Users\tinei\Arduino`.
 - Read `docs/definitions.md` before implementing.
 - Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
-- `public/firmware/` (bins + `manifest.json`) is owned by the **firmware** workers. Do not `git restore` or rewrite it if Round/Simple drop new images into this tree; the wizard version is that manifest, not a label you invent.
+- Firmware images are not in this tree. Firmware CI uploads each release to `POST /api/firmware/<product>`, and `/firmware/<product>/manifest.json` serves the current one from the database. The wizard version is that release, not a label you invent. Pipeline: `README.md`, "Firmware release pipeline".
 - Do **not** use local Playwright to verify login or `/install`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
 
 ## Multi-repo: this repo owns the contract
@@ -37,8 +37,8 @@ Source of truth for anything a switch and the console both depend on:
 
 - `docs/device-api.md`: endpoints, auth, payloads, error codes.
 - `docs/definitions.md`: product model (recipes, channels, pages).
-- `docs/changelog.md`: user-facing release notes, one section per product.
-- `public/firmware/<product>/manifest.json`: what `/install` flashes (firmware-owned, see above).
+- `docs/changelog.md`: console release notes and each product intro. Firmware notes live in each firmware repo's `CHANGELOG.md` and arrive with the upload.
+- `/firmware/<product>/manifest.json`: what `/install` flashes, the product's current uploaded release.
 
 Firmware repos implement these docs; they do not redefine them. A firmware session that needs a protocol change proposes it here, not in its own tree.
 

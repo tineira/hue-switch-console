@@ -30,15 +30,15 @@ Exact diff to `docs/device-api.md` (endpoint, request/response fields, error cod
 ### Round (`hue-round-switch`)
 
 - [ ] Implemented; `FIRMWARE_VERSION` bumped
-- [ ] `docs/changelog.md` `## Round` entry (user-facing wording)
-- [ ] Installer bins synced to `public/firmware/round/`
+- [ ] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
+- [ ] Release uploaded; `/firmware/round/manifest.json` shows the new version
 - [ ] Tested on a board by the user
 
 ### Simple (`hue-simple-switch`)
 
 - [ ] Implemented; `FIRMWARE_VERSION` bumped
-- [ ] `docs/changelog.md` `## Simple` entry (user-facing wording)
-- [ ] Installer bins synced to `public/firmware/simple/`
+- [ ] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
+- [ ] Release uploaded; `/firmware/simple/manifest.json` shows the new version
 - [ ] Tested on a board by the user
 
 ### Cleanup

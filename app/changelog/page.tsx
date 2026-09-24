@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Shell } from "@/app/shell";
 import { requireSessionUser } from "@/lib/auth";
-import { parseChangelog, type ChangelogEntry } from "@/lib/changelog-parse";
+import { notesToItems, parseChangelog, type ChangelogEntry } from "@/lib/changelog-parse";
+import { listReleaseNotes, parseProductId } from "@/lib/firmware";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +11,25 @@ export const metadata = {
   title: "Changelog",
 };
 
-function loadChangelog() {
+// Console entries live in docs/changelog.md; Round and Simple entries arrive with each firmware upload.
+async function loadChangelog() {
   const file = path.join(process.cwd(), "docs", "changelog.md");
-  return parseChangelog(readFileSync(file, "utf8"));
+  const doc = parseChangelog(readFileSync(file, "utf8"));
+  for (const section of doc.sections) {
+    const product = parseProductId(section.id);
+    if (!product) continue;
+    const releases = await listReleaseNotes(product).catch(() => []);
+    section.entries = [
+      ...releases.map((release) => ({
+        id: `${section.id}-${release.version}`,
+        heading: release.version,
+        date: release.date,
+        items: notesToItems(release.notes),
+      })),
+      ...section.entries,
+    ];
+  }
+  return doc;
 }
 
 function EntryHeading({ entry }: { entry: ChangelogEntry }) {
@@ -31,7 +48,7 @@ function EntryHeading({ entry }: { entry: ChangelogEntry }) {
 
 export default async function ChangelogPage() {
   const user = await requireSessionUser();
-  const doc = loadChangelog();
+  const doc = await loadChangelog();
 
   return (
     <Shell email={user.email}>

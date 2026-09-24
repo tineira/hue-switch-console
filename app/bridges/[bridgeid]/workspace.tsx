@@ -701,7 +701,7 @@ export function BridgeWorkspace({
     setError(null);
   }
 
-  // Newer firmware in public/firmware for this board's product, or null when it is current.
+  // Newer uploaded firmware for this board's product, or null when it is current.
   function updateFor(item: WorkspaceSwitch): string | null {
     const latest = latestFirmware[isRoundItem(item) ? "round" : "simple"];
     return compareVersions(item.firmware ?? "", latest) === -1 ? latest : null;

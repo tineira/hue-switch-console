@@ -120,8 +120,18 @@ export function parseChangelog(markdown: string): ChangelogDoc {
   }
   if (entry && entry.items.length === 0) fail(`empty entry ${entry.id}`);
   if (sections.length === 0) fail("no sections");
-  for (const item of sections) {
-    if (item.entries.length === 0) fail(`section ${item.id} has no entries`);
-  }
   return { intro, sections };
+}
+
+// Firmware notes arrive with each upload as markdown bullets; wrapped lines join their bullet.
+export function notesToItems(notes: string): string[] {
+  const items: string[] = [];
+  for (const raw of notes.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("<!--")) continue;
+    if (line.startsWith("- ")) items.push(line.slice(2).trim());
+    else if (items.length > 0) items[items.length - 1] += ` ${line}`;
+    else items.push(line);
+  }
+  return items;
 }

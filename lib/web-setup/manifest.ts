@@ -84,10 +84,11 @@ export async function loadManifestStatus(
   await Promise.all(
     partUrls.map(async ({ part, url }) => {
       try {
-        const probe = await fetch(url, { method: "HEAD", cache: "no-store" });
+        // Part URLs name the version, so a cached copy is never stale.
+        const probe = await fetch(url, { method: "HEAD" });
         if (probe.ok) return;
         if (probe.status === 405 || probe.status === 501) {
-          const get = await fetch(url, { method: "GET", cache: "no-store" });
+          const get = await fetch(url, { method: "GET" });
           if (get.ok) return;
         }
         missing.push(part.path);
@@ -110,7 +111,7 @@ export async function fetchFirmwareParts(
 ): Promise<{ data: Uint8Array; address: number }[]> {
   const files: { data: Uint8Array; address: number }[] = [];
   for (const { part, url } of partUrls) {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url);
     if (!res.ok) {
       throw new Error(`Firmware image missing: ${part.path}`);
     }

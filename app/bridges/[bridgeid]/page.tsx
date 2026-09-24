@@ -12,10 +12,9 @@ import {
   toSwitchPublic,
 } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
+import { currentVersion } from "@/lib/firmware";
 import { withSceneNames } from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
-import roundManifest from "@/public/firmware/round/manifest.json";
-import simpleManifest from "@/public/firmware/simple/manifest.json";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +35,10 @@ export default async function BridgePage({
   }
   const { bridgeid } = await params;
   const { mac } = await searchParams;
+  const [roundVersion, simpleVersion] = await Promise.all([
+    currentVersion("round").catch(() => null),
+    currentVersion("simple").catch(() => null),
+  ]);
   const [row, allSwitches] = await Promise.all([
     getBridge(user.id, bridgeid),
     listSwitches(user.id),
@@ -94,8 +97,8 @@ export default async function BridgePage({
         switches={switches}
         initialMac={typeof mac === "string" ? mac : null}
         latestFirmware={{
-          round: roundManifest.version,
-          simple: simpleManifest.version,
+          round: roundVersion ?? "",
+          simple: simpleVersion ?? "",
         }}
       />
     </Shell>

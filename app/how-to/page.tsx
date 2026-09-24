@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Shell } from "@/app/shell";
 import { requireSessionUser } from "@/lib/auth";
-import roundManifest from "@/public/firmware/round/manifest.json";
+import { currentVersion } from "@/lib/firmware";
 
 export const dynamic = "force-dynamic";
 
@@ -76,81 +76,84 @@ const SIMPLE_STEPS: (Step & { pattern: Pattern })[] = [
   },
 ];
 
-const ROUND_STEPS: (Step & { ring: Ring; face: ReactNode })[] = [
-  {
-    key: "wifi",
-    ring: "wait",
-    face: <FaceText line="Wi-Fi..." sub={roundManifest.version} />,
-    see: "Wi-Fi... and the firmware version",
-    state: "Joining Wi-Fi",
-    means: "The board is joining the saved network. This usually takes a few seconds.",
-  },
-  {
-    key: "no-wifi",
-    ring: "error",
-    face: <FaceText line="No Wi-Fi" sub="Plug the antenna" />,
-    see: "No Wi-Fi, Plug the antenna",
-    state: "No Wi-Fi",
-    means:
-      "The board could not join Wi-Fi, or no network is saved. The XIAO S3 needs its U.FL antenna to reach the router.",
-    fix: {
-      text: "Plug in the antenna. If it is already in, save a 2.4 GHz network on",
-      href: "/devices",
-      link: "Devices",
+// The Wi-Fi screen shows the firmware version; this one is what /install flashes now.
+function roundSteps(version: string | null): (Step & { ring: Ring; face: ReactNode })[] {
+  return [
+    {
+      key: "wifi",
+      ring: "wait",
+      face: <FaceText line="Wi-Fi..." sub={version ?? undefined} />,
+      see: "Wi-Fi... and the firmware version",
+      state: "Joining Wi-Fi",
+      means: "The board is joining the saved network. This usually takes a few seconds.",
     },
-  },
-  {
-    key: "loading",
-    ring: "loading",
-    face: <FaceText line="Loading..." sub="Connecting" />,
-    see: "Loading..., Connecting, ring pulses",
-    state: "Finding the Bridge",
-    means: "Wi-Fi is up. The board is looking for the Hue Bridge on the network.",
-  },
-  {
-    key: "pairing",
-    ring: "pairing",
-    face: <FaceText line="Press Bridge button" sub="on the Hue Bridge" />,
-    see: "Press Bridge button, ring flashes yellow",
-    state: "Needs pairing",
-    means:
-      "The board found the Bridge and is waiting for you to approve it. It also shows this when the Bridge rejects the saved key twice, and then pairs again by itself.",
-    fix: {
-      text: "Press the round button on top of the Hue Bridge. To pair again later, hold BOOT for about 3 seconds.",
+    {
+      key: "no-wifi",
+      ring: "error",
+      face: <FaceText line="No Wi-Fi" sub="Plug the antenna" />,
+      see: "No Wi-Fi, Plug the antenna",
+      state: "No Wi-Fi",
+      means:
+        "The board could not join Wi-Fi, or no network is saved. The XIAO S3 needs its U.FL antenna to reach the router.",
+      fix: {
+        text: "Plug in the antenna. If it is already in, save a 2.4 GHz network on",
+        href: "/devices",
+        link: "Devices",
+      },
     },
-  },
-  {
-    key: "no-bridge",
-    ring: "error",
-    face: <FaceText line="No Bridge" sub="same LAN as Bridge" />,
-    see: "No Bridge, same LAN as Bridge",
-    state: "Bridge not reachable",
-    means:
-      "The board cannot find the Bridge on this network. It keeps retrying, and after a short Bridge or Wi-Fi outage it reconnects by itself.",
-    fix: {
-      text: "Check that the Bridge is on and on the same network as the board.",
+    {
+      key: "loading",
+      ring: "loading",
+      face: <FaceText line="Loading..." sub="Connecting" />,
+      see: "Loading..., Connecting, ring pulses",
+      state: "Finding the Bridge",
+      means: "Wi-Fi is up. The board is looking for the Hue Bridge on the network.",
     },
-  },
-  {
-    key: "empty",
-    ring: "mute",
-    face: <FaceEmpty />,
-    see: "A blank disc that says Page",
-    state: "Needs a page",
-    means: "The Bridge is paired, and this Round has no pages yet.",
-    fix: { text: "Add at least one page on", href: "/", link: "Bridge" },
-  },
-  {
-    key: "ready",
-    ring: "ready",
-    face: <FaceReady />,
-    see: "Page name, scene, brightness ring, page dots",
-    state: "Ready",
-    means:
-      "Tap or double tap runs that page's recipes, swipe changes page, and the ring dims. The disc shows ... while a press is sent. After the screen timeout the disc goes dark. The first touch only wakes it.",
-    ready: true,
-  },
-];
+    {
+      key: "pairing",
+      ring: "pairing",
+      face: <FaceText line="Press Bridge button" sub="on the Hue Bridge" />,
+      see: "Press Bridge button, ring flashes yellow",
+      state: "Needs pairing",
+      means:
+        "The board found the Bridge and is waiting for you to approve it. It also shows this when the Bridge rejects the saved key twice, and then pairs again by itself.",
+      fix: {
+        text: "Press the round button on top of the Hue Bridge. To pair again later, hold BOOT for about 3 seconds.",
+      },
+    },
+    {
+      key: "no-bridge",
+      ring: "error",
+      face: <FaceText line="No Bridge" sub="same LAN as Bridge" />,
+      see: "No Bridge, same LAN as Bridge",
+      state: "Bridge not reachable",
+      means:
+        "The board cannot find the Bridge on this network. It keeps retrying, and after a short Bridge or Wi-Fi outage it reconnects by itself.",
+      fix: {
+        text: "Check that the Bridge is on and on the same network as the board.",
+      },
+    },
+    {
+      key: "empty",
+      ring: "mute",
+      face: <FaceEmpty />,
+      see: "A blank disc that says Page",
+      state: "Needs a page",
+      means: "The Bridge is paired, and this Round has no pages yet.",
+      fix: { text: "Add at least one page on", href: "/", link: "Bridge" },
+    },
+    {
+      key: "ready",
+      ring: "ready",
+      face: <FaceReady />,
+      see: "Page name, scene, brightness ring, page dots",
+      state: "Ready",
+      means:
+        "Tap or double tap runs that page's recipes, swipe changes page, and the ring dims. The disc shows ... while a press is sent. After the screen timeout the disc goes dark. The first touch only wakes it.",
+      ready: true,
+    },
+  ];
+}
 
 function Led({ pattern, label }: { pattern: Pattern; label: string }) {
   return <span role="img" aria-label={label} className={`led led-${pattern}`} />;
@@ -328,6 +331,7 @@ function ErrorCard({
 
 export default async function HowToPage() {
   const user = await requireSessionUser();
+  const steps = roundSteps(await currentVersion("round").catch(() => null));
 
   return (
     <Shell email={user.email}>
@@ -509,7 +513,7 @@ export default async function HowToPage() {
         </div>
 
         <ol className="flex flex-col gap-3">
-          {ROUND_STEPS.map((step, i) => (
+          {steps.map((step, i) => (
             <li key={step.key}>
               <StateCard
                 step={step}
