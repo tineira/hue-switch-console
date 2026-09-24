@@ -101,7 +101,7 @@ export async function hueClear(port: BytePort, onLog?: HueLog): Promise<void> {
 }
 
 /**
- * Asks the Simple to restart into its ROM download mode (docs/specs/usb-download-mode.md).
+ * Asks the Simple to restart into its ROM download mode (docs/specs/finished/usb-download-mode.md).
  * Firmware before Simple 0.2.11 answers HUEERR unknown; the caller then asks for BOOT+RESET.
  */
 export async function hueBoot(

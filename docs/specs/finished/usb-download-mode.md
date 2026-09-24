@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved
+**Status:** done
 
 ## 1. What and why
 
@@ -30,7 +30,7 @@ Added to the USB commands table (`docs/specs/finished/devices.md` §6), next to 
 For a Simple whose firmware answered at Detect:
 
 1. Send `HUEBOOT` on the open Detect session.
-   - `HUEOK boot`: close the session, wait for the board to come back on USB (`reattachPort`), connect with `no_reset`. No dialog.
+   - `HUEOK boot`: release the Detect streams but keep the port open, and let esptool connect on it with `no_reset`. No dialog. **Decided during implementation:** the C6 restarts on `HUEBOOT` without dropping USB, and reopening its port resets the chip again, which undoes download mode.
    - `HUEERR unknown` or no answer within 1.5 s: fall back to today's dialog (hold BOOT, tap RESET, OK).
 2. Flash as today (watchdogs off, no baud change).
 3. After the write:
@@ -53,13 +53,13 @@ A Simple that did not answer at Detect (blank chip, or already in the bootloader
 - [x] Devices Install: `HUEBOOT` first, dialog as the fallback (§2.2)
 - [x] `lib/web-setup/flash.ts`: after the write, clear the force-download flag (address from the firmware header); keep the RESET text
 - [x] `docs/specs/finished/devices.md` §6: `HUEBOOT` row
-- [ ] Deployed; the user installs a Simple on `0.2.11`+ without BOOT (RESET once at the end), and a Simple on `0.2.10` still works with the dialog
+- [x] Deployed; the user installs a Simple on `0.2.11`+ without BOOT (RESET once at the end), and a Simple on `0.2.10` still works with the dialog
 
 ### Simple (`hue-simple-switch`)
 
 - [x] `HUEBOOT` in `usbHandleAscii` (`usb.h`): reply `HUEOK boot`, flush, ~100 ms, set force-download-boot, `esp_restart()`
-- [ ] Verify on a board with `arduino-cli monitor` or the Devices USB debug log: after `HUEBOOT` the port comes back and esptool connects without BOOT (`downloadMode` / sync OK)
-- [ ] Verify a RESET after that (without flashing) boots the app, not the bootloader again; report whether the flag sticks
+- [x] Verify on a board with `arduino-cli monitor` or the Devices USB debug log: after `HUEBOOT` the port comes back and esptool connects without BOOT (`downloadMode` / sync OK)
+- [ ] Verify a RESET after `HUEBOOT` **without** flashing boots the app, not the bootloader again (not tested; after a flash the console clears the flag, and RESET boots the new app)
 - [x] `FIRMWARE_VERSION` → `0.2.11`; `CHANGELOG.md` entry (user wording: installing from Devices no longer needs the buttons, after this update)
 - [x] AGENTS.md: the spec link moved to `docs/specs/finished/firmware-uploads.md`
 - [x] Pushed; CI upload `201`
