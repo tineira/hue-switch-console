@@ -61,9 +61,11 @@ Offsets are **not** stored or uploaded. They come from the product spec in the c
 - **Responses:**
   - `201` new release, now current;
   - `200` same `product` + `version` with identical sha256 for every part (CI re-run): no change, made current again;
-  - `409 version_exists` same version, different bytes. Bump `FIRMWARE_VERSION`;
+  - `409 version_exists` same version, different bytes (Arduino builds are not byte-for-byte reproducible, so a rebuild without a version bump lands here). The bins stay as they were; the notes are updated. Bump `FIRMWARE_VERSION` to ship new bins;
   - `400 invalid_image` with which check failed;
-  - `401` bad or missing token.
+  - `400 missing_notes`, `400 invalid_version`;
+  - `401` bad or missing token; `503 upload_not_configured` when the console has no `FIRMWARE_UPLOAD_TOKEN`.
+- A release row imported from the old changelog (no bins yet) takes the bins of its first upload as a new release.
 - **Retention:** after a successful upload, keep the **parts** of the newest 5 releases per product plus the current one; delete older parts. Release rows (version, date, notes) are kept forever: they are the changelog.
 
 `POST /api/firmware/{product}/current` with `{ "version": "0.5.27" }`, same token: rollback / roll forward to a stored release. `404` if that version is not stored.

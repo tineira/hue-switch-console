@@ -104,6 +104,27 @@ const STATEMENTS = [
   on recipes (switch_id, page_id, event)
   where page_id is not null`,
   `create index if not exists recipes_switch_id_idx on recipes (switch_id)`,
+  `create table if not exists firmware_releases (
+  id uuid primary key default gen_random_uuid(),
+  product text not null check (product in ('round', 'simple')),
+  version text not null check (version ~ '^\\d+\\.\\d+\\.\\d+$'),
+  commit_sha text,
+  notes text not null default '',
+  created_at timestamptz not null default now(),
+  unique (product, version)
+)`,
+  `create table if not exists firmware_parts (
+  release_id uuid not null references firmware_releases (id) on delete cascade,
+  name text not null check (name in ('bootloader.bin', 'partitions.bin', 'boot_app0.bin', 'firmware.bin')),
+  sha256 text not null check (sha256 ~ '^[0-9a-f]{64}$'),
+  size integer not null check (size > 0),
+  data bytea not null,
+  primary key (release_id, name)
+)`,
+  `create table if not exists firmware_current (
+  product text primary key check (product in ('round', 'simple')),
+  release_id uuid not null references firmware_releases (id)
+)`,
 ];
 
 let running: Promise<void> | null = null;

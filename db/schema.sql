@@ -97,6 +97,31 @@ create unique index if not exists recipes_round_uniq
 
 create index if not exists recipes_switch_id_idx on recipes (switch_id);
 
+-- Firmware releases uploaded by firmware CI (docs/specs/firmware-uploads.md).
+create table if not exists firmware_releases (
+  id uuid primary key default gen_random_uuid(),
+  product text not null check (product in ('round', 'simple')),
+  version text not null check (version ~ '^\d+\.\d+\.\d+$'),
+  commit_sha text,
+  notes text not null default '',
+  created_at timestamptz not null default now(),
+  unique (product, version)
+);
+
+create table if not exists firmware_parts (
+  release_id uuid not null references firmware_releases (id) on delete cascade,
+  name text not null check (name in ('bootloader.bin', 'partitions.bin', 'boot_app0.bin', 'firmware.bin')),
+  sha256 text not null check (sha256 ~ '^[0-9a-f]{64}$'),
+  size integer not null check (size > 0),
+  data bytea not null,
+  primary key (release_id, name)
+);
+
+create table if not exists firmware_current (
+  product text primary key check (product in ('round', 'simple')),
+  release_id uuid not null references firmware_releases (id)
+);
+
 -- Forward-compatible ALTERs for databases created before pages.
 alter table switches add column if not exists product text not null default 'simple';
 alter table switches add column if not exists page_swipe_axis text not null default 'horizontal';
