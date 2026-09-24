@@ -756,6 +756,7 @@ export function DevicesPanel() {
         );
       }
       portRef.current = port;
+      appendUsbLog(port === picked ? "— install —" : "— install (board came back on a new port) —");
       if (detected.usb.kind === "other") {
         const board = product.board;
         const ok = window.confirm(
@@ -772,6 +773,7 @@ export function DevicesPanel() {
         product,
         status: manifest,
         unidentified: detected.usb.kind === "other",
+        onLog: appendUsbLog,
         onProgress: ({ message, percent: next }) => {
           setStatus(message);
           setPercent(next);
@@ -1576,7 +1578,7 @@ export function DevicesPanel() {
       <details className="rounded-md border border-line bg-background p-3">
         <summary className="cursor-pointer text-sm font-medium">USB debug</summary>
         <p className="mt-1 text-xs text-muted">
-          Improv packets and HUE lines from the XIAO. The token, the Wi-Fi
+          Improv packets and HUE lines from the XIAO, and how Install connected. The token, the Wi-Fi
           password, and the Hue key are not logged.
         </p>
         <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs text-muted">

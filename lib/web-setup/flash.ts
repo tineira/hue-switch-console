@@ -122,19 +122,31 @@ function loaderFor(
     transport: InstanceType<typeof import("esptool-js").Transport>;
     baudrate: number;
     enableTracing: boolean;
-    terminal: { clean: () => void; writeLine: () => void; write: () => void };
+    debugLogging: boolean;
+    terminal: {
+      clean: () => void;
+      writeLine: (line: string) => void;
+      write: (text: string) => void;
+    };
   }) => InstanceType<typeof import("esptool-js").ESPLoader>,
   Transport: typeof import("esptool-js").Transport,
+  log: (line: string) => void,
 ) {
   const transport = new Transport(port, false);
+  // esptool's own lines (sync attempts, the boot mode it saw) go to the USB log on Devices.
   const esploader = new ESPLoader({
     transport,
     baudrate: 115200,
     enableTracing: false,
+    debugLogging: true,
     terminal: {
       clean() {},
-      writeLine() {},
-      write() {},
+      writeLine(line) {
+        if (line.trim()) log(line.trim());
+      },
+      write(text) {
+        if (text.trim()) log(text.trim());
+      },
     },
   });
   return { transport, esploader };
@@ -156,9 +168,15 @@ export async function flashProduct(options: {
   /** The USB id did not name the board. The person already chose the firmware. */
   unidentified?: boolean;
   onProgress: (progress: FlashProgress) => void;
+  onLog?: (line: string) => void;
 }): Promise<string> {
   const { ESPLoader, Transport } = await import("esptool-js");
-  let current = loaderFor(options.port, ESPLoader, Transport);
+  // Only the connect is logged; the write would flood the log.
+  let logging = true;
+  const log = (line: string) => {
+    if (logging) options.onLog?.(line);
+  };
+  let current = loaderFor(options.port, ESPLoader, Transport, log);
 
   // The S3 enters the bootloader when DTR/RTS toggle. The C6 USB-JTAG
   // setSignals call never returns on Windows and locks the reader, so that
@@ -189,7 +207,7 @@ export async function flashProduct(options: {
         `Failed to initialize. Hold BOOT, tap RESET, and click Install again. (${detail})`,
       );
     }
-    current = loaderFor(options.port, ESPLoader, Transport);
+    current = loaderFor(options.port, ESPLoader, Transport, log);
     options.onProgress({
       message: "Connecting without reset… hold BOOT.",
       percent: null,
@@ -218,6 +236,8 @@ export async function flashProduct(options: {
     }
     throw new Error("The chip did not identify itself. The write was aborted.");
   }
+  logging = false;
+  options.onLog?.(`— connected: ${detected} —`);
   const esploader = current.esploader;
   const transport = current.transport;
 
