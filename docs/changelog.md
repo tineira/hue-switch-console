@@ -10,6 +10,14 @@ What changed in the console, the Round switch, and the Simple switch. Newest fir
 
 The console has no version number. Each heading is the day the change went live.
 
+### 2026-09-24
+
+- New firmware reaches Devices as soon as it is released, without waiting for a console update.
+- Installing on a Simple with firmware 0.2.11 or later no longer needs the BOOT button. Older Simples still ask for BOOT and RESET, at the right moment.
+- Install on a Simple no longer stops right after connecting.
+- After Install, the Round and the Simple restart on the new firmware by themselves.
+- The USB debug log on Devices shows how Install connected.
+
 ### 2026-09-23
 
 - Devices flags a board whose key was revoked on API keys, instead of calling it set up, and points you to Replace console key.
