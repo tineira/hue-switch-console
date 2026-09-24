@@ -140,6 +140,27 @@ async function clearC6ForceDownload(esploader: EspLoaderType): Promise<void> {
   await esploader.writeReg(C6_LP_AON_SYS_CFG, (cfg & ~C6_FORCE_DOWNLOAD_BOOT) >>> 0);
 }
 
+// Classic hard reset (Python esptool: RTS high pulls EN low, then released). Bounded, since
+// setSignals can hang on some USB serial ports.
+async function resetOverRts(transport: {
+  setDTR: (state: boolean) => Promise<void>;
+  setRTS: (state: boolean) => Promise<void>;
+}): Promise<boolean> {
+  const pulse = (async () => {
+    await transport.setDTR(false);
+    await transport.setRTS(true);
+    await sleep(100);
+    await transport.setRTS(false);
+    return true;
+  })();
+  const timeout = sleep(2000).then(() => false);
+  try {
+    return await Promise.race([pulse, timeout]);
+  } catch {
+    return false;
+  }
+}
+
 async function afterConnect(esploader: EspLoaderType, product: ProductSpec): Promise<string> {
   const detected = String(esploader.chip?.CHIP_NAME ?? "");
   if (detected && !chipFamilyMatches(detected, product.chipFamily)) {
@@ -354,8 +375,18 @@ export async function flashProduct(options: {
     }
   }
 
+  // The S3 is reset over RTS, the same lines that put it in the bootloader. The C6 restarts
+  // when the port is released below (its USB-Serial-JTAG resets on close), so it needs nothing.
+  let restarted = false;
+  if (autoReset) {
+    options.onLog?.("— reset after write —");
+    restarted = await resetOverRts(transport);
+  }
+
   options.onProgress({
-    message: "Flash finished. Press RESET on the board.",
+    message: restarted
+      ? "Flash finished. The board is restarting."
+      : "Flash finished. If the board does not restart by itself, press RESET.",
     percent: 100,
   });
   try {
