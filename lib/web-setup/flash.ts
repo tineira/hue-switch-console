@@ -135,7 +135,9 @@ async function afterConnect(esploader: EspLoaderType, product: ProductSpec): Pro
   if (!detected) return "";
   if (product.chipFamily === "ESP32-C6") await disableC6Watchdogs(esploader);
   await esploader.runStub();
-  await esploader.changeBaud();
+  // No changeBaud: loaderFor uses 115200, the ROM rate, so there is nothing to change
+  // (esptool-js main() skips it the same way). It also closes and reopens the port, and on
+  // the C6's USB-Serial-JTAG that open resets the chip and kills the stub.
   await esploader.flashId();
   return detected;
 }
