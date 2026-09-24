@@ -118,8 +118,7 @@ export async function uploadRelease(input: {
        values (${product}, ${version}, ${commit}, ${notes})
        on conflict (product, version)
        do update set commit_sha = coalesce(excluded.commit_sha, firmware_releases.commit_sha),
-                     notes = excluded.notes,
-                     created_at = now()`,
+                     notes = excluded.notes`,
     ...parts.map(
       (part) => tx`
         insert into firmware_parts (release_id, name, sha256, size, data)
