@@ -56,6 +56,12 @@ The Round switch (XIAO ESP32-S3 with the round display). Each heading is the fir
 
 <!-- 0.4.1 was never tagged. The 0.5.7 commit moved the macro from 0.5.0 to 0.5.7, so 0.5.1 through 0.5.6 were never tagged. 0.5.14 was a web-setup branch build, also copied into an installer image here. On main the macro went from 0.5.13 to 0.5.15, then to 0.5.16. -->
 
+<!-- 0385460 -->
+
+### 0.5.28 — 2026-09-24
+
+- A quick double tap counts as a double tap instead of a single tap.
+
 <!-- ce16d4d -->
 
 ### 0.5.27 — 2026-09-23
