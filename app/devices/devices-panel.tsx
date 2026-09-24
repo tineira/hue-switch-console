@@ -755,7 +755,7 @@ export function DevicesPanel() {
         product.chipFamily === "ESP32-C6" && (detected.improv !== null || detected.huesta !== null);
       if (needsBoot) {
         const ok = window.confirm(
-          "Put the Simple in download mode: hold BOOT, tap RESET, then release BOOT. Click OK when done.",
+          "Hold BOOT on the Simple and keep holding it. Tap RESET, then click OK. Release BOOT only when the page says Writing firmware.",
         );
         if (!ok) {
           setPanel("none");
@@ -763,6 +763,8 @@ export function DevicesPanel() {
           return;
         }
       }
+      // Give the COM port time to come back after RESET; opening it mid re-enumeration stalls.
+      if (needsBoot) await sleep(1500);
       appendUsbLog(needsBoot ? "— install: after BOOT+RESET —" : "— install: port check —");
       const port = await reattachPort(picked, needsBoot ? 6000 : 3000, appendUsbLog);
       if (!port) {
