@@ -121,7 +121,7 @@ Firmware release notes travel **with the upload**, so a release needs no console
 - [x] Phase B: delete `public/firmware/*/*.bin` + `manifest.json`, `.github/workflows/sync-firmware-bins.yml`; rewrite `public/firmware/README.md` into the root `README.md` "Firmware release pipeline"
 - [x] Update `AGENTS.md`: the `public/firmware/` ownership paragraph, and the source-of-truth list (`docs/changelog.md` becomes console-only; firmware notes live in each firmware repo); also `docs/specs/TEMPLATE.md` ("Installer bins synced" → "Release uploaded")
 - [x] Deployed; on production: `/firmware/round/manifest.json` shows the uploaded version, a second part download is a CDN hit (`x-vercel-cache: HIT`)
-- [ ] A USB install from Devices by the user succeeds
+- [x] A USB install from Devices by the user succeeds (Round 0.5.28, 2026-09-24)
 
 ### Round (`hue-round-switch`)
 
