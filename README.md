@@ -141,7 +141,7 @@ Upload a local build (a folder with the four bins) with
 
 | Symptom | Cause |
 | --- | --- |
-| Firmware run log: `FIRMWARE_UPLOAD_TOKEN missing; skip console upload` | Secret missing or empty in that firmware repo |
+| Firmware run fails: `FIRMWARE_UPLOAD_TOKEN ... missing; cannot upload the release to the console` | Secret missing or empty in that firmware repo |
 | Upload answers `401` | The firmware repo's secret and Vercel's differ; set both again |
 | Upload answers `503 upload_not_configured` | No `FIRMWARE_UPLOAD_TOKEN` on Vercel, or no redeploy since it was set |
 | Upload answers `400 missing_notes` | No `### <version>` section in that repo's `CHANGELOG.md` |
