@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved (2026-09-26). Not implemented yet.
+**Status:** in progress. Console code done and checked locally (2026-09-26); waiting on the production deploy and the service setup the user does (Resend domain, Google, GitHub, Turnstile, env vars).
 
 ## 1. What and why
 
@@ -49,10 +49,10 @@ No change to NVS keys, `HUESET`, Improv or the installer.
 | Social providers: Google, GitHub | "Continue with …" buttons, each shown only when its client ID and secret are set |
 | Account linking (trusted: Google, GitHub) | Signing in with Google and with an emailed code for the same verified address reaches the **same** account |
 | Email and password | Self-hosted only, when no email provider is configured |
-| Captcha plugin (Cloudflare Turnstile) | Bot check on the send-code and request-invite endpoints, when Turnstile is configured |
-| Admin plugin | Ban (suspend), unban, revoke sessions, delete user; used by `/admin` (§2.7) |
-| Rate limiter, database storage | Per-IP limits on auth endpoints (§2.5) |
-| Database hooks | Sign-up gate (§2.3), disposable-domain block, admin role, `last_login_at` |
+| Rate limiter, database storage | Per-IP limits on the OAuth callback endpoints |
+| Database hooks | Sign-up gate (§2.3), disposable-domain block, suspended check, admin role, `last_login_at` |
+
+**As built.** Every sign-in step except the OAuth return trip runs in server actions that call `auth.api.*` after checking Turnstile (`lib/turnstile.ts`) and the send limits (`lib/auth-limits.ts`). `/api/auth/[...all]` serves only `/api/auth/callback/*` and `/api/auth/error` and answers `404` to every other Better Auth path, so the checks cannot be skipped by calling the library's endpoints directly. For the same reason Turnstile and suspension are done in the console rather than with Better Auth's Captcha and Admin plugins: suspension is `users.banned`, checked when a session is created, when a session is read, and on device calls.
 
 Before building, check that the current Better Auth release supports this project's Next.js (16.3) and read `node_modules/next/dist/docs/` for the route handler and request-interception conventions it needs.
 
@@ -107,7 +107,7 @@ Enforced in the console. Defaults, each overridable by env (`LIMIT_SWITCHES`, �
 | Active device API keys | 25 | `POST /api/keys` → `400 limit_reached` in the UI |
 | Register body size | 512 KB | `POST /api/device/register` → `413 payload_too_large` |
 
-A user who hits a limit sees why in the console (Devices shows a banner when the last register from a board was refused). The admin can raise the limit for one account (`users.limits` jsonb overrides).
+A user who hits a limit sees why in the console (Setup and Switches show a banner for 7 days after a register from a board was refused). The admin can raise the limit for one account (`users.limits` jsonb overrides).
 
 ### 2.5 Rate limits
 
@@ -127,15 +127,15 @@ When the daily email cap is reached, the code form says "Email sign-in is busy, 
 
 ### 2.7 Admin — new `/admin`
 
-Admins are the emails in `ADMIN_EMAILS` (comma-separated). The operator controls it by env, and self-hosters are admin of their own seeded account. A database hook sets the Better Auth `role` to `admin` for those emails at sign-in and to `user` for everyone else, so the Admin plugin's checks follow the env.
+Admins are the emails in `ADMIN_EMAILS` (comma-separated). The operator controls it by env, and self-hosters are admin of their own seeded account. A session hook stores `role` = `admin` for those emails at sign-in and `user` for everyone else, so the table shows who is admin; `/admin` itself checks `ADMIN_EMAILS`.
 
 - Accounts table: email, sign-in methods, created, last sign-in, switches, bridges, last board seen, status. Sort by any column. A **Dormant** filter (§2.8).
-- Suspend / unsuspend (Admin plugin ban: revokes sessions, refuses sign-in; device calls get `403 account_suspended`).
+- Suspend / unsuspend (`users.banned`: deletes the account's sessions, refuses sign-in; device calls get `403 account_suspended`).
 - Delete an account (type its email to confirm; same cascade as §2.6).
 - Raise limits for one account.
 - Create and revoke invites.
 - Invite requests: approve (emails the invite) or dismiss (§2.3).
-- The admin cannot read another account's recipes or topology from this page; it only shows counts. Impersonation (an Admin plugin feature) is not enabled.
+- The admin cannot read another account's recipes or topology from this page; it only shows counts. There is no impersonation.
 
 ### 2.8 Dormant accounts and cleanup
 
@@ -163,6 +163,8 @@ alter table users add column if not exists ban_reason text;
 alter table users add column if not exists ban_expires timestamptz;
 alter table users add column if not exists last_login_at timestamptz;
 alter table users add column if not exists limits jsonb not null default '{}'::jsonb;
+alter table users add column if not exists register_refused_at timestamptz;      -- banner on Setup / Switches (§2.4)
+alter table users add column if not exists register_refused_reason text;
 
 create table if not exists sessions (
   id uuid primary key default gen_random_uuid(),
@@ -237,7 +239,7 @@ create unique index if not exists invite_requests_pending_email_idx
 
 create table if not exists auth_events (
   id bigserial primary key,
-  kind text not null check (kind in ('email_sent', 'invite_requested')),
+  kind text not null check (kind in ('email_sent', 'code_failed', 'invite_requested')),
   email text,
   ip text,
   created_at timestamptz not null default now()
@@ -268,7 +270,7 @@ Invite codes are stored as SHA-256 hashes, like device keys. Old rows are delete
 
 `USER_EMAIL` / `USER_PASSWORD` keep seeding the first account. The disposable-domain list comes from the `disposable-email-domains` npm package.
 
-A self-hoster needs only what they need today: `DATABASE_URL`, `AUTH_SECRET`, `USER_EMAIL`, `USER_PASSWORD`.
+A self-hoster needs only what they need today: `DATABASE_URL`, `AUTH_SECRET`, `USER_EMAIL`, `USER_PASSWORD`. `DATABASE_DRIVER=pg` runs the console on any Postgres instead of Neon's HTTP driver. `EMAIL_DEV_CONSOLE=1` prints emails to the server log in local development.
 
 ### 2.11 Services and free tiers (hosted)
 
@@ -301,26 +303,26 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 
 ### Console (`hue-switch-console`)
 
-- [ ] Confirm the current Better Auth release works with Next.js 16.3 (and read the relevant `node_modules/next/dist/docs/` guides)
+- [x] Confirm the current Better Auth release works with Next.js 16.3 (better-auth 1.7.6 lists `next ^16` as a peer)
 - [ ] `hue.tineira.com` verified as a sending domain in Resend (SPF, DKIM); `RESEND_API_KEY` and `EMAIL_FROM` set in Vercel (user)
 - [ ] Google and GitHub OAuth clients created with callback `https://hue.tineira.com/api/auth/callback/{google,github}`; keys set in Vercel (user)
 - [ ] Turnstile widget created; keys set in Vercel (user)
-- [ ] Schema (§2.9) in `db/schema.sql` and `lib/ensure-schema.ts`, checked against Better Auth's generated schema; existing account migrated (email verified, `credential` row)
-- [ ] Better Auth setup (`lib/auth.ts`, `/api/auth/[...all]`): email OTP, Google, GitHub, account linking, password only without email, Turnstile, admin plugin, rate limiter, hooks (sign-up gate, disposable domains, admin role, `last_login_at`); `getSessionUser` wraps it
-- [ ] Email sending (`lib/email.ts`, Resend) with the sign-in code, change-email code, old-address notice and invite templates, in English; `EMAIL_DAILY_CAP`
-- [ ] `/login`: provider buttons, email → code form, invite cookie, request-an-invite form; password form only without email
-- [ ] `SIGNUP_MODE`, invites and invite requests (§2.3)
-- [ ] Per-account limits in `POST /api/device/register` and `POST /api/keys`; `account_suspended`; register body size limit; Devices banner for refused registers
-- [ ] `POLL_IDLE_SEC` 300 → 900 in `lib/config-sync.ts`
-- [ ] Before deploy: the existing account is below every limit, and the largest stored snapshot is well under 512 KB
-- [ ] `/account`: sign-in methods, change email, sign out everywhere, delete account
-- [ ] `/admin`: accounts table with Dormant filter, suspend, delete, limits, invites, invite requests
-- [ ] Cleanup cron (`/api/cron/cleanup`, `vercel.json` cron entry)
+- [x] Schema (§2.9) in `db/schema.sql` and `lib/ensure-schema.ts`, checked against Better Auth's generated schema; existing account migrated (email verified, `credential` row)
+- [x] Better Auth setup (`lib/auth.ts`, `/api/auth/[...all]`): email OTP, Google, GitHub, account linking, password only without email, rate limiter, hooks (sign-up gate, disposable domains, suspended check, admin role, `last_login_at`); Turnstile and suspension in the console (§2.2 "As built"); `getSessionUser` wraps it
+- [x] Email sending (`lib/email.ts`, Resend) with the sign-in code, change-email code, old-address notice and invite templates, in English; `EMAIL_DAILY_CAP`
+- [x] `/login`: provider buttons, email → code form, invite cookie, request-an-invite form; password form only without email
+- [x] `SIGNUP_MODE`, invites and invite requests (§2.3)
+- [x] Per-account limits in `POST /api/device/register` and `POST /api/keys`; `account_suspended`; register body size limit; banner on Setup and Switches for refused registers
+- [x] `POLL_IDLE_SEC` 300 → 900 in `lib/config-sync.ts`
+- [x] Before deploy: the existing account is below every limit, and the largest stored snapshot is well under 512 KB (2026-09-26: 4 switches, 1 Bridge, 4 active keys, largest snapshot 31 KB)
+- [x] `/account`: sign-in methods, change email, sign out everywhere, delete account
+- [x] `/admin`: accounts table with Dormant filter, suspend, delete, limits, invites, invite requests
+- [x] Cleanup cron (`/api/cron/cleanup`, `vercel.json` cron entry)
 - [ ] Vercel Firewall rate-limit rule on `/api/device/*`
-- [ ] `docs/device-api.md` updated in the same commit as the register limit and the idle poll (§2.1)
-- [ ] `docs/definitions.md`: "User account", "No public signup", the auth row, and the poll interval (line on "5 min otherwise") updated
-- [ ] `README.md`: env vars (§2.10), services (§2.11) and self-hosting without email or OAuth
-- [ ] `docs/changelog.md` console entry (including "sign in again once" and the 15-minute idle poll)
+- [x] `docs/device-api.md` updated in the same commit as the register limit and the idle poll (§2.1)
+- [x] `docs/definitions.md`: "User account", "No public signup", the auth row, and the poll interval (line on "5 min otherwise") updated
+- [x] `README.md`: env vars (§2.10), services (§2.11) and self-hosting without email or OAuth
+- [x] `docs/changelog.md` console entry (including "sign in again once" and the 15-minute idle poll)
 - [ ] Deployed; checked on production by the user (Google sign-in, sign-in by code, invite request → approve → sign-up, account deletion on a test account)
 
 ### Round (`hue-round-switch`)

@@ -14,7 +14,7 @@ export default async function SwitchesLayout({ children }: LayoutProps<"/switche
     latestFirmware(),
   ]);
   return (
-    <Shell email={user.email} wide>
+    <Shell email={user.email} userId={user.id} wide>
       <SwitchesArea bridges={bridges} switches={switches} latestFirmware={latest}>
         {children}
       </SwitchesArea>

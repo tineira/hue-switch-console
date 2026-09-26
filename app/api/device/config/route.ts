@@ -56,6 +56,7 @@ export async function GET(req: Request) {
     return jsonError(500, "database_error", { details });
   }
   if (!device) return jsonError(401, "unauthorized");
+  if (device.suspended) return jsonError(403, "account_suspended");
 
   const url = new URL(req.url);
   const mac = normalizeMac(url.searchParams.get("mac") ?? "");

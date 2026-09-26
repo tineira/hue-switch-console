@@ -2,7 +2,8 @@
 
 Web console (Vercel + Neon Postgres) for Wi-Fi Hue wall switches. **It never talks
 to the Bridge.** A XIAO or `npm run push-from-bridge` uploads topology.
-Humans sign in with email + password (cookie `hsw_session`). Devices use an API key.
+Humans sign in with Google, GitHub or an emailed code (a password on self-hosted consoles
+without email). Devices use an API key.
 
 Two products, one console:
 
@@ -50,6 +51,35 @@ $env:CONSOLE_TOKEN="hsw_…"
 $env:CONSOLE_URL="http://localhost:3000"
 npm run push-from-bridge
 ```
+
+## Accounts and sign-in
+
+Sign-in is [Better Auth](https://www.better-auth.com) running inside the console on the
+same Postgres; there is no auth service to sign up for. Spec:
+[`docs/specs/multi-user-accounts.md`](docs/specs/multi-user-accounts.md).
+
+**Self-hosting** needs only `DATABASE_URL`, `AUTH_SECRET`, `USER_EMAIL` and `USER_PASSWORD`.
+That gives one account with a password; sign-up stays closed. Neon is the default
+driver; for any other Postgres set `DATABASE_DRIVER=pg`.
+
+**Hosted** (`hue.tineira.com`) adds, each optional and off until set:
+
+| Env var | Turns on |
+| --- | --- |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Emailed 6-digit codes, invites and notices. Password sign-in turns off. `EMAIL_FROM` e.g. `Hue Switch <codes@hue.tineira.com>` (domain verified in Resend) |
+| `SIGNUP_MODE` | `closed` (default), `invite` or `open` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Continue with Google. Callback `https://<host>/api/auth/callback/google` |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Continue with GitHub. Callback `https://<host>/api/auth/callback/github` |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile on the email and invite-request forms |
+| `BETTER_AUTH_URL` | Public URL for OAuth callbacks and links in emails (else taken from the request) |
+| `ADMIN_EMAILS` | Comma-separated admins for `/admin` (default: `USER_EMAIL`) |
+| `CRON_SECRET` | The daily cleanup cron (`vercel.json`) |
+| `EMAIL_DAILY_CAP` | Emails a day before email sign-in says it is busy (default 90, under Resend's free 100) |
+| `LIMIT_SWITCHES`, `LIMIT_BRIDGES`, `LIMIT_KEYS`, `LIMIT_SNAPSHOT_KB` | Per-account limits (25, 5, 25, 512); `/admin` overrides one account |
+| `PRIVACY_URL`, `TERMS_URL` | Links under the sign-in form |
+
+Local development without sending mail: `EMAIL_DEV_CONSOLE=1` prints codes to the
+server log instead (never in production).
 
 ## Device API
 

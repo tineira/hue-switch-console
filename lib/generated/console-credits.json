@@ -6,6 +6,18 @@
     "url": "https://neon.com"
   },
   {
+    "name": "better-auth",
+    "version": "1.7.6",
+    "license": "MIT",
+    "url": "https://better-auth.com"
+  },
+  {
+    "name": "disposable-email-domains",
+    "version": "1.0.62",
+    "license": "MIT",
+    "url": "https://github.com/ivolo/disposable-email-domains"
+  },
+  {
     "name": "esptool-js",
     "version": "0.6.1",
     "license": "Apache-2.0",
@@ -24,6 +36,12 @@
     "url": "https://nextjs.org"
   },
   {
+    "name": "pg",
+    "version": "8.23.0",
+    "license": "MIT",
+    "url": "https://github.com/brianc/node-postgres"
+  },
+  {
     "name": "react",
     "version": "19.2.8",
     "license": "MIT",
@@ -34,6 +52,12 @@
     "version": "19.2.8",
     "license": "MIT",
     "url": "https://react.dev/"
+  },
+  {
+    "name": "resend",
+    "version": "6.30.0",
+    "license": "MIT",
+    "url": "https://github.com/resend/resend-node#readme"
   },
   {
     "name": "tailwindcss",

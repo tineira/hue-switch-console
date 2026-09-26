@@ -21,7 +21,7 @@ export default async function SetupPage({
   const expected = mac ? await getSwitchByMac(user.id, mac).catch(() => null) : null;
 
   return (
-    <Shell email={user.email}>
+    <Shell email={user.email} userId={user.id}>
       <section className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Setup</h1>
         <p className="max-w-2xl text-sm text-muted">

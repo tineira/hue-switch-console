@@ -1,84 +1,26 @@
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { authSecret, isDbConfigured } from "@/lib/env";
+import { isAdminEmail } from "@/lib/account-config";
+import { auth } from "@/lib/better-auth";
+import { ensureSchema } from "@/lib/ensure-schema";
+import { isDbConfigured } from "@/lib/env";
+import { hashPassword } from "@/lib/password";
 import { sql } from "@/lib/sql";
+
+// Human sessions are Better Auth sessions (docs/specs/multi-user-accounts.md §2.2).
+// Pages and routes keep calling getSessionUser / requireSessionUser.
 
 export type SessionUser = {
   id: string;
   email?: string;
 };
 
-const COOKIE = "hsw_session";
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-function hmac(value: string): string {
-  return createHmac("sha256", authSecret()).update(value).digest("hex");
-}
-
-function hashPassword(password: string): string {
-  const salt = randomBytes(16);
-  const hash = scryptSync(password, salt, 32);
-  return `${salt.toString("hex")}:${hash.toString("hex")}`;
-}
-
-function verifyPassword(password: string, stored: string): boolean {
-  const [saltHex, hashHex] = stored.split(":");
-  if (!saltHex || !hashHex) return false;
-  const hash = scryptSync(password, Buffer.from(saltHex, "hex"), 32);
-  const expected = Buffer.from(hashHex, "hex");
-  if (hash.length !== expected.length) return false;
-  return timingSafeEqual(hash, expected);
-}
-
-function encodeSession(userId: string): string {
-  const exp = Date.now() + WEEK_MS;
-  const payload = `${userId}.${exp}`;
-  return `${payload}.${hmac(payload)}`;
-}
-
-function decodeSession(token: string | undefined): string | null {
-  if (!token) return null;
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [userId, expStr, sig] = parts;
-  const payload = `${userId}.${expStr}`;
-  const expected = hmac(payload);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-  const exp = Number(expStr);
-  if (!Number.isFinite(exp) || Date.now() > exp) return null;
-  return userId;
-}
-
-async function setSessionCookie(userId: string) {
-  const store = await cookies();
-  store.set(COOKIE, encodeSession(userId), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: WEEK_MS / 1000,
-  });
-}
-
-export async function clearSessionCookie() {
-  const store = await cookies();
-  store.delete(COOKIE);
-}
-
 export async function getSessionUser(): Promise<SessionUser | null> {
   if (!isDbConfigured()) return null;
-  const store = await cookies();
-  const userId = decodeSession(store.get(COOKIE)?.value);
-  if (!userId) return null;
-  const rows = await sql()`
-    select id, email from users where id = ${userId} limit 1
-  `;
-  const row = rows[0] as { id: string; email: string } | undefined;
-  if (!row) return null;
-  return { id: row.id, email: row.email };
+  await ensureSchema();
+  const session = await auth().api.getSession({ headers: await headers() });
+  if (!session || session.user.banned) return null;
+  return { id: session.user.id, email: session.user.email };
 }
 
 export async function requireSessionUser(): Promise<SessionUser> {
@@ -88,10 +30,20 @@ export async function requireSessionUser(): Promise<SessionUser> {
   return user;
 }
 
-export async function ensureSeedUser(): Promise<{
-  created: boolean;
-  error?: string;
-}> {
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireSessionUser();
+  if (!isAdminEmail(user.email)) redirect("/");
+  return user;
+}
+
+let seeded = false;
+
+/**
+ * Seeds USER_EMAIL with a password sign-in (`credential` account). An account that
+ * predates Better Auth keeps its id and its stored password hash.
+ */
+export async function ensureSeedUser(): Promise<{ created: boolean; error?: string }> {
+  if (seeded) return { created: false };
   const email = process.env.USER_EMAIL?.trim().toLowerCase();
   const password = process.env.USER_PASSWORD;
   if (!email || !password) {
@@ -100,27 +52,32 @@ export async function ensureSeedUser(): Promise<{
   if (!isDbConfigured()) {
     return { created: false, error: "Database is not configured" };
   }
-  const existing = await sql()`
-    select id from users where email = ${email} limit 1
+  await ensureSchema();
+  const db = sql();
+  let created = false;
+  const existing = await db`
+    select id, password_hash from users where email = ${email} limit 1
   `;
-  if (existing.length > 0) return { created: false };
-  await sql()`
-    insert into users (email, password_hash)
-    values (${email}, ${hashPassword(password)})
+  let row = existing[0] as { id: string; password_hash: string | null } | undefined;
+  if (!row) {
+    const inserted = await db`
+      insert into users (email, email_verified) values (${email}, true)
+      returning id, password_hash
+    `;
+    row = inserted[0] as { id: string; password_hash: string | null };
+    created = true;
+  } else {
+    await db`update users set email_verified = true where id = ${row.id} and not email_verified`;
+  }
+  const credential = await db`
+    select 1 from accounts where user_id = ${row.id} and provider_id = 'credential' limit 1
   `;
-  return { created: true };
-}
-
-export async function signInWithPassword(
-  email: string,
-  password: string,
-): Promise<boolean> {
-  const normalized = email.trim().toLowerCase();
-  const rows = await sql()`
-    select id, password_hash from users where email = ${normalized} limit 1
-  `;
-  const row = rows[0] as { id: string; password_hash: string } | undefined;
-  if (!row || !verifyPassword(password, row.password_hash)) return false;
-  await setSessionCookie(row.id);
-  return true;
+  if (credential.length === 0) {
+    await db`
+      insert into accounts (user_id, account_id, provider_id, password)
+      values (${row.id}, ${row.id}, 'credential', ${row.password_hash ?? hashPassword(password)})
+    `;
+  }
+  seeded = true;
+  return { created };
 }

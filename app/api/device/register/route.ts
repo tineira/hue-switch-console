@@ -7,6 +7,7 @@ import { authenticateDevice } from "@/lib/device-auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/http";
+import { accountLimits, recordRegisterRefused, registerLimitHit } from "@/lib/limits";
 import {
   asString,
   parseChannels,
@@ -40,10 +41,25 @@ export async function POST(req: Request) {
     return jsonError(500, "database_error", { details });
   }
   if (!device) return jsonError(401, "unauthorized");
+  if (device.suspended) return jsonError(403, "account_suspended");
+
+  let limits;
+  let text: string;
+  try {
+    limits = await accountLimits(device.userId);
+    text = await req.text();
+  } catch (err) {
+    const details = err instanceof Error ? err.message : "unknown";
+    return jsonError(500, "database_error", { details });
+  }
+  if (Buffer.byteLength(text) > limits.snapshotKb * 1024) {
+    await recordRegisterRefused(device.userId, "payload_too_large").catch(() => {});
+    return jsonError(413, "payload_too_large", { details: `limit ${limits.snapshotKb} KB` });
+  }
 
   let body: unknown;
   try {
-    body = await req.json();
+    body = JSON.parse(text);
   } catch {
     return jsonError(400, "invalid_json");
   }
@@ -83,6 +99,11 @@ export async function POST(req: Request) {
   };
 
   try {
+    const hit = await registerLimitHit({ userId: device.userId, limits, mac: mac ?? null, bridgeid });
+    if (hit) {
+      await recordRegisterRefused(device.userId, `limit_reached:${hit}`);
+      return jsonError(403, "limit_reached", { details: hit });
+    }
     await upsertBridge({ userId: device.userId, snapshot });
     if (!mac) {
       return jsonOk({
