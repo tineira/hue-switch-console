@@ -36,7 +36,7 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
   const notes = String(form.get("notes") ?? "").replace(/\r\n/g, "\n").trim();
   if (!notes) return jsonError(400, "missing_notes");
 
-  // Optional: older firmware CI does not send it (docs/specs/credits.md §2.4).
+  // Optional: older firmware CI does not send it (docs/specs/finished/credits.md §2.4).
   let credits: CreditEntry[] | null = null;
   const rawCredits = form.get("credits");
   if (rawCredits !== null) {

@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress
+**Status:** done (2026-09-26)
 
 ## 1. What and why
 
@@ -93,24 +93,24 @@ CI (`firmware.yml`, the "Upload to console" step):
 - [x] `lib/firmware.ts` reads the current release's credits per product
 - [x] `README.md` "Firmware release pipeline": the `credits` field and `THIRD_PARTY.json`
 - [x] `docs/changelog.md` console entry
-- [ ] Deployed; on production: footer on every page, `/credits` opens signed out, both firmware sections show the placeholder
+- [x] Deployed; on production: footer on every page, `/credits` opens signed out, both firmware sections show the placeholder
 
 ### Round (`hue-round-switch`)
 
 - [x] `THIRD_PARTY.json` (Arduino-ESP32 core 3.3.12, ESP-IDF, GFX Library for Arduino 1.6.8), with licenses checked against each component's own files
 - [x] `firmware.yml`: `sketch.yaml` ↔ `THIRD_PARTY.json` version check; send `credits`
-- [ ] `FIRMWARE_VERSION` bump **not required**: a push of the same version re-uploads with `credits` and gets `200` or `409`, and both store it. Bump only if the push ships other changes too.
-- [ ] Production `/credits` shows the Round list
+- [x] `FIRMWARE_VERSION` bump **not required**: a push of the same version re-uploads with `credits` and gets `200` or `409`, and both store it. Bump only if the push ships other changes too.
+- [x] Production `/credits` shows the Round list (0.5.29 re-upload, `409`, credits stored)
 
 ### Simple (`hue-simple-switch`)
 
 - [x] `THIRD_PARTY.json` (Arduino-ESP32 core 3.3.12, ESP-IDF; no extra libraries today)
 - [x] `firmware.yml`: same check and field as Round
-- [ ] Production `/credits` shows the Simple list
+- [x] Production `/credits` shows the Simple list (0.4.1 re-upload, `409`, credits stored)
 
 ### Cleanup
 
-- [ ] None. `credits` stays optional.
+- [x] None. `credits` stays optional.
 
 ## 5. Decisions (2026-09-26)
 

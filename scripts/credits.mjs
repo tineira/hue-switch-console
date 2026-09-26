@@ -1,5 +1,5 @@
 // Writes lib/generated/console-credits.json: the open-source software the console is built on
-// (docs/specs/credits.md §2.3). Runs as `prebuild`; rerun by hand after changing dependencies.
+// (docs/specs/finished/credits.md §2.3). Runs as `prebuild`; rerun by hand after changing dependencies.
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

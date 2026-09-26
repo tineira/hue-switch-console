@@ -96,7 +96,7 @@ third-party software linked into the image (core, ESP-IDF, every library
 pinned in `sketch.yaml`). Firmware CI fails when that file and `sketch.yaml`
 disagree. The console shows the current release's list on the public
 `/credits` page; the field is optional, and a re-upload of the same version
-replaces it. Spec: [`docs/specs/credits.md`](docs/specs/credits.md).
+replaces it. Spec: [`docs/specs/finished/credits.md`](docs/specs/finished/credits.md).
 
 ### Flash layout
 

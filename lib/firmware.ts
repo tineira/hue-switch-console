@@ -64,7 +64,7 @@ export function checkImage(product: ProductId, name: PartName, data: Uint8Array)
 
 export type UploadPart = { name: PartName; data: Uint8Array };
 
-// Third-party software linked into a firmware image, sent by firmware CI (docs/specs/credits.md §2.4).
+// Third-party software linked into a firmware image, sent by firmware CI (docs/specs/finished/credits.md §2.4).
 export type CreditEntry = { name: string; version: string; license: string; url: string };
 
 const CREDIT_FIELDS = ["name", "version", "license", "url"] as const;

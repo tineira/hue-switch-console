@@ -1,7 +1,7 @@
 import consoleCredits from "@/lib/generated/console-credits.json";
 import type { CreditEntry } from "@/lib/firmware";
 
-// Credits page content (docs/specs/credits.md §2.2).
+// Credits page content (docs/specs/finished/credits.md §2.2).
 
 export type Thanks = { name: string; role: string; url: string };
 

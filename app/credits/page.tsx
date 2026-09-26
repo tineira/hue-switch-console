@@ -136,7 +136,7 @@ async function CreditsContent() {
   );
 }
 
-// Public: no sign-in needed (docs/specs/credits.md §2.2).
+// Public: no sign-in needed (docs/specs/finished/credits.md §2.2).
 export default async function CreditsPage() {
   const user = await getSessionUser().catch(() => null);
 

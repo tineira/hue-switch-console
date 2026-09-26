@@ -19,7 +19,7 @@ function XIcon() {
   );
 }
 
-// Site-wide footer (docs/specs/credits.md §2.1). In the root layout, so pages without Shell get it too.
+// Site-wide footer (docs/specs/finished/credits.md §2.1). In the root layout, so pages without Shell get it too.
 export function SiteFooter() {
   return (
     <footer className="mt-auto w-full border-t border-line">
