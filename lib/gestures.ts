@@ -1,14 +1,12 @@
 // Sentences for a gesture card header and a Simple channel's summary line
 // (docs/specs/design-bridge-v2/README.md, "Summary sentences").
 
-import { findRoundRecipe, ROUND_EVENTS } from "@/lib/pages";
 import { nameForTarget } from "@/lib/recipes";
 import { isBootChannel } from "@/lib/simple-channels";
 import type {
   Light,
   PageGroup,
   RecipeTarget,
-  RoundRecipe,
   Scene,
   SceneListItem,
   SimpleChannelConfig,
@@ -201,26 +199,4 @@ export function simpleChannelGestures(
 /** "Label: sentence · Label: sentence" for a list of gestures. */
 export function gesturesLine(gestures: { label: string; summary: string }[]): string {
   return gestures.map((gesture) => `${gesture.label}: ${lowerFirst(gesture.summary)}`).join(" · ");
-}
-
-/** Tap and Double tap of one Round page. */
-export function roundPageGestures(
-  pageId: string,
-  recipes: RoundRecipe[],
-  snapshot: TopologySnapshot,
-): { label: string; action: GestureAction; summary: string }[] {
-  return ROUND_EVENTS.map((event) => {
-    const recipe = findRoundRecipe(recipes, pageId, event);
-    const action: GestureAction = !recipe
-      ? "none"
-      : recipe.action === "recall_scene"
-        ? "scenes"
-        : recipe.action;
-    const scenes = recipe?.action === "recall_scene" ? (recipe.targets ?? []) : [];
-    return {
-      label: event === "short" ? "Tap" : "Double tap",
-      action,
-      summary: summarizeGesture(action, recipe?.target, scenes, snapshot, "Does nothing"),
-    };
-  });
 }

@@ -2,126 +2,125 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
 
-**Status:** approved
+**Status:** approved. Revised on 2026-09-26 after the first deploy: the per-Bridge overview is gone and Switches opens straight on the editor (§12, decision 5).
 
 ## 1. What and why
 
-The nav is named after the Bridge and after "Devices", but that's not what the user works with. **Bridge** is really the switch editor, and it almost always redirects to the only Bridge. **Devices** is a USB workbench (flash, Wi-Fi, token, pair), not a list of your devices. Since Bridge page v2, the console also has no view of the Bridge's lights, rooms, zones and scenes, and it has never had a way to answer "what controls this light?".
+The nav was named after the Bridge and after "Devices", but that's not what the user works with.
+- **Bridge** was really the switch editor, and it almost always redirected to the only Bridge.
+- **Devices** is a USB workbench (flash, Wi-Fi, token, pair), not a list of your devices.
+- Since Bridge page v2, the console also has no view of the Bridge's lights, rooms, zones and scenes. It has never had a way to answer "what controls this light?".
 
 Afterwards the user has three places, each named after what they work with:
 
-- **Switches**: every switch on the Bridge with its health (last seen, firmware, update available, stale targets). Each switch has its own page, the current v2 editor.
-- **Lights**: read-only topology of the Bridge and which switch gestures act on each room, zone and light. **The layout is pending a Claude Design handoff (§8).** This spec only reserves its place.
-- **Setup**: the current Devices USB flow, renamed. It is reachable from the nav and from wherever a switch needs it (add a switch, update firmware).
+- **Switches**: the editor for every switch in the account. Tabs are grouped in one section per Bridge, each with its health (last seen, update available, stale targets). Each switch has its own URL.
+- **Lights**: read-only topology and which switch gestures act on each room, zone and light, in one section per Bridge. **The layout is pending a Claude Design handoff (§8).** This spec only reserves its place.
+- **Setup**: the old Devices USB flow, renamed. It is reachable from the nav and from wherever a switch needs it (add a switch, update firmware).
 
-The Bridge stays the configuration context (`docs/definitions.md`, "Per Bridge"). It no longer names a page.
+The Bridge stays the configuration context (`docs/definitions.md`, "Per Bridge"): a switch uses only its own Bridge's topology. The Bridge is a section on a page, not a page of its own.
 
 ## 2. Contract change
 
-None. No device endpoint, payload, NVS key or installer change. The firmware repos do not link to console pages. `hue-round-switch/AGENTS.md` mentions `/install`, which keeps redirecting (§3), so no firmware session is needed.
+None. No device endpoint, payload, NVS key or installer change.
+- The firmware repos do not link to console pages. `hue-round-switch/AGENTS.md` mentions `/install`, which keeps redirecting (§3).
+- The Round's "Token rejected" screen says "Set a new one in Devices". Renaming that is a separate Round change; the console's how-to drawing of that screen follows the firmware.
 
 ## 3. Route map
 
-| Route | Today | After |
+| Route | Before | After |
 | --- | --- | --- |
-| `/` | Bridge list; redirects to the only Bridge | Bridge picker (≥ 2 Bridges) or the "No Bridge yet" empty state (0). With one Bridge, redirects to `/bridges/[bridgeid]/switches`. |
-| `/switches` | — | New. Redirect: 1 Bridge → `/bridges/[id]/switches`; otherwise `/`. |
-| `/lights` | — | New in phase 2 (§8). Same redirect rule, to `/bridges/[id]/lights`. |
-| `/bridges/[bridgeid]` | Editor (`?mac=` selects a switch) | Redirect: with `?mac=` to `/bridges/[id]/switches/[mac]`, otherwise to `/bridges/[id]/switches`. |
-| `/bridges/[bridgeid]/switches` | — | **Switches overview** (§5). |
-| `/bridges/[bridgeid]/switches/[mac]` | — | **Switch page**: the current v2 editor, opened on that switch (§6). |
-| `/bridges/[bridgeid]/lights` | — | **Lights** (§8), phase 2. |
-| `/setup` | — | **Setup**: the current `/devices` page, moved (§7). |
+| `/` | Bridge list; redirected to the only Bridge | Redirect to `/switches`. |
+| `/switches` | — | The first switch (`/switches/<mac>`, oldest first), or the empty state: "No Bridge yet" / "No switches yet" with steps and **Go to Setup**. |
+| `/switches/[mac]` | — | **Switches**: the editor, opened on that switch (§5). |
+| `/lights` | — | **Lights** (§8), phase 2. |
+| `/setup` | — | **Setup**: the old `/devices` page, moved (§6). |
+| `/bridges`, `/bridges/[bridgeid]` | Editor (`?mac=` selects a switch) | Redirect to `/switches/<mac>` with `?mac=`, otherwise `/switches`. |
+| `/bridges/[bridgeid]/switches[/<mac>]` | (the first deploy of this spec) | Redirect to `/switches[/<mac>]`. |
 | `/devices` | USB flow | `permanentRedirect` to `/setup`, keeping the query string. |
 | `/install` | Redirect to `/devices` | `permanentRedirect` to `/setup`. |
 | `/how-to`, `/keys`, `/changelog` | — | Unchanged, apart from link and copy updates (§9). |
 
-`[mac]` is the stored form: 12 lowercase hex characters, no separators (`switches.mac`). A MAC with separators or uppercase letters redirects to the canonical form. An unknown MAC, or one registered to a different Bridge, shows "Switch not found on this Bridge" with a link to the overview. If the switch is on another Bridge of the same account, it redirects there.
+A MAC identifies a switch within an account, so the URL does not need the Bridge.
+- `[mac]` is the stored form: 12 lowercase hex characters, no separators (`switches.mac`). A MAC with separators or uppercase letters redirects to the canonical form.
+- An unknown MAC, or a switch whose Bridge has never checked in, shows "Switch not found" with a link to `/switches`.
 
-## 4. Nav and Bridge context
+## 4. Nav
 
 **Top nav** (`app/nav-links.tsx`): **Switches · Lights · Setup · How-to**. Lights appears in phase 2. API keys, Changelog, and later Account and Admin (`docs/specs/multi-user-accounts.md`) stay in the account menu.
 
-- Inside `/bridges/[bridgeid]/…`, Switches and Lights link to the same Bridge's pages. Anywhere else they link to `/switches` and `/lights`, which redirect (§3).
-- Active state: Switches is active on `/switches` and `/bridges/*/switches*`, Lights on `/lights` and `/bridges/*/lights`, and Setup on `/setup`.
-- The "Hue switch console" wordmark links to `/`, as today (which redirects when there's one Bridge).
+- Active state: Switches is active on `/`, `/switches` and `/switches/*`, Lights on `/lights`, and Setup on `/setup`.
+- The "Hue switch console" wordmark links to `/`, which redirects to `/switches`.
 
-**Bridge layout.** New `app/bridges/[bridgeid]/layout.tsx`:
-- It loads the session user and the Bridge row once, and renders `Shell wide`.
-- If the Bridge is missing it shows today's "Bridge not found" block, for every child route.
-- The children render their own `h1` ("Switches", "Lights", or the switch name). Under the `h1`, both overview pages show a **context line** (text-sm muted):
+## 5. Switches (`/switches/[mac]`)
 
-  `Bridge C42996FFFECA6703 · 192.168.1.20 · 44 lights · 10 rooms · 9 zones · 123 scenes · snapshot 5 min ago`
+The v2 editor (`app/switches/workspace.tsx` and the editors in `app/switches/`), across every Bridge of the account.
 
-  The bridge id and IP are mono. **Fix:** today's header counts zones as rooms ("19 rooms"). Count them separately. With two or more Bridges in the account, the line ends with a `Change Bridge` link to `/`.
+**Header:** `h1` "Switches" and, on the right, a primary button **Add a switch** linking to `/setup`.
 
-**Bridge picker** (`/` with ≥ 2 Bridges): today's list. The heading stays "Bridges" and the card button changes from "Open workspace" to "Open". The empty state ("No Bridge yet") links to **Setup** instead of Devices.
+**One section per Bridge**, most recently updated first. Each section has:
 
-## 5. Switches overview (`/bridges/[bridgeid]/switches`)
+- A **context line** (text-sm muted), with the bridge id and IP in mono:
 
-**Header:**
-- `h1` "Switches" and the Bridge context line (§4).
-- On the right, a primary button **Add a switch**, linking to `/setup`.
+  `Bridge C42996FFFECA6703 · 192.168.1.20 · 44 lights · 10 rooms · 9 zones · 123 scenes · Snapshot 5 min ago`
 
-**One card per switch** on this Bridge, oldest first (`created_at`). The same order applies to the tabs on a switch page; until now they were sorted by last seen, so they moved around as boards checked in. The whole card links to the switch page. Each card contains:
+  **Fix:** the old header counted zones as rooms ("19 rooms"). They are counted separately.
+- "No lights yet. A switch paired with this Bridge sends its rooms, lights, and scenes when it checks in." when its snapshot is empty.
+- Its **switch tabs**, oldest first (`created_at`). They used to be sorted by last seen, so they moved around as boards checked in. With no switch: "No switches on this Bridge yet."
 
-- **Title row:**
-  - the name (or formatted MAC)
-  - the product pill (`Round` / `Simple`)
-  - `Update to x.y.z` (filament outline pill) when a newer release is uploaded for the product. It links to `/setup?mac=<mac>`.
-- **Meta line** (text-xs muted): `AA:BB:CC:DD:EE:FF · firmware 0.4.0 · rev 6 · seen 12 min ago`. `seen` reads `never seen` when `last_seen_at` is null.
-- **Summary** (text-sm), one line per page or channel in use, from the same summary helpers the editor uses (`lib/gestures.ts` `summarizeGesture` / `describeTarget`, `lib/pages.ts`, `lib/simple-channels.ts`):
-  - Round: `Veladores · Tap toggles Velador Tomás 1.A · Double tap toggles Velador Camby 1.A`. After 3 pages, `+3 more pages`.
-  - Simple: `BOOT · Veladores dormitorio principal · Click toggles Velador Tomás 1.A`. Unused channels collapse into one muted line: `D0, D1, D2 not used`.
-  - Nothing configured: muted `Nothing set up yet.`
-- **Warnings** (text-xs warn), shown only when they apply:
-  - `N gestures point at lights or scenes no longer on the Bridge.`: the stale count the editor already computes.
-  - `Not seen for N h.`, when `last_seen_at` is older than 3 h. Boards with recipes poll hourly (`definitions.md`, Polling), so 3 missed polls means something is wrong.
-  - `Firmware too old to edit channels. Update it.`: Simple below `supportsChannelTypes`.
+A switch whose Bridge row is missing is not shown. It can't be configured without topology.
 
-**Empty states:**
-- No switch on this Bridge: today's dashed block. Copy: "No switches on this Bridge. Set up a board on **Setup**. It shows up here once it pairs with this Bridge."
-- Topology empty: today's "No lights yet" block, above the cards.
+**Tabs:**
+- The first line is the name, plus a filament dot for unsaved changes and a **warn dot** when the switch needs attention.
+- The second line (text-xs muted) reads `Round|Simple · seen 12 min ago`, with these parts when they apply:
+  - `· not seen 5 h` in warn instead of `seen …`, when `last_seen_at` is older than 3 h. Boards with recipes poll hourly (`definitions.md`, Polling), so 3 missed polls means something is wrong.
+  - `· N stale` in warn: assignments in the draft that are no longer in that Bridge's snapshot.
+  - `· update` in filament, when a newer release is uploaded for the product.
+- The warn dot shows for "not seen", stale assignments, or a Simple below `supportsChannelTypes`.
 
-The overview has no drafts and no save bar. It is read-only.
+**The selected switch's card** follows the sections, unchanged from v2 except as listed here.
+- Its title is an `h2`.
+- `Update to x.y.z` links to `/setup?mac=<mac>`.
+- Under the meta line, a not-seen switch adds a warn line: "Not seen for 5 h. Saved changes reach it when it checks in again."
+- Stale assignments keep their warning and **Clear stale** above the save bar. A Simple on old firmware keeps its banner inside the card.
+- The document `<title>` is the switch name.
 
-## 6. Switch page (`/bridges/[bridgeid]/switches/[mac]`)
+**Tabs and the URL:**
+- Clicking a tab calls `window.history.pushState(null, "", "/switches/<mac>")`. That doesn't remount anything, so drafts survive (Next docs: `01-app/01-getting-started/04-linking-and-navigating.md`, "Native History API").
+- The selected switch is **derived from `usePathname()`**, so Back and Forward move between switches. Open gesture cards, the notice and the rename form reset when it changes.
+- Each switch uses its own Bridge's snapshot. **Save all** covers drafts on every Bridge.
 
-The current v2 workspace (`app/bridges/[bridgeid]/workspace.tsx` and the editors), moved to this route and otherwise unchanged. Specifically:
+**Unsaved drafts.** While any switch is dirty:
+- A `beforeunload` listener makes a reload or tab close ask first.
+- Every in-app link that leaves `/switches` (nav, wordmark, Update → Setup, how-to links) asks first with a `window.confirm`: "Unsaved changes on {names}. Leave without saving?". Cancel stays on the page, OK navigates.
+- Tab switches and links to `/switches` itself do not ask, because they keep the drafts.
+- Implementation: a capture-phase click listener on `window`, registered by the workspace. The nav in `Shell` needs no changes.
 
-- **Tabs stay.** The switch tabs row above the card stays, because drafts on several switches and **Save all** depend on one mounted workspace.
-  - Clicking a tab calls `window.history.pushState(null, "", "/bridges/<id>/switches/<mac>")`. That doesn't remount anything, so drafts survive (Next docs: `01-app/01-getting-started/04-linking-and-navigating.md`, "Native History API").
-  - The selected switch is **derived from `usePathname()`**, so Back and Forward move between switches.
-  - `selectBoard` keeps its current side effects (closing open gestures and so on) and runs when the pathname's MAC changes.
-- **Above the tabs:** a back link `← Switches` (text-sm filament) to the overview. There is no `h1` "Bridge" and no context line here. The page's `h1` is the card title, which already shows the switch name, product, Saved/Unsaved and the update pill. Promote that `h2` to `h1` (same visual size as today). The document `<title>` is the switch name.
-- **Update link.** `Update to x.y.z` links to `/setup?mac=<mac>` instead of `/devices`.
-- **Copy.** "…from Devices" becomes "…from Setup" (the BOOT hold warning in `simple-channels-editor.tsx`, and the empty-state text).
-- **Unsaved drafts.** While any switch is dirty:
-  - A `beforeunload` listener makes a reload or tab close ask first.
-  - Every in-app link that leaves the switch page (nav, wordmark, `← Switches`, Update → Setup, how-to links) asks first with a `window.confirm`: "Unsaved changes on {names}. Leave without saving?". Cancel stays on the page, OK navigates.
-  - Tab switches between switches do not ask, because they keep the drafts.
-  - Implementation: a capture-phase click listener on `document`, registered by the workspace. It checks `<a>` elements whose pathname is not `/bridges/<id>/switches/*`, so the nav in `Shell` needs no changes.
-- **Data loading and where the editor mounts.** Every switch of the Bridge is loaded with its channels, pages and recipes, as before, by a shared server loader (`lib/bridge-switches.ts`) that the overview uses too.
-  - The editor is rendered by `app/bridges/[bridgeid]/switches/layout.tsx`, not by `[mac]/page.tsx`. A layout stays mounted when the MAC in the URL changes, but a page is keyed by its param. That keeps drafts through tab switches and through the `router.refresh()` after a save, which Back needs to avoid showing pre-save data.
-  - `[mac]/page.tsx` only canonicalises the MAC, follows a switch to its Bridge, or says it is not found.
-  - With a single switch, the tabs row is hidden.
+**Where the editor mounts:**
+- `app/switches/layout.tsx` loads every Bridge and switch once (`lib/bridge-switches.ts`, `loadSwitchesView`) and renders the editor when the URL names a known switch.
+- A layout stays mounted when the MAC in the URL changes; a page is keyed by its param. That keeps drafts through tab switches and through the `router.refresh()` after a save, which Back needs to avoid showing pre-save data.
+- `[mac]/page.tsx` only canonicalises the MAC or says it is not found.
 
-## 7. Setup (`/setup`)
+## 6. Setup (`/setup`)
 
-The current `app/devices/` moves to `app/setup/`. `DevicesPanel` keeps its behavior (`docs/specs/finished/devices.md` stays the reference for the flow). Changes:
+The old `app/devices/` moves to `app/setup/` (`SetupPanel`). Its behavior is unchanged (`docs/specs/finished/devices.md` stays the reference for the flow), apart from:
 
 - **Name.** Nav label "Setup". `h1` "Setup". Intro: "Plug a switch into this computer over USB to install or update firmware, save Wi-Fi, and link it to this console. Use Chrome or Edge." `<title>` "Setup".
-- **`?mac=<mac>` (optional).** When the account has that switch, show a line above Detect: "Updating **{name}**. Plug it in over USB and press Detect." After Detect, if the board reports a different MAC, add a warn line: "This is {other name or MAC}, not {name}." It only informs and never blocks.
-- **Back to the switch.** Where the card links to `/` today (`devices-panel.tsx`, the console-record line), link to the switch page `/bridges/<bridgeid>/switches/<mac>` when the console knows the board. Link text: "Open in Switches".
-- The component can keep its internal name, or be renamed `SetupPanel`. Implementer's choice; no behavior depends on it.
+- **`?mac=<mac>` (optional).** When the account has that switch, a line above Detect reads "Updating **{name}**. Plug it in over USB and press Detect." After Detect, if the board reports a different MAC, a warn line reads "This is {other name or MAC}, not {name}." It only informs and never blocks.
+- **Back to the switch.** When the console knows the board, the checklist links to `/switches/<mac>`: "Edit its pages: Open in Switches". Before, it linked to `/`.
+- `GET /api/switches/{mac}` also returns `label`, for the name in that warning.
 
-## 8. Lights (`/bridges/[bridgeid]/lights`) — pending design
+## 7. (Removed) Switches overview
+
+The first deploy had a per-Bridge overview at `/bridges/<id>/switches`: cards with a summary of what each switch does. It was dropped the same day (§12, decision 5). The summary helpers it introduced stay in `lib/gestures.ts` (`simpleChannelGestures`, `gesturesLine`), and the Simple editor uses them.
+
+## 8. Lights (`/lights`) — pending design
 
 > **Open.** This section is filled in once the Claude Design handoff arrives. It goes in `docs/specs/design-lights/` while in progress and moves to `finished/` with this spec. Until then, phase 1 ships **without** the Lights route and nav item, so there's no empty page.
 
 What is already decided (from the design brief):
 
-- **Read-only.** No assigning. At most, links to a switch's page (§6).
+- **Read-only.** No assigning. At most, links to a switch (`/switches/<mac>`).
+- One section per Bridge, with the same context line as Switches (§5).
 - It answers, in order:
   1. what controls this room, zone or light (switch · page or channel · gesture · action);
   2. what's in the house (rooms, zones, lights, scenes, and how zones overlap rooms);
@@ -129,7 +128,6 @@ What is already decided (from the design brief):
   4. how fresh the snapshot is, and which targets are stale.
 - **Direct and indirect control are different.** A gesture on a light is direct. A gesture on a room or zone acts on its lights **through** that group. Scene gestures act on the scenes' group, and the Ring acts on its group or light list.
 - Light on/off comes from the snapshot and is never presented as live.
-- Uses the Bridge layout (§4): `h1` "Lights" and the context line.
 
 **Design-independent groundwork** (can be built in phase 2 before the layout is final): a pure function in `lib/`, e.g. `lib/control-index.ts`:
 
@@ -151,19 +149,23 @@ Control = { mac, switchName, product,
 ## 9. Docs and copy to update (same commit as the code)
 
 - `docs/definitions.md`:
-  - "Display and recipes": replace "Switches of *this* `bridgeid` are tabs; the selected one opens below" with the new model. Each switch has its own page under Switches, and tabs switch between the Bridge's switches without losing drafts.
-  - Also mention Setup where the text says Devices or `/install` (line 15).
-- `AGENTS.md`: "what `/install` flashes" → "what `/setup` flashes".
-- `README.md`: "Devices (`/devices`; `/install` …)" → Setup.
-- `app/how-to/page.tsx`: every "Devices" link and label → Setup (`/setup`). Step 2 "Choose what it does" `where="Bridge" href="/"` → `where="Switches" href="/switches"`.
-- `app/keys/keys-panel.tsx`: the last-switch link → `/bridges/<id>/switches/<mac>`. The "Devices" link → Setup.
-- `app/firmware/[product]/manifest.json/route.ts` comment: "/install and Devices" → "Setup".
-- `docs/changelog.md`: a console entry. "Switches, Lights (later) and Setup replace Bridge and Devices. Each switch has its own page. Old links redirect."
+  - "Display and recipes": Switches lists every switch in tabs grouped by Bridge; each switch has its own URL.
+  - Setup where the text said `/install`.
+- `AGENTS.md`: `/install` → `/setup`.
+- `README.md`: Devices → Setup.
+- `docs/device-api.md`: `GET /api/switches/{mac}` row. Devices → Setup.
+- `app/how-to/page.tsx`:
+  - every "Devices" link and label → Setup (`/setup`);
+  - step 2 → `where="Switches" href="/switches"`;
+  - the update step points at "Update to".
+- `app/keys/keys-panel.tsx`: the last-switch link → `/switches/<mac>`. "Devices" → Setup.
+- Code comments that say Devices → Setup.
+- `docs/changelog.md`: console entry.
 - `docs/specs/finished/*` stay as written (history).
 
 ## 10. Compatibility
 
-- Bookmarks: `/`, `/bridges/<id>`, `/bridges/<id>?mac=…`, `/devices` and `/install` all redirect (§3).
+- Bookmarks: `/`, `/bridges`, `/bridges/<id>`, `/bridges/<id>?mac=…`, `/bridges/<id>/switches[/<mac>]`, `/devices` and `/install` all redirect (§3).
 - Boards and the device API are untouched. `CONSOLE_URL` on the boards is the host, not a page.
 - No data or schema change.
 
@@ -171,23 +173,31 @@ Control = { mac, switchName, product,
 
 ### Phase 1: structure (console, `hue-switch-console`)
 
-- [x] `app/bridges/[bridgeid]/layout.tsx` (Shell wide, Bridge lookup, not-found)
-- [x] Shared server loader for a Bridge's switches with config
-- [x] `/bridges/[id]/switches` overview (§5), with warnings and empty states
-- [x] `/bridges/[id]/switches/[mac]` editor (§6): pathname-driven selection, `pushState` tabs, `← Switches`, `h1`, leave-with-drafts confirm (reload and in-app links)
-- [x] `/bridges/[id]` → redirects; `/switches` redirect route; `/` one-Bridge redirect target changed
+- [x] Shared server loader for every Bridge and switch (`loadSwitchesView`)
+- [x] `/switches` layout with the editor; `/switches` index (first switch or empty state); `/switches/[mac]` (canonical MAC, not found)
+- [x] Editor (§5): sections per Bridge with context line, tabs with warnings, pathname-driven selection, `pushState` tabs, per-switch snapshot, leave-with-drafts confirm (reload and in-app links)
+- [x] Redirects: `/`, `/bridges`, `/bridges/[id]`, `/bridges/[id]/switches[/…]`
 - [x] `app/devices` → `app/setup`; `/devices` and `/install` redirects; `?mac=` hint; "Open in Switches" link
 - [x] Nav: Switches · Setup · How-to, with active states (§4)
-- [x] Context line with separate room and zone counts
+- [x] Separate room and zone counts
 - [x] Docs and copy (§9)
 - [x] `npm run build` passes; `npm run lint` passes except the existing `app/theme-picker.tsx` error (set-state-in-effect), which this change does not touch
-- [ ] Deployed; checked on production (login, overview, a Round and a Simple switch page, tab switching with a draft, Back/Forward, Save all, old URLs redirect, Setup with `?mac=`). Per `AGENTS.md`, not with local Playwright.
+- [ ] Deployed; checked on production:
+  - login lands on Switches;
+  - a Round and a Simple switch;
+  - tab switching with a draft, then Back and Forward;
+  - Save all;
+  - a nav link with a draft asks first;
+  - old URLs redirect;
+  - Setup with `?mac=`.
+
+  Per `AGENTS.md`, not with local Playwright.
 
 ### Phase 2: Lights (console)
 
 - [ ] Claude Design handoff in `docs/specs/design-lights/`; §8 filled in and approved
 - [ ] `lib/control-index.ts`
-- [ ] `/bridges/[id]/lights` and `/lights` redirect; Lights nav item
+- [ ] `/lights`; Lights nav item
 - [ ] Changelog entry
 - [ ] Deployed; checked on production
 
@@ -197,10 +207,13 @@ Control = { mac, switchName, product,
 
 ## 12. Decisions (grilled 2026-09-26)
 
-1. **Leaving the editor with unsaved changes:** confirm first, for a reload and for in-app links (§6). Drafts are not kept across pages.
+1. **Leaving the editor with unsaved changes:** confirm first, for a reload and for in-app links (§5). Drafts are not kept across pages.
 2. **"Not seen" threshold:** 3 h for every board, whether or not it has recipes.
 3. **Naming:** the USB page is called **Setup**.
 4. **Removing a switch:** out of scope. It gets its own spec later (it needs `DELETE /api/switches/[mac]` and a rule for a board that registers again).
+5. **No overview page; sections per Bridge** (after the first deploy). A separate overview between the nav and the editor didn't make sense. Switches opens straight on the editor, with tabs grouped in one section per Bridge.
+   - The URL is flat: `/switches/<mac>`.
+   - The overview's warnings moved onto the tabs, and "not seen" also goes on the card header.
 
 ## 13. Open questions
 

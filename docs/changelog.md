@@ -12,7 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-26
 
-- The menu is now Switches, Setup and How-to. **Switches** lists every switch on the Bridge with when it was last seen, its firmware, what it does, and anything that needs attention. Each switch has its own page and link. **Setup** is the old Devices page. Old links still work.
+- The menu is now Switches, Setup and How-to. **Switches** opens on your switches, grouped by Bridge; a tab is marked when its switch has not been seen for 3 hours or points at lights or scenes the Bridge no longer has. Each switch has its own link. **Setup** is the old Devices page. Old links still work.
 - Leaving a switch page with unsaved changes asks first.
 - Room and zone counts are shown separately.
 

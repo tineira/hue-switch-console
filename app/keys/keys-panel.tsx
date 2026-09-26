@@ -108,7 +108,7 @@ function KeyRow({
             <div className="flex flex-col">
               {key.last_switch_bridgeid ? (
                 <Link
-                  href={`/bridges/${encodeURIComponent(key.last_switch_bridgeid)}/switches/${key.last_switch_mac}`}
+                  href={`/switches/${key.last_switch_mac}`}
                   className="font-medium hover:text-filament hover:underline"
                 >
                   {board}

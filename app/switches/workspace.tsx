@@ -3,8 +3,8 @@
 import {
   RoundPagesEditor,
   type RoundDraft,
-} from "@/app/bridges/[bridgeid]/round-pages-editor";
-import { SimpleChannelsEditor } from "@/app/bridges/[bridgeid]/simple-channels-editor";
+} from "@/app/switches/round-pages-editor";
+import { SimpleChannelsEditor } from "@/app/switches/simple-channels-editor";
 import { formatMac } from "@/lib/mac";
 import {
   DEFAULT_SCREEN_TIMEOUT_SEC,
@@ -21,7 +21,9 @@ import {
   supportsChannelTypes,
   supportsHoldDim,
 } from "@/lib/simple-channels";
-import type { BridgeSwitch } from "@/lib/bridge-switches";
+import { BridgeContext } from "@/app/switches/bridge-context";
+import { minutesSince } from "@/lib/ago";
+import type { BridgeSwitch, LoadedBridge } from "@/lib/bridge-switches";
 import type {
   RoundRecipe,
   SimpleChannelConfig,
@@ -97,34 +99,47 @@ function leavingLink(event: MouseEvent, switchesPath: string): HTMLAnchorElement
   if (link.hasAttribute("download")) return null;
   const url = new URL(link.href, window.location.href);
   if (url.origin !== window.location.origin) return null;
-  if (url.pathname.startsWith(switchesPath) && url.pathname.length > switchesPath.length) {
-    return null;
-  }
+  // `/switches` redirects to a switch inside the same layout, so drafts stay.
+  if (url.pathname === switchesPath || url.pathname.startsWith(`${switchesPath}/`)) return null;
   return link;
 }
 
+const SWITCHES_PATH = "/switches";
+
+// Boards with recipes poll hourly (docs/definitions.md, "Polling"): three missed polls.
+const NOT_SEEN_MIN = 180;
+
+const EMPTY_SNAPSHOT: TopologySnapshot = {
+  receivedAt: "",
+  bridgeid: "",
+  lights: [],
+  rooms: [],
+  scenes: [],
+};
+
+function notSeenText(min: number): string {
+  const hours = Math.round(min / 60);
+  return hours < 48 ? `${hours} h` : `${Math.round(hours / 24)} days`;
+}
+
 /**
- * The editor for every switch on one Bridge. The URL names the selected switch
- * (`/bridges/<id>/switches/<mac>`); tabs change it with `pushState`, so drafts on
- * other switches survive and Back / Forward move between switches.
+ * The editor for every switch in the account, with tabs grouped by Bridge. The URL
+ * names the selected switch (`/switches/<mac>`); tabs change it with `pushState`, so
+ * drafts on other switches survive and Back / Forward move between switches.
  */
-export function BridgeWorkspace({
-  bridgeid,
-  snapshot,
+export function SwitchesWorkspace({
+  bridges,
   switches,
   latestFirmware,
 }: {
-  bridgeid: string;
-  snapshot: TopologySnapshot;
+  bridges: LoadedBridge[];
   switches: WorkspaceSwitch[];
   latestFirmware: { round: string; simple: string };
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const overviewPath = `/bridges/${encodeURIComponent(bridgeid)}/switches`;
-  const switchesPath = `${overviewPath}/`;
-  const pathMac = pathname.startsWith(switchesPath)
-    ? pathname.slice(switchesPath.length).split("/")[0]
+  const pathMac = pathname.startsWith(`${SWITCHES_PATH}/`)
+    ? pathname.slice(SWITCHES_PATH.length + 1).split("/")[0]
     : null;
   const selectedMac =
     switches.find((item) => item.mac === pathMac)?.mac ?? switches[0]?.mac ?? null;
@@ -171,13 +186,12 @@ export function BridgeWorkspace({
   }
 
   const selected = switches.find((item) => item.mac === selectedMac) ?? null;
+  const snapshot = selected ? snapshotOf(selected) : EMPTY_SNAPSHOT;
   const round = isRoundItem(selected);
   const simpleConfigs = selected ? (drafts[selected.mac] ?? []) : [];
   const roundDraft = selected ? roundDrafts[selected.mac] : undefined;
   const dirty = selected ? itemDirty(selected) : false;
-  const staleCount = round
-    ? staleRoundCount(roundDraft?.recipes ?? [], snapshot)
-    : simpleConfigs.filter((config) => isSimpleChannelStale(config, snapshot)).length;
+  const staleCount = selected ? staleFor(selected) : 0;
   const dirtyOthers = switches.filter(
     (item) => item.mac !== selected?.mac && itemDirty(item),
   );
@@ -203,7 +217,7 @@ export function BridgeWorkspace({
       event.returnValue = "";
     }
     function onClick(event: MouseEvent) {
-      if (!leavingLink(event, switchesPath)) return;
+      if (!leavingLink(event, SWITCHES_PATH)) return;
       if (window.confirm(question)) return;
       event.preventDefault();
       event.stopPropagation();
@@ -214,7 +228,26 @@ export function BridgeWorkspace({
       window.removeEventListener("beforeunload", onBeforeUnload);
       window.removeEventListener("click", onClick, true);
     };
-  }, [leaveQuestion, switchesPath]);
+  }, [leaveQuestion]);
+
+  function snapshotOf(item: WorkspaceSwitch): TopologySnapshot {
+    return bridges.find((bridge) => bridge.bridgeid === item.bridgeid)?.snapshot ?? EMPTY_SNAPSHOT;
+  }
+
+  // Assignments in the draft that point at something no longer in the Bridge's snapshot.
+  function staleFor(item: WorkspaceSwitch): number {
+    const itemSnapshot = snapshotOf(item);
+    if (isRoundItem(item)) {
+      return staleRoundCount(roundDrafts[item.mac]?.recipes ?? [], itemSnapshot);
+    }
+    return (drafts[item.mac] ?? []).filter((config) => isSimpleChannelStale(config, itemSnapshot))
+      .length;
+  }
+
+  function notSeenMin(item: WorkspaceSwitch): number | null {
+    const min = minutesSince(item.last_seen_at);
+    return min !== null && min > NOT_SEEN_MIN ? min : null;
+  }
 
   function itemDirty(item: WorkspaceSwitch): boolean {
     if (isRoundItem(item)) {
@@ -387,7 +420,7 @@ export function BridgeWorkspace({
 
   function selectBoard(item: WorkspaceSwitch) {
     if (item.mac === selectedMac) return;
-    window.history.pushState(null, "", `${switchesPath}${item.mac}`);
+    window.history.pushState(null, "", `${SWITCHES_PATH}/${item.mac}`);
   }
 
   // Newer uploaded firmware for this board's product, or null when it is current.
@@ -400,8 +433,56 @@ export function BridgeWorkspace({
     return (names[item.mac] || "").trim() || formatMac(item.mac);
   }
 
-  const topologyEmpty =
-    snapshot.lights.length === 0 && snapshot.rooms.length === 0 && snapshot.scenes.length === 0;
+  function renderTab(item: WorkspaceSwitch) {
+    const active = item.mac === selectedMac;
+    const unseen = notSeenMin(item);
+    const stale = staleFor(item);
+    const tooOld = !isRoundItem(item) && !supportsChannelTypes(item.firmware);
+    const warn = unseen !== null || stale > 0 || tooOld;
+    return (
+      <button
+        key={item.mac}
+        type="button"
+        aria-current={active ? "true" : undefined}
+        onClick={() => selectBoard(item)}
+        className={`flex min-w-0 max-w-full flex-col items-start gap-0.5 rounded-xl border px-3.5 py-2 text-left ${
+          active
+            ? "border-filament/60 bg-filament-soft shadow-[0_0_0_1px_var(--filament)]"
+            : "border-line bg-cream hover:border-filament/40"
+        }`}
+      >
+        <span className="flex max-w-full items-center gap-2">
+          <span className="truncate text-sm font-medium">{boardName(item)}</span>
+          {itemDirty(item) ? (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-filament"
+              aria-label="Unsaved changes"
+              title="Unsaved changes"
+            />
+          ) : null}
+          {warn ? (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-warn"
+              aria-label="Needs attention"
+              title="Needs attention"
+            />
+          ) : null}
+        </span>
+        <span className="text-xs text-muted">
+          {isRoundItem(item) ? "Round" : "Simple"}
+          {unseen !== null ? (
+            <span className="text-warn"> · not seen {notSeenText(unseen)}</span>
+          ) : item.last_seen_at ? (
+            ` · seen ${formatWhen(item.last_seen_at)}`
+          ) : (
+            " · never seen"
+          )}
+          {stale > 0 ? <span className="text-warn"> · {stale} stale</span> : null}
+          {updateFor(item) ? <span className="text-filament"> · update</span> : null}
+        </span>
+      </button>
+    );
+  }
 
   const statusText =
     notice?.text ??
@@ -420,9 +501,15 @@ export function BridgeWorkspace({
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href={overviewPath} className="w-fit text-sm font-medium text-filament hover:underline">
-        ← Switches
-      </Link>
+      <section className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Switches</h1>
+        <Link
+          href="/setup"
+          className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
+        >
+          Add a switch
+        </Link>
+      </section>
 
       {error ? (
         <p
@@ -433,52 +520,35 @@ export function BridgeWorkspace({
         </p>
       ) : null}
 
-      {topologyEmpty ? (
-        <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
-          <p className="font-medium text-foreground">No lights yet</p>
-          <p className="mt-2">
-            A switch paired with this Bridge sends its rooms, lights, and scenes
-            when it checks in.
-          </p>
-        </div>
-      ) : null}
-
-      {switches.length > 1 ? (
-        <nav aria-label="Switches" className="flex flex-wrap gap-2">
-          {switches.map((item) => {
-            const active = item.mac === selectedMac;
-            return (
-              <button
-                key={item.mac}
-                type="button"
-                aria-current={active ? "true" : undefined}
-                onClick={() => selectBoard(item)}
-                className={`flex min-w-0 max-w-full flex-col items-start gap-0.5 rounded-xl border px-3.5 py-2 text-left ${
-                  active
-                    ? "border-filament/60 bg-filament-soft shadow-[0_0_0_1px_var(--filament)]"
-                    : "border-line bg-cream hover:border-filament/40"
-                }`}
-              >
-                <span className="flex max-w-full items-center gap-2">
-                  <span className="truncate text-sm font-medium">{boardName(item)}</span>
-                  {itemDirty(item) ? (
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full bg-filament"
-                      aria-label="Unsaved changes"
-                      title="Unsaved changes"
-                    />
-                  ) : null}
-                </span>
-                <span className="text-xs text-muted">
-                  {isRoundItem(item) ? "Round" : "Simple"}
-                  {item.last_seen_at ? ` · seen ${formatWhen(item.last_seen_at)}` : " · never seen"}
-                  {updateFor(item) ? <span className="text-filament"> · update</span> : null}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-      ) : null}
+      {bridges.map((bridge) => {
+        const onBridge = switches.filter((item) => item.bridgeid === bridge.bridgeid);
+        const empty =
+          bridge.snapshot.lights.length === 0 &&
+          bridge.snapshot.rooms.length === 0 &&
+          bridge.snapshot.scenes.length === 0;
+        return (
+          <section
+            key={bridge.bridgeid}
+            aria-label={`Bridge ${bridge.bridgeid}`}
+            className="flex flex-col gap-2"
+          >
+            <BridgeContext bridge={bridge} />
+            {empty ? (
+              <p className="text-sm text-muted">
+                No lights yet. A switch paired with this Bridge sends its rooms,
+                lights, and scenes when it checks in.
+              </p>
+            ) : null}
+            {onBridge.length > 0 ? (
+              <nav aria-label={`Switches on ${bridge.bridgeid}`} className="flex flex-wrap gap-2">
+                {onBridge.map(renderTab)}
+              </nav>
+            ) : (
+              <p className="text-sm text-muted">No switches on this Bridge yet.</p>
+            )}
+          </section>
+        );
+      })}
 
       {selected ? (
         <section
@@ -487,7 +557,7 @@ export function BridgeWorkspace({
         >
           <header className="flex items-start gap-2 px-5 py-3.5">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <h1 className="flex flex-wrap items-center gap-2 text-base font-medium">
+              <h2 className="flex flex-wrap items-center gap-2 text-base font-medium">
                 <span className="truncate">{boardName(selected)}</span>
                 <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
                   {round ? "Round" : "Simple"}
@@ -510,7 +580,7 @@ export function BridgeWorkspace({
                     Update to {updateFor(selected)}
                   </Link>
                 ) : null}
-              </h1>
+              </h2>
               <p className="text-xs text-muted">
                 <span className="font-mono">{formatMac(selected.mac)}</span>
                 {selected.firmware ? ` · firmware ${selected.firmware}` : ""}
@@ -523,6 +593,12 @@ export function BridgeWorkspace({
                   {round ? "What the screen shows" : "What the LED shows"}
                 </Link>
               </p>
+              {notSeenMin(selected) !== null ? (
+                <p className="text-xs text-warn">
+                  Not seen for {notSeenText(notSeenMin(selected) as number)}. Saved
+                  changes reach it when it checks in again.
+                </p>
+              ) : null}
             </div>
             <button
               type="button"

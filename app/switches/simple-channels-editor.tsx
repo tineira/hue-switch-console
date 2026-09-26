@@ -4,7 +4,7 @@ import {
   GesturePicker,
   choiceClass,
   type GestureOption,
-} from "@/app/bridges/[bridgeid]/gesture-picker";
+} from "@/app/switches/gesture-picker";
 import {
   gestureTarget,
   gesturesLine,

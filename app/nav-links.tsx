@@ -3,21 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Inside a Bridge, Switches (and later Lights) stay on it; elsewhere `/switches`
-// redirects to the only Bridge or the Bridge picker (docs/specs/page-structure.md).
-function bridgeBase(path: string): string | null {
-  const match = /^\/bridges\/([^/]+)/.exec(path);
-  return match ? `/bridges/${match[1]}` : null;
-}
-
+// Pages: docs/specs/page-structure.md.
 export function NavLinks() {
   const path = usePathname();
-  const base = bridgeBase(path);
   const links = [
     {
-      href: base ? `${base}/switches` : "/switches",
+      href: "/switches",
       label: "Switches",
-      active: path === "/" || path === "/switches" || /^\/bridges\/[^/]+\/switches(\/|$)/.test(path),
+      active: path === "/" || path === "/switches" || path.startsWith("/switches/"),
     },
     {
       href: "/setup",

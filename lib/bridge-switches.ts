@@ -1,10 +1,10 @@
-// Server loaders shared by the Bridge layout, the Switches overview and a switch's page
-// (docs/specs/page-structure.md).
+// Server loaders for the Switches page (docs/specs/page-structure.md): every Bridge of
+// the account and every switch registered against one of them.
 
 import { cache } from "react";
 import {
-  getBridge,
   isRoundSwitch,
+  listBridges,
   listPages,
   listRoundRecipes,
   listSimpleChannels,
@@ -24,7 +24,7 @@ import type {
   TopologySnapshot,
 } from "@/lib/types";
 
-/** A switch with its saved configuration, as the editor and the overview use it. */
+/** A switch with its saved configuration, as the editor uses it. */
 export type BridgeSwitch = SwitchPublic & {
   simpleChannels: SimpleChannelConfig[];
   pages: SwitchPage[];
@@ -38,15 +38,21 @@ export type LoadedBridge = {
   snapshot: TopologySnapshot;
 };
 
-/** The Bridge and its snapshot, or null when it is not in this account. Cached per request. */
-export const loadBridge = cache(
-  async (userId: string, bridgeid: string): Promise<LoadedBridge | null> => {
+/**
+ * Every Bridge (most recently updated first) and every switch whose Bridge is known,
+ * oldest switch first so tabs keep their place as boards check in.
+ * Cached per request: the layout and its pages both ask.
+ */
+export const loadSwitchesView = cache(
+  async (userId: string): Promise<{ bridges: LoadedBridge[]; switches: BridgeSwitch[] }> => {
     if (process.env.DATABASE_URL) {
       await ensureSchema();
     }
-    const row = await getBridge(userId, bridgeid);
-    if (!row) return null;
-    return {
+    const [bridgeRows, switchRows] = await Promise.all([
+      listBridges(userId),
+      listSwitches(userId),
+    ]);
+    const bridges: LoadedBridge[] = bridgeRows.map((row) => ({
       bridgeid: row.bridgeid,
       bridgeIp: row.bridge_ip,
       updatedAt: row.updated_at,
@@ -57,39 +63,30 @@ export const loadBridge = cache(
         rooms: [],
         scenes: [],
       },
-    };
+    }));
+    const byId = new Map(bridges.map((bridge) => [bridge.bridgeid, bridge]));
+    const switches = await Promise.all(
+      switchRows
+        .filter((item) => byId.has(item.bridgeid))
+        .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
+        .map(async (item): Promise<BridgeSwitch> => {
+          const snapshot = (byId.get(item.bridgeid) as LoadedBridge).snapshot;
+          const round = isRoundSwitch(item);
+          return {
+            ...toSwitchPublic(item),
+            simpleChannels: round
+              ? []
+              : withSnapshotNames(await listSimpleChannels(item.id), snapshot),
+            pages: round ? await listPages(item.id) : [],
+            roundRecipes: round
+              ? withSceneNames(await listRoundRecipes(item.id), snapshot)
+              : [],
+          };
+        }),
+    );
+    return { bridges, switches };
   },
 );
-
-/**
- * Every switch registered against this Bridge, with channels or pages and recipes.
- * Cached per request: the switches layout and its page both ask.
- */
-export const loadBridgeSwitches = cache(async (
-  userId: string,
-  bridge: LoadedBridge,
-): Promise<BridgeSwitch[]> => {
-  const all = await listSwitches(userId);
-  // Oldest first, so tabs and cards keep their place as boards check in.
-  return Promise.all(
-    all
-      .filter((item) => item.bridgeid === bridge.bridgeid)
-      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
-      .map(async (item) => {
-        const round = isRoundSwitch(item);
-        return {
-          ...toSwitchPublic(item),
-          simpleChannels: round
-            ? []
-            : withSnapshotNames(await listSimpleChannels(item.id), bridge.snapshot),
-          pages: round ? await listPages(item.id) : [],
-          roundRecipes: round
-            ? withSceneNames(await listRoundRecipes(item.id), bridge.snapshot)
-            : [],
-        };
-      }),
-  );
-});
 
 /** The current uploaded release per product; "" when none or on error. */
 export const latestFirmware = cache(async (): Promise<{ round: string; simple: string }> => {

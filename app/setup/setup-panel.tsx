@@ -59,7 +59,6 @@ const CLEAR_CONFIRM =
 type ConsoleRecord = {
   lastSeenAt: string | null;
   firmware: string | null;
-  bridgeid: string | null;
   label: string | null;
   // The key this board last used was revoked on API keys.
   keyRevoked: boolean;
@@ -138,7 +137,6 @@ async function lookupConsole(
       found?: unknown;
       last_seen_at?: unknown;
       firmware?: unknown;
-      bridgeid?: unknown;
       label?: unknown;
       key_revoked?: unknown;
     };
@@ -146,7 +144,6 @@ async function lookupConsole(
     return {
       lastSeenAt: typeof body.last_seen_at === "string" ? body.last_seen_at : null,
       firmware: typeof body.firmware === "string" ? body.firmware : null,
-      bridgeid: typeof body.bridgeid === "string" ? body.bridgeid : null,
       label: typeof body.label === "string" ? body.label : null,
       keyRevoked: body.key_revoked === true,
     };
@@ -1241,8 +1238,8 @@ export function SetupPanel({
               lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
               consoleLookup={consoleLookup}
               switchHref={
-                detected.consoleRecord?.bridgeid && detected.huesta.mac
-                  ? `/bridges/${encodeURIComponent(detected.consoleRecord.bridgeid)}/switches/${detected.huesta.mac}`
+                detected.consoleRecord && detected.huesta.mac
+                  ? `/switches/${detected.huesta.mac}`
                   : null
               }
               recheck={{

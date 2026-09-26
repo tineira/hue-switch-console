@@ -1,15 +1,8 @@
-import Link from "next/link";
 import { agoText, minutesSince } from "@/lib/ago";
 import type { LoadedBridge } from "@/lib/bridge-switches";
 
-/** The line under a Bridge page's h1: which Bridge, what its snapshot holds, how old it is. */
-export function BridgeContext({
-  bridge,
-  multipleBridges,
-}: {
-  bridge: LoadedBridge;
-  multipleBridges: boolean;
-}) {
+/** A Bridge section's heading line: which Bridge, what its snapshot holds, how old it is. */
+export function BridgeContext({ bridge }: { bridge: LoadedBridge }) {
   const { snapshot } = bridge;
   const rooms = snapshot.rooms.filter((room) => room.rtype !== "zone").length;
   const zones = snapshot.rooms.length - rooms;
@@ -25,11 +18,6 @@ export function BridgeContext({
         {plural(zones, "zone")} · {plural(snapshot.scenes.length, "scene")}
       </span>
       <span>Snapshot {age === null ? "age unknown" : agoText(age)}</span>
-      {multipleBridges ? (
-        <Link href="/" className="font-medium text-filament hover:underline">
-          Change Bridge
-        </Link>
-      ) : null}
     </p>
   );
 }

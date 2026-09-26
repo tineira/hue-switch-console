@@ -322,7 +322,7 @@ Used by the console UI. Firmware does not call these.
 | `GET` | `/api/bridges` | snapshots |
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
 | `GET` | `/api/switches` | registered boards |
-| `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, bridgeid, label, key_revoked }` (Setup reads it after Detect) |
+| `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, label, key_revoked }` (Setup reads it after Detect) |
 | `PATCH` | `/api/switches/{mac}` | `{ "label": "Kitchen" }` or `{ "label": null }` — console display name |
 | `GET` | `/api/switches/{mac}/channels` | Simple channel settings (`channelSettings[]`). Round Display: `400 round_switch_uses_pages` |
 | `PUT` | `/api/switches/{mac}/channels` | replace Simple channel settings; increments `rev`. Round: `400 round_switch_uses_pages` |

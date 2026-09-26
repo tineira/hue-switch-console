@@ -4,8 +4,8 @@ import {
   GesturePicker,
   choiceClass,
   type GestureOption,
-} from "@/app/bridges/[bridgeid]/gesture-picker";
-import { RoundDial } from "@/app/bridges/[bridgeid]/round-dial";
+} from "@/app/switches/gesture-picker";
+import { RoundDial } from "@/app/switches/round-dial";
 import {
   groupLights,
   groupScenes,
