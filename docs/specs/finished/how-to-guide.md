@@ -162,8 +162,8 @@ All three are closed. Answers 1 and 2 come from reading the firmware trees; 3 is
    - In `hue-simple-switch` `led.h`, `ledComputeRung()` returns rung 1 (`fast`) whenever the station isn't connected. After that come rung 2 (needs the console), 3 (needs pairing), 4 (no recipes) and 5 (heartbeat), the same order as steps 3–6. Only a console failure or a rejected token (rung 6, `solid`) comes first.
    - No change.
 3. **CLOSED: "Set a new one in Devices"** on the Round's Token rejected screen.
-   - Decision: the drawing keeps the firmware's text, because the guide shows what the board really shows. The fix line on that tile now says "The screen still calls it Devices, the page's old name."
-   - Renaming the text on the board is a Round firmware copy change, outside this spec. When it ships, update `faceParts()` in `app/how-to/visuals.tsx` and drop that sentence.
+   - Decision: the drawing follows the firmware's text, because the guide shows what the board really shows.
+   - Round 0.5.30 renamed the text on the board to "Set a new one in Setup". Every registered switch runs it, so `faceParts()` in `app/how-to/visuals.tsx` now draws the new text, and the tile's fix line no longer explains the old name.
 
 ## 10. Implementation notes
 

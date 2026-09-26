@@ -319,7 +319,7 @@ const ROUND_STATUS: Status[] = [
     see: "Full-screen message, stays until fixed",
     means:
       "The console rejected the token and this Round has no recipes yet, so presses have nothing to run.",
-    fix: "Save a new token on Setup. The screen still calls it Devices, the page's old name.",
+    fix: "Save a new token on Setup.",
     href: "/setup",
     cta: "Open Setup",
   },

@@ -99,7 +99,7 @@ function faceParts(kind: FaceKind, version: string | null): { ring: Ring; flash?
     case "token":
       return { ring: "ready", body: <FaceReady tokenDot /> };
     case "tokenfull":
-      return { ring: "error", body: <FaceText line="Token rejected" sub="Set a new one in Devices" /> };
+      return { ring: "error", body: <FaceText line="Token rejected" sub="Set a new one in Setup" /> };
   }
 }
 
