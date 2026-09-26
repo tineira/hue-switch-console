@@ -12,6 +12,10 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-26
 
+- Each switch shows whether it runs the config you saved: **Up to date**, **Pending** (with when you saved and when the switch checks in next), or a warning when the switch received a config but did not keep it. Needs the next Round and Simple firmware; older firmware shows no status.
+- Saved changes reach the switch faster: within about 30 seconds while the Switches page is open, about 5 minutes otherwise, instead of up to an hour. A switch with nothing set up yet checks in every 30 seconds. Needs the same firmware.
+- If a switch holds a newer config than the console (for example after a restore), the console sends its own config again when it has one, and otherwise offers **Replace the switch's config**.
+
 - New **Lights** page: a map of the Bridge's rooms, lights and zones that shows which switch reaches each one, directly or through a room or zone, and which lights no switch reaches. A Round page shows as a chip with its name: filled when it controls the light, outlined when it reaches it through a room or zone. Hover or click a light, room or zone to see who controls it; hover or click a switch to see everything it reaches. On a phone, tap anything to open its details.
 
 - The menu is now Switches, Setup and How-to. **Switches** opens on your switches, grouped by Bridge; a tab is marked when its switch has not been seen for 3 hours or points at lights or scenes the Bridge no longer has. Each switch has its own link. **Setup** is the old Devices page. Old links still work.

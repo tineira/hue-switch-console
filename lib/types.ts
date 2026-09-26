@@ -1,3 +1,5 @@
+import type { ConfigStatus } from "@/lib/config-sync";
+
 export type ChannelKind = "maintained" | "momentary";
 export type ChannelEvent = "on" | "off" | "double_click" | "short";
 export type HueAction = "on" | "off" | "recall_scene" | "toggle";
@@ -146,4 +148,11 @@ export type SwitchPublic = {
   product: SwitchProduct;
   pageSwipeAxis: PageSwipeAxis;
   screenTimeoutSec: number;
+  /** Revision the switch last reported from NVS; null when its firmware does not report it. */
+  applied_rev: number | null;
+  config_status: ConfigStatus;
+  /** When `rev` last changed (the save a pending switch has not picked up yet). */
+  rev_changed_at: string | null;
+  /** When the switch is next expected to poll. */
+  next_poll_at: string | null;
 };

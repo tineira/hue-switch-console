@@ -1,9 +1,11 @@
 import { getSessionUser } from "@/lib/auth";
+import { EDITING_WINDOW_MIN } from "@/lib/config-sync";
 import {
   getBridge,
   getSwitchByMac,
   isRoundSwitch,
   listSimpleChannels,
+  markSwitchEditing,
   replaceSimpleChannels,
   toSwitchPublic,
 } from "@/lib/db";
@@ -112,6 +114,7 @@ export async function PUT(
     if (invalid) return jsonError(400, invalid.error, { details: invalid.details });
 
     const channels = withSnapshotNames(resolved, snapshot);
+    await markSwitchEditing(sw.id, EDITING_WINDOW_MIN);
     const rev = await replaceSimpleChannels(sw.id, channels);
     return jsonOk({ ok: true, mac, rev, channels });
   } catch (err) {

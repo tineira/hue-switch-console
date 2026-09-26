@@ -141,9 +141,11 @@ alter table switches add column if not exists next_poll_at timestamptz;
 - `rev_changed_at`: set to `now()` by every statement that changes `rev`
   (`incrementSwitchRev`, register, the channel-type cleanup, the Round product
   switch, `PUT /pages`, the auto-bump in §4.4). Shown on **Pending**.
-- `editing_until`: set to `now() + 15 min` whenever the console loads a
-  switch's config for editing (`GET /api/switches/{mac}/channels`,
-  `GET /api/switches/{mac}/pages`) or saves it (`PUT` on either).
+- `editing_until`: set to `now() + 15 min` for every switch of the account
+  while the Switches page is open and visible (it calls
+  `POST /api/switches/sync` on load and every 30 s, which also returns the
+  statuses the page shows), and for one switch when it is saved. The editor
+  data is rendered on the server, so there is no per-switch `GET` to hook.
 - `next_poll_at`: `now() + pollSec` on each device poll, for the UI.
 
 ### 4.2 `GET /api/device/config`
@@ -164,7 +166,8 @@ to one or two writes per poll.
 
 In this order:
 
-1. **No config** for the switch (Simple: no channel settings; Round: no pages)
+1. **No config** for the switch (Simple: no channel settings; Round: no page
+   recipes, since every Round has a default page)
    → **30 s**. A switch with nothing to do is almost certainly being set up.
 2. `editing_until > now()` → **30 s**.
 3. A newer `rev` is pending for this switch (`rev > applied_rev`, e.g. saved

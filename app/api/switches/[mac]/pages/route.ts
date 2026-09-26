@@ -1,10 +1,12 @@
 import { getSessionUser } from "@/lib/auth";
+import { EDITING_WINDOW_MIN } from "@/lib/config-sync";
 import {
   getBridge,
   getSwitchByMac,
   isRoundSwitch,
   listPages,
   listRoundRecipes,
+  markSwitchEditing,
   replaceRoundConfig,
   toSwitchPublic,
 } from "@/lib/db";
@@ -122,6 +124,7 @@ export async function PUT(
     const invalid = validateRoundConfig(pages, recipes, snapshot);
     if (invalid) return jsonError(400, "validation_error", { details: invalid });
 
+    await markSwitchEditing(sw.id, EDITING_WINDOW_MIN);
     const saved = await replaceRoundConfig(sw, {
       pageSwipeAxis,
       screenTimeoutSec,

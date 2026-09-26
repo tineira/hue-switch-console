@@ -146,6 +146,13 @@ alter table switches add column if not exists product text not null default 'sim
 alter table switches add column if not exists page_swipe_axis text not null default 'horizontal';
 alter table switches add column if not exists page_seq integer not null default 1;
 alter table switches add column if not exists screen_timeout_sec integer not null default 30;
+-- Config sync (docs/specs/config-sync.md).
+alter table switches add column if not exists applied_rev integer;
+alter table switches add column if not exists served_rev integer;
+alter table switches add column if not exists apply_failed boolean not null default false;
+alter table switches add column if not exists rev_changed_at timestamptz;
+alter table switches add column if not exists editing_until timestamptz;
+alter table switches add column if not exists next_poll_at timestamptz;
 alter table pages add column if not exists group_rtype text;
 alter table pages add column if not exists group_rid text;
 alter table pages add column if not exists grouped_light_rid text;

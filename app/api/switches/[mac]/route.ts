@@ -1,4 +1,5 @@
 import { getSessionUser } from "@/lib/auth";
+import { configStatus } from "@/lib/config-sync";
 import {
   getSwitchByMac,
   isApiKeyRevoked,
@@ -34,6 +35,9 @@ export async function GET(
       firmware: sw.firmware,
       label: sw.label,
       key_revoked: sw.api_key_id ? await isApiKeyRevoked(sw.api_key_id) : false,
+      applied_rev: sw.applied_rev,
+      config_status: configStatus(sw),
+      next_poll_at: sw.next_poll_at,
     });
   } catch (err) {
     const details = err instanceof Error ? err.message : "unknown";

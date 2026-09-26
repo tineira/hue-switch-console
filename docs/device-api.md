@@ -150,7 +150,7 @@ for old boards.
 
 ---
 
-## `GET /api/device/config?mac={mac}`
+## `GET /api/device/config?mac={mac}&rev={rev}`
 
 Poll recipes. Does **not** return topology. Compare `rev` to NVS: if remote
 `rev` is greater, **replace** the whole local set (channels, pages, recipes).
@@ -159,12 +159,39 @@ If local `rev` ≥ remote, do not write NVS.
 ### Request
 
 ```
-GET /api/device/config?mac=aabbccddeeff HTTP/1.1
+GET /api/device/config?mac=aabbccddeeff&rev=11 HTTP/1.1
 Host: hue.tineira.com
 Authorization: Bearer hsw_…
 ```
 
 `mac` is required (query). Same hex rules as register.
+
+`rev` is optional: the recipe revision stored in NVS, a non-negative decimal
+integer read at request time (`0` = nothing applied yet). The console records
+it to show whether the switch runs the saved config
+(`docs/specs/config-sync.md`). Missing or malformed `rev` is ignored: no `400`,
+and the response is always a full `200`.
+
+### Response `204`
+
+When the request carries `rev` and it equals the revision the console would
+serve, the response is `204 No Content` with no body. Keep NVS; there is
+nothing to parse.
+
+A `rev` **greater** than the console's means the switch holds a config from a
+console state that no longer exists (e.g. after a database restore). If the
+console has a config for that switch, it moves its `rev` past the switch's and
+answers `200`, so the console's config replaces NVS. If it has none, it leaves
+`rev` alone and the switch keeps NVS.
+
+### `X-Poll-Sec`
+
+Every `200` and `204` carries the header `X-Poll-Sec: <seconds>`, the delay
+until the next poll. A `200` body also carries `"pollSec"` with the same value
+(for logs; firmware reads the header). The console decides the value; today it
+is 30 s while the switch has no config, while its owner has the Switches page
+open (or saved in the last 15 min), and while the switch is behind; 300 s
+otherwise.
 
 ### Response `200`
 
@@ -305,8 +332,19 @@ click target is one light) or `dim`: ramp the target with Clip v2
 (`docs/specs/finished/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
 keeps the rest, so its hold does nothing (BOOT still re-pairs).
 
-Poll cadence (firmware): no recipes in NVS → about 1 minute; after recipes
-exist → at boot and every 1 hour. GPIO never waits on this GET.
+Poll cadence (firmware):
+
+- At boot and after re-pairing: poll now.
+- After a `200` or `204`: wait `X-Poll-Sec`, clamped to 30–3600 s. When the
+  header is missing (older console): no recipes in NVS → about 1 minute;
+  recipes → every 1 hour.
+- After replacing NVS with a new `rev`: poll once more right away, reporting
+  the new `rev` (a confirmation; the answer is `204`). Not after keeping NVS or
+  a parse failure.
+- After `401`: wait 3600 s.
+- Other errors: retry as before.
+
+GPIO never waits on this GET.
 
 ---
 
@@ -321,8 +359,10 @@ Used by the console UI. Firmware does not call these.
 | `DELETE` | `/api/keys/{id}` | revoke |
 | `GET` | `/api/bridges` | snapshots |
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
-| `GET` | `/api/switches` | registered boards |
-| `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, label, key_revoked }` (Setup reads it after Detect) |
+| `GET` | `/api/switches` | registered boards; each has `applied_rev` (or `null`), `config_status` (`current` \| `pending` \| `not_applied` \| `ahead` \| `unknown`), `rev_changed_at`, `next_poll_at` |
+| `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, label, key_revoked, applied_rev, config_status, next_poll_at }` (Setup reads it after Detect) |
+| `POST` | `/api/switches/sync` | the Switches page calls it every 30 s while visible: every switch polls fast for 15 min; returns `{ switches: [{ mac, rev, applied_rev, config_status, rev_changed_at, next_poll_at, last_seen_at }] }` |
+| `POST` | `/api/switches/{mac}/replace-config` | switch `ahead`: moves `rev` past the switch's so its next poll takes the console's config. `409 not_ahead` otherwise |
 | `PATCH` | `/api/switches/{mac}` | `{ "label": "Kitchen" }` or `{ "label": null }` — console display name |
 | `GET` | `/api/switches/{mac}/channels` | Simple channel settings (`channelSettings[]`). Round Display: `400 round_switch_uses_pages` |
 | `PUT` | `/api/switches/{mac}/channels` | replace Simple channel settings; increments `rev`. Round: `400 round_switch_uses_pages` |

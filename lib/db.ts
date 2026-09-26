@@ -11,6 +11,7 @@ import {
   resolvePageGroup,
   withSceneNames,
 } from "@/lib/pages";
+import { configStatus } from "@/lib/config-sync";
 import { snapshotFromJson } from "@/lib/recipes";
 import { sql } from "@/lib/sql";
 import type {
@@ -60,6 +61,12 @@ export type SwitchRow = {
   page_swipe_axis: PageSwipeAxis;
   page_seq: number;
   screen_timeout_sec: number;
+  applied_rev: number | null;
+  served_rev: number | null;
+  apply_failed: boolean;
+  rev_changed_at: string | null;
+  editing_until: string | null;
+  next_poll_at: string | null;
 };
 
 export type BridgeRow = {
@@ -137,7 +144,19 @@ function mapSwitch(row: Record<string, unknown>): SwitchRow {
     page_swipe_axis: row.page_swipe_axis === "vertical" ? "vertical" : "horizontal",
     page_seq: Number(row.page_seq) || 1,
     screen_timeout_sec: asScreenTimeoutSec(row.screen_timeout_sec),
+    applied_rev: asRevOrNull(row.applied_rev),
+    served_rev: asRevOrNull(row.served_rev),
+    apply_failed: row.apply_failed === true,
+    rev_changed_at: row.rev_changed_at ? String(row.rev_changed_at) : null,
+    editing_until: row.editing_until ? String(row.editing_until) : null,
+    next_poll_at: row.next_poll_at ? String(row.next_poll_at) : null,
   };
+}
+
+function asRevOrNull(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isInteger(n) ? n : null;
 }
 
 function mapBridge(row: Record<string, unknown>): BridgeRow {
@@ -177,6 +196,10 @@ export function toSwitchPublic(row: SwitchRow): SwitchPublic {
     product: row.product,
     pageSwipeAxis: row.page_swipe_axis,
     screenTimeoutSec: row.screen_timeout_sec,
+    applied_rev: row.applied_rev,
+    config_status: configStatus(row),
+    rev_changed_at: row.rev_changed_at,
+    next_poll_at: row.next_poll_at,
   };
 }
 
@@ -288,7 +311,8 @@ export async function getSwitchByMac(userId: string, mac: string) {
   const rows = await sql()`
     select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
            api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
-           screen_timeout_sec
+           screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
+           editing_until, next_poll_at
     from switches
     where user_id = ${userId} and mac = ${mac}
     limit 1
@@ -301,7 +325,8 @@ export async function listSwitches(userId: string) {
   const rows = await sql()`
     select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
            api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
-           screen_timeout_sec
+           screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
+           editing_until, next_poll_at
     from switches
     where user_id = ${userId}
     order by last_seen_at desc nulls last
@@ -373,6 +398,10 @@ export async function upsertSwitch(row: {
       channels = excluded.channels,
       api_key_id = excluded.api_key_id,
       rev = excluded.rev,
+      rev_changed_at = case
+        when excluded.rev is distinct from switches.rev then now()
+        else switches.rev_changed_at
+      end,
       last_seen_at = now(),
       product = excluded.product,
       page_swipe_axis = excluded.page_swipe_axis,
@@ -380,7 +409,8 @@ export async function upsertSwitch(row: {
       screen_timeout_sec = excluded.screen_timeout_sec
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
               api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
-              screen_timeout_sec
+              screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
+              editing_until, next_poll_at
   `;
   const sw = mapSwitch(rows[0] as Record<string, unknown>);
   if (sw.product === "round") {
@@ -401,7 +431,8 @@ export async function updateSwitchLabel(
     where user_id = ${userId} and mac = ${mac}
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
               api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
-              screen_timeout_sec
+              screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
+              editing_until, next_poll_at
   `;
   if (!rows[0]) return null;
   return mapSwitch(rows[0] as Record<string, unknown>);
@@ -411,6 +442,62 @@ export async function touchSwitch(id: string, apiKeyId: string) {
   await sql()`
     update switches set last_seen_at = now(), api_key_id = ${apiKeyId}
     where id = ${id}
+  `;
+}
+
+/**
+ * One config poll (docs/specs/config-sync.md §4.2): what the switch reported, what it
+ * was served, and when it is next expected. `reported` null leaves the applied
+ * revision and the failure flag as they were (firmware that does not send `rev`).
+ */
+export async function recordConfigPoll(input: {
+  id: string;
+  apiKeyId: string;
+  reported: number | null;
+  applyFailed: boolean;
+  servedRev: number;
+  pollSec: number;
+}) {
+  await sql()`
+    update switches
+    set last_seen_at = now(),
+        api_key_id = ${input.apiKeyId},
+        applied_rev = coalesce(${input.reported}::integer, applied_rev),
+        apply_failed = case
+          when ${input.reported}::integer is null then apply_failed
+          else ${input.applyFailed}
+        end,
+        served_rev = ${input.servedRev},
+        next_poll_at = now() + make_interval(secs => ${input.pollSec})
+    where id = ${input.id}
+  `;
+}
+
+/** Moves `rev` past a revision the switch holds, so the console's config wins (§4.4). */
+export async function bumpSwitchRevPast(switchId: string, past: number): Promise<number> {
+  const rows = await sql()`
+    update switches
+    set rev = greatest(rev, ${past}::integer + 1), rev_changed_at = now()
+    where id = ${switchId}
+    returning rev
+  `;
+  return Number((rows[0] as { rev: number }).rev);
+}
+
+/** The person has the Switches area open: every switch of theirs polls fast for a while. */
+export async function markSwitchesEditing(userId: string, minutes: number) {
+  await sql()`
+    update switches
+    set editing_until = now() + make_interval(mins => ${minutes})
+    where user_id = ${userId}
+  `;
+}
+
+export async function markSwitchEditing(switchId: string, minutes: number) {
+  await sql()`
+    update switches
+    set editing_until = now() + make_interval(mins => ${minutes})
+    where id = ${switchId}
   `;
 }
 
@@ -517,7 +604,7 @@ export async function dropLegacySimpleRecipes() {
         and r.channel_id is distinct from 'c1'
       returning r.switch_id
     )
-    update switches set rev = rev + 1
+    update switches set rev = rev + 1, rev_changed_at = now()
     where id in (select distinct switch_id from gone)
   `;
 }
@@ -718,7 +805,9 @@ export async function persistPageGroupAndDim(
 
 export async function incrementSwitchRev(switchId: string): Promise<number> {
   const rows = await sql()`
-    update switches set rev = rev + 1 where id = ${switchId} returning rev
+    update switches set rev = rev + 1, rev_changed_at = now()
+    where id = ${switchId}
+    returning rev
   `;
   return Number((rows[0] as { rev: number }).rev);
 }
@@ -767,7 +856,7 @@ async function migrateC1RecipesForSwitch(
   const pages = await listPages(switchId);
   const recipes = await listRoundRecipes(switchId);
   await persistPageGroupAndDim(switchId, pages, recipes, snapshot);
-  await sql()`update switches set rev = rev + 1, product = 'round' where id = ${switchId}`;
+  await sql()`update switches set rev = rev + 1, rev_changed_at = now(), product = 'round' where id = ${switchId}`;
   return true;
 }
 
@@ -879,7 +968,8 @@ export async function replaceRoundConfig(
     set page_swipe_axis = ${input.pageSwipeAxis},
         screen_timeout_sec = ${input.screenTimeoutSec},
         page_seq = ${seq},
-        rev = rev + 1
+        rev = rev + 1,
+        rev_changed_at = now()
     where id = ${sw.id}
     returning rev, page_swipe_axis, page_seq, product, screen_timeout_sec
   `;

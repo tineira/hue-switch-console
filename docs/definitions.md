@@ -226,7 +226,7 @@ Channels come from `channels[]` in the config; a pin not listed is ignored. For 
 
 At boot: load recipes from NVS **before** handling GPIO. The first read of each GPIO **only sets the state**; it does not fire `on`/`off`. Then Wi‑Fi, poll, etc.
 
-If the user changes a recipe in the app, the switch learns about it on the poll (1 min if no recipes; if it already has some, at boot and every 1 h). Reboot = fetch recipes now; it does not fire GPIO events.
+If the user changes a recipe in the app, the switch learns about it on the poll. The console sets the interval: 30 s while the switch has no config or the Switches page is open, 5 min otherwise (firmware from before this change: 1 min with no recipes, else every 1 h). Reboot = fetch recipes now; it does not fire GPIO events. Each poll reports the `rev` in NVS, so the console shows whether the switch runs the saved config (`docs/specs/config-sync.md`).
 
 **Other rules:**
 

@@ -23,11 +23,13 @@ import {
 } from "@/lib/simple-channels";
 import { BridgeContext } from "@/app/switches/bridge-context";
 import { minutesSince } from "@/lib/ago";
+import { SYNC_REFRESH_MS } from "@/lib/config-sync";
 import type { BridgeSwitch, LoadedBridge } from "@/lib/bridge-switches";
 import type {
   RoundRecipe,
   SimpleChannelConfig,
   SwitchPage,
+  SwitchPublic,
   TopologySnapshot,
 } from "@/lib/types";
 import { compareVersions } from "@/lib/web-setup/devices";
@@ -41,7 +43,38 @@ type Notice = { text: string; tone: "ok" | "muted" };
 
 type SaveResult = { ok: true; rev?: number } | { ok: false; error: string };
 
-const SAVED_TAIL = "The switch picks this up on poll, or immediately after reboot.";
+const SAVED_TAIL = "The switch picks this up on its next check-in.";
+
+type SyncInfo = Pick<
+  SwitchPublic,
+  "rev" | "applied_rev" | "config_status" | "rev_changed_at" | "next_poll_at" | "last_seen_at"
+>;
+
+function syncOf(item: SyncInfo): SyncInfo {
+  return {
+    rev: item.rev,
+    applied_rev: item.applied_rev,
+    config_status: item.config_status,
+    rev_changed_at: item.rev_changed_at,
+    next_poll_at: item.next_poll_at,
+    last_seen_at: item.last_seen_at,
+  };
+}
+
+/**
+ * Keeps every switch polling fast while this page is open, and returns each one's
+ * config status (docs/specs/config-sync.md §4.6). Null when the request fails.
+ */
+async function fetchSync(): Promise<Record<string, SyncInfo> | null> {
+  try {
+    const res = await fetch("/api/switches/sync", { method: "POST" });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { switches?: (SyncInfo & { mac: string })[] };
+    return Object.fromEntries((body.switches ?? []).map((item) => [item.mac, syncOf(item)]));
+  } catch {
+    return null;
+  }
+}
 
 function isRoundItem(item: WorkspaceSwitch | null | undefined): boolean {
   return item?.product === "round";
@@ -87,6 +120,16 @@ function formatWhen(iso: string | null | undefined): string {
   const hr = Math.round(min / 60);
   if (hr < 48) return `${hr} h ago`;
   return new Date(iso).toLocaleString();
+}
+
+function formatUntil(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return null;
+  const min = Math.round((then - Date.now()) / 60000);
+  if (min < 0) return null;
+  if (min < 1) return "in under a minute";
+  return `in about ${min} min`;
 }
 
 /** A plain left click on a link that leaves the switch pages; modified clicks open elsewhere. */
@@ -162,6 +205,10 @@ export function SwitchesWorkspace({
   const [revs, setRevs] = useState<Record<string, number>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, item.rev])),
   );
+  const [sync, setSync] = useState<Record<string, SyncInfo>>(() =>
+    Object.fromEntries(switches.map((item) => [item.mac, syncOf(item)])),
+  );
+  const [replacing, setReplacing] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [names, setNames] = useState<Record<string, string | null>>(() =>
@@ -207,6 +254,24 @@ export function SwitchesWorkspace({
     if (selectedName) document.title = `${selectedName} · Hue switch console`;
   }, [selectedName]);
 
+  // While this page is visible, switches poll fast and their sync status stays current.
+  useEffect(() => {
+    let alive = true;
+    async function refresh() {
+      if (document.visibilityState !== "visible") return;
+      const next = await fetchSync();
+      if (alive && next) setSync(next);
+    }
+    void refresh();
+    const timer = window.setInterval(refresh, SYNC_REFRESH_MS);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+
   // Ask before a reload, a tab close, or a link out of the switch pages loses drafts.
   // Tabs between switches keep them, so they do not ask.
   useEffect(() => {
@@ -244,8 +309,12 @@ export function SwitchesWorkspace({
       .length;
   }
 
+  function syncFor(item: WorkspaceSwitch): SyncInfo {
+    return sync[item.mac] ?? syncOf(item);
+  }
+
   function notSeenMin(item: WorkspaceSwitch): number | null {
-    const min = minutesSince(item.last_seen_at);
+    const min = minutesSince(syncFor(item).last_seen_at);
     return min !== null && min > NOT_SEEN_MIN ? min : null;
   }
 
@@ -406,15 +475,80 @@ export function SwitchesWorkspace({
       if (selected) setSavedAt(selected.mac);
       showNotice(
         items.length > 1
-          ? `Saved ${items.length} switches. Each picks this up on poll, or immediately after reboot.`
+          ? `Saved ${items.length} switches. Each picks this up on its next check-in.`
           : `Saved · rev ${lastRev}. ${SAVED_TAIL}`,
         "ok",
       );
+      const next = await fetchSync();
+      if (next) setSync(next);
       // Refresh the server data so Back and the overview show what was saved. The
       // switches layout keeps this component mounted, so drafts on other switches stay.
       router.refresh();
     } finally {
       setPending(false);
+    }
+  }
+
+  async function replaceConfig(item: WorkspaceSwitch) {
+    const question =
+      `${boardName(item)} keeps a newer config than the console has. ` +
+      "Replace it with what the console shows? Anything only on the switch is lost.";
+    if (!window.confirm(question)) return;
+    setReplacing(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/switches/${item.mac}/replace-config`, { method: "POST" });
+      const body = (await res.json()) as { rev?: number; error?: string; details?: string };
+      if (!res.ok) {
+        setError(body.details ?? body.error ?? "Could not replace the switch's config");
+        return;
+      }
+      if (typeof body.rev === "number") {
+        setRevs((current) => ({ ...current, [item.mac]: body.rev as number }));
+      }
+      const next = await fetchSync();
+      if (next) setSync(next);
+    } catch {
+      setError("Could not replace the switch's config");
+    } finally {
+      setReplacing(false);
+    }
+  }
+
+  // One line on whether the switch runs the saved config (docs/specs/config-sync.md §4.6).
+  function syncLine(item: WorkspaceSwitch): { text: string; tone: "ok" | "muted" | "warn" } | null {
+    const info = syncFor(item);
+    switch (info.config_status) {
+      case "current":
+        return { text: "Up to date: the switch runs the saved config.", tone: "ok" };
+      case "pending": {
+        const saved = info.rev_changed_at ? `Saved ${formatWhen(info.rev_changed_at)}` : "Saved";
+        const until = formatUntil(info.next_poll_at);
+        return {
+          text: until
+            ? `${saved}, not on the switch yet. It checks in ${until}.`
+            : `${saved}, not on the switch yet. It has not checked in since ${formatWhen(info.last_seen_at)}.`,
+          tone: "muted",
+        };
+      }
+      case "not_applied":
+        return {
+          text:
+            "Not applied: the switch received this config but did not keep it. " +
+            "Connect it over USB and check its serial log.",
+          tone: "warn",
+        };
+      case "ahead":
+        return {
+          text:
+            `Ahead of the console: the switch keeps rev ${info.applied_rev}, newer than ` +
+            `this console's rev ${info.rev}, and ignores changes until it is replaced.`,
+          tone: "warn",
+        };
+      default:
+        return updateFor(item)
+          ? { text: "Update the firmware to see whether the switch has the saved config.", tone: "muted" }
+          : null;
     }
   }
 
@@ -438,7 +572,9 @@ export function SwitchesWorkspace({
     const unseen = notSeenMin(item);
     const stale = staleFor(item);
     const tooOld = !isRoundItem(item) && !supportsChannelTypes(item.firmware);
-    const warn = unseen !== null || stale > 0 || tooOld;
+    const status = syncFor(item).config_status;
+    const warn =
+      unseen !== null || stale > 0 || tooOld || status === "not_applied" || status === "ahead";
     return (
       <button
         key={item.mac}
@@ -472,11 +608,14 @@ export function SwitchesWorkspace({
           {isRoundItem(item) ? "Round" : "Simple"}
           {unseen !== null ? (
             <span className="text-warn"> · not seen {notSeenText(unseen)}</span>
-          ) : item.last_seen_at ? (
-            ` · seen ${formatWhen(item.last_seen_at)}`
+          ) : syncFor(item).last_seen_at ? (
+            ` · seen ${formatWhen(syncFor(item).last_seen_at)}`
           ) : (
             " · never seen"
           )}
+          {status === "pending" ? <span className="text-filament"> · pending</span> : null}
+          {status === "not_applied" ? <span className="text-warn"> · not applied</span> : null}
+          {status === "ahead" ? <span className="text-warn"> · ahead</span> : null}
           {stale > 0 ? <span className="text-warn"> · {stale} stale</span> : null}
           {updateFor(item) ? <span className="text-filament"> · update</span> : null}
         </span>
@@ -584,7 +723,7 @@ export function SwitchesWorkspace({
               <p className="text-xs text-muted">
                 <span className="font-mono">{formatMac(selected.mac)}</span>
                 {selected.firmware ? ` · firmware ${selected.firmware}` : ""}
-                {` · rev ${revs[selected.mac] ?? selected.rev}`}
+                {` · rev ${sync[selected.mac]?.rev ?? revs[selected.mac] ?? selected.rev}`}
                 {" · "}
                 <Link
                   href={round ? "/how-to#round" : "/how-to#simple"}
@@ -593,6 +732,30 @@ export function SwitchesWorkspace({
                   {round ? "What the screen shows" : "What the LED shows"}
                 </Link>
               </p>
+              {(() => {
+                const line = syncLine(selected);
+                if (!line) return null;
+                const tone =
+                  line.tone === "ok" ? "text-ok" : line.tone === "warn" ? "text-warn" : "text-muted";
+                return (
+                  <p className={`text-xs ${tone}`}>
+                    {line.text}
+                    {syncFor(selected).config_status === "ahead" ? (
+                      <>
+                        {" "}
+                        <button
+                          type="button"
+                          disabled={replacing}
+                          onClick={() => replaceConfig(selected)}
+                          className="font-medium underline underline-offset-2 disabled:opacity-50"
+                        >
+                          {replacing ? "Replacing…" : "Replace the switch's config"}
+                        </button>
+                      </>
+                    ) : null}
+                  </p>
+                );
+              })()}
               {notSeenMin(selected) !== null ? (
                 <p className="text-xs text-warn">
                   Not seen for {notSeenText(notSeenMin(selected) as number)}. Saved

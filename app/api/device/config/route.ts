@@ -1,4 +1,7 @@
+import { NextResponse } from "next/server";
+import { parseReportedRev, pollSecFor } from "@/lib/config-sync";
 import {
+  bumpSwitchRevPast,
   getBridge,
   getSwitchByMac,
   incrementSwitchRev,
@@ -7,12 +10,12 @@ import {
   listRoundRecipes,
   listSimpleChannels,
   persistPageGroupAndDim,
-  touchSwitch,
+  recordConfigPoll,
 } from "@/lib/db";
 import { authenticateDevice } from "@/lib/device-auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { jsonError } from "@/lib/http";
 import {
   computeDim,
   deviceRoundPage,
@@ -57,12 +60,23 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const mac = normalizeMac(url.searchParams.get("mac") ?? "");
   if (!mac) return jsonError(400, "mac query parameter is required");
+  // Optional: the revision in the switch's NVS (docs/specs/config-sync.md §2.1).
+  const reported = parseReportedRev(url.searchParams.get("rev"));
 
   try {
     const sw = await getSwitchByMac(device.userId, mac);
     if (!sw) return jsonError(404, "not_found");
-    await touchSwitch(sw.id, device.keyId);
 
+    // A switch holding a higher revision than ours keeps its NVS and ignores us.
+    // When we have a config for it, move past that revision so ours wins (§4.4).
+    const serve = async (rev: number, hasConfig: boolean) =>
+      reported !== null && reported > rev && hasConfig
+        ? bumpSwitchRevPast(sw.id, reported)
+        : rev;
+
+    let rev: number;
+    let hasConfig: boolean;
+    let body: Record<string, unknown>;
     if (isRoundSwitch(sw)) {
       const bridge = await getBridge(device.userId, sw.bridgeid);
       const snapshot = snapshotFromJson(bridge?.snapshot);
@@ -70,7 +84,9 @@ export async function GET(req: Request) {
       const rawRecipes = await listRoundRecipes(sw.id);
       const recipes = snapshot ? withSceneNames(rawRecipes, snapshot) : rawRecipes;
       const persisted = await persistPageGroupAndDim(sw.id, pages, recipes, snapshot);
-      const rev = persisted ? await incrementSwitchRev(sw.id) : sw.rev;
+      // Every Round has a default page; it is configured once a gesture is set.
+      hasConfig = recipes.length > 0;
+      rev = await serve(persisted ? await incrementSwitchRev(sw.id) : sw.rev, hasConfig);
       const filled = await listPages(sw.id);
       const payloadPages = filled.map((page) => {
         const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
@@ -82,33 +98,57 @@ export async function GET(req: Request) {
         const dim = computeDim(pageRecipes, group?.groupedLightRid, snapshot);
         return deviceRoundPage({ ...page, group, dim });
       });
-      return jsonOk({
+      body = {
         rev,
         product: "round",
         pageSwipeAxis: sw.page_swipe_axis,
         screenTimeoutSec: sw.screen_timeout_sec,
         pages: payloadPages,
         recipes: recipes.map(deviceRoundRecipe),
-      });
+      };
+    } else if (!supportsChannelTypes(sw.firmware)) {
+      // Firmware < 0.3.0 cannot run channel settings: it gets nothing to do
+      // until it is reflashed (docs/specs/finished/simple-channel-types.md §3).
+      hasConfig = true;
+      rev = sw.rev;
+      body = { rev, recipes: [] };
+    } else {
+      const registered = new Set(sw.channels.map((channel) => channel.id));
+      const bridge = await getBridge(device.userId, sw.bridgeid);
+      const channels = withSnapshotNames(
+        (await listSimpleChannels(sw.id)).filter((config) => registered.has(config.id)),
+        snapshotFromJson(bridge?.snapshot),
+      );
+      hasConfig = channels.length > 0;
+      rev = await serve(sw.rev, hasConfig);
+      body = {
+        rev,
+        product: "simple",
+        channels: channels.map(deviceSimpleChannel),
+        recipes: deriveSimpleRecipes(channels).map(deviceSimpleRecipe),
+      };
     }
 
-    // Firmware < 0.3.0 cannot run channel settings: it gets nothing to do
-    // until it is reflashed (docs/specs/finished/simple-channel-types.md §3).
-    if (!supportsChannelTypes(sw.firmware)) {
-      return jsonOk({ rev: sw.rev, recipes: [] });
-    }
-    const registered = new Set(sw.channels.map((channel) => channel.id));
-    const bridge = await getBridge(device.userId, sw.bridgeid);
-    const channels = withSnapshotNames(
-      (await listSimpleChannels(sw.id)).filter((config) => registered.has(config.id)),
-      snapshotFromJson(bridge?.snapshot),
-    );
-    return jsonOk({
-      rev: sw.rev,
-      product: "simple",
-      channels: channels.map(deviceSimpleChannel),
-      recipes: deriveSimpleRecipes(channels).map(deviceSimpleRecipe),
+    const pollSec = pollSecFor({
+      hasConfig,
+      editingUntil: sw.editing_until,
+      behind: reported !== null && reported < rev,
     });
+    await recordConfigPoll({
+      id: sw.id,
+      apiKeyId: device.keyId,
+      reported,
+      // Served this config before and still reports an older one: it did not keep it.
+      applyFailed: reported !== null && sw.served_rev !== null && reported < sw.served_rev,
+      servedRev: rev,
+      pollSec,
+    });
+
+    const headers = { "X-Poll-Sec": String(pollSec) };
+    if (reported === rev) {
+      return new Response(null, { status: 204, headers });
+    }
+    return NextResponse.json({ ...body, pollSec }, { headers });
   } catch (err) {
     const details = err instanceof Error ? err.message : "unknown";
     return jsonError(500, "database_error", { details });
