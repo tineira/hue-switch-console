@@ -1,106 +1,13 @@
-import { getSessionUser } from "@/lib/auth";
-import {
-  getBridge,
-  getSwitchByMac,
-  isRoundSwitch,
-  listRecipes,
-  replaceRecipes,
-  toSwitchPublic,
-} from "@/lib/db";
-import { ensureSchema } from "@/lib/ensure-schema";
-import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
-import { parseRecipes } from "@/lib/parse";
-import { snapshotFromJson, validateRecipes } from "@/lib/recipes";
-import { normalizeMac } from "@/lib/tokens";
+import { jsonError } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  _req: Request,
-  context: { params: Promise<{ mac: string }> },
-) {
-  if (!isDbConfigured()) {
-    return jsonError(503, "database_not_configured");
-  }
-  const user = await getSessionUser();
-  if (!user) return jsonError(401, "unauthorized");
-  try {
-    await ensureSchema();
-  } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
-  }
-  const { mac: rawMac } = await context.params;
-  const mac = normalizeMac(rawMac);
-  if (!mac) return jsonError(400, "mac must be 12 hex digits");
-
-  try {
-    const sw = await getSwitchByMac(user.id, mac);
-    if (!sw) return jsonError(404, "not_found");
-    if (isRoundSwitch(sw)) {
-      return jsonError(400, "round_switch_uses_pages", {
-        details: "Round Display recipes are saved with pages",
-      });
-    }
-    const recipes = await listRecipes(sw.id);
-    return jsonOk({ ...toSwitchPublic(sw), recipes });
-  } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
-  }
+// Simple recipes are derived from channel settings (docs/specs/simple-channel-types.md).
+function gone() {
+  return jsonError(410, "gone", {
+    details: "Use /api/switches/{mac}/channels (Simple) or /api/switches/{mac}/pages (Round)",
+  });
 }
 
-export async function PUT(
-  req: Request,
-  context: { params: Promise<{ mac: string }> },
-) {
-  if (!isDbConfigured()) {
-    return jsonError(503, "database_not_configured");
-  }
-  const user = await getSessionUser();
-  if (!user) return jsonError(401, "unauthorized");
-  try {
-    await ensureSchema();
-  } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
-  }
-  const { mac: rawMac } = await context.params;
-  const mac = normalizeMac(rawMac);
-  if (!mac) return jsonError(400, "mac must be 12 hex digits");
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError(400, "invalid_json");
-  }
-  const recipes = parseRecipes((body as { recipes?: unknown })?.recipes);
-  if (!recipes) {
-    return jsonError(400, "recipes[] is required");
-  }
-
-  try {
-    const sw = await getSwitchByMac(user.id, mac);
-    if (!sw) return jsonError(404, "not_found");
-    if (isRoundSwitch(sw)) {
-      return jsonError(400, "round_switch_uses_pages", {
-        details: "Round Display recipes are saved with pages",
-      });
-    }
-    const bridge = await getBridge(user.id, sw.bridgeid);
-    const snapshot = snapshotFromJson(bridge?.snapshot);
-    if (!snapshot) {
-      return jsonError(400, "no topology snapshot for this bridge");
-    }
-    const invalid = validateRecipes(recipes, sw.channels ?? [], snapshot);
-    if (invalid) return jsonError(400, "validation_error", { details: invalid });
-
-    const rev = await replaceRecipes(sw.id, recipes);
-    return jsonOk({ ok: true, mac, rev, recipes });
-  } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
-  }
-}
+export const GET = gone;
+export const PUT = gone;

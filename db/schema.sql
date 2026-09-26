@@ -97,6 +97,22 @@ create unique index if not exists recipes_round_uniq
 
 create index if not exists recipes_switch_id_idx on recipes (switch_id);
 
+-- Simple channel settings (docs/specs/simple-channel-types.md). The config
+-- poll derives the Simple recipes from these rows; `recipes` holds Round only.
+create table if not exists simple_channels (
+  switch_id uuid not null references switches (id) on delete cascade,
+  channel_id text not null,
+  kind text not null check (kind in ('maintained', 'momentary')),
+  group_rtype text not null check (group_rtype in ('room', 'zone')),
+  group_rid text not null,
+  grouped_light_rid text not null,
+  target_rtype text not null check (target_rtype in ('light', 'grouped_light')),
+  target_rid text not null,
+  scenes jsonb not null default '[]'::jsonb,
+  hold jsonb,
+  primary key (switch_id, channel_id)
+);
+
 -- Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
 create table if not exists firmware_releases (
   id uuid primary key default gen_random_uuid(),

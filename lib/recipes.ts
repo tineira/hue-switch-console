@@ -1,48 +1,12 @@
 import type {
-  Channel,
-  ChannelEvent,
-  ChannelKind,
   HueAction,
   Light,
-  Recipe,
   RecipeTarget,
   Room,
   Scene,
   TargetRtype,
   TopologySnapshot,
 } from "@/lib/types";
-
-export function eventsForKind(kind: ChannelKind): ChannelEvent[] {
-  return kind === "momentary" ? ["short"] : ["on", "off", "double_click"];
-}
-
-export function eventLabel(event: ChannelEvent): string {
-  switch (event) {
-    case "on":
-      return "On";
-    case "off":
-      return "Off";
-    case "double_click":
-      return "Double-click";
-    case "short":
-      return "Short press";
-  }
-}
-
-export function eventLabelShort(event: ChannelEvent): string {
-  switch (event) {
-    case "double_click":
-      return "double-click";
-    case "short":
-      return "short";
-    default:
-      return event;
-  }
-}
-
-export function kindLabel(kind: ChannelKind): string {
-  return kind === "momentary" ? "Momentary" : "Maintained";
-}
 
 export function actionLabel(action: HueAction): string {
   switch (action) {
@@ -57,40 +21,8 @@ export function actionLabel(action: HueAction): string {
   }
 }
 
-export function defaultActionForEvent(event: ChannelEvent): HueAction {
-  switch (event) {
-    case "on":
-      return "on";
-    case "off":
-      return "off";
-    case "double_click":
-      return "recall_scene";
-    case "short":
-      return "toggle";
-  }
-}
-
-/** Hue action to apply when dropping a target onto a slot. Null = incompatible. */
-export function defaultActionForTarget(
-  event: ChannelEvent,
-  rtype: TargetRtype,
-): HueAction | null {
-  if (rtype === "scene") {
-    return "recall_scene";
-  }
-  if (event === "on") return "on";
-  if (event === "off") return "off";
-  if (event === "double_click") return "on";
-  if (event === "short") return "toggle";
-  return null;
-}
-
 export function actionsForTarget(rtype: TargetRtype): HueAction[] {
   return rtype === "scene" ? ["recall_scene"] : ["on", "off", "toggle"];
-}
-
-export function targetKey(target: RecipeTarget): string {
-  return `${target.rtype}:${target.rid}`;
 }
 
 export function nameForTarget(
@@ -132,25 +64,6 @@ export function actionClause(action: HueAction, targetName: string): string {
   }
 }
 
-export function confirmationForChannel(
-  channel: Channel,
-  recipes: Recipe[],
-  snapshot: TopologySnapshot,
-): string {
-  const parts = eventsForKind(channel.kind).map((event) => {
-    const rec = recipes.find(
-      (recipe) => recipe.channelId === channel.id && recipe.event === event,
-    );
-    if (!rec) return `${eventLabelShort(event)} → unassigned`;
-    const name = nameForTarget(snapshot, rec.target) ?? "unknown target";
-    const stale = isTargetStale(snapshot, rec.target)
-      ? " (missing from snapshot)"
-      : "";
-    return `${eventLabelShort(event)} → ${actionClause(rec.action, name)}${stale}`;
-  });
-  return `${channel.label} ${parts.join(" · ")}`;
-}
-
 export type RoomGroup = {
   room: Room;
   lights: Light[];
@@ -185,74 +98,6 @@ export function groupTopology(snapshot: TopologySnapshot): GroupedTopology {
       (scene) => !usedSceneIds.has(scene.id),
     ),
   };
-}
-
-export function recipesEqual(a: Recipe[], b: Recipe[]): boolean {
-  if (a.length !== b.length) return false;
-  const serialize = (list: Recipe[]) =>
-    [...list]
-      .map(
-        (r) =>
-          `${r.channelId}|${r.event}|${r.action}|${r.target.rtype}|${r.target.rid}`,
-      )
-      .sort()
-      .join(";");
-  return serialize(a) === serialize(b);
-}
-
-export function validateRecipes(
-  recipes: Recipe[],
-  channels: Channel[],
-  snapshot: TopologySnapshot,
-): string | null {
-  const channelById = new Map(channels.map((c) => [c.id, c]));
-  const seen = new Set<string>();
-  const lightIds = new Set(snapshot.lights.map((l) => l.id));
-  const groupedIds = new Set(
-    snapshot.rooms
-      .map((r) => r.grouped_light_id)
-      .filter((id): id is string => Boolean(id)),
-  );
-  const sceneIds = new Set(snapshot.scenes.map((s) => s.id));
-
-  for (const rec of recipes) {
-    const key = `${rec.channelId}:${rec.event}`;
-    if (seen.has(key)) return `duplicate recipe for ${key}`;
-    seen.add(key);
-
-    const channel = channelById.get(rec.channelId);
-    if (!channel) return `unknown channelId ${rec.channelId}`;
-    if (!eventsForKind(channel.kind).includes(rec.event)) {
-      return `event ${rec.event} is not valid for ${channel.kind} channel ${channel.id}`;
-    }
-
-    if (rec.action === "recall_scene") {
-      if (rec.target.rtype !== "scene") {
-        return "recall_scene requires target.rtype scene";
-      }
-    } else if (rec.target.rtype === "scene") {
-      return `${rec.action} cannot target a scene`;
-    } else if (
-      rec.target.rtype !== "light" &&
-      rec.target.rtype !== "grouped_light"
-    ) {
-      return `invalid rtype ${rec.target.rtype}`;
-    }
-
-    if (rec.target.rtype === "light" && !lightIds.has(rec.target.rid)) {
-      return `unknown light rid ${rec.target.rid}`;
-    }
-    if (
-      rec.target.rtype === "grouped_light" &&
-      !groupedIds.has(rec.target.rid)
-    ) {
-      return `unknown grouped_light rid ${rec.target.rid}`;
-    }
-    if (rec.target.rtype === "scene" && !sceneIds.has(rec.target.rid)) {
-      return `unknown scene rid ${rec.target.rid}`;
-    }
-  }
-  return null;
 }
 
 export function snapshotFromJson(raw: unknown): TopologySnapshot | null {

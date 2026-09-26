@@ -5,6 +5,10 @@ import {
   type PageSlotRef,
   type RoundDraft,
 } from "@/app/bridges/[bridgeid]/round-pages-editor";
+import {
+  SimpleChannelsEditor,
+  type SimpleSlotRef,
+} from "@/app/bridges/[bridgeid]/simple-channels-editor";
 import { formatMac } from "@/lib/mac";
 import { compareVersions } from "@/lib/web-setup/devices";
 import {
@@ -23,42 +27,32 @@ import {
   targetBelongsToGroup,
   upsertRoundRecipe,
 } from "@/lib/pages";
+import { groupTopology } from "@/lib/recipes";
 import {
-  actionLabel,
-  actionsForTarget,
-  actionClause,
-  confirmationForChannel,
-  defaultActionForTarget,
-  eventLabel,
-  eventsForKind,
-  groupTopology,
-  isTargetStale,
-  kindLabel,
-  nameForTarget,
-  recipesEqual,
-} from "@/lib/recipes";
+  clearStaleSimple,
+  groupRoom,
+  isSimpleChannelStale,
+  simpleChannelsEqual,
+  supportsChannelTypes,
+} from "@/lib/simple-channels";
 import type {
-  Channel,
-  ChannelEvent,
-  HueAction,
-  Recipe,
   RecipeTarget,
   RoundRecipe,
+  SceneListItem,
+  SimpleChannelConfig,
   SwitchPage,
   SwitchPublic,
   TopologySnapshot,
 } from "@/lib/types";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export type WorkspaceSwitch = SwitchPublic & {
-  recipes: Recipe[];
+  simpleChannels: SimpleChannelConfig[];
   pages: SwitchPage[];
   roundRecipes: RoundRecipe[];
 };
-
-type SlotRef = { channelId: string; event: ChannelEvent };
 
 function isRoundItem(item: WorkspaceSwitch | null | undefined): boolean {
   return item?.product === "round";
@@ -100,68 +94,40 @@ function formatWhen(iso: string | null | undefined): string {
   return new Date(iso).toLocaleString();
 }
 
-function findRecipe(
-  recipes: Recipe[],
-  slot: SlotRef,
-): Recipe | undefined {
-  return recipes.find(
-    (recipe) =>
-      recipe.channelId === slot.channelId && recipe.event === slot.event,
-  );
-}
-
-function upsertRecipe(recipes: Recipe[], next: Recipe): Recipe[] {
-  const without = recipes.filter(
-    (recipe) =>
-      !(recipe.channelId === next.channelId && recipe.event === next.event),
-  );
-  return [...without, next];
-}
-
-function clearRecipe(recipes: Recipe[], slot: SlotRef): Recipe[] {
-  return recipes.filter(
-    (recipe) =>
-      !(recipe.channelId === slot.channelId && recipe.event === slot.event),
-  );
-}
-
-function incompatibleHint(event: ChannelEvent): string {
-  return `${eventLabel(event)} cannot use that target. Pick a room, light, or scene.`;
-}
-
-function firstOpenSlot(
+function firstSimpleSlot(
   item: WorkspaceSwitch | undefined,
-  recipes: Recipe[],
-): SlotRef | null {
+  configs: SimpleChannelConfig[],
+): SimpleSlotRef | null {
   if (!item) return null;
-  const channels = item.channels ?? [];
-  const preferred = [
-    ...channels.filter((channel) => channel.kind === "maintained"),
-    ...channels.filter((channel) => channel.kind === "momentary"),
-  ];
-  for (const channel of preferred) {
-    for (const event of eventsForKind(channel.kind)) {
-      if (!findRecipe(recipes, { channelId: channel.id, event })) {
-        return { channelId: channel.id, event };
-      }
-    }
-  }
-  const channel = preferred[0] ?? channels[0];
-  if (!channel) return null;
-  return { channelId: channel.id, event: eventsForKind(channel.kind)[0] };
+  const channel =
+    item.channels.find((candidate) =>
+      configs.some((config) => config.id === candidate.id),
+    ) ?? item.channels[0];
+  return channel ? { channelId: channel.id, slot: "target" } : null;
 }
 
-function assignHint(slot: SlotRef | null, channel: Channel | undefined): string {
-  if (!slot || !channel) {
-    return "Select a slot, then click a room, light, or scene.";
+function simpleAssignHint(
+  slot: SimpleSlotRef | null,
+  label: string | null,
+  config: SimpleChannelConfig | undefined,
+  groupName: string | null,
+): string {
+  if (!slot || !label) return "Select a channel slot, then click a light or scene.";
+  if (!config) {
+    return `Pick a room or zone for ${label} first. Topology then shows only that group.`;
   }
-  if (slot.event === "double_click") {
-    return `Assigning ${channel.label} · Double-click — a scene is typical. A room or light also works.`;
+  const where = groupName ?? "its group";
+  if (slot.slot === "scenes") {
+    return `Assigning ${label} · Double-click — click scenes in ${where} to add or remove them. Up to 8, cycled in order.`;
   }
-  if (slot.event === "short") {
-    return `Assigning ${channel.label} · Short press — click a room or light (toggle) or a scene.`;
+  if (slot.slot === "hold") {
+    return config.hold?.action === "recall_scene"
+      ? `Assigning ${label} · Hold — click scenes in ${where} to add or remove them.`
+      : `Assigning ${label} · Hold — click the whole ${config.group.rtype} or a light in ${where}.`;
   }
-  return `Assigning ${channel.label} · ${eventLabel(slot.event)} — click a room, light, or scene.`;
+  return config.kind === "maintained"
+    ? `Assigning ${label} · On / Off — click the whole ${config.group.rtype} or one light in ${where}.`
+    : `Assigning ${label} · Click — click the whole ${config.group.rtype} or one light in ${where} to toggle.`;
 }
 
 function roundAssignHint(
@@ -203,19 +169,19 @@ export function BridgeWorkspace({
   const [selectedMac, setSelectedMac] = useState<string | null>(
     first?.mac ?? null,
   );
-  const [selectedSlot, setSelectedSlot] = useState<SlotRef | null>(() =>
-    isRoundItem(first) ? null : firstOpenSlot(first, first?.recipes ?? []),
+  const [selectedSlot, setSelectedSlot] = useState<SimpleSlotRef | null>(() =>
+    isRoundItem(first) ? null : firstSimpleSlot(first, first?.simpleChannels ?? []),
   );
   const [pageSlot, setPageSlot] = useState<PageSlotRef | null>(() =>
     isRoundItem(first)
       ? firstOpenPageSlot(first.pages ?? [], first.roundRecipes ?? [])
       : null,
   );
-  const [drafts, setDrafts] = useState<Record<string, Recipe[]>>(() =>
-    Object.fromEntries(switches.map((item) => [item.mac, item.recipes])),
+  const [drafts, setDrafts] = useState<Record<string, SimpleChannelConfig[]>>(() =>
+    Object.fromEntries(switches.map((item) => [item.mac, item.simpleChannels])),
   );
-  const [saved, setSaved] = useState<Record<string, Recipe[]>>(() =>
-    Object.fromEntries(switches.map((item) => [item.mac, item.recipes])),
+  const [saved, setSaved] = useState<Record<string, SimpleChannelConfig[]>>(() =>
+    Object.fromEntries(switches.map((item) => [item.mac, item.simpleChannels])),
   );
   const [roundDrafts, setRoundDrafts] = useState<Record<string, RoundDraft>>(
     () =>
@@ -242,7 +208,7 @@ export function BridgeWorkspace({
 
   const selected = switches.find((item) => item.mac === selectedMac) ?? null;
   const round = isRoundItem(selected);
-  const recipes = selected ? (drafts[selected.mac] ?? []) : [];
+  const simpleConfigs = selected ? (drafts[selected.mac] ?? []) : [];
   const baseline = selected ? (saved[selected.mac] ?? []) : [];
   const roundDraft = selected ? roundDrafts[selected.mac] : undefined;
   const roundBaseline = selected ? roundSaved[selected.mac] : undefined;
@@ -256,14 +222,18 @@ export function BridgeWorkspace({
               !pagesEqual(roundDraft.pages, roundBaseline.pages) ||
               !roundRecipesEqual(roundDraft.recipes, roundBaseline.recipes)),
         )
-      : !recipesEqual(recipes, baseline)
+      : !simpleChannelsEqual(simpleConfigs, baseline)
     : false;
   const selectedChannel = selected?.channels.find(
     (channel) => channel.id === selectedSlot?.channelId,
   );
+  const selectedConfig = simpleConfigs.find(
+    (config) => config.id === selectedSlot?.channelId,
+  );
+  const simpleFirmwareOk = selected ? supportsChannelTypes(selected.firmware) : false;
   const staleCount = round
     ? staleRoundCount(roundDraft?.recipes ?? [], snapshot)
-    : recipes.filter((recipe) => isTargetStale(snapshot, recipe.target)).length;
+    : simpleConfigs.filter((config) => isSimpleChannelStale(config, snapshot)).length;
 
   function isTargetActive(rid: string): boolean {
     if (round && pageSlot && roundDraft) {
@@ -278,12 +248,21 @@ export function BridgeWorkspace({
       }
       return rec.target?.rid === rid;
     }
-    return Boolean(
-      selectedSlot && findRecipe(recipes, selectedSlot)?.target.rid === rid,
-    );
+    if (!selectedSlot || !selectedConfig) return false;
+    if (selectedSlot.slot === "scenes") {
+      return selectedConfig.scenes.some((item) => item.rid === rid);
+    }
+    if (selectedSlot.slot === "hold") {
+      const hold = selectedConfig.hold;
+      if (!hold) return false;
+      return hold.action === "recall_scene"
+        ? hold.targets.some((item) => item.rid === rid)
+        : hold.target.rid === rid;
+    }
+    return selectedConfig.target.rid === rid;
   }
 
-  function setRecipesFor(mac: string, next: Recipe[]) {
+  function setSimpleFor(mac: string, next: SimpleChannelConfig[]) {
     setDrafts((current) => ({ ...current, [mac]: next }));
   }
 
@@ -291,22 +270,10 @@ export function BridgeWorkspace({
     setRoundDrafts((current) => ({ ...current, [mac]: next }));
   }
 
-  function toggleSlot(slot: SlotRef) {
+  function selectSimpleSlot(slot: SimpleSlotRef) {
     setNotice(null);
     setError(null);
-    setSelectedSlot((current) =>
-      current &&
-      current.channelId === slot.channelId &&
-      current.event === slot.event
-        ? null
-        : slot,
-    );
-  }
-
-  function maintainedChannel(): Channel | null {
-    if (!selected) return null;
-    if (selectedChannel?.kind === "maintained") return selectedChannel;
-    return selected.channels.find((channel) => channel.kind === "maintained") ?? null;
+    setSelectedSlot(slot);
   }
 
   function assignRoundTarget(target: RecipeTarget) {
@@ -404,35 +371,74 @@ export function BridgeWorkspace({
       assignRoundTarget(target);
       return;
     }
-    if (!selectedSlot) {
-      setNotice("Select a channel slot, then click a destination.");
+    assignSimpleTarget(target);
+  }
+
+  function toggleScene(scenes: SceneListItem[], rid: string): SceneListItem[] | null {
+    if (scenes.some((item) => item.rid === rid)) {
+      return scenes.filter((item) => item.rid !== rid);
+    }
+    if (scenes.length >= MAX_SCENE_LIST) {
+      setNotice(`A scene list can have at most ${MAX_SCENE_LIST} scenes.`);
+      return null;
+    }
+    return [...scenes, sceneListItem(snapshot, rid)];
+  }
+
+  function assignSimpleTarget(target: RecipeTarget) {
+    if (!selected) return;
+    if (!simpleFirmwareOk) {
+      setNotice("Update this switch's firmware to configure it.");
       return;
     }
-    const action = defaultActionForTarget(selectedSlot.event, target.rtype);
-    if (!action) {
-      setNotice(incompatibleHint(selectedSlot.event));
+    if (!selectedSlot || !selectedConfig) {
+      setNotice("Pick a room or zone for a channel, then click a light or scene.");
       return;
     }
-    const nextRecipes = upsertRecipe(recipes, {
-      channelId: selectedSlot.channelId,
-      event: selectedSlot.event,
-      action,
-      target,
-    });
-    setRecipesFor(selected.mac, nextRecipes);
-    const channel = selected.channels.find(
-      (item) => item.id === selectedSlot.channelId,
-    );
-    if (channel) {
-      const events = eventsForKind(channel.kind);
-      const idx = events.indexOf(selectedSlot.event);
-      const following = events.slice(idx + 1).find((event) => {
-        return !findRecipe(nextRecipes, { channelId: channel.id, event });
-      });
-      if (following) {
-        setSelectedSlot({ channelId: channel.id, event: following });
+    const config = selectedConfig;
+    if (!targetBelongsToGroup(target, config.group, snapshot)) {
+      setNotice("That light or scene is not in this channel's room or zone.");
+      return;
+    }
+    const holdScenes =
+      selectedSlot.slot === "hold" && config.hold?.action === "recall_scene";
+    const wantsScenes = selectedSlot.slot === "scenes" || holdScenes;
+    let next: SimpleChannelConfig;
+    if (target.rtype === "scene") {
+      if (config.hold?.action === "recall_scene" && holdScenes) {
+        const targets = toggleScene(config.hold.targets, target.rid);
+        if (!targets) return;
+        next = { ...config, hold: { action: "recall_scene", targets } };
+      } else {
+        if (config.kind !== "maintained") {
+          setNotice(
+            "A push button click toggles a light or the whole room. Scenes are not available here.",
+          );
+          return;
+        }
+        const scenes = toggleScene(config.scenes, target.rid);
+        if (!scenes) return;
+        next = { ...config, scenes };
+        if (selectedSlot.slot !== "scenes") {
+          setSelectedSlot({ channelId: config.id, slot: "scenes" });
+        }
       }
+    } else if (wantsScenes) {
+      setNotice("This slot takes scenes. Pick a scene from the list.");
+      return;
+    } else if (
+      selectedSlot.slot === "hold" &&
+      config.hold &&
+      config.hold.action !== "recall_scene"
+    ) {
+      next = { ...config, hold: { action: config.hold.action, target } };
+    } else {
+      next = { ...config, target };
     }
+    setSimpleFor(
+      selected.mac,
+      simpleConfigs.map((item) => (item.id === config.id ? next : item)),
+    );
     setNotice(null);
   }
 
@@ -470,59 +476,6 @@ export function BridgeWorkspace({
     );
   }
 
-  function assignRoomOnOff(groupedLightId: string, roomName: string) {
-    setError(null);
-    if (!selected) {
-      setNotice("Select a switch above first.");
-      return;
-    }
-    if (round) {
-      assignRoomTapAndOff(groupedLightId, roomName);
-      return;
-    }
-    const channel = maintainedChannel();
-    if (!channel) {
-      setNotice(
-        "Select a maintained channel (D0, D1, or D2). BOOT is a momentary button and has no on/off.",
-      );
-      return;
-    }
-    const target: RecipeTarget = {
-      rtype: "grouped_light",
-      rid: groupedLightId,
-    };
-    let next = recipes;
-    next = upsertRecipe(next, {
-      channelId: channel.id,
-      event: "on",
-      action: "on",
-      target,
-    });
-    next = upsertRecipe(next, {
-      channelId: channel.id,
-      event: "off",
-      action: "off",
-      target,
-    });
-    setRecipesFor(selected.mac, next);
-    setSelectedSlot({ channelId: channel.id, event: "double_click" });
-    setNotice(
-      `${channel.label} on and off now control ${roomName}. Optionally pick a scene for double-click.`,
-    );
-  }
-
-  function clearSlot(slot: SlotRef) {
-    if (!selected) return;
-    setRecipesFor(selected.mac, clearRecipe(recipes, slot));
-  }
-
-  function changeAction(slot: SlotRef, action: HueAction) {
-    if (!selected) return;
-    const existing = findRecipe(recipes, slot);
-    if (!existing) return;
-    setRecipesFor(selected.mac, upsertRecipe(recipes, { ...existing, action }));
-  }
-
   function discard() {
     if (!selected) return;
     if (round) {
@@ -532,9 +485,9 @@ export function BridgeWorkspace({
       setNotice("Reverted to the last saved pages.");
       return;
     }
-    setRecipesFor(selected.mac, saved[selected.mac] ?? []);
+    setSimpleFor(selected.mac, saved[selected.mac] ?? []);
     setError(null);
-    setNotice("Reverted to the last saved recipes.");
+    setNotice("Reverted to the last saved channels.");
   }
 
   function clearStale() {
@@ -547,10 +500,7 @@ export function BridgeWorkspace({
       setNotice("Cleared assignments that are missing from this snapshot.");
       return;
     }
-    setRecipesFor(
-      selected.mac,
-      recipes.filter((recipe) => !isTargetStale(snapshot, recipe.target)),
-    );
+    setSimpleFor(selected.mac, clearStaleSimple(simpleConfigs, snapshot));
     setNotice("Cleared assignments that are missing from this snapshot.");
   }
 
@@ -617,24 +567,33 @@ export function BridgeWorkspace({
         router.refresh();
         return;
       }
-      const res = await fetch(`/api/switches/${selected.mac}/recipes`, {
+      const res = await fetch(`/api/switches/${selected.mac}/channels`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipes }),
+        body: JSON.stringify({
+          channels: simpleConfigs.map((config) => ({
+            id: config.id,
+            kind: config.kind,
+            group: { rtype: config.group.rtype, rid: config.group.rid },
+            target: config.target,
+            scenes: config.scenes.map((item) => item.rid),
+            hold: config.hold,
+          })),
+        }),
       });
       const body = (await res.json()) as {
         ok?: boolean;
         rev?: number;
-        recipes?: Recipe[];
+        channels?: SimpleChannelConfig[];
         error?: string;
         details?: string;
       };
       if (!res.ok) {
-        setError(body.details ?? body.error ?? "Could not save recipes");
+        setError(body.details ?? body.error ?? "Could not save channels");
         return;
       }
-      const next = body.recipes ?? recipes;
-      setRecipesFor(selected.mac, next);
+      const next = body.channels ?? simpleConfigs;
+      setSimpleFor(selected.mac, next);
       setSaved((current) => ({ ...current, [selected.mac]: next }));
       if (typeof body.rev === "number") {
         setRevs((current) => ({ ...current, [selected.mac]: body.rev as number }));
@@ -663,11 +622,14 @@ export function BridgeWorkspace({
   const pageGroupName = pageGroup
     ? (snapshot.rooms.find((room) => room.id === pageGroup.rid)?.name ?? null)
     : null;
-  const visibleRooms = round
-    ? pageGroup
-      ? grouped.rooms.filter((item) => item.room.id === pageGroup.rid)
-      : []
-    : grouped.rooms;
+  const simpleGroup = !round ? (selectedConfig?.group ?? null) : null;
+  const simpleGroupName = simpleGroup
+    ? (groupRoom(snapshot, simpleGroup)?.name ?? null)
+    : null;
+  const focusGroup = round ? pageGroup : simpleGroup;
+  const visibleRooms = focusGroup
+    ? grouped.rooms.filter((item) => item.room.id === focusGroup.rid)
+    : [];
 
   function itemDirty(item: WorkspaceSwitch): boolean {
     if (isRoundItem(item)) {
@@ -682,7 +644,7 @@ export function BridgeWorkspace({
             !roundRecipesEqual(draft.recipes, base.recipes)),
       );
     }
-    return !recipesEqual(drafts[item.mac] ?? [], saved[item.mac] ?? []);
+    return !simpleChannelsEqual(drafts[item.mac] ?? [], saved[item.mac] ?? []);
   }
 
   function selectBoard(item: WorkspaceSwitch) {
@@ -695,7 +657,7 @@ export function BridgeWorkspace({
       setPageSlot(firstOpenPageSlot(draft.pages, draft.recipes));
     } else {
       setPageSlot(null);
-      setSelectedSlot(firstOpenSlot(item, drafts[item.mac] ?? item.recipes));
+      setSelectedSlot(firstSimpleSlot(item, drafts[item.mac] ?? item.simpleChannels));
     }
     setNotice(null);
     setError(null);
@@ -873,95 +835,22 @@ export function BridgeWorkspace({
             ) : null}
 
             {!round ? (
-              <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
-                {(selected.channels ?? []).length === 0 ? (
-                  <p className="text-sm text-muted">
-                    This board registered without channels. Re-register
-                    from the firmware so BOOT / D0 / D1 / D2 appear.
-                  </p>
-                ) : (
-                  selected.channels.map((channel) => (
-                    <ChannelCard
-                      key={channel.id}
-                      channel={channel}
-                      recipes={recipes}
-                      snapshot={snapshot}
-                      selectedSlot={selectedSlot}
-                      onSelectSlot={toggleSlot}
-                      onClearSlot={clearSlot}
-                      onChangeAction={changeAction}
-                    />
-                  ))
-                )}
-
-                {selected.channels.length > 0 ? (
-                  <div className="flex flex-col gap-2 rounded-lg bg-background/70 px-3 py-2">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-                      Confirmation
-                    </p>
-                    {recipes.length === 0 ? (
-                      <p className="text-sm text-muted">
-                        Nothing assigned yet. Empty slots are no-ops on
-                        the switch. Incomplete (on and off without
-                        double-click) is valid.
-                      </p>
-                    ) : null}
-                    <div className="flex flex-col gap-1 text-sm leading-relaxed">
-                      {selected.channels.map((channel) => (
-                        <p key={channel.id}>
-                          {confirmationForChannel(channel, recipes, snapshot)}
-                        </p>
-                      ))}
-                    </div>
-                    {staleCount > 0 ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-xs text-warn">
-                          {staleCount} assignment
-                          {staleCount === 1 ? " is" : "s are"} missing
-                          from this snapshot. Saving will be rejected
-                          until {staleCount === 1 ? "it is" : "they are"}{" "}
-                          cleared.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={clearStale}
-                          className="text-xs font-medium text-warn hover:underline"
-                        >
-                          Clear stale
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                <div className="sticky bottom-3 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-cream/95 px-3 py-2 backdrop-blur">
-                  <button
-                    type="button"
-                    onClick={save}
-                    disabled={!dirty || pending}
-                    className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50"
-                  >
-                    {pending ? "Saving…" : "Save recipes"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={discard}
-                    disabled={!dirty || pending}
-                    className="rounded-md border border-line px-3 py-1.5 text-sm disabled:opacity-50"
-                  >
-                    Discard
-                  </button>
-                  {!dirty && savedAt === selected.mac ? (
-                    <span className="text-xs text-ok">Saved</span>
-                  ) : null}
-                  {dirty ? (
-                    <span className="text-xs text-filament">Unsaved changes</span>
-                  ) : null}
-                  {!dirty && savedAt !== selected.mac ? (
-                    <span className="text-xs text-muted">Empty slots stay empty.</span>
-                  ) : null}
-                </div>
-              </div>
+              <SimpleChannelsEditor
+                channels={selected.channels}
+                configs={simpleConfigs}
+                snapshot={snapshot}
+                firmware={simpleFirmwareOk}
+                selectedSlot={selectedSlot}
+                pending={pending}
+                dirty={dirty}
+                savedFlash={savedAt === selected.mac}
+                staleCount={staleCount}
+                onSelectSlot={selectSimpleSlot}
+                onChange={(next) => setSimpleFor(selected.mac, next)}
+                onSave={save}
+                onDiscard={discard}
+                onClearStale={clearStale}
+              />
             ) : null}
           </section>
         ) : (
@@ -979,7 +868,12 @@ export function BridgeWorkspace({
             <p className="text-sm text-muted">
               {round
                 ? roundAssignHint(pageSlot, pageGroupName)
-                : assignHint(selectedSlot, selectedChannel)}
+                : simpleAssignHint(
+                    selectedSlot,
+                    selectedChannel?.label ?? null,
+                    selectedConfig,
+                    simpleGroupName,
+                  )}
             </p>
             {notice ? (
               <p className="text-sm text-filament" role="status">
@@ -1010,9 +904,16 @@ export function BridgeWorkspace({
                   Pick another group, or wait for a new topology upload.
                 </p>
               ) : null}
-              {!round && grouped.rooms.length === 0 ? (
+              {!round && !simpleGroup ? (
                 <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
-                  Snapshot has no rooms. Lights and scenes are listed below.
+                  Pick a room or zone for a channel. Topology then shows only
+                  that group&apos;s lights and scenes.
+                </p>
+              ) : null}
+              {!round && simpleGroup && visibleRooms.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
+                  This channel&apos;s room or zone is missing from the snapshot.
+                  Pick another group, or wait for a new topology upload.
                 </p>
               ) : null}
 
@@ -1041,17 +942,17 @@ export function BridgeWorkspace({
                           })
                         }
                       />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          assignRoomOnOff(room.grouped_light_id as string, room.name)
-                        }
-                        className="rounded-md border border-filament/40 bg-filament-soft px-3 py-1.5 text-sm font-medium"
-                      >
-                        {round
-                          ? "Use this room for tap and double-tap"
-                          : "Use this room for on and off"}
-                      </button>
+                      {round ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            assignRoomTapAndOff(room.grouped_light_id as string, room.name)
+                          }
+                          className="rounded-md border border-filament/40 bg-filament-soft px-3 py-1.5 text-sm font-medium"
+                        >
+                          Use this room for tap and double-tap
+                        </button>
+                      ) : null}
                     </div>
                   ) : (
                     <p className="text-xs text-muted">
@@ -1093,163 +994,15 @@ export function BridgeWorkspace({
                     </TargetGroup>
                   ) : (
                     <p className="text-xs text-muted">
-                      No scenes for this room. Double-click can stay empty.
+                      No scenes for this room. The scene list can stay empty.
                     </p>
                   )}
                 </article>
               ))}
 
-              {!round && grouped.ungroupedLights.length > 0 ? (
-                <article className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
-                  <h3 className="text-base font-medium">Ungrouped lights</h3>
-                  <TargetGroup title="Lights">
-                    {grouped.ungroupedLights.map((light) => (
-                      <TargetButton
-                        key={light.id}
-                        label={light.name}
-                        active={isTargetActive(light.id)}
-                        onClick={() =>
-                          assignTarget({ rtype: "light", rid: light.id })
-                        }
-                      />
-                    ))}
-                  </TargetGroup>
-                </article>
-              ) : null}
-
-              {!round && grouped.ungroupedScenes.length > 0 ? (
-                <article className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
-                  <h3 className="text-base font-medium">Other scenes</h3>
-                  <TargetGroup title="Scenes">
-                    {grouped.ungroupedScenes.map((scene) => (
-                      <TargetButton
-                        key={scene.id}
-                        label={scene.name}
-                        detail="scene"
-                        active={isTargetActive(scene.id)}
-                        onClick={() =>
-                          assignTarget({ rtype: "scene", rid: scene.id })
-                        }
-                      />
-                    ))}
-                  </TargetGroup>
-                </article>
-              ) : null}
             </div>
           )}
         </section>
-      </div>
-    </div>
-  );
-}
-
-function ChannelCard({
-  channel,
-  recipes,
-  snapshot,
-  selectedSlot,
-  onSelectSlot,
-  onClearSlot,
-  onChangeAction,
-}: {
-  channel: Channel;
-  recipes: Recipe[];
-  snapshot: TopologySnapshot;
-  selectedSlot: SlotRef | null;
-  onSelectSlot: (slot: SlotRef) => void;
-  onClearSlot: (slot: SlotRef) => void;
-  onChangeAction: (slot: SlotRef, action: HueAction) => void;
-}) {
-  const events = eventsForKind(channel.kind);
-  return (
-    <div
-      className={`flex flex-col gap-2 border-l-2 pl-3 ${
-        channel.kind === "maintained"
-          ? "border-filament/70"
-          : "border-line"
-      }`}
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-medium">
-          {channel.label}
-          <span className="ml-2 text-xs font-normal text-muted">
-            {kindLabel(channel.kind)} · GPIO {channel.gpio}
-          </span>
-        </p>
-        {channel.kind === "momentary" ? (
-          <p className="text-xs text-muted">
-            Long press re-pairs Hue. It is not a recipe.
-          </p>
-        ) : null}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        {events.map((event) => {
-          const slot = { channelId: channel.id, event };
-          const recipe = findRecipe(recipes, slot);
-          const selected =
-            selectedSlot?.channelId === channel.id &&
-            selectedSlot.event === event;
-          const stale = recipe ? isTargetStale(snapshot, recipe.target) : false;
-          const targetName = recipe
-            ? nameForTarget(snapshot, recipe.target)
-            : null;
-          return (
-            <div
-              key={event}
-              className={`flex items-stretch gap-2 rounded-lg border px-2.5 py-2 ${
-                selected
-                  ? "border-filament bg-filament-soft"
-                  : stale
-                    ? "border-warn/40 bg-warn-soft"
-                    : recipe
-                      ? "border-line bg-background/40"
-                      : "border-dashed border-line"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => onSelectSlot(slot)}
-                className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left"
-              >
-                <span className="text-xs font-medium uppercase tracking-[0.1em] text-muted">
-                  {eventLabel(event)}
-                </span>
-                {recipe ? (
-                  <span className="text-sm">
-                    {actionClause(
-                      recipe.action,
-                      targetName ?? "unknown target",
-                    )}
-                    {stale ? " — missing from snapshot" : ""}
-                  </span>
-                ) : (
-                  <span className="text-sm text-muted">
-                    Unassigned — this event does nothing
-                  </span>
-                )}
-              </button>
-              {recipe ? (
-                <div className="flex shrink-0 items-center gap-1">
-                  {actionsForTarget(recipe.target.rtype).length > 1 ? (
-                    <ActionSelect
-                      id={`action-${channel.id}-${event}`}
-                      value={recipe.action}
-                      actions={actionsForTarget(recipe.target.rtype)}
-                      onChange={(action) => onChangeAction(slot, action)}
-                    />
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => onClearSlot(slot)}
-                    className="rounded-md px-2 py-1 text-xs text-muted hover:text-danger"
-                  >
-                    Clear
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -1298,74 +1051,6 @@ function TargetButton({
         <span className="ml-2 text-xs text-muted">{detail}</span>
       ) : null}
     </button>
-  );
-}
-
-function ActionSelect({
-  id,
-  value,
-  actions,
-  onChange,
-}: {
-  id: string;
-  value: HueAction;
-  actions: HueAction[];
-  onChange: (action: HueAction) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointer(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest(`[data-action-select="${id}"]`)) return;
-      setOpen(false);
-    }
-    document.addEventListener("mousedown", onPointer);
-    return () => document.removeEventListener("mousedown", onPointer);
-  }, [open, id]);
-
-  return (
-    <div className="relative" data-action-select={id}>
-      <label className="sr-only" htmlFor={id}>
-        Hue action
-      </label>
-      <button
-        id={id}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        className="rounded-md border border-line bg-cream px-1.5 py-1 text-xs text-foreground"
-      >
-        {actionLabel(value)}
-      </button>
-      {open ? (
-        <ul
-          className="absolute right-0 z-10 mt-1 min-w-24 overflow-hidden rounded-md border border-line bg-cream py-1 shadow-lg"
-          role="listbox"
-        >
-          {actions.map((action) => (
-            <li key={action}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={action === value}
-                className={`w-full px-2.5 py-1.5 text-left text-xs text-foreground ${
-                  action === value ? "bg-filament-soft" : "hover:bg-background"
-                }`}
-                onClick={() => {
-                  onChange(action);
-                  setOpen(false);
-                }}
-              >
-                {actionLabel(action)}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
   );
 }
 

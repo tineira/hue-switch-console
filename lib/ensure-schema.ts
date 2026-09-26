@@ -1,4 +1,4 @@
-import { migrateLegacyRoundSwitches } from "@/lib/db";
+import { dropLegacySimpleRecipes, migrateLegacyRoundSwitches } from "@/lib/db";
 import { sql } from "@/lib/sql";
 
 const STATEMENTS = [
@@ -104,6 +104,19 @@ const STATEMENTS = [
   on recipes (switch_id, page_id, event)
   where page_id is not null`,
   `create index if not exists recipes_switch_id_idx on recipes (switch_id)`,
+  `create table if not exists simple_channels (
+  switch_id uuid not null references switches (id) on delete cascade,
+  channel_id text not null,
+  kind text not null check (kind in ('maintained', 'momentary')),
+  group_rtype text not null check (group_rtype in ('room', 'zone')),
+  group_rid text not null,
+  grouped_light_rid text not null,
+  target_rtype text not null check (target_rtype in ('light', 'grouped_light')),
+  target_rid text not null,
+  scenes jsonb not null default '[]'::jsonb,
+  hold jsonb,
+  primary key (switch_id, channel_id)
+)`,
   `create table if not exists firmware_releases (
   id uuid primary key default gen_random_uuid(),
   product text not null check (product in ('round', 'simple')),
@@ -135,6 +148,7 @@ async function applySchema() {
     await db.query(statement);
   }
   await migrateLegacyRoundSwitches();
+  await dropLegacySimpleRecipes();
 }
 
 export async function ensureSchema() {

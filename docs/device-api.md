@@ -56,8 +56,8 @@ Register this switch (if `mac` is present) and replace the topology snapshot
 for `bridgeid`. Last snapshot for that `bridgeid` wins. Several XIAOs paired
 to the same bridge share one tree.
 
-If the switch was already registered and `bridgeid` changes, stored recipes
-and pages for that MAC are deleted and `rev` is **incremented** (never reset to
+If the switch was already registered and `bridgeid` changes, stored recipes,
+pages and Simple channel settings for that MAC are deleted and `rev` is **incremented** (never reset to
 `0` as an “empty” signal). Firmware writes NVS only when remote `rev` is
 greater than local.
 
@@ -73,15 +73,15 @@ Content-Type: application/json
 ```json
 {
   "mac": "aabbccddeeff",
-  "firmware": "0.1.0",
+  "firmware": "0.3.0",
   "bridgeid": "C42996FFFECA6703",
   "bridge_ip": "192.168.100.12",
   "source": "xiao",
   "channels": [
-    { "id": "boot", "gpio": 9, "label": "BOOT", "kind": "momentary" },
-    { "id": "d0", "gpio": 0, "label": "D0", "kind": "maintained" },
-    { "id": "d1", "gpio": 1, "label": "D1", "kind": "maintained" },
-    { "id": "d2", "gpio": 2, "label": "D2", "kind": "maintained" }
+    { "id": "boot", "gpio": 9, "label": "BOOT" },
+    { "id": "d0", "gpio": 0, "label": "D0" },
+    { "id": "d1", "gpio": 1, "label": "D1" },
+    { "id": "d2", "gpio": 2, "label": "D2" }
   ],
   "lights": [
     { "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "name": "Velador", "on": true, "caps": ["dim", "ct"] }
@@ -112,7 +112,7 @@ Content-Type: application/json
 | `lights` | yes | **Required array** (omit or non-array → 400). May be empty `[]` if the Bridge really has no lights. Each item needs `id`, `name`. `on`, `caps[]` optional |
 | `rooms` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
 | `scenes` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
-| `channels` | yes when registering a GPIO board | `{ id, gpio, label, kind }`. `kind` is `maintained` or `momentary`. Empty array allowed. Round Display may send `[]` |
+| `channels` | yes when registering a GPIO board | `{ id, gpio, label }`: the pins the board has. Empty array allowed. Round Display may send `[]`. Simple firmware < 0.3.0 also sends `kind` (`maintained` \| `momentary`); it is accepted and ignored, because the user picks each channel's type in the console |
 | `product` | current firmware: yes | `"round"` or `"simple"`. Current boards **send** it. If omitted (old boards), inferred from empty/`c1` channels (round) vs GPIO (simple). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string |
@@ -153,8 +153,8 @@ for old boards.
 ## `GET /api/device/config?mac={mac}`
 
 Poll recipes. Does **not** return topology. Compare `rev` to NVS: if remote
-`rev` is greater, **replace** the whole local recipe array. If local `rev` ≥
-remote, do not write NVS.
+`rev` is greater, **replace** the whole local set (channels, pages, recipes).
+If local `rev` ≥ remote, do not write NVS.
 
 ### Request
 
@@ -168,9 +168,32 @@ Authorization: Bearer hsw_…
 
 ### Response `200`
 
+Simple switch (firmware ≥ 0.3.0):
+
 ```json
 {
   "rev": 12,
+  "product": "simple",
+  "channels": [
+    {
+      "id": "d0",
+      "kind": "maintained",
+      "group": {
+        "rtype": "room",
+        "rid": "11111111-2222-3333-4444-555555555555",
+        "groupedLightRid": "66666666-7777-8888-9999-000000000000"
+      }
+    },
+    {
+      "id": "boot",
+      "kind": "momentary",
+      "group": {
+        "rtype": "room",
+        "rid": "11111111-2222-3333-4444-555555555555",
+        "groupedLightRid": "66666666-7777-8888-9999-000000000000"
+      }
+    }
+  ],
   "recipes": [
     {
       "channelId": "d0",
@@ -188,13 +211,37 @@ Authorization: Bearer hsw_…
       "channelId": "d0",
       "event": "double_click",
       "action": "recall_scene",
-      "target": { "rtype": "scene", "rid": "99999999-aaaa-bbbb-cccc-dddddddddddd" }
+      "targets": [
+        { "rtype": "scene", "rid": "99999999-aaaa-bbbb-cccc-dddddddddddd", "name": "Relax" }
+      ]
+    },
+    {
+      "channelId": "boot",
+      "event": "short",
+      "action": "toggle",
+      "target": { "rtype": "light", "rid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" }
     }
   ]
 }
 ```
 
-Empty assignment: `{ "rev": 0, "recipes": [] }`.
+- `channels[]` lists only the channels the user configured. A pin that is not
+  listed does nothing. `kind` is `maintained` (toggle switch) or `momentary`
+  (push button); the user picks it, not the firmware.
+- The console **derives** the recipes from each channel: a toggle switch gets
+  `on` + `off` on its target and, if it has scenes, `double_click` →
+  `recall_scene`; a push button gets `short` → `toggle`. BOOT may add `hold`.
+  With no `hold` recipe, BOOT's 3 s long press re-pairs with the Bridge; with
+  one, the button never re-pairs (only USB install does).
+- A scene list is `targets[]` (1–8 scenes, same rules as Round §8.1: cycle from
+  the last scene this channel set, wrap, start at the first when there is none;
+  an `off` on the channel clears the last scene; skip scenes that return 404).
+- Empty assignment: `{ "rev": 7, "product": "simple", "channels": [], "recipes": [] }`.
+
+Simple firmware older than 0.3.0 gets `{ "rev": 12, "recipes": [] }`: it
+cannot run channel settings, so it does nothing until it is reflashed. Its
+old per-slot recipes were deleted when the console moved to channel types
+(`docs/specs/simple-channel-types.md`).
 
 If the board is a Round Display (`product: "round"`), the payload is instead:
 
@@ -241,15 +288,19 @@ If the board is a Round Display (`product: "round"`), the payload is instead:
 `{ "mode": "lights", "rids": ["…"] }` (child lights from tap/double). There is
 no `dimTarget`.
 
-Simple-switch firmware still receives `{ rev, recipes[] }` with `channelId` only.
-
 Unknown MAC for this key’s account: `404`.
 
 | Recipe field | Values |
 | --- | --- |
-| `event` | `on` \| `off` \| `double_click` (maintained) or `short` (momentary) |
+| `event` | Simple: `on` \| `off` \| `double_click` (maintained) or `short` \| `double_click` \| `hold` (momentary). Round: `short` \| `double_click` |
 | `action` | `on` \| `off` \| `recall_scene` \| `toggle` |
-| `target.rtype` | `light` \| `grouped_light` \| `scene` |
+| `target` | `{ rtype: light \| grouped_light, rid }` for `on` / `off` / `toggle` |
+| `targets[]` | 1–8 `{ rtype: scene, rid, name }` for `recall_scene` |
+
+The console sends only the Simple events its UI offers today (`on`, `off`,
+`double_click` on maintained; `short` on momentary; `hold` on BOOT). Firmware
+accepts every combination in the table, so a later console can open the
+reserved slots (push-button double-click and hold) without a flash.
 
 Poll cadence (firmware): no recipes in NVS → about 1 minute; after recipes
 exist → at boot and every 1 hour. GPIO never waits on this GET.
@@ -269,54 +320,61 @@ Used by the console UI. Firmware does not call these.
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
 | `GET` | `/api/switches` | registered boards |
 | `PATCH` | `/api/switches/{mac}` | `{ "label": "Kitchen" }` or `{ "label": null }` — console display name |
-| `GET` | `/api/switches/{mac}/recipes` | GPIO recipes. Round Display: `400 round_switch_uses_pages` |
-| `PUT` | `/api/switches/{mac}/recipes` | replace GPIO recipes; increments `rev`. Round: `400 round_switch_uses_pages` |
+| `GET` | `/api/switches/{mac}/channels` | Simple channel settings (`channelSettings[]`). Round Display: `400 round_switch_uses_pages` |
+| `PUT` | `/api/switches/{mac}/channels` | replace Simple channel settings; increments `rev`. Round: `400 round_switch_uses_pages` |
 | `GET` | `/api/switches/{mac}/pages` | round pages + recipes |
 | `PUT` | `/api/switches/{mac}/pages` | replace pages, swipe axis, timeout, and page recipes; increments `rev`. Every page must have a group |
 
-### `PUT /api/switches/{mac}/recipes`
+### `PUT /api/switches/{mac}/channels`
 
 ```
-PUT /api/switches/aabbccddeeff/recipes HTTP/1.1
+PUT /api/switches/aabbccddeeff/channels HTTP/1.1
 Cookie: hsw_session=…
 Content-Type: application/json
 ```
 
 ```json
 {
-  "recipes": [
+  "channels": [
     {
-      "channelId": "d0",
-      "event": "on",
-      "action": "on",
-      "target": { "rtype": "grouped_light", "rid": "66666666-7777-8888-9999-000000000000" }
+      "id": "d0",
+      "kind": "maintained",
+      "group": { "rtype": "room", "rid": "11111111-2222-3333-4444-555555555555" },
+      "target": { "rtype": "grouped_light", "rid": "66666666-7777-8888-9999-000000000000" },
+      "scenes": ["99999999-aaaa-bbbb-cccc-dddddddddddd"],
+      "hold": null
     },
     {
-      "channelId": "d0",
-      "event": "off",
-      "action": "off",
-      "target": { "rtype": "grouped_light", "rid": "66666666-7777-8888-9999-000000000000" }
-    },
-    {
-      "channelId": "d0",
-      "event": "double_click",
-      "action": "recall_scene",
-      "target": { "rtype": "scene", "rid": "99999999-aaaa-bbbb-cccc-dddddddddddd" }
+      "id": "boot",
+      "kind": "momentary",
+      "group": { "rtype": "room", "rid": "11111111-2222-3333-4444-555555555555" },
+      "target": { "rtype": "light", "rid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+      "scenes": [],
+      "hold": null
     }
   ]
 }
 ```
 
-Omitted slots stay empty (no-op on the switch). Validation: `channelId` must
-exist on the switch; event must match `kind`; `recall_scene` only with
-`rtype: scene` (any event: `on`, `off`, `double_click`, `short`); `on` / `off` /
-`toggle` cannot target a scene; `rid` must exist in the latest snapshot for
-that `bridgeid`.
+A channel left out is not used. `hold` is `null` (BOOT re-pairs with the
+Bridge), `{ "action": "on" | "off" | "toggle", "target": … }`, or
+`{ "action": "recall_scene", "targets": ["<scene rid>", …] }`.
+
+Validation, with the `error` code:
+
+| Rule | `error` |
+| --- | --- |
+| `id` is a channel the switch registered, listed once | `invalid_channel` |
+| `boot` is `momentary`; only `maintained` has `scenes`; only `boot` has `hold` | `channel_kind_not_allowed` |
+| `target` (and a hold target) is the group's `grouped_light` or one of its lights | `target_outside_group` |
+| Every scene (double-click and hold) belongs to the group | `scene_outside_group` |
+| `group` is a room or zone in the snapshot; lists hold 0–8 scenes (hold: 1–8), no duplicates | `validation_error` |
+| Switch firmware is older than 0.3.0 | `409 firmware_update_required` |
 
 Response:
 
 ```json
-{ "ok": true, "mac": "aabbccddeeff", "rev": 13, "recipes": [ ] }
+{ "ok": true, "mac": "aabbccddeeff", "rev": 13, "channels": [ ] }
 ```
 
 ---
@@ -325,3 +383,6 @@ Response:
 
 `POST /api/ingest` and `GET /api/ingest` return `410 gone`. Use
 `POST /api/device/register`.
+
+`GET` and `PUT /api/switches/{mac}/recipes` return `410 gone`. Simple
+switches use `/api/switches/{mac}/channels`; Round uses `/pages`.

@@ -1,17 +1,17 @@
 import type {
   Channel,
-  ChannelEvent,
   ChannelKind,
   HueAction,
   Light,
   PageGroup,
   PageSwipeAxis,
-  Recipe,
   RecipeTarget,
   Room,
   RoundRecipe,
   Scene,
   SceneListItem,
+  SimpleChannelConfig,
+  SimpleHold,
   SwitchPage,
   SwitchProduct,
   TargetRtype,
@@ -26,7 +26,6 @@ import {
 import { isRoundThemeId, normalizeRoundTheme } from "@/lib/round-themes";
 
 const KINDS: ChannelKind[] = ["maintained", "momentary"];
-const EVENTS: ChannelEvent[] = ["on", "off", "double_click", "short"];
 const ACTIONS: HueAction[] = ["on", "off", "recall_scene", "toggle"];
 const RTYPES: TargetRtype[] = ["light", "grouped_light", "scene"];
 
@@ -36,10 +35,6 @@ export function asString(value: unknown): string | undefined {
 
 function isKind(value: unknown): value is ChannelKind {
   return typeof value === "string" && (KINDS as string[]).includes(value);
-}
-
-function isEvent(value: unknown): value is ChannelEvent {
-  return typeof value === "string" && (EVENTS as string[]).includes(value);
 }
 
 function isAction(value: unknown): value is HueAction {
@@ -128,11 +123,13 @@ export function parseChannels(raw: unknown): Channel[] | null {
     const row = item as Record<string, unknown>;
     const id = asString(row.id);
     const label = asString(row.label) ?? id;
-    if (!id || !isKind(row.kind) || !label) return null;
+    if (!id || !label) return null;
+    // Firmware < simple 0.3.0 still declares kind; the user picks it now.
+    if (row.kind !== undefined && !isKind(row.kind)) return null;
     if (typeof row.gpio !== "number" || !Number.isInteger(row.gpio) || row.gpio < 0) {
       return null;
     }
-    channels.push({ id, gpio: row.gpio, label, kind: row.kind });
+    channels.push({ id, gpio: row.gpio, label });
   }
   return channels;
 }
@@ -141,36 +138,6 @@ export function parseMac(raw: unknown): string | null | undefined {
   if (raw === undefined || raw === null || raw === "") return undefined;
   if (typeof raw !== "string") return null;
   return normalizeMac(raw);
-}
-
-export function parseRecipes(raw: unknown): Recipe[] | null {
-  if (!Array.isArray(raw)) return null;
-  const recipes: Recipe[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") return null;
-    const row = item as Record<string, unknown>;
-    const channelId = asString(row.channelId);
-    const targetRaw = row.target;
-    if (
-      !channelId ||
-      !isEvent(row.event) ||
-      !isAction(row.action) ||
-      !targetRaw ||
-      typeof targetRaw !== "object"
-    ) {
-      return null;
-    }
-    const target = targetRaw as Record<string, unknown>;
-    const rid = asString(target.rid);
-    if (!rid || !isRtype(target.rtype)) return null;
-    recipes.push({
-      channelId,
-      event: row.event,
-      action: row.action,
-      target: { rtype: target.rtype, rid },
-    });
-  }
-  return recipes;
 }
 
 export function parseProduct(raw: unknown): SwitchProduct | undefined {
@@ -299,4 +266,72 @@ export function parseRoundPages(raw: unknown): SwitchPage[] | null {
     });
   }
   return pages;
+}
+
+function parseSceneRids(raw: unknown): SceneListItem[] | null {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) return null;
+  const items: SceneListItem[] = [];
+  for (const item of raw) {
+    const rid =
+      typeof item === "string"
+        ? asString(item)
+        : item && typeof item === "object"
+          ? asString((item as Record<string, unknown>).rid)
+          : undefined;
+    if (!rid) return null;
+    items.push({ rtype: "scene", rid, name: "" });
+  }
+  return items;
+}
+
+function parseSimpleHold(raw: unknown): SimpleHold | null | undefined {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== "object") return undefined;
+  const row = raw as Record<string, unknown>;
+  if (row.action === "recall_scene") {
+    // An empty list parses; validation explains why it cannot be saved.
+    const targets = parseSceneRids(row.targets);
+    if (!targets) return undefined;
+    return { action: "recall_scene", targets };
+  }
+  if (row.action !== "on" && row.action !== "off" && row.action !== "toggle") {
+    return undefined;
+  }
+  const target = parseRecipeTarget(row.target);
+  if (!target) return undefined;
+  return { action: row.action, target };
+}
+
+/**
+ * `PUT /api/switches/{mac}/channels` body. `group.groupedLightRid` is left empty;
+ * the route resolves it from the snapshot.
+ */
+export function parseSimpleChannels(raw: unknown): SimpleChannelConfig[] | null {
+  if (!Array.isArray(raw)) return null;
+  const configs: SimpleChannelConfig[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return null;
+    const row = item as Record<string, unknown>;
+    const id = asString(row.id);
+    if (!id || !isKind(row.kind)) return null;
+    const groupRaw = row.group as Record<string, unknown> | undefined;
+    const groupRid = groupRaw ? asString(groupRaw.rid) : undefined;
+    if (!groupRaw || !groupRid || (groupRaw.rtype !== "room" && groupRaw.rtype !== "zone")) {
+      return null;
+    }
+    const target = parseRecipeTarget(row.target);
+    const scenes = parseSceneRids(row.scenes);
+    const hold = parseSimpleHold(row.hold);
+    if (!target || !scenes || hold === undefined) return null;
+    configs.push({
+      id,
+      kind: row.kind,
+      group: { rtype: groupRaw.rtype, rid: groupRid, groupedLightRid: "" },
+      target,
+      scenes,
+      hold,
+    });
+  }
+  return configs;
 }

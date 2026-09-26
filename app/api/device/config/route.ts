@@ -4,8 +4,8 @@ import {
   incrementSwitchRev,
   isRoundSwitch,
   listPages,
-  listRecipes,
   listRoundRecipes,
+  listSimpleChannels,
   persistPageGroupAndDim,
   touchSwitch,
 } from "@/lib/db";
@@ -22,6 +22,13 @@ import {
   withSceneNames,
 } from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
+import {
+  deriveSimpleRecipes,
+  deviceSimpleChannel,
+  deviceSimpleRecipe,
+  supportsChannelTypes,
+  withSnapshotNames,
+} from "@/lib/simple-channels";
 import { normalizeMac } from "@/lib/tokens";
 
 export const dynamic = "force-dynamic";
@@ -85,8 +92,23 @@ export async function GET(req: Request) {
       });
     }
 
-    const recipes = await listRecipes(sw.id);
-    return jsonOk({ rev: sw.rev, recipes });
+    // Firmware < 0.3.0 cannot run channel settings: it gets nothing to do
+    // until it is reflashed (docs/specs/simple-channel-types.md §3).
+    if (!supportsChannelTypes(sw.firmware)) {
+      return jsonOk({ rev: sw.rev, recipes: [] });
+    }
+    const registered = new Set(sw.channels.map((channel) => channel.id));
+    const bridge = await getBridge(device.userId, sw.bridgeid);
+    const channels = withSnapshotNames(
+      (await listSimpleChannels(sw.id)).filter((config) => registered.has(config.id)),
+      snapshotFromJson(bridge?.snapshot),
+    );
+    return jsonOk({
+      rev: sw.rev,
+      product: "simple",
+      channels: channels.map(deviceSimpleChannel),
+      recipes: deriveSimpleRecipes(channels).map(deviceSimpleRecipe),
+    });
   } catch (err) {
     const details = err instanceof Error ? err.message : "unknown";
     return jsonError(500, "database_error", { details });

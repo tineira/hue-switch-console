@@ -20,24 +20,24 @@ HTTP wire format: `docs/device-api.md`. Round pages: `docs/round-pages.md` (that
 
 **Switch / XIAO.** Seeed XIAO Wi‑Fi board. It is not a Zigbee accessory and does not impersonate a Hue switch.
 
-- **Simple:** several GPIO **channels**. The firmware declares `{ id, gpio, label, kind }`; the console assigns recipes to that `id`, it does not pick the pin.
+- **Simple:** several GPIO **channels**. The firmware declares `{ id, gpio, label }`; the user configures each `id` in the console (room or zone, type, target, scenes). The console does not pick the pin.
 - **Round:** no recipe GPIO. The console defines **pages**; the poll returns `pages[]` + recipes with `pageId`. See `docs/round-pages.md`.
 
 The **display name** is edited by the user in the console (`switches.label`); it is not sent to the device. If empty, the UI shows the MAC.
 
-**Channel (Simple only).** One GPIO input. `kind`:
+**Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/specs/simple-channel-types.md`); both use the same wiring:
 
-- `maintained` — classic wall switch: the circuit stays **closed** or **open** (two stable states).
-- `momentary` — push button (e.g. BOOT): press and release.
+- `maintained` — UI *Toggle switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states).
+- `momentary` — UI *Push button*: press and release.
 
-v1 channels (declared by the firmware; closed = GPIO to GND, `INPUT_PULLUP`):
+Channels (declared by the firmware; closed = GPIO to GND, `INPUT_PULLUP`):
 
-| id | GPIO | kind | label |
+| id | GPIO | label | kind |
 | --- | --- | --- | --- |
-| `boot` | 9 | `momentary` | BOOT |
-| `d0` | 0 | `maintained` | D0 |
-| `d1` | 1 | `maintained` | D1 |
-| `d2` | 2 | `maintained` | D2 |
+| `boot` | 9 | BOOT | always `momentary` |
+| `d0` | 0 | D0 | user's choice |
+| `d1` | 1 | D1 | user's choice |
+| `d2` | 2 | D2 | user's choice |
 
 Do not use GPIO 3/14 (RF), 15 (LED), or USB.
 
@@ -105,7 +105,7 @@ v1 events:
 
 Not needed in v1: triple click, long-off, double_off. Noise and long wires eat the double-click if the window is too short; it is calibrated in firmware.
 
-**`momentary` channel** (BOOT): different events — `short`, `long`. `long` on BOOT is reserved for Hue re-pair; it is not a recipe. A push button does **not** generate stable `on`/`off`.
+**`momentary` channel** (push button): `short` (click), `double_click` (two clicks within the window), `hold` (held past ~800 ms; fires once while still pressed). A push button does **not** generate stable `on`/`off`. The console only offers `short` today, plus `hold` on BOOT; the firmware already emits the others. BOOT's 3 s long press re-pairs with the Bridge unless BOOT has a `hold` recipe.
 
 **Round:** does not use this GPIO state machine. Recipe events per page: `short` (tap) and `double_click` (double tap). There is **no** `double_click` → `on` fallback on the circle (empty slot = no-op). Details: `docs/round-pages.md`.
 
@@ -115,30 +115,30 @@ One Bridge at a time. Two columns.
 
 **Left — switches.** XIAOs of *this* `bridgeid`.
 
-- **Simple:** channels (`kind` + label). Each `maintained` channel gets **up to three** recipes: `on`, `off`, `double_click`. Empty = does nothing.
+- **Simple:** channels. Each one gets a room or zone, a type (toggle switch or push button), a target, and for a toggle switch a double-click scene list. A channel without a room does nothing.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.
 
 The XIAO is not drawn inside the Hue tree.
 
-**Right — Bridge topology.** By **room** (on Round, filtered to the page's group):
+**Right — Bridge topology.** Filtered to the selected page's or channel's room or zone:
 
 1. The whole room (`grouped_light`)
 2. The lights
 3. That room's scenes
 
-**Simple recipe**
+**Simple channel settings → recipes**
 
 ```text
-switch + channelId + event (on | off | double_click | short)
-  → Hue action: on | off | recall_scene | toggle
-  → target: { rtype, rid }   // light | grouped_light | scene
+switch + channelId → group (room | zone), kind, target (light | grouped_light), scenes[], hold (BOOT)
+  maintained: on → on target · off → off target · double_click → recall_scene scenes[] (if any)
+  momentary:  short → toggle target · hold → BOOT's hold action (if any)
 ```
 
-`toggle` (GET + invert) is a Hue action, not a GPIO event. On a `maintained` channel the natural mapping is `on`→`on`, `off`→`off`, not toggle.
+The user edits channel settings; the console derives the recipes the switch runs. `toggle` (GET + invert) is a Hue action, not a GPIO event.
 
 There is no loose multi-select of lights. There is no single recipe "for the switch".
 
-On save, `rev` goes up. NVS stores the array. On register, the Simple firmware sends `{ id, gpio, label, kind }[]` and `"product": "simple"`. Round sends `"product": "round"` and `channels: []`.
+On save, `rev` goes up. NVS stores the set. On register, the Simple firmware sends `{ id, gpio, label }[]` and `"product": "simple"`. Round sends `"product": "round"` and `channels: []`.
 
 ## Assign in the app, execute on the switch
 
@@ -152,34 +152,30 @@ The app **writes** recipes / pages. The switch **executes** them on the LAN. The
 - Round: `product: "round"`, `channels: []`.
 - Snapshot: `lights[]`, `rooms[]`, `scenes[]` (required; a truly empty `[]` is legal).
 
-The UI does not invent pins. If a channel is not sent, it cannot be assigned. `kind` decides which **events** can be mapped (`on`/`off`/`double_click` vs `short`).
+The UI does not invent pins. If a channel is not sent, it cannot be assigned. The type the user picks decides which **events** the channel has (`on`/`off`/`double_click` vs `short`/`double_click`/`hold`).
 
 Wipe round→simple **only** if the body carries an explicit `"product": "simple"`. Inferring from channels does not delete pages.
 
 ### How the user assigns (console, Simple)
 
 1. Pick a **switch** (left).
-2. See its **channels**. A `maintained` channel shows **three slots** (On / Off / Double-click):
-   - On (`on`)
-   - Off (`off`)
-   - Double-click (`double_click`) — optional
-3. Pick a slot and a **target** in the topology (right). Target = `{ rtype, rid }` of **this** Bridge.
-4. The app fills in the **Hue action** with the slot's default (can be changed):
+2. For each **channel**, pick a **room or zone**. "Not used" = the channel does nothing.
+3. Pick a **type**: Toggle switch or Push button. BOOT is always a push button.
+4. Pick the **target** in the topology (right, filtered to that group): the whole group (`grouped_light`) or one light. It defaults to the whole group.
+5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button on BOOT: pick **hold** — Re-pair with Bridge (default), Toggle, Turn on, Turn off, or Cycle scenes.
 
-| Slot (event) | Default Hue action | Fitting targets |
+| Type | Gesture | What it does |
 | --- | --- | --- |
-| `on` | `on` | `light`, `grouped_light`, or `scene` (`recall_scene`) |
-| `off` | `off` | the **same** target as `on`, or `scene`, or empty |
-| `double_click` | `recall_scene` | `scene` (or another light/group if wanted) |
-| `short` (momentary) | `toggle` | light, grouped_light, or `scene` (`recall_scene`) |
+| Toggle switch | lever closes / opens | `on` / `off` the target (automatic) |
+| Toggle switch | double-click | next scene in the list; empty list → `on` |
+| Push button | click | `toggle` the target (automatic) |
+| Push button | double-click, hold | reserved (BOOT: hold is configurable) |
 
-UI shortcut: "Use this room for on and off" fills `on` and `off` together with the same `grouped_light`. Double-click stays empty until a scene is chosen.
+If the target is one light, a scene still applies to the whole group; the console warns.
 
-An empty slot = the switch **does nothing** on that event. Saving incomplete is valid (`on`+`off` without double-click).
+Confirmation sentence (not just UUIDs): *"D0 · Living · toggle switch: on/off all of Living · double-click cycles Relax, Bright"*.
 
-Confirmation sentence (not just UUIDs): *"D0 on → turn on Living · off → turn off Living · double-click → scene Relax"*.
-
-Validate on save: `rid` exists in that `bridgeid`'s snapshot; `recall_scene` only with `rtype: scene`; `on` / `off` / `toggle` do not target a scene (the `on`/`off`/`short` slot can still have the `recall_scene` action).
+Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only toggle switches have scenes; only BOOT has a hold. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
 
 `rev` increments. That is what the poll compares.
 
@@ -194,12 +190,17 @@ Round: Save (PUT pages) **requires a group** on every page. The device register 
 ```text
 {
   rev: 12,
+  product: "simple",
+  channels: [ { id: "d0", kind: "maintained", group: { rtype, rid, groupedLightRid } }, … ],
   recipes: [
     { channelId: "d0", event: "on", action: "on", target: { rtype: "grouped_light", rid: "…" } },
+    { channelId: "d0", event: "double_click", action: "recall_scene", targets: [ { rtype: "scene", rid, name }, … ] },
     …
   ]
 }
 ```
+
+Firmware < 0.3.0 gets `{ rev, recipes: [] }`.
 
 **Round** (`product: "round"`): `rev`, `product`, `pageSwipeAxis`, `screenTimeoutSec`, `pages[]` (with `group` + `dim`), `recipes[]` with `pageId`. See `docs/round-pages.md` §11.2 and `docs/device-api.md`.
 
@@ -207,7 +208,7 @@ If local `rev` ≥ remote `rev`, the firmware does **not** write NVS. If remote 
 
 ### What the firmware must do (Simple)
 
-For each `maintained` channel (contact to GND = closed, pull-up, ~50 ms debounce):
+Channels come from `channels[]` in the config; a pin not listed is ignored. For each `maintained` channel (contact to GND = closed, pull-up, ~50 ms debounce):
 
 1. Read the GPIO. Stable closed/open state.
 2. **Double-click** state machine (important: do not fire `off` then `on` if it was a double):
@@ -222,12 +223,12 @@ For each `maintained` channel (contact to GND = closed, pull-up, ~50 ms debounce
 | --- | --- |
 | `on` | `PUT …/{rtype}/{rid}` `{ "on": { "on": true } }` |
 | `off` | same with `false` |
-| `recall_scene` | `PUT …/scene/{rid}` `{ "recall": { "action": "active" } }` |
+| `recall_scene` | `PUT …/scene/{rid}` `{ "recall": { "action": "active" } }`, next `rid` of `targets[]` (Round §8.1; an `off` on the channel restarts the cycle) |
 | `toggle` | GET `on` + inverse PUT (mostly `momentary` / `short`) |
 
 5. The contact path does **not** use the console URL. If the PUT fails, log and move on; do not block other channels.
 
-`momentary` channel (BOOT): `short` → recipe if one exists; `long` 3 s → re-pair, not a recipe.
+`momentary` channel: `short` on release, **immediately** when the channel has no `double_click` recipe (otherwise after the window); `double_click` on the second press; `hold` once at ~800 ms while pressed. BOOT with no `hold` recipe: 3 s long press → re-pair. BOOT with a `hold` recipe: never re-pairs from the button (USB install only).
 
 At boot: load recipes from NVS **before** handling GPIO. The first read of each GPIO **only sets the state**; it does not fire `on`/`off`. Then Wi‑Fi, poll, etc.
 
@@ -303,11 +304,11 @@ Production host: `https://hue.tineira.com`. In Cloudflare, CNAME `hue` to the ta
 - HTTPS to `hue.tineira.com`: **verify** the certificate (Arduino bundle). `setInsecure()` only against the Hue Bridge.
 - Poll: without recipes ~1 min; with recipes at boot and every **1 h**. GPIO / finger never wait.
 - Orphan recipe: kept; the Hue PUT fails; the UI marks it stale.
-- GPIO double-click without a recipe → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. No public signup.
+- Toggle-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. No public signup.
 - Minimal API:
-  - Human (`hsw_session` cookie): login; CRUD API keys; GET topology; PATCH switch label; PUT recipes (Simple) / PUT pages (Round).
-  - Device (Bearer key): `POST /api/device/register`; `GET /api/device/config?mac=` (`{ rev, recipes[] }` Simple; Round adds `pages`, `pageId`, axis, timeout).
-- Tables (Neon): `users`, `device_api_keys`, `bridges` (snapshot JSON), `switches` (`product`, axis, timeout), `pages`, `recipes`. The server filters by `user_id`; there is no Supabase RLS.
+  - Human (`hsw_session` cookie): login; CRUD API keys; GET topology; PATCH switch label; PUT channels (Simple) / PUT pages (Round).
+  - Device (Bearer key): `POST /api/device/register`; `GET /api/device/config?mac=` (Simple: `rev`, `product`, `channels[]`, `recipes[]`; Round: `pages`, `pageId`, axis, timeout).
+- Tables (Neon): `users`, `device_api_keys`, `bridges` (snapshot JSON), `switches` (`product`, axis, timeout), `pages`, `recipes` (Round), `simple_channels`. The server filters by `user_id`; there is no Supabase RLS.
 
 ## Repos
 

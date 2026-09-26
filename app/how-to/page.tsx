@@ -407,12 +407,14 @@ export default async function HowToPage() {
               the name is only used in the console.
             </li>
             <li>
-              <b>Simple switch:</b> each button has slots. BOOT has{" "}
-              <b>Short press</b>; the wired buttons D0, D1, and D2 have{" "}
-              <b>On</b>, <b>Off</b>, and <b>Double-click</b>. Click a slot, then
-              click a room, light, or scene under Lights and scenes.{" "}
-              <b>Use this room for on and off</b> fills both slots at once. The
-              menu on a slot switches between Toggle, Turn on, and Turn off.
+              <b>Simple switch:</b> pick a room or zone for each input, then
+              its type. A <b>Toggle switch</b> (wall lever) turns the lights on
+              and off with the lever; a quick off-on flick cycles the scenes you
+              add under <b>Double-click</b>. A <b>Push button</b> toggles the
+              lights on each click. The whole room is the default target; click
+              a light or scene on the right to change it. BOOT is always a push
+              button, and its <b>Hold</b> re-pairs with the Bridge unless you
+              give it another action.
             </li>
             <li>
               <b>Round switch:</b> click <b>Add page</b> and pick the page&apos;s

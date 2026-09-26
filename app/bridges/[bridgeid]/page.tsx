@@ -6,8 +6,8 @@ import {
   getBridge,
   isRoundSwitch,
   listPages,
-  listRecipes,
   listRoundRecipes,
+  listSimpleChannels,
   listSwitches,
   toSwitchPublic,
 } from "@/lib/db";
@@ -15,6 +15,7 @@ import { ensureSchema } from "@/lib/ensure-schema";
 import { currentVersion } from "@/lib/firmware";
 import { withSceneNames } from "@/lib/pages";
 import { snapshotFromJson } from "@/lib/recipes";
+import { withSnapshotNames } from "@/lib/simple-channels";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +79,9 @@ export default async function BridgePage({
         const round = isRoundSwitch(item);
         return {
           ...toSwitchPublic(item),
-          recipes: round ? [] : await listRecipes(item.id),
+          simpleChannels: round
+            ? []
+            : withSnapshotNames(await listSimpleChannels(item.id), snapshot),
           pages: round ? await listPages(item.id) : [],
           roundRecipes: round
             ? withSceneNames(await listRoundRecipes(item.id), snapshot)

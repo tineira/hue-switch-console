@@ -3,11 +3,12 @@ export type ChannelEvent = "on" | "off" | "double_click" | "short";
 export type HueAction = "on" | "off" | "recall_scene" | "toggle";
 export type TargetRtype = "light" | "grouped_light" | "scene";
 
+/** A pin the Simple firmware registered. `kind` is only sent by firmware < 0.3.0 and is ignored. */
 export type Channel = {
   id: string;
   gpio: number;
   label: string;
-  kind: ChannelKind;
+  kind?: ChannelKind;
 };
 
 export type Light = {
@@ -42,6 +43,34 @@ export type Recipe = {
   event: ChannelEvent;
   action: HueAction;
   target: RecipeTarget;
+};
+
+export type SimpleEvent = "on" | "off" | "double_click" | "short" | "hold";
+
+/** BOOT hold: null = re-pair with the Bridge (no recipe). */
+export type SimpleHold =
+  | { action: "on" | "off" | "toggle"; target: RecipeTarget }
+  | { action: "recall_scene"; targets: SceneListItem[] };
+
+/** What the user configures per Simple channel (docs/specs/simple-channel-types.md). */
+export type SimpleChannelConfig = {
+  id: string;
+  kind: ChannelKind;
+  group: PageGroup;
+  /** `light` or `grouped_light` inside the group. */
+  target: RecipeTarget;
+  /** Double-click scene list (maintained only). */
+  scenes: SceneListItem[];
+  /** BOOT only. */
+  hold: SimpleHold | null;
+};
+
+export type SimpleRecipe = {
+  channelId: string;
+  event: SimpleEvent;
+  action: HueAction;
+  target?: RecipeTarget;
+  targets?: SceneListItem[];
 };
 
 export type SwitchProduct = "simple" | "round";

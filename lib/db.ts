@@ -21,6 +21,8 @@ import type {
   Recipe,
   RoundRecipe,
   SceneListItem,
+  SimpleChannelConfig,
+  SimpleHold,
   SwitchPage,
   SwitchProduct,
   SwitchPublic,
@@ -334,6 +336,7 @@ export async function upsertSwitch(row: {
   if (existing && (bridgeChanged || wipeToSimple)) {
     await sql()`delete from recipes where switch_id = ${existing.id}`;
     await sql()`delete from pages where switch_id = ${existing.id}`;
+    await sql()`delete from simple_channels where switch_id = ${existing.id}`;
   }
   const label = existing?.label ?? row.label ?? null;
   const firmware = row.firmware ?? existing?.firmware ?? null;
@@ -411,41 +414,107 @@ export async function touchSwitch(id: string, apiKeyId: string) {
   `;
 }
 
-export async function listRecipes(switchId: string): Promise<Recipe[]> {
-  const rows = await sql()`
-    select channel_id, event, action, target_rtype, target_rid
-    from recipes
-    where switch_id = ${switchId} and page_id is null
-  `;
-  return rows.map((row) => {
-    const rec = row as Record<string, unknown>;
-    return {
-      channelId: String(rec.channel_id),
-      event: rec.event as Recipe["event"],
-      action: rec.action as Recipe["action"],
-      target: {
-        rtype: rec.target_rtype as Recipe["target"]["rtype"],
-        rid: String(rec.target_rid),
-      },
-    };
-  });
+function asSimpleHold(value: unknown): SimpleHold | null {
+  let raw = value;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  if (row.action === "recall_scene") {
+    const targets = asTargets(row.targets);
+    return targets.length > 0 ? { action: "recall_scene", targets } : null;
+  }
+  const target = row.target as Record<string, unknown> | undefined;
+  if (
+    (row.action === "on" || row.action === "off" || row.action === "toggle") &&
+    target &&
+    (target.rtype === "light" || target.rtype === "grouped_light") &&
+    typeof target.rid === "string"
+  ) {
+    return { action: row.action, target: { rtype: target.rtype, rid: target.rid } };
+  }
+  return null;
 }
 
-export async function replaceRecipes(switchId: string, recipes: Recipe[]) {
-  await sql()`delete from recipes where switch_id = ${switchId} and page_id is null`;
-  for (const rec of recipes) {
+function mapSimpleChannel(row: Record<string, unknown>): SimpleChannelConfig {
+  return {
+    id: String(row.channel_id),
+    kind: row.kind === "momentary" ? "momentary" : "maintained",
+    group: {
+      rtype: row.group_rtype === "zone" ? "zone" : "room",
+      rid: String(row.group_rid),
+      groupedLightRid: String(row.grouped_light_rid),
+    },
+    target: {
+      rtype: row.target_rtype === "light" ? "light" : "grouped_light",
+      rid: String(row.target_rid),
+    },
+    scenes: asTargets(row.scenes),
+    hold: asSimpleHold(row.hold),
+  };
+}
+
+export async function listSimpleChannels(
+  switchId: string,
+): Promise<SimpleChannelConfig[]> {
+  const rows = await sql()`
+    select channel_id, kind, group_rtype, group_rid, grouped_light_rid,
+           target_rtype, target_rid, scenes, hold
+    from simple_channels
+    where switch_id = ${switchId}
+    order by channel_id asc
+  `;
+  return rows.map((row) => mapSimpleChannel(row as Record<string, unknown>));
+}
+
+export async function replaceSimpleChannels(
+  switchId: string,
+  configs: SimpleChannelConfig[],
+) {
+  await sql()`delete from simple_channels where switch_id = ${switchId}`;
+  for (const config of configs) {
     await sql()`
-      insert into recipes (switch_id, channel_id, event, action, target_rtype, target_rid)
+      insert into simple_channels (
+        switch_id, channel_id, kind, group_rtype, group_rid, grouped_light_rid,
+        target_rtype, target_rid, scenes, hold
+      )
       values (
-        ${switchId}, ${rec.channelId}, ${rec.event}, ${rec.action},
-        ${rec.target.rtype}, ${rec.target.rid}
+        ${switchId}, ${config.id}, ${config.kind}, ${config.group.rtype},
+        ${config.group.rid}, ${config.group.groupedLightRid},
+        ${config.target.rtype}, ${config.target.rid},
+        ${JSON.stringify(config.scenes)}::jsonb,
+        ${config.hold ? JSON.stringify(config.hold) : null}::jsonb
       )
     `;
   }
-  const rows = await sql()`
-    update switches set rev = rev + 1 where id = ${switchId} returning rev
+  return incrementSwitchRev(switchId);
+}
+
+/**
+ * Simple recipes from before channel types (on/off/double_click/short per slot)
+ * cannot be expressed as channel settings; the user approved deleting them
+ * (docs/specs/simple-channel-types.md §3). Idempotent: only switches that still
+ * had rows get a rev bump, so their next poll replaces the old set with nothing.
+ */
+export async function dropLegacySimpleRecipes() {
+  await sql()`
+    with gone as (
+      delete from recipes r
+      using switches s
+      where r.switch_id = s.id
+        and s.product = 'simple'
+        and r.page_id is null
+        and r.channel_id is distinct from 'c1'
+      returning r.switch_id
+    )
+    update switches set rev = rev + 1
+    where id in (select distinct switch_id from gone)
   `;
-  return Number((rows[0] as { rev: number }).rev);
 }
 
 function asTargets(value: unknown): SceneListItem[] {

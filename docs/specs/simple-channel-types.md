@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved (2026-09-25)
+**Status:** in progress (console on branch `simple-channel-types`, not deployed)
 
 ## 1. What and why
 
@@ -154,14 +154,14 @@ The user approved an exception to "never ship a console that breaks boards alrea
 
 ### Console (`hue-switch-console`)
 
-- [ ] Schema: per-channel settings (`switch_id`, `channel_id`, `kind`, `group_rtype`, `group_rid`) in their own table, so a register does not overwrite them. `recipes.event` check allows `hold`.
-- [ ] Migration: delete Simple recipes, bump `rev` on every Simple.
-- [ ] `PUT /api/switches/{mac}/recipes` (or a new `/channels` route) takes the §2.5 body, validates it, and derives the recipes.
-- [ ] `GET /api/device/config`: Simple payload per §2.2. `recipes: []` for `firmware < 0.3.0`.
-- [ ] Register: `channels[].kind` optional and ignored.
-- [ ] UI per channel: group → type → target → scene list (maintained) or BOOT hold choice. Show a confirmation sentence, e.g. *"D0 · Living · toggle switch: on/off whole room · double-click cycles Relax, Bright"*. Warn when the target is one light and scenes are set: "Scenes apply to the whole room". Show the read-only state for old firmware.
-- [ ] `docs/device-api.md` and `docs/definitions.md` (channel, events, assign flow, firmware rules) updated in the same commit.
-- [ ] `docs/changelog.md` entry.
+- [x] Schema: per-channel settings in their own table (`simple_channels`: kind, group, target, scenes, hold), so a register does not overwrite them. Simple recipes are derived from it at poll time, so `recipes` keeps Round only and its `event` check needs no `hold`.
+- [x] Migration: delete Simple recipes, bump `rev` on every Simple.
+- [x] `PUT /api/switches/{mac}/channels` takes the §2.5 body and validates it; `/recipes` returns `410 gone`.
+- [x] `GET /api/device/config`: Simple payload per §2.2. `recipes: []` for `firmware < 0.3.0`.
+- [x] Register: `channels[].kind` optional and ignored.
+- [x] UI per channel: group → type → target → scene list (maintained) or BOOT hold choice. Show a confirmation sentence, e.g. *"D0 · Living · toggle switch: on/off whole room · double-click cycles Relax, Bright"*. Warn when the target is one light and scenes are set: "Scenes apply to the whole room". Show the read-only state for old firmware.
+- [x] `docs/device-api.md` and `docs/definitions.md` (channel, events, assign flow, firmware rules) updated in the same commit.
+- [x] `docs/changelog.md` entry.
 - [ ] Deployed; checked on production.
 
 ### Round (`hue-round-switch`)
