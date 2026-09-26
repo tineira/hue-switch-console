@@ -64,6 +64,45 @@ export function checkImage(product: ProductId, name: PartName, data: Uint8Array)
 
 export type UploadPart = { name: PartName; data: Uint8Array };
 
+// Third-party software linked into a firmware image, sent by firmware CI (docs/specs/credits.md §2.4).
+export type CreditEntry = { name: string; version: string; license: string; url: string };
+
+const CREDIT_FIELDS = ["name", "version", "license", "url"] as const;
+const MAX_CREDITS = 50;
+const MAX_CREDIT_FIELD = 200;
+
+// Returns the entries, or why the field is wrong.
+export function parseCredits(raw: string): { credits: CreditEntry[] } | { problem: string } {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return { problem: "credits is not valid JSON" };
+  }
+  if (!Array.isArray(value) || value.length < 1 || value.length > MAX_CREDITS) {
+    return { problem: `credits must be an array of 1 to ${MAX_CREDITS} entries` };
+  }
+  const credits: CreditEntry[] = [];
+  for (const [i, item] of value.entries()) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return { problem: `credits[${i}] is not an object` };
+    }
+    const entry = {} as CreditEntry;
+    for (const field of CREDIT_FIELDS) {
+      const v = (item as Record<string, unknown>)[field];
+      if (typeof v !== "string" || !v.trim() || v.length > MAX_CREDIT_FIELD) {
+        return { problem: `credits[${i}].${field} must be a non-empty string of at most ${MAX_CREDIT_FIELD} characters` };
+      }
+      entry[field] = v.trim();
+    }
+    if (!/^https:\/\/\S+$/.test(entry.url)) {
+      return { problem: `credits[${i}].url must start with https://` };
+    }
+    credits.push(entry);
+  }
+  return { credits };
+}
+
 export type UploadResult =
   | { status: "created" | "unchanged"; version: string }
   | { status: "version_exists"; version: string };
@@ -77,9 +116,12 @@ export async function uploadRelease(input: {
   version: string;
   commit: string | null;
   notes: string;
+  credits: CreditEntry[] | null;
   parts: UploadPart[];
 }): Promise<UploadResult> {
   const { product, version, commit, notes } = input;
+  // Absent credits leave the stored ones as they are.
+  const credits = input.credits ? JSON.stringify(input.credits) : null;
   const parts = input.parts.map((part) => ({
     name: part.name,
     size: part.data.length,
@@ -101,7 +143,9 @@ export async function uploadRelease(input: {
     // The bins of a released version never change (their URLs are cached forever); its notes can.
     const same = parts.every((part) => row.shas[part.name] === part.sha256);
     await db.transaction((tx) => [
-      tx`update firmware_releases set notes = ${notes} where id = ${row.id}`,
+      tx`update firmware_releases
+         set notes = ${notes}, credits = coalesce(${credits}::jsonb, credits)
+         where id = ${row.id}`,
       ...(same
         ? [
             tx`insert into firmware_current (product, release_id) values (${product}, ${row.id})
@@ -114,11 +158,12 @@ export async function uploadRelease(input: {
 
   // A new version, or one imported from the old changelog without bins.
   await db.transaction((tx) => [
-    tx`insert into firmware_releases (product, version, commit_sha, notes)
-       values (${product}, ${version}, ${commit}, ${notes})
+    tx`insert into firmware_releases (product, version, commit_sha, notes, credits)
+       values (${product}, ${version}, ${commit}, ${notes}, ${credits}::jsonb)
        on conflict (product, version)
        do update set commit_sha = coalesce(excluded.commit_sha, firmware_releases.commit_sha),
-                     notes = excluded.notes`,
+                     notes = excluded.notes,
+                     credits = coalesce(excluded.credits, firmware_releases.credits)`,
     ...parts.map(
       (part) => tx`
         insert into firmware_parts (release_id, name, sha256, size, data)
@@ -213,4 +258,17 @@ export async function listReleaseNotes(product: ProductId): Promise<FirmwareNote
     const r = row as FirmwareNotes;
     return { version: String(r.version), date: String(r.date), notes: String(r.notes) };
   });
+}
+
+export type CurrentCredits = { version: string; credits: CreditEntry[] | null };
+
+export async function currentCredits(product: ProductId): Promise<CurrentCredits | null> {
+  const rows = await sql()`
+    select r.version, r.credits from firmware_current c
+    join firmware_releases r on r.id = c.release_id
+    where c.product = ${product}
+  `;
+  const row = rows[0] as { version: string; credits: CreditEntry[] | null } | undefined;
+  if (!row) return null;
+  return { version: String(row.version), credits: Array.isArray(row.credits) ? row.credits : null };
 }

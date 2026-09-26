@@ -146,6 +146,7 @@ const STATEMENTS = [
   product text primary key check (product in ('round', 'simple')),
   release_id uuid not null references firmware_releases (id)
 )`,
+  `alter table firmware_releases add column if not exists credits jsonb`,
 ];
 
 let running: Promise<void> | null = null;

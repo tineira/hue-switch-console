@@ -147,6 +147,8 @@ alter table switches add column if not exists page_swipe_axis text not null defa
 alter table switches add column if not exists page_seq integer not null default 1;
 alter table switches add column if not exists screen_timeout_sec integer not null default 30;
 -- Config sync (docs/specs/finished/config-sync.md).
+-- Firmware credits (docs/specs/credits.md).
+alter table firmware_releases add column if not exists credits jsonb;
 alter table switches add column if not exists applied_rev integer;
 alter table switches add column if not exists served_rev integer;
 alter table switches add column if not exists apply_failed boolean not null default false;

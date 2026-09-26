@@ -12,6 +12,9 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-26
 
+- Every page ends with a footer: who built the console, links to GitHub and X, **Credits** and **Changelog**.
+- New public **Credits** page: thanks to Vercel, Neon, Seeed Studio and Espressif, the open-source software in the console, and what each switch's current firmware is built on. It also carries the Philips Hue trademark notice.
+
 - Each switch shows whether it runs the config you saved: **Up to date**, **Pending** (with when you saved and when the switch checks in next), or a warning when the switch received a config but did not keep it. Needs the next Round and Simple firmware; older firmware shows no status.
 - Saved changes reach the switch faster: within about 30 seconds while the Switches page is open, about 5 minutes otherwise, instead of up to an hour. A switch with nothing set up yet checks in every 30 seconds. Needs the same firmware.
 - If a switch holds a newer config than the console (for example after a restore), the console sends its own config again when it has one, and otherwise offers **Replace the switch's config**.

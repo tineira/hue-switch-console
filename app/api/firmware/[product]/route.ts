@@ -3,7 +3,9 @@ import {
   checkImage,
   isVersion,
   PART_NAMES,
+  parseCredits,
   parseProductId,
+  type CreditEntry,
   uploadRelease,
   uploadTokenMatches,
   type UploadPart,
@@ -34,6 +36,15 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
   const notes = String(form.get("notes") ?? "").replace(/\r\n/g, "\n").trim();
   if (!notes) return jsonError(400, "missing_notes");
 
+  // Optional: older firmware CI does not send it (docs/specs/credits.md §2.4).
+  let credits: CreditEntry[] | null = null;
+  const rawCredits = form.get("credits");
+  if (rawCredits !== null) {
+    const parsed = parseCredits(String(rawCredits));
+    if ("problem" in parsed) return jsonError(400, "invalid_credits", { details: parsed.problem });
+    credits = parsed.credits;
+  }
+
   const parts: UploadPart[] = [];
   for (const name of PART_NAMES) {
     const file = form.get(name);
@@ -48,7 +59,7 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
 
   try {
     await ensureSchema();
-    const result = await uploadRelease({ product, version, commit, notes, parts });
+    const result = await uploadRelease({ product, version, commit, notes, credits, parts });
     if (result.status === "version_exists") {
       return jsonError(409, "version_exists", {
         version,

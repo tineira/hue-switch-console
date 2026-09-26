@@ -91,6 +91,13 @@ non-empty notes, and the chip id inside `bootloader.bin` / `firmware.bin`
 releases per product plus the current one. Release rows and their notes are
 kept for the changelog.
 
+Each upload also sends `credits`: the firmware repo's `THIRD_PARTY.json`, the
+third-party software linked into the image (core, ESP-IDF, every library
+pinned in `sketch.yaml`). Firmware CI fails when that file and `sketch.yaml`
+disagree. The console shows the current release's list on the public
+`/credits` page; the field is optional, and a re-upload of the same version
+replaces it. Spec: [`docs/specs/credits.md`](docs/specs/credits.md).
+
 ### Flash layout
 
 The console serves the four parts at fixed offsets, never taken from an
