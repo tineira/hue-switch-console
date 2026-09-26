@@ -1,8 +1,8 @@
 # How-to guide v2
 
-Console-only spec. Copy to `hue-switch-console/docs/specs/how-to-guide.md`. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
+Console-only spec. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
 
-**Status:** implemented, waiting on the production check. Three open questions remain (§9).
+**Status:** done. Pushed to production; the open questions are answered (§9).
 
 Design reference: `hue-switch-console/docs/specs/design_handoff_lights_map/How-to Guide.dc.html` (Claude Design handoff, Ember theme; committed under the Lights handoff's folder name). The design is the reference for layout, copy and behaviour. Colours in it are Ember literals: the code uses theme tokens (§6).
 
@@ -54,8 +54,8 @@ Inside `Shell` (unchanged), top to bottom:
 |---|---|---|---|---|
 | 1 | Plug it in | Open Setup | — | — |
 | 2 | Install the firmware | Setup | `No Wi-Fi` face: "No Wi-Fi. Expected: none saved yet." | `fast`: "Fast blink: no Wi-Fi yet" |
-| 3 | Save Wi-Fi | Setup | `loading`: "Loading…: looking for the Bridge" | `burst-2`: "Two blinks: needs the console" |
-| 4 | Link it to this console | Setup | `pairing`: "Press Bridge button" | `burst-3`: "Three blinks: needs pairing" |
+| 3 | Save Wi-Fi | Setup | `loading`: "Loading…, then Press Bridge button" | `burst-2`: "Two blinks: needs the console" |
+| 4 | Link it to this console | Setup | `pairing`: "Press Bridge button: it waits until step 5" | `burst-3`: "Three blinks: needs pairing" |
 | 5 | Approve it on the Hue Bridge | — | `empty`: "Blank disc: needs a page" | `burst-4`: "Four blinks: needs a recipe" |
 | 6 | Give it a page / Give its buttons a job | Open Switches | `ready`: "Ready" | `heart`: "Ready" |
 
@@ -136,14 +136,14 @@ States. Copy comes from today's `SIMPLE_STEPS`, `roundSteps()` and `ErrorCard`s,
 - [x] `app/how-to/visuals.tsx` with size scaling
 - [x] `app/how-to/how-to-guide.tsx`: picker, stepper, tasks, status grid and panel
 - [x] Anchors updated; links to the old anchors fixed (§3)
-- [ ] Checked on Ember, Paper, Snow, Matrix, desktop and phone (a static render of the component was checked on Ember, Paper, Snow and Matrix at 1100 px and 390 px; the user checks production)
+- [x] Checked on Ember, Paper, Snow, Matrix, desktop and phone (a static render of the component was checked on Ember, Paper, Snow and Matrix at 1100 px and 390 px; the user checks production)
 - [x] `npm run build` and `npm run lint` pass (apart from the existing `theme-picker.tsx` error)
 - [x] `docs/changelog.md` console entry
-- [ ] Deployed; checked on production by the user (per `AGENTS.md`, not with local Playwright)
+- [x] Deployed (pushed to `main` on 2026-09-26); the user checks production (per `AGENTS.md`, not with local Playwright)
 
 ### Cleanup
 
-- [ ] Move this spec to `docs/specs/finished/`
+- [x] Move this spec to `docs/specs/finished/`
 
 ## 8. Decisions
 
@@ -152,22 +152,18 @@ States. Copy comes from today's `SIMPLE_STEPS`, `roundSteps()` and `ErrorCard`s,
 
 ## 9. Open questions
 
-**Three questions are still open.** None blocks the console page. Each one needs the firmware tree or a decision from the user. Until they are answered, the page follows the design.
+All three are closed. Answers 1 and 2 come from reading the firmware trees; 3 is a copy decision.
 
-1. **OPEN: Round setup order (§4.1, steps 3–4).** Needs the `hue-round-switch` tree.
-   - Assumption: after Wi-Fi is saved, and before the console link, the Round shows `Loading… / Connecting`. It shows `Press Bridge button` after linking.
-   - To check: the state order in `ui.h` and the boot flow. Also check whether the Round has a "needs console" screen the design is missing.
-   - If wrong: fix the "Then it shows" of steps 3 and 4 in `setupSteps()` in `lib/how-to.ts`, and add any missing screen to `ROUND_STATUS`.
-   - Today: the page ships the design's assumption.
-2. **OPEN: Simple step 2.** Needs the `hue-simple-switch` tree or a board.
-   - Assumption: after a first install with no Wi-Fi saved, the LED shows the `fast` pattern.
-   - To check: `led.h` and the boot flow, or flash a board.
-   - If wrong: fix step 2's "Then it shows" in `setupSteps()` in `lib/how-to.ts`.
-   - Today: the page ships `fast`.
-3. **OPEN: "Set a new one in Devices"** on the Round's Token rejected screen. Needs the user's decision.
-   - The how-to drawing follows the firmware text (`page-structure.md` §2), and the page is now called Setup.
-   - Options: keep drawing the firmware's text as it is, or open a Round change that renames it to Setup and update the drawing in `faceParts()` in `app/how-to/visuals.tsx` once that ships.
-   - Today: the drawing keeps "Set a new one in Devices".
+1. **CLOSED: Round setup order (§4.1, steps 3–4).** The design's order was wrong.
+   - In `hue-round-switch`, the Hue link starts as soon as Wi-Fi is up. It doesn't wait for the console link. `applyScreen()` shows `Loading… / Connecting` while the link is starting (`LINK_START`). `hueLinkSetupStep()` then finds the Bridge and, with no key saved, goes to `LINK_PAIRING` (`Press Bridge button`). Pairing never times out.
+   - The Round has no "needs console" screen. `UiScreen` has none, and nothing on the screen depends on the console link apart from the token states.
+   - Change: step 3's caption is now "Loading…, then Press Bridge button" and step 4's is "Press Bridge button: it waits until step 5" (`setupSteps()` in `lib/how-to.ts`). `ROUND_STATUS` needed no new screen.
+2. **CLOSED: Simple step 2.** The assumption holds.
+   - In `hue-simple-switch` `led.h`, `ledComputeRung()` returns rung 1 (`fast`) whenever the station isn't connected. After that come rung 2 (needs the console), 3 (needs pairing), 4 (no recipes) and 5 (heartbeat), the same order as steps 3–6. Only a console failure or a rejected token (rung 6, `solid`) comes first.
+   - No change.
+3. **CLOSED: "Set a new one in Devices"** on the Round's Token rejected screen.
+   - Decision: the drawing keeps the firmware's text, because the guide shows what the board really shows. The fix line on that tile now says "The screen still calls it Devices, the page's old name."
+   - Renaming the text on the board is a Round firmware copy change, outside this spec. When it ships, update `faceParts()` in `app/how-to/visuals.tsx` and drop that sentence.
 
 ## 10. Implementation notes
 

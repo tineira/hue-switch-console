@@ -105,7 +105,7 @@ export function setupSteps(product: Product): SetupStep[] {
       body: "Click **Set up Wi-Fi** and pick a **2.4 GHz** network. The board can't join 5 GHz.",
       note: round ? "The Round needs its U.FL antenna plugged in to reach the router." : undefined,
       shows: round
-        ? { caption: "Loading…: looking for the Bridge", visual: { face: "loading" } }
+        ? { caption: "Loading…, then Press Bridge button", visual: { face: "loading" } }
         : { caption: "Two blinks: needs the console", visual: { led: "burst-2" } },
     },
     {
@@ -115,7 +115,7 @@ export function setupSteps(product: Product): SetupStep[] {
       body: "Click **Link to console**. This saves a device key on the board so it can fetch what its buttons do.",
       note: "Wi-Fi or Console can turn amber for a moment while the board joins. Setup checks again every 10 seconds, up to three times, then offers **Check again**.",
       shows: round
-        ? { caption: "Press Bridge button", visual: { face: "pairing" } }
+        ? { caption: "Press Bridge button: it waits until step 5", visual: { face: "pairing" } }
         : { caption: "Three blinks: needs pairing", visual: { led: "burst-3" } },
     },
     {
@@ -319,7 +319,7 @@ const ROUND_STATUS: Status[] = [
     see: "Full-screen message, stays until fixed",
     means:
       "The console rejected the token and this Round has no recipes yet, so presses have nothing to run.",
-    fix: "Save a new token on Setup.",
+    fix: "Save a new token on Setup. The screen still calls it Devices, the page's old name.",
     href: "/setup",
     cta: "Open Setup",
   },
