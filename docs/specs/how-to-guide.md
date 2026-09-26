@@ -2,9 +2,9 @@
 
 Console-only spec. Copy to `hue-switch-console/docs/specs/how-to-guide.md`. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
 
-**Status:** draft
+**Status:** implemented, waiting on the production check
 
-Design reference: `hue-switch-console/docs/specs/design_handoff_how_to/How-to Guide.dc.html` (Claude Design handoff, Ember theme). The design is the reference for layout, copy and behaviour. Colours in it are Ember literals: the code uses theme tokens (§6).
+Design reference: `hue-switch-console/docs/specs/design_handoff_lights_map/How-to Guide.dc.html` (Claude Design handoff, Ember theme; committed under the Lights handoff's folder name). The design is the reference for layout, copy and behaviour. Colours in it are Ember literals: the code uses theme tokens (§6).
 
 ## 1. What and why
 
@@ -114,7 +114,8 @@ States. Copy comes from today's `SIMPLE_STEPS`, `roundSteps()` and `ErrorCard`s,
 
 - **Product choice:** saved in `localStorage` under `hsw-howto-product`, like `hsw-theme`. The default is `round`. It is not derived from the switches in the account (decided). Switching product resets the task list to its first item and the status selection to its default.
 - **Hydration:** render `round` on the server. Read the stored value in an effect, and accept a brief switch on first paint. Alternatively, set a `data-howto-product` attribute in the existing `themeBoot` script and hide the other product with CSS. The implementer picks one and notes it here.
-- **Deep link (optional, nice to have):** `?product=simple` overrides the stored value, so Setup could link to the right guide.
+  - **Picked:** the first. The server renders `round` (or the `?product=` value). Without `?product=`, the client reads the stored choice through `useSyncExternalStore`, so a Simple reader may see Round for one frame.
+- **Deep link:** `?product=simple` overrides the stored value (without saving it). Setup and Switches link to `/how-to?product=<product>#status`. Old `#round` / `#simple` anchors still select that product and scroll to `#status`.
 - **Reduced motion:** covered by the existing `prefers-reduced-motion` rules for `.led` and `.round-face`.
 - **Mobile:** the product cards stack, the "On this page" list sits above the content and is not sticky, and "Then it shows" wraps under the step text.
 
@@ -131,13 +132,13 @@ States. Copy comes from today's `SIMPLE_STEPS`, `roundSteps()` and `ErrorCard`s,
 
 ### Console (`hue-switch-console`)
 
-- [ ] `lib/how-to.ts` data; every fact from the old page accounted for (§4.2)
-- [ ] `app/how-to/visuals.tsx` with size scaling
-- [ ] `app/how-to/how-to-guide.tsx`: picker, stepper, tasks, status grid and panel
-- [ ] Anchors updated; links to the old anchors fixed (§3)
-- [ ] Checked on Ember, Paper, Snow, Matrix, desktop and phone
-- [ ] `npm run build` and `npm run lint` pass (apart from the existing `theme-picker.tsx` error)
-- [ ] `docs/changelog.md` console entry
+- [x] `lib/how-to.ts` data; every fact from the old page accounted for (§4.2)
+- [x] `app/how-to/visuals.tsx` with size scaling
+- [x] `app/how-to/how-to-guide.tsx`: picker, stepper, tasks, status grid and panel
+- [x] Anchors updated; links to the old anchors fixed (§3)
+- [ ] Checked on Ember, Paper, Snow, Matrix, desktop and phone (a static render of the component was checked on Ember, Paper, Snow and Matrix at 1100 px and 390 px; the user checks production)
+- [x] `npm run build` and `npm run lint` pass (apart from the existing `theme-picker.tsx` error)
+- [x] `docs/changelog.md` console entry
 - [ ] Deployed; checked on production by the user (per `AGENTS.md`, not with local Playwright)
 
 ### Cleanup
@@ -154,3 +155,7 @@ States. Copy comes from today's `SIMPLE_STEPS`, `roundSteps()` and `ErrorCard`s,
 1. **Round setup order (§4.1, steps 3–4).** The design assumes that after Wi-Fi is saved, and before the console link, the Round shows `Loading… / Connecting`, and shows `Press Bridge button` after linking. Check the state order in `hue-round-switch` `ui.h` and the boot flow. If the Round doesn't depend on the console link to look for the Bridge, fix the "Then it shows" of steps 3 and 4. Also check whether the Round has a "needs console" screen the design is missing.
 2. **Simple step 2.** After a first install with no Wi-Fi saved, confirm the LED is the `fast` pattern.
 3. **"Set a new one in Devices"** on the Round's Token rejected screen. The how-to drawing follows the firmware (`page-structure.md` §2). Decide whether to keep drawing the firmware's text as is, or to open a Round change that renames it to Setup and update the drawing when that ships.
+
+Implementation notes on §9: the firmware trees are not in this repo, so 1 and 2 are not verified yet, and the page follows the design. For 3, the drawing keeps the firmware's text ("Set a new one in Devices") until a Round change renames it.
+
+One change to §3: the `.led` and `.round-face` rules now size by `--k` (default 1, so every value at the default size is unchanged), as §6 asks. Colours and timings are untouched.

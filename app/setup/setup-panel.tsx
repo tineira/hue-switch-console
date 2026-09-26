@@ -392,7 +392,7 @@ function SetupChecklist({
                 : firmwareOld
                   ? `Update to ${manifestVersion} with Update below when convenient. Settings stay.`
                   : null;
-  const guide = productId === "round" ? "/how-to#round" : "/how-to#simple";
+  const guide = `/how-to?product=${productId === "round" ? "round" : "simple"}#status`;
   const guideText = productId === "round" ? "What the screen shows" : "What the LED shows";
   const allDone = rows.every((row) => row.state === "done");
   const anyError = rows.some((row) => row.state === "error");

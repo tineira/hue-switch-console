@@ -726,7 +726,7 @@ export function SwitchesWorkspace({
                 {` · rev ${sync[selected.mac]?.rev ?? revs[selected.mac] ?? selected.rev}`}
                 {" · "}
                 <Link
-                  href={round ? "/how-to#round" : "/how-to#simple"}
+                  href={`/how-to?product=${round ? "round" : "simple"}#status`}
                   className="text-filament underline underline-offset-2"
                 >
                   {round ? "What the screen shows" : "What the LED shows"}

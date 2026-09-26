@@ -12,6 +12,8 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-26
 
+- **How-to** is rebuilt around your switch. Pick Round or Simple once and the page shows only what applies to it. Setup is a six-step guide where each step shows the screen or LED the switch should show next. Everyday tasks (change what a button or page does, update, pair again, retire a board) are short separate items. To diagnose a board, pick the screen or blink that matches it and get what it means and what to do. The "What the screen shows" and "What the LED shows" links on Setup and Switches open the right guide.
+
 - Every page ends with a footer: who built the console, links to GitHub and X, **Credits** and **Changelog**.
 - New public **Credits** page: thanks to Vercel, Neon, Seeed Studio and Espressif, the open-source software in the console, and what each switch's current firmware is built on. It also carries the Philips Hue trademark notice.
 
