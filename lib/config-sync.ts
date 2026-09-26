@@ -5,7 +5,7 @@ export type ConfigStatus = "current" | "pending" | "not_applied" | "ahead" | "un
 
 /** Poll intervals the console hands out. The firmware clamps to 30–3600 s. */
 export const POLL_FAST_SEC = 30;
-export const POLL_IDLE_SEC = 300;
+export const POLL_IDLE_SEC = 900;
 
 /** How long the Switches area counts as "editing" after a load, heartbeat or save. */
 export const EDITING_WINDOW_MIN = 15;

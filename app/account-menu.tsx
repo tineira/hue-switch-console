@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SignOutButton } from "@/app/sign-out-button";
 
-const ITEMS = [
+const BASE_ITEMS = [
+  { href: "/account", label: "Account" },
   { href: "/keys", label: "API keys" },
   { href: "/changelog", label: "Changelog" },
 ];
 
-export function AccountMenu({ email }: { email?: string }) {
+export function AccountMenu({ email, isAdmin }: { email?: string; isAdmin?: boolean }) {
+  const ITEMS = isAdmin ? [...BASE_ITEMS, { href: "/admin", label: "Admin" }] : BASE_ITEMS;
   const path = usePathname();
   const [open, setOpen] = useState(false);
 

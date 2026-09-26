@@ -43,13 +43,13 @@ Do not use GPIO 3/14 (RF), 15 (LED), or USB.
 
 **Console.** Next.js on Vercel. Human login. Receives snapshots and stores assignments. Host: `https://hue.tineira.com` (Cloudflare DNS → Vercel). **All UI (copy, buttons, errors) is English.**
 
-**Postgres (Neon).** Accounts (`users` with email + `password_hash`), device API keys, topology, recipes, Round pages. **Not Supabase Auth.** The human session is the `hsw_session` cookie (HMAC). The runtime applies `db/schema.sql` and `lib/ensure-schema.ts`. Do not apply the migrations in `docs/archive/supabase-DO-NOT-APPLY/`.
+**Postgres (Neon).** Accounts (`users`, plus Better Auth's `sessions`, `accounts` and `verifications`), device API keys, topology, recipes, Round pages. **Not Supabase Auth.** The human session is a Better Auth session cookie (`hsw.session_token`); sign-in runs inside the console (`docs/specs/multi-user-accounts.md`). The runtime applies `db/schema.sql` and `lib/ensure-schema.ts`. Do not apply the migrations in `docs/archive/supabase-DO-NOT-APPLY/`.
 
 **Hue application key.** Token the Bridge issues on pairing (`POST /api` with the Bridge button pressed). Lives in the XIAO's NVS. It is not the console API key.
 
 **Console API key / `CONSOLE_TOKEN`.** Device token (`hsw_…`). The user **creates and manages** it in the console (name, copy once, revoke). The XIAO sends it as `Authorization: Bearer`. It cannot be used to sign in to the site.
 
-**User account.** Email + password in the console. Humans only. No public signup. First account: seed `USER_EMAIL` / `USER_PASSWORD` (`.env.local`, never commit).
+**User account.** A person, identified by email. Hosted console: signs in with Google, GitHub or a 6-digit code emailed to them, no password. Sign-up follows `SIGNUP_MODE` (`closed`, `invite`, `open`); at launch it is invite-only. Self-hosted console without email: the seeded `USER_EMAIL` / `USER_PASSWORD` account with a password (`.env.local`, never commit). Everything an account owns (keys, Bridges, switches, recipes) is deleted with it. Per-account limits: 25 switches, 5 Bridges, 25 active keys, 512 KB snapshot (`docs/specs/multi-user-accounts.md`).
 
 **Topology.** Snapshot of **one Bridge**. Any XIAO paired to that `bridgeid` (or `push-from-bridge`) uploads it with `POST /api/device/register`. It is not "the switch's topology". The JSON must be enough to draw rooms and assign `rid`:
 
@@ -76,7 +76,7 @@ Do not use GPIO 3/14 (RF), 15 (LED), or USB.
 - Console URL + device token: written over USB (`HUESET`) into NVS `console`.
 - Bridge IP, Hue key, recipes / pages: discovered, paired, or received by poll, and kept in NVS.
 
-**Console account.** The login (email + password). Not a Hue "Home".
+**Console account.** The login (Google, GitHub, emailed code, or password when self-hosted). Not a Hue "Home".
 
 ## Per Bridge (there is no Home)
 
@@ -226,7 +226,7 @@ Channels come from `channels[]` in the config; a pin not listed is ignored. For 
 
 At boot: load recipes from NVS **before** handling GPIO. The first read of each GPIO **only sets the state**; it does not fire `on`/`off`. Then Wi‑Fi, poll, etc.
 
-If the user changes a recipe in the app, the switch learns about it on the poll. The console sets the interval: 30 s while the switch has no config or the Switches page is open, 5 min otherwise (firmware from before this change: 1 min with no recipes, else every 1 h). Reboot = fetch recipes now; it does not fire GPIO events. Each poll reports the `rev` in NVS, so the console shows whether the switch runs the saved config (`docs/specs/finished/config-sync.md`).
+If the user changes a recipe in the app, the switch learns about it on the poll. The console sets the interval: 30 s while the switch has no config or the Switches page is open, 15 min otherwise (firmware from before this change: 1 min with no recipes, else every 1 h). Reboot = fetch recipes now; it does not fire GPIO events. Each poll reports the `rev` in NVS, so the console shows whether the switch runs the saved config (`docs/specs/finished/config-sync.md`).
 
 **Other rules:**
 
@@ -236,14 +236,14 @@ If the user changes a recipe in the app, the switch learns about it on the poll.
 - Console chrome in English; **Hue names** (Living, Velador Tomás) are shown as they are.
 - Several topology POSTs for the same `bridgeid`: **last good snapshot wins**. A register without `rooms`/`scenes` (omitted) is a 400; it does not overwrite.
 - Revoked API key: the poll fails; recipes in NVS **keep** running on the LAN.
-- No public signup. Only the seeded account (`USER_EMAIL`).
+- Sign-up follows `SIGNUP_MODE`: `closed` (only the seeded `USER_EMAIL`), `invite` or `open`. A suspended account gets `403 account_suspended` on device calls; its NVS recipes keep running.
 - Orphan recipe (the `rid` is no longer in the snapshot): kept; the Hue PUT fails; the UI marks it stale.
 
 ## Two doors
 
 | Who | How |
 | --- | --- |
-| User in the browser | Email + password; `hsw_session` cookie |
+| User in the browser | Google, GitHub or emailed code (password when self-hosted without email); Better Auth session cookie |
 | XIAO or `push-from-bridge` | `CONSOLE_TOKEN` (device API key) |
 
 The signed-in user **creates and manages** API keys in the console: create, name, copy (once), revoke. Each key is a device token. Several XIAOs can share one, or use one per board (better for revoking). There is no permanent `INGEST_TOKEN` on the server. `POST /api/ingest` returns `410 gone`; use `POST /api/device/register`.
@@ -284,7 +284,7 @@ If the user changes recipes on the web, the XIAO can take up to 1 h unless reboo
 | **Vercel** project (`hue-switch-console`) | Build and serverless | Done |
 | **Neon** Postgres | Accounts, API keys, topology, recipes, pages | Done (`db/schema.sql`) |
 | **Cloudflare** DNS: `hue.tineira.com` → Vercel | The XIAO's console URL | Done |
-| Auth | `hsw_session` cookie; seed `USER_EMAIL` / `USER_PASSWORD` | Done. Not Supabase Auth |
+| Auth | Better Auth in the console (Google, GitHub, emailed code; password when self-hosted); seed `USER_EMAIL` / `USER_PASSWORD` | Done. Not Supabase Auth |
 | API keys UI | Create, copy once, revoke | Done |
 | Rich snapshot + Bridge screen | Simple = channels; Round = pages | Done |
 
@@ -298,9 +298,9 @@ Production host: `https://hue.tineira.com`. In Cloudflare, CNAME `hue` to the ta
 - HTTPS to `hue.tineira.com`: **verify** the certificate (Arduino bundle). `setInsecure()` only against the Hue Bridge.
 - Poll: without recipes ~1 min; with recipes at boot and every **1 h**. GPIO / finger never wait.
 - Orphan recipe: kept; the Hue PUT fails; the UI marks it stale.
-- Toggle-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. No public signup.
+- Toggle-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. Sign-up only as `SIGNUP_MODE` allows.
 - Minimal API:
-  - Human (`hsw_session` cookie): login; CRUD API keys; GET topology; PATCH switch label; PUT channels (Simple) / PUT pages (Round).
+  - Human (session cookie): sign in; CRUD API keys; GET topology; PATCH switch label; PUT channels (Simple) / PUT pages (Round).
   - Device (Bearer key): `POST /api/device/register`; `GET /api/device/config?mac=` (Simple: `rev`, `product`, `channels[]`, `recipes[]`; Round: `pages`, `pageId`, axis, timeout).
 - Tables (Neon): `users`, `device_api_keys`, `bridges` (snapshot JSON), `switches` (`product`, axis, timeout), `pages`, `recipes` (Round), `simple_channels`. The server filters by `user_id`; there is no Supabase RLS.
 

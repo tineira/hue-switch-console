@@ -12,6 +12,11 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-26
 
+- **Accounts.** The console can now host more than one person. Sign in with **Google**, **GitHub** or a **6-digit code** sent to your email; there is no password to remember. Sign-up is by invitation for now, and anyone can ask for an invite from the sign-in page. Everyone is signed out once by this update; sign in again with the same email and all your switches are there. Consoles without email set up keep signing in with the password.
+- New **Account** page (in the menu under your email): change your email, sign out on every device, or delete your account and everything in it. It also shows how many switches, Bridges and API keys you use out of your limit (25, 5 and 25).
+- If a board is refused because the account is at its limit, Setup and Switches say so. Existing switches and Bridges keep updating; only new ones are refused.
+- Switches that are idle now check in every 15 minutes instead of 5, so a saved change can take up to 15 minutes to reach one. Opening the Switches page still speeds them up, from their next check-in.
+
 - **How-to** is rebuilt around your switch. Pick Round or Simple once and the page shows only what applies to it. Setup is a six-step guide where each step shows the screen or LED the switch should show next. Everyday tasks (change what a button or page does, update, pair again, retire a board) are short separate items. To diagnose a board, pick the screen or blink that matches it and get what it means and what to do. The "What the screen shows" and "What the LED shows" links on Setup and Switches open the right guide.
 
 - Every page ends with a footer: who built the console, links to GitHub and X, **Credits** and **Changelog**.

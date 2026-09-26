@@ -147,6 +147,96 @@ const STATEMENTS = [
   release_id uuid not null references firmware_releases (id)
 )`,
   `alter table firmware_releases add column if not exists credits jsonb`,
+  // Multi-user accounts (docs/specs/multi-user-accounts.md §2.9).
+  // users doubles as Better Auth's user table; the rest are its tables.
+  `alter table users alter column password_hash drop not null`,
+  `alter table users add column if not exists name text not null default ''`,
+  `alter table users add column if not exists email_verified boolean not null default false`,
+  `alter table users add column if not exists image text`,
+  `alter table users add column if not exists updated_at timestamptz not null default now()`,
+  `alter table users add column if not exists role text not null default 'user'`,
+  `alter table users add column if not exists banned boolean not null default false`,
+  `alter table users add column if not exists ban_reason text`,
+  `alter table users add column if not exists ban_expires timestamptz`,
+  `alter table users add column if not exists last_login_at timestamptz`,
+  `alter table users add column if not exists limits jsonb not null default '{}'::jsonb`,
+  `alter table users add column if not exists register_refused_at timestamptz`,
+  `alter table users add column if not exists register_refused_reason text`,
+  `create table if not exists sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users (id) on delete cascade,
+  token text not null unique,
+  expires_at timestamptz not null,
+  ip_address text,
+  user_agent text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+)`,
+  `create index if not exists sessions_user_id_idx on sessions (user_id)`,
+  `create table if not exists accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users (id) on delete cascade,
+  account_id text not null,
+  provider_id text not null,
+  access_token text,
+  refresh_token text,
+  id_token text,
+  access_token_expires_at timestamptz,
+  refresh_token_expires_at timestamptz,
+  scope text,
+  password text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider_id, account_id)
+)`,
+  `create index if not exists accounts_user_id_idx on accounts (user_id)`,
+  `create table if not exists verifications (
+  id uuid primary key default gen_random_uuid(),
+  identifier text not null,
+  value text not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+)`,
+  `create index if not exists verifications_identifier_idx on verifications (identifier)`,
+  `create table if not exists rate_limits (
+  id uuid primary key default gen_random_uuid(),
+  key text not null unique,
+  count integer not null,
+  last_request bigint not null
+)`,
+  `create table if not exists invites (
+  id uuid primary key default gen_random_uuid(),
+  code_hash text not null unique,
+  code_prefix text not null,
+  email text,
+  created_by uuid references users (id) on delete set null,
+  expires_at timestamptz not null,
+  used_by uuid references users (id) on delete set null,
+  used_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now()
+)`,
+  `create table if not exists invite_requests (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  note text,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'dismissed')),
+  invite_id uuid references invites (id) on delete set null,
+  decided_at timestamptz,
+  created_at timestamptz not null default now()
+)`,
+  `create unique index if not exists invite_requests_pending_email_idx
+  on invite_requests (lower(email)) where status = 'pending'`,
+  `create table if not exists auth_events (
+  id bigserial primary key,
+  kind text not null check (kind in ('email_sent', 'code_failed', 'invite_requested')),
+  email text,
+  ip text,
+  created_at timestamptz not null default now()
+)`,
+  `create index if not exists auth_events_email_idx on auth_events (kind, email, created_at)`,
+  `create index if not exists auth_events_time_idx on auth_events (kind, created_at)`,
 ];
 
 let running: Promise<void> | null = null;

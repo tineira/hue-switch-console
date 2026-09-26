@@ -31,9 +31,11 @@ The token looks like `hsw_…`. The server stores **SHA-256(token)** only. A
 revoked or unknown key returns `401`. Recipes already in NVS keep running on
 the LAN.
 
-Human UI uses a session cookie `hsw_session` (email + password against Neon
-`users`, not Supabase Auth). No public signup. That cookie is **not** valid as
-a device Bearer token.
+Human UI uses a Better Auth session cookie (`hsw.session_token`), obtained by
+Google, GitHub or an emailed code on the hosted console, or by a password on a
+self-hosted console without email. Sign-up and accounts:
+`docs/specs/multi-user-accounts.md`. That cookie is **not** valid as a device
+Bearer token.
 
 Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
 
@@ -41,9 +43,16 @@ Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
 | --- | --- |
 | 400 | `invalid_json`, `invalid_payload`, `validation_error`, or a field message |
 | 401 | `unauthorized` |
+| 403 | `account_suspended`: the key's owner is suspended. NVS recipes keep running, as with a revoked key. |
+| 403 | `limit_reached` (`register` only): it would create a **new** switch or Bridge past the account's limit. `details`: `"switches"` or `"bridges"`. Updates to existing ones are never refused. |
 | 404 | `not_found` |
 | 410 | `gone` (`/api/ingest` only) |
+| 413 | `payload_too_large` (`register` only): body over the account's snapshot limit (512 KB by default) |
+| 429 | `rate_limited`: too many requests from one IP (Vercel Firewall rule on `/api/device/*`). `Retry-After` in seconds. |
 | 503 | `database_not_configured` |
+
+Firmware treats every non-200 except `401` as a failed call and retries on its
+normal schedule, so `403`, `413` and `429` need no firmware change.
 
 MAC is 12 hex digits, case-insensitive, `:` / `-` allowed on input. Stored and
 returned lowercase without separators (`aabbccddeeff`).
@@ -190,8 +199,9 @@ Every `200` and `204` carries the header `X-Poll-Sec: <seconds>`, the delay
 until the next poll. A `200` body also carries `"pollSec"` with the same value
 (for logs; firmware reads the header). The console decides the value; today it
 is 30 s while the switch has no config, while its owner has the Switches page
-open (or saved in the last 15 min), and while the switch is behind; 300 s
-otherwise.
+open (or saved in the last 15 min), and while the switch is behind; 900 s
+otherwise (300 s before the multi-user accounts change). A switch on the 900 s
+poll picks up the fast poll only at its next check-in.
 
 ### Response `200`
 
@@ -373,7 +383,7 @@ Used by the console UI. Firmware does not call these.
 
 ```
 PUT /api/switches/aabbccddeeff/channels HTTP/1.1
-Cookie: hsw_session=…
+Cookie: __Secure-hsw.session_token=…
 Content-Type: application/json
 ```
 

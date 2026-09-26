@@ -1,5 +1,6 @@
 /**
- * Seeds the first console user. No public signup.
+ * Seeds the first console user with a password sign-in. The console also does this
+ * on its own when /login first loads.
  *   npx vercel env run -- node scripts/seed-user.mjs
  */
 import { randomBytes, scryptSync } from "node:crypto";
@@ -22,5 +23,11 @@ if (existing.length > 0) {
   console.log(`already exists: ${email}`);
   process.exit(0);
 }
-await sql`insert into users (email, password_hash) values (${email}, ${stored})`;
+const [user] = await sql`
+  insert into users (email, email_verified) values (${email}, true) returning id
+`;
+await sql`
+  insert into accounts (user_id, account_id, provider_id, password)
+  values (${user.id}, ${user.id}, 'credential', ${stored})
+`;
 console.log(`seeded ${email}`);

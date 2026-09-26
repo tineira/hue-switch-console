@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { AccountMenu } from "@/app/account-menu";
 import { NavLinks } from "@/app/nav-links";
+import { RefusedRegisterBanner } from "@/app/refused-register-banner";
 import { ThemePicker } from "@/app/theme-picker";
+import { isAdminEmail } from "@/lib/account-config";
 
 export function Shell({
   email,
+  userId,
   wide,
   children,
 }: {
   email?: string;
+  /** Shows the refused-register banner for this account. */
+  userId?: string;
   wide?: boolean;
   children: React.ReactNode;
 }) {
@@ -27,9 +32,10 @@ export function Shell({
         </div>
         <div className="ml-auto flex items-center gap-2">
           <ThemePicker />
-          <AccountMenu email={email} />
+          <AccountMenu email={email} isAdmin={isAdminEmail(email)} />
         </div>
       </header>
+      {userId ? <RefusedRegisterBanner userId={userId} /> : null}
       {children}
     </div>
   );
