@@ -6,15 +6,10 @@ import {
   isRoundThemeId,
   normalizeRoundTheme,
 } from "@/lib/round-themes";
-import {
-  actionClause,
-  isTargetStale,
-  nameForTarget,
-} from "@/lib/recipes";
+import { isTargetStale } from "@/lib/recipes";
 import type {
   Channel,
   DimSet,
-  HueAction,
   PageGroup,
   PageSwipeAxis,
   Recipe,
@@ -57,18 +52,6 @@ export function inferProduct(
   return isPlaceholderRoundChannels(channels) ? "round" : "simple";
 }
 
-export function roundEventLabel(event: RoundEvent): string {
-  return event === "double_click" ? "Double tap" : "Tap";
-}
-
-export function defaultRoundActionForTarget(
-  event: RoundEvent,
-  rtype: RecipeTarget["rtype"],
-): HueAction {
-  if (rtype === "scene") return "recall_scene";
-  return event === "double_click" ? "off" : "toggle";
-}
-
 export function findRoundRecipe(
   recipes: RoundRecipe[],
   pageId: string,
@@ -76,29 +59,6 @@ export function findRoundRecipe(
 ): RoundRecipe | undefined {
   return recipes.find(
     (recipe) => recipe.pageId === pageId && recipe.event === event,
-  );
-}
-
-export function upsertRoundRecipe(
-  recipes: RoundRecipe[],
-  next: RoundRecipe,
-): RoundRecipe[] {
-  return [
-    ...recipes.filter(
-      (recipe) =>
-        !(recipe.pageId === next.pageId && recipe.event === next.event),
-    ),
-    next,
-  ];
-}
-
-export function clearRoundRecipe(
-  recipes: RoundRecipe[],
-  pageId: string,
-  event: RoundEvent,
-): RoundRecipe[] {
-  return recipes.filter(
-    (recipe) => !(recipe.pageId === pageId && recipe.event === event),
   );
 }
 
@@ -121,10 +81,6 @@ export function foldAscii(input: string): string {
 export function normalizePageName(input: string): string {
   const folded = foldAscii(input).slice(0, PAGE_NAME_MAX).trim();
   return folded || "Page";
-}
-
-export function pageNameWouldTruncate(input: string): boolean {
-  return foldAscii(input).length > PAGE_NAME_MAX;
 }
 
 export function pageNameFromGroup(name: string): string {
@@ -203,52 +159,6 @@ export function targetBelongsToGroup(
     return sceneGroupRid(snapshot, target.rid) === group.rid;
   }
   return false;
-}
-
-export function recipeBelongsToGroup(
-  recipe: RoundRecipe,
-  group: PageGroup,
-  snapshot: TopologySnapshot,
-): boolean {
-  if (recipe.action === "recall_scene") {
-    const targets = recipe.targets ?? [];
-    return (
-      targets.length > 0 &&
-      targets.every((item) =>
-        targetBelongsToGroup({ rtype: "scene", rid: item.rid }, group, snapshot),
-      )
-    );
-  }
-  return recipe.target
-    ? targetBelongsToGroup(recipe.target, group, snapshot)
-    : false;
-}
-
-/** Drop tap/double targets that are not in the page's room or zone. */
-export function recipesForGroup(
-  recipes: RoundRecipe[],
-  pageId: string,
-  group: PageGroup,
-  snapshot: TopologySnapshot,
-): RoundRecipe[] {
-  const next: RoundRecipe[] = [];
-  for (const recipe of recipes) {
-    if (recipe.pageId !== pageId) {
-      next.push(recipe);
-      continue;
-    }
-    if (recipe.action === "recall_scene") {
-      const targets = (recipe.targets ?? []).filter((item) =>
-        targetBelongsToGroup({ rtype: "scene", rid: item.rid }, group, snapshot),
-      );
-      if (targets.length > 0) next.push({ ...recipe, targets });
-      continue;
-    }
-    if (recipe.target && targetBelongsToGroup(recipe.target, group, snapshot)) {
-      next.push(recipe);
-    }
-  }
-  return next;
 }
 
 function groupFromTarget(
@@ -379,55 +289,6 @@ export function withSceneNames(
       ),
     };
   });
-}
-
-function roundActionClause(
-  recipe: RoundRecipe,
-  snapshot: TopologySnapshot,
-): string {
-  if (recipe.action === "recall_scene") {
-    const names = (recipe.targets ?? []).map(
-      (item) =>
-        item.name ||
-        nameForTarget(snapshot, { rtype: "scene", rid: item.rid }) ||
-        "unknown target",
-    );
-    if (names.length === 0) return "scene unknown target";
-    if (names.length === 1) return `scene ${names[0]}`;
-    return `cycle ${names.join(", ")}`;
-  }
-  const target = recipe.target;
-  const name = target
-    ? nameForTarget(snapshot, target) ?? "unknown target"
-    : "unknown target";
-  return actionClause(recipe.action, name);
-}
-
-export function confirmationForPage(
-  page: SwitchPage,
-  recipes: RoundRecipe[],
-  snapshot: TopologySnapshot,
-): string {
-  const pageRecipes = recipes.filter((recipe) => recipe.pageId === page.id);
-  const tap = findRoundRecipe(pageRecipes, page.id, "short");
-  const dbl = findRoundRecipe(pageRecipes, page.id, "double_click");
-  const dim = computeDim(pageRecipes, page.group?.groupedLightRid, snapshot);
-  const tapPart = tap
-    ? `tap → ${roundActionClause(tap, snapshot)}`
-    : "tap → unassigned";
-  const dblPart = dbl
-    ? `double-tap → ${roundActionClause(dbl, snapshot)}`
-    : "double-tap → unassigned";
-  let ring = "ring unused";
-  if (dim?.mode === "group") {
-    const name =
-      nameForTarget(snapshot, { rtype: "grouped_light", rid: dim.rid }) ??
-      "the room";
-    ring = `ring dims ${name} (on lights)`;
-  } else if (dim?.mode === "lights") {
-    ring = "ring dims those lights";
-  }
-  return `${page.name} · ${tapPart} · ${dblPart} · ${ring}`;
 }
 
 export function isRoundRecipeStale(

@@ -414,30 +414,31 @@ export default async function HowToPage() {
               lights on each click. Its <b>Double-click</b> can cycle scenes,
               and its <b>Hold</b> can dim (ramps while you hold, stops when you
               let go) or turn off the whole room. The whole room is the
-              default target; click a light or scene on the right to change it.
-              BOOT is always a push button, and its <b>Hold</b> re-pairs with
-              the Bridge unless you give it another action.
+              default target; open a gesture with <b>Change</b> to pick one
+              light or the scenes. BOOT is always a push button, and its{" "}
+              <b>Hold</b> re-pairs with the Bridge unless you give it another
+              action.
             </li>
             <li>
               <b>Round switch:</b> click <b>Add page</b> and pick the page&apos;s
-              room or zone. Then select <b>Tap</b> or <b>Double tap</b> and click
-              a light or scene on the right. Several scenes make a list that the
-              press steps through, up to 8 from the same room.{" "}
-              <b>Use this room for tap and double-tap</b> makes tap toggle the
-              room and double tap turn it off. The dimmer ring follows the
-              page&apos;s lights.
+              room or zone. Tap starts as toggle and double tap as turn off,
+              both for the whole room. Click <b>Change</b> on either to pick
+              another action, one light, or scenes. Several scenes make a list
+              that the press steps through, up to 8 from the same room. The
+              dimmer ring follows the page&apos;s lights.
             </li>
             <li>
-              For a Round you can also set the page swipe direction, the screen
-              timeout, and each page&apos;s name and colours.
+              For a Round you can also set each page&apos;s name and theme, and
+              under <b>Device</b> the page swipe direction and the screen
+              timeout.
             </li>
           </GuideStep>
 
           <GuideStep n={3} title="Save and check">
             <li>
-              Read the <b>Confirmation</b> box, which says in words what each
-              press will do, then click <b>Save pages</b> (Round) or{" "}
-              <b>Save recipes</b> (Simple).
+              Each gesture says in words what the press will do. Click{" "}
+              <b>Save pages</b> (Round) or <b>Save channels</b> (Simple). With
+              changes on several switches, <b>Save all</b> saves them together.
             </li>
             <li>
               The switch picks up changes the next time it checks in, which can

@@ -35,6 +35,7 @@ export function RoundDial({
         ["--t-accent" as string]: accent,
         ["--t-track" as string]: palette.track,
         ["--t-ring" as string]: accent,
+        ["--k" as string]: size / 104,
       }}
       aria-hidden="true"
     >

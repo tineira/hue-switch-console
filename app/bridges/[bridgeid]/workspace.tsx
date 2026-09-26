@@ -2,52 +2,34 @@
 
 import {
   RoundPagesEditor,
-  type PageSlotRef,
   type RoundDraft,
 } from "@/app/bridges/[bridgeid]/round-pages-editor";
-import {
-  SimpleChannelsEditor,
-  type SimpleSlotRef,
-} from "@/app/bridges/[bridgeid]/simple-channels-editor";
+import { SimpleChannelsEditor } from "@/app/bridges/[bridgeid]/simple-channels-editor";
 import { formatMac } from "@/lib/mac";
-import { compareVersions } from "@/lib/web-setup/devices";
 import {
   DEFAULT_SCREEN_TIMEOUT_SEC,
-  MAX_SCENE_LIST,
-  isScreenTimeoutSec,
-  clearRoundRecipe,
   clearStaleRoundRecipes,
-  defaultRoundActionForTarget,
-  findRoundRecipe,
+  isScreenTimeoutSec,
   pagesEqual,
   roundRecipesEqual,
-  sceneGroupRid,
-  sceneListItem,
   staleRoundCount,
-  targetBelongsToGroup,
-  upsertRoundRecipe,
 } from "@/lib/pages";
-import { groupTopology } from "@/lib/recipes";
 import {
   clearStaleSimple,
-  groupRoom,
   isSimpleChannelStale,
   simpleChannelsEqual,
   supportsChannelTypes,
   supportsHoldDim,
-  withTarget,
 } from "@/lib/simple-channels";
 import type {
-  RecipeTarget,
   RoundRecipe,
-  SceneListItem,
   SimpleChannelConfig,
-  SimpleGesture,
   SwitchPage,
   SwitchPublic,
   TopologySnapshot,
 } from "@/lib/types";
-import { useMemo, useState, type FormEvent } from "react";
+import { compareVersions } from "@/lib/web-setup/devices";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -56,6 +38,12 @@ export type WorkspaceSwitch = SwitchPublic & {
   pages: SwitchPage[];
   roundRecipes: RoundRecipe[];
 };
+
+type Notice = { text: string; tone: "ok" | "muted" };
+
+type SaveResult = { ok: true; rev?: number } | { ok: false; error: string };
+
+const SAVED_TAIL = "The switch picks this up on poll, or immediately after reboot.";
 
 function isRoundItem(item: WorkspaceSwitch | null | undefined): boolean {
   return item?.product === "round";
@@ -70,19 +58,25 @@ function roundDraftOf(item: WorkspaceSwitch): RoundDraft {
   };
 }
 
-function firstOpenPageSlot(
-  pages: SwitchPage[],
-  recipes: RoundRecipe[],
-): PageSlotRef | null {
-  if (pages.length === 0) return null;
-  for (const page of pages) {
-    for (const event of ["short", "double_click"] as const) {
-      if (!findRoundRecipe(recipes, page.id, event)) {
-        return { pageId: page.id, event };
-      }
+function roundDraftsEqual(a: RoundDraft, b: RoundDraft): boolean {
+  return (
+    a.pageSwipeAxis === b.pageSwipeAxis &&
+    a.screenTimeoutSec === b.screenTimeoutSec &&
+    pagesEqual(a.pages, b.pages) &&
+    roundRecipesEqual(a.recipes, b.recipes)
+  );
+}
+
+/** A scene list with no scene yet cannot be saved; say which gesture. */
+function emptySceneList(draft: RoundDraft): string | null {
+  for (const recipe of draft.recipes) {
+    if (recipe.action === "recall_scene" && (recipe.targets ?? []).length === 0) {
+      const page = draft.pages.find((item) => item.id === recipe.pageId);
+      const gesture = recipe.event === "double_click" ? "Double tap" : "Tap";
+      return `Pick at least one scene for ${gesture} on ${page?.name || "a page"}, or set it to Nothing.`;
     }
   }
-  return { pageId: pages[0].id, event: "short" };
+  return null;
 }
 
 function formatWhen(iso: string | null | undefined): string {
@@ -95,62 +89,6 @@ function formatWhen(iso: string | null | undefined): string {
   const hr = Math.round(min / 60);
   if (hr < 48) return `${hr} h ago`;
   return new Date(iso).toLocaleString();
-}
-
-function firstSimpleSlot(
-  item: WorkspaceSwitch | undefined,
-  configs: SimpleChannelConfig[],
-): SimpleSlotRef | null {
-  if (!item) return null;
-  const channel =
-    item.channels.find((candidate) =>
-      configs.some((config) => config.id === candidate.id),
-    ) ?? item.channels[0];
-  return channel ? { channelId: channel.id, slot: "target" } : null;
-}
-
-function simpleAssignHint(
-  slot: SimpleSlotRef | null,
-  label: string | null,
-  config: SimpleChannelConfig | undefined,
-  groupName: string | null,
-): string {
-  if (!slot || !label) return "Select a channel slot, then click a light or scene.";
-  if (!config) {
-    return `Pick a room or zone for ${label} first. Topology then shows only that group.`;
-  }
-  const where = groupName ?? "its group";
-  if (slot.slot === "scenes") {
-    return `Assigning ${label} · Double-click — click scenes in ${where} to add or remove them. Up to 8, cycled in order.`;
-  }
-  if (slot.slot === "double" || slot.slot === "hold") {
-    const name = slot.slot === "double" ? "Double-click" : "Hold";
-    const gesture = slot.slot === "double" ? config.double : config.hold;
-    if (!gesture) return `Assigning ${label} · ${name} — pick what it does first.`;
-    if (gesture.action === "off") return `${label} · Hold turns off all of ${where}.`;
-    return gesture.action === "recall_scene"
-      ? `Assigning ${label} · ${name} — click scenes in ${where} to add or remove them.`
-      : `Assigning ${label} · ${name} — click the whole ${config.group.rtype} or a light in ${where}.`;
-  }
-  return config.kind === "maintained"
-    ? `Assigning ${label} · On / Off — click the whole ${config.group.rtype} or one light in ${where}.`
-    : `Assigning ${label} · Click — click the whole ${config.group.rtype} or one light in ${where} to toggle.`;
-}
-
-function roundAssignHint(
-  slot: PageSlotRef | null,
-  groupName: string | null,
-): string {
-  if (!groupName) {
-    return "Pick a room or zone for this page first. Topology only shows lights and scenes in that group.";
-  }
-  if (!slot) {
-    return `Select Tap or Double tap, then click a light or scene in ${groupName}.`;
-  }
-  if (slot.event === "double_click") {
-    return `Assigning Double tap in ${groupName} — the room or a light turns off. A scene starts or edits a list. Off is not a scene.`;
-  }
-  return `Assigning Tap in ${groupName} — click a light (toggle) or a scene (cycle list).`;
 }
 
 export function BridgeWorkspace({
@@ -171,30 +109,18 @@ export function BridgeWorkspace({
   latestFirmware: { round: string; simple: string };
 }) {
   const router = useRouter();
-  const grouped = useMemo(() => groupTopology(snapshot), [snapshot]);
   const first = switches.find((item) => item.mac === initialMac) ?? switches[0];
-  const [selectedMac, setSelectedMac] = useState<string | null>(
-    first?.mac ?? null,
-  );
-  const [selectedSlot, setSelectedSlot] = useState<SimpleSlotRef | null>(() =>
-    isRoundItem(first) ? null : firstSimpleSlot(first, first?.simpleChannels ?? []),
-  );
-  const [pageSlot, setPageSlot] = useState<PageSlotRef | null>(() =>
-    isRoundItem(first)
-      ? firstOpenPageSlot(first.pages ?? [], first.roundRecipes ?? [])
-      : null,
-  );
+  const [selectedMac, setSelectedMac] = useState<string | null>(first?.mac ?? null);
   const [drafts, setDrafts] = useState<Record<string, SimpleChannelConfig[]>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, item.simpleChannels])),
   );
   const [saved, setSaved] = useState<Record<string, SimpleChannelConfig[]>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, item.simpleChannels])),
   );
-  const [roundDrafts, setRoundDrafts] = useState<Record<string, RoundDraft>>(
-    () =>
-      Object.fromEntries(
-        switches.filter(isRoundItem).map((item) => [item.mac, roundDraftOf(item)]),
-      ),
+  const [roundDrafts, setRoundDrafts] = useState<Record<string, RoundDraft>>(() =>
+    Object.fromEntries(
+      switches.filter(isRoundItem).map((item) => [item.mac, roundDraftOf(item)]),
+    ),
   );
   const [roundSaved, setRoundSaved] = useState<Record<string, RoundDraft>>(() =>
     Object.fromEntries(
@@ -210,311 +136,62 @@ export function BridgeWorkspace({
     Object.fromEntries(switches.map((item) => [item.mac, item.label])),
   );
   const [editingMac, setEditingMac] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  // Only one gesture card, and one Simple channel row, open on the page at a time.
+  const [openGesture, setOpenGesture] = useState<string | null>(null);
+  const [openChannel, setOpenChannel] = useState<string | null>(null);
 
   const selected = switches.find((item) => item.mac === selectedMac) ?? null;
   const round = isRoundItem(selected);
   const simpleConfigs = selected ? (drafts[selected.mac] ?? []) : [];
-  const baseline = selected ? (saved[selected.mac] ?? []) : [];
   const roundDraft = selected ? roundDrafts[selected.mac] : undefined;
-  const roundBaseline = selected ? roundSaved[selected.mac] : undefined;
-  const dirty = selected
-    ? round
-      ? Boolean(
-          roundDraft &&
-            roundBaseline &&
-            (roundDraft.pageSwipeAxis !== roundBaseline.pageSwipeAxis ||
-              roundDraft.screenTimeoutSec !== roundBaseline.screenTimeoutSec ||
-              !pagesEqual(roundDraft.pages, roundBaseline.pages) ||
-              !roundRecipesEqual(roundDraft.recipes, roundBaseline.recipes)),
-        )
-      : !simpleChannelsEqual(simpleConfigs, baseline)
-    : false;
-  const selectedChannel = selected?.channels.find(
-    (channel) => channel.id === selectedSlot?.channelId,
-  );
-  const selectedConfig = simpleConfigs.find(
-    (config) => config.id === selectedSlot?.channelId,
-  );
-  const simpleFirmwareOk = selected ? supportsChannelTypes(selected.firmware) : false;
-  const simpleDimOk = selected ? supportsHoldDim(selected.firmware) : false;
+  const dirty = selected ? itemDirty(selected) : false;
   const staleCount = round
     ? staleRoundCount(roundDraft?.recipes ?? [], snapshot)
     : simpleConfigs.filter((config) => isSimpleChannelStale(config, snapshot)).length;
+  const dirtyOthers = switches.filter(
+    (item) => item.mac !== selected?.mac && itemDirty(item),
+  );
+  const dirtyCount = dirtyOthers.length + (dirty ? 1 : 0);
 
-  function isTargetActive(rid: string): boolean {
-    if (round && pageSlot && roundDraft) {
-      const rec = findRoundRecipe(
-        roundDraft.recipes,
-        pageSlot.pageId,
-        pageSlot.event,
-      );
-      if (!rec) return false;
-      if (rec.action === "recall_scene") {
-        return (rec.targets ?? []).some((item) => item.rid === rid);
-      }
-      return rec.target?.rid === rid;
+  function itemDirty(item: WorkspaceSwitch): boolean {
+    if (isRoundItem(item)) {
+      const draft = roundDrafts[item.mac];
+      const base = roundSaved[item.mac];
+      return Boolean(draft && base && !roundDraftsEqual(draft, base));
     }
-    if (!selectedSlot || !selectedConfig) return false;
-    if (selectedSlot.slot === "scenes") {
-      return selectedConfig.scenes.some((item) => item.rid === rid);
-    }
-    if (selectedSlot.slot === "double" || selectedSlot.slot === "hold") {
-      const gesture =
-        selectedSlot.slot === "double" ? selectedConfig.double : selectedConfig.hold;
-      if (!gesture) return false;
-      return gesture.action === "recall_scene"
-        ? gesture.targets.some((item) => item.rid === rid)
-        : gesture.target.rid === rid;
-    }
-    return selectedConfig.target.rid === rid;
+    return !simpleChannelsEqual(drafts[item.mac] ?? [], saved[item.mac] ?? []);
+  }
+
+  function showNotice(text: string | null, tone: Notice["tone"] = "muted") {
+    setNotice(text ? { text, tone } : null);
   }
 
   function setSimpleFor(mac: string, next: SimpleChannelConfig[]) {
     setDrafts((current) => ({ ...current, [mac]: next }));
+    showNotice(null);
   }
 
   function setRoundDraft(mac: string, next: RoundDraft) {
     setRoundDrafts((current) => ({ ...current, [mac]: next }));
-  }
-
-  function selectSimpleSlot(slot: SimpleSlotRef) {
-    setNotice(null);
-    setError(null);
-    setSelectedSlot(slot);
-  }
-
-  function assignRoundTarget(target: RecipeTarget) {
-    if (!selected || !roundDraft) return;
-    if (!pageSlot) {
-      setNotice("Select Tap or Double tap, then click a destination.");
-      return;
-    }
-    const page = roundDraft.pages.find((item) => item.id === pageSlot.pageId);
-    if (!page?.group) {
-      setNotice("Pick a room or zone for this page first.");
-      return;
-    }
-    if (!targetBelongsToGroup(target, page.group, snapshot)) {
-      setNotice("That light or scene is not in this page's room or zone.");
-      return;
-    }
-    const current = findRoundRecipe(
-      roundDraft.recipes,
-      pageSlot.pageId,
-      pageSlot.event,
-    );
-    if (target.rtype === "scene") {
-      const existing =
-        current?.action === "recall_scene" ? (current.targets ?? []) : [];
-      if (existing.some((item) => item.rid === target.rid)) {
-        const nextTargets = existing.filter((item) => item.rid !== target.rid);
-        const nextRecipes =
-          nextTargets.length === 0
-            ? clearRoundRecipe(
-                roundDraft.recipes,
-                pageSlot.pageId,
-                pageSlot.event,
-              )
-            : upsertRoundRecipe(roundDraft.recipes, {
-                pageId: pageSlot.pageId,
-                event: pageSlot.event,
-                action: "recall_scene",
-                targets: nextTargets,
-              });
-        setRoundDraft(selected.mac, { ...roundDraft, recipes: nextRecipes });
-        setNotice(null);
-        return;
-      }
-      if (existing.length > 0) {
-        const group = sceneGroupRid(snapshot, existing[0].rid);
-        const nextGroup = sceneGroupRid(snapshot, target.rid);
-        if (!group || !nextGroup || group !== nextGroup) {
-          setNotice("Scenes must be in the same room or zone.");
-          return;
-        }
-      }
-      if (existing.length >= MAX_SCENE_LIST) {
-        setNotice("A scene list can have at most 8 scenes.");
-        return;
-      }
-      const nextRecipes = upsertRoundRecipe(roundDraft.recipes, {
-        pageId: pageSlot.pageId,
-        event: pageSlot.event,
-        action: "recall_scene",
-        targets: [...existing, sceneListItem(snapshot, target.rid)],
-      });
-      setRoundDraft(selected.mac, { ...roundDraft, recipes: nextRecipes });
-      setNotice(null);
-      return;
-    }
-    const action = defaultRoundActionForTarget(pageSlot.event, target.rtype);
-    const nextRecipes = upsertRoundRecipe(roundDraft.recipes, {
-      pageId: pageSlot.pageId,
-      event: pageSlot.event,
-      action,
-      target,
-    });
-    setRoundDraft(selected.mac, { ...roundDraft, recipes: nextRecipes });
-    if (pageSlot.event === "short") {
-      const dblEmpty = !findRoundRecipe(
-        nextRecipes,
-        pageSlot.pageId,
-        "double_click",
-      );
-      if (dblEmpty) {
-        setPageSlot({ pageId: pageSlot.pageId, event: "double_click" });
-      }
-    }
-    setNotice(null);
-  }
-
-  function assignTarget(target: RecipeTarget) {
-    setError(null);
-    if (!selected) {
-      setNotice("Select a switch above first.");
-      return;
-    }
-    if (round) {
-      assignRoundTarget(target);
-      return;
-    }
-    assignSimpleTarget(target);
-  }
-
-  function toggleScene(scenes: SceneListItem[], rid: string): SceneListItem[] | null {
-    if (scenes.some((item) => item.rid === rid)) {
-      return scenes.filter((item) => item.rid !== rid);
-    }
-    if (scenes.length >= MAX_SCENE_LIST) {
-      setNotice(`A scene list can have at most ${MAX_SCENE_LIST} scenes.`);
-      return null;
-    }
-    return [...scenes, sceneListItem(snapshot, rid)];
-  }
-
-  function assignSimpleTarget(target: RecipeTarget) {
-    if (!selected) return;
-    if (!simpleFirmwareOk) {
-      setNotice("Update this switch's firmware to configure it.");
-      return;
-    }
-    if (!selectedSlot || !selectedConfig) {
-      setNotice("Pick a room or zone for a channel, then click a light or scene.");
-      return;
-    }
-    const config = selectedConfig;
-    if (!targetBelongsToGroup(target, config.group, snapshot)) {
-      setNotice("That light or scene is not in this channel's room or zone.");
-      return;
-    }
-    const gestureSlot =
-      selectedSlot.slot === "double" || selectedSlot.slot === "hold"
-        ? selectedSlot.slot
-        : null;
-    const gesture =
-      gestureSlot === "double" ? config.double : gestureSlot === "hold" ? config.hold : null;
-    const withGesture = (value: SimpleGesture): SimpleChannelConfig =>
-      gestureSlot === "double" ? { ...config, double: value } : { ...config, hold: value };
-    let next: SimpleChannelConfig;
-    if (gestureSlot && !gesture) {
-      setNotice("Pick what this gesture does first.");
-      return;
-    }
-    if (gesture?.action === "recall_scene") {
-      if (target.rtype !== "scene") {
-        setNotice("This gesture cycles scenes. Pick a scene from the list.");
-        return;
-      }
-      const targets = toggleScene(gesture.targets, target.rid);
-      if (!targets) return;
-      next = withGesture({ action: "recall_scene", targets });
-    } else if (gesture?.action === "off") {
-      setNotice("Hold turns off the whole room or zone. There is nothing to pick.");
-      return;
-    } else if (gesture) {
-      if (target.rtype === "scene") {
-        setNotice("Dim needs a light or the whole room or zone, not a scene.");
-        return;
-      }
-      next = withGesture({ action: gesture.action, target });
-    } else if (target.rtype === "scene") {
-      if (config.kind !== "maintained") {
-        setNotice(
-          "A click toggles a light or the whole room. For scenes, set Double-click or Hold to Cycle scenes.",
-        );
-        return;
-      }
-      const scenes = toggleScene(config.scenes, target.rid);
-      if (!scenes) return;
-      next = { ...config, scenes };
-      if (selectedSlot.slot !== "scenes") {
-        setSelectedSlot({ channelId: config.id, slot: "scenes" });
-      }
-    } else if (selectedSlot.slot === "scenes") {
-      setNotice("Double-click cycles scenes. Pick a scene from the list.");
-      return;
-    } else {
-      next = withTarget(config, target);
-    }
-    setSimpleFor(
-      selected.mac,
-      simpleConfigs.map((item) => (item.id === config.id ? next : item)),
-    );
-    setNotice(
-      next.hold === null && config.hold?.action === "off"
-        ? "Hold turn off was cleared: the click now controls the whole room or zone."
-        : null,
-    );
-  }
-
-  function assignRoomTapAndOff(groupedLightId: string, roomName: string) {
-    if (!selected || !roundDraft) return;
-    const pageId = pageSlot?.pageId ?? roundDraft.pages[0]?.id;
-    if (!pageId) return;
-    const page = roundDraft.pages.find((item) => item.id === pageId);
-    if (!page?.group) {
-      setNotice("Pick a room or zone for this page first.");
-      return;
-    }
-    if (page.group.groupedLightRid !== groupedLightId) {
-      setNotice("That room is not this page's group.");
-      return;
-    }
-    const target: RecipeTarget = { rtype: "grouped_light", rid: groupedLightId };
-    let next = roundDraft.recipes;
-    next = upsertRoundRecipe(next, {
-      pageId,
-      event: "short",
-      action: "toggle",
-      target,
-    });
-    next = upsertRoundRecipe(next, {
-      pageId,
-      event: "double_click",
-      action: "off",
-      target,
-    });
-    setRoundDraft(selected.mac, { ...roundDraft, recipes: next });
-    setPageSlot({ pageId, event: "short" });
-    setNotice(
-      `Tap toggles ${roomName}. Double-tap turns it off. The ring dims ${roomName}.`,
-    );
+    showNotice(null);
   }
 
   function discard() {
     if (!selected) return;
     if (round) {
-      const baselineDraft = roundSaved[selected.mac] ?? roundDraftOf(selected);
-      setRoundDraft(selected.mac, baselineDraft);
-      setError(null);
-      setNotice("Reverted to the last saved pages.");
-      return;
+      setRoundDrafts((current) => ({
+        ...current,
+        [selected.mac]: roundSaved[selected.mac] ?? roundDraftOf(selected),
+      }));
+      showNotice("Reverted to the last saved pages.");
+    } else {
+      setDrafts((current) => ({ ...current, [selected.mac]: saved[selected.mac] ?? [] }));
+      showNotice("Reverted to the last saved channels.");
     }
-    setSimpleFor(selected.mac, saved[selected.mac] ?? []);
     setError(null);
-    setNotice("Reverted to the last saved channels.");
+    setOpenGesture(null);
   }
 
   function clearStale() {
@@ -524,111 +201,120 @@ export function BridgeWorkspace({
         ...roundDraft,
         recipes: clearStaleRoundRecipes(roundDraft.recipes, snapshot),
       });
-      setNotice("Cleared assignments that are missing from this snapshot.");
-      return;
+    } else {
+      setSimpleFor(selected.mac, clearStaleSimple(simpleConfigs, snapshot));
     }
-    setSimpleFor(selected.mac, clearStaleSimple(simpleConfigs, snapshot));
-    setNotice("Cleared assignments that are missing from this snapshot.");
+    showNotice("Cleared assignments that are missing from this snapshot.");
   }
 
-  async function save() {
-    if (!selected) return;
+  async function saveRound(mac: string): Promise<SaveResult> {
+    const draft = roundDrafts[mac];
+    if (!draft) return { ok: true };
+    if (!isScreenTimeoutSec(draft.screenTimeoutSec)) {
+      return { ok: false, error: "Screen timeout must be 0 (always on) or 10–600 seconds." };
+    }
+    const empty = emptySceneList(draft);
+    if (empty) return { ok: false, error: empty };
+    const res = await fetch(`/api/switches/${mac}/pages`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageSwipeAxis: draft.pageSwipeAxis,
+        screenTimeoutSec: draft.screenTimeoutSec,
+        pages: draft.pages.map((page) => ({
+          id: page.id,
+          name: page.name,
+          theme: page.theme,
+          group: page.group,
+        })),
+        recipes: draft.recipes,
+      }),
+    });
+    const body = (await res.json()) as {
+      rev?: number;
+      pages?: SwitchPage[];
+      recipes?: RoundRecipe[];
+      pageSwipeAxis?: RoundDraft["pageSwipeAxis"];
+      screenTimeoutSec?: number;
+      error?: string;
+      details?: string;
+    };
+    if (!res.ok) {
+      return { ok: false, error: body.details ?? body.error ?? "Could not save pages" };
+    }
+    const next: RoundDraft = {
+      pages: body.pages ?? draft.pages,
+      recipes: body.recipes ?? draft.recipes,
+      pageSwipeAxis: body.pageSwipeAxis ?? draft.pageSwipeAxis,
+      screenTimeoutSec: body.screenTimeoutSec ?? draft.screenTimeoutSec,
+    };
+    setRoundDrafts((current) => ({ ...current, [mac]: next }));
+    setRoundSaved((current) => ({ ...current, [mac]: next }));
+    return { ok: true, rev: body.rev };
+  }
+
+  async function saveSimple(mac: string): Promise<SaveResult> {
+    const configs = drafts[mac] ?? [];
+    const res = await fetch(`/api/switches/${mac}/channels`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channels: configs.map((config) => ({
+          id: config.id,
+          kind: config.kind,
+          group: { rtype: config.group.rtype, rid: config.group.rid },
+          target: config.target,
+          scenes: config.scenes.map((item) => item.rid),
+          double: config.double,
+          hold: config.hold,
+        })),
+      }),
+    });
+    const body = (await res.json()) as {
+      rev?: number;
+      channels?: SimpleChannelConfig[];
+      error?: string;
+      details?: string;
+    };
+    if (!res.ok) {
+      return { ok: false, error: body.details ?? body.error ?? "Could not save channels" };
+    }
+    const next = body.channels ?? configs;
+    setDrafts((current) => ({ ...current, [mac]: next }));
+    setSaved((current) => ({ ...current, [mac]: next }));
+    return { ok: true, rev: body.rev };
+  }
+
+  async function saveSwitch(item: WorkspaceSwitch): Promise<SaveResult> {
+    const result = isRoundItem(item) ? await saveRound(item.mac) : await saveSimple(item.mac);
+    if (result.ok && typeof result.rev === "number") {
+      setRevs((current) => ({ ...current, [item.mac]: result.rev as number }));
+    }
+    return result;
+  }
+
+  async function saveMany(items: WorkspaceSwitch[]) {
+    if (items.length === 0) return;
     setPending(true);
     setError(null);
-    setNotice(null);
+    showNotice(null);
     try {
-      if (round && roundDraft) {
-        if (!isScreenTimeoutSec(roundDraft.screenTimeoutSec)) {
-          setError(
-            "Screen timeout must be 0 (always on) or 10–600 seconds.",
-          );
+      let lastRev: number | undefined;
+      for (const item of items) {
+        const result = await saveSwitch(item);
+        if (!result.ok) {
+          setError(items.length > 1 ? `${boardName(item)}: ${result.error}` : result.error);
           return;
         }
-        const res = await fetch(`/api/switches/${selected.mac}/pages`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            pageSwipeAxis: roundDraft.pageSwipeAxis,
-            screenTimeoutSec: roundDraft.screenTimeoutSec,
-            pages: roundDraft.pages.map((page) => ({
-              id: page.id,
-              name: page.name,
-              theme: page.theme,
-              group: page.group,
-            })),
-            recipes: roundDraft.recipes,
-          }),
-        });
-        const body = (await res.json()) as {
-          ok?: boolean;
-          rev?: number;
-          pages?: SwitchPage[];
-          recipes?: RoundRecipe[];
-          pageSwipeAxis?: RoundDraft["pageSwipeAxis"];
-          screenTimeoutSec?: number;
-          error?: string;
-          details?: string;
-        };
-        if (!res.ok) {
-          setError(body.details ?? body.error ?? "Could not save pages");
-          return;
-        }
-        const next: RoundDraft = {
-          pages: body.pages ?? roundDraft.pages,
-          recipes: body.recipes ?? roundDraft.recipes,
-          pageSwipeAxis: body.pageSwipeAxis ?? roundDraft.pageSwipeAxis,
-          screenTimeoutSec: body.screenTimeoutSec ?? roundDraft.screenTimeoutSec,
-        };
-        setRoundDraft(selected.mac, next);
-        setRoundSaved((current) => ({ ...current, [selected.mac]: next }));
-        if (pageSlot && !next.pages.some((page) => page.id === pageSlot.pageId)) {
-          setPageSlot(firstOpenPageSlot(next.pages, next.recipes));
-        }
-        if (typeof body.rev === "number") {
-          setRevs((current) => ({ ...current, [selected.mac]: body.rev as number }));
-        }
-        setSavedAt(selected.mac);
-        setNotice(
-          `Saved · rev ${body.rev}. The switch picks this up on poll, or immediately after reboot.`,
-        );
-        router.refresh();
-        return;
+        lastRev = result.rev;
       }
-      const res = await fetch(`/api/switches/${selected.mac}/channels`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          channels: simpleConfigs.map((config) => ({
-            id: config.id,
-            kind: config.kind,
-            group: { rtype: config.group.rtype, rid: config.group.rid },
-            target: config.target,
-            scenes: config.scenes.map((item) => item.rid),
-            double: config.double,
-            hold: config.hold,
-          })),
-        }),
-      });
-      const body = (await res.json()) as {
-        ok?: boolean;
-        rev?: number;
-        channels?: SimpleChannelConfig[];
-        error?: string;
-        details?: string;
-      };
-      if (!res.ok) {
-        setError(body.details ?? body.error ?? "Could not save channels");
-        return;
-      }
-      const next = body.channels ?? simpleConfigs;
-      setSimpleFor(selected.mac, next);
-      setSaved((current) => ({ ...current, [selected.mac]: next }));
-      if (typeof body.rev === "number") {
-        setRevs((current) => ({ ...current, [selected.mac]: body.rev as number }));
-      }
-      setSavedAt(selected.mac);
-      setNotice(
-        `Saved · rev ${body.rev}. The switch picks this up on poll, or immediately after reboot.`,
+      setOpenGesture(null);
+      if (selected) setSavedAt(selected.mac);
+      showNotice(
+        items.length > 1
+          ? `Saved ${items.length} switches. Each picks this up on poll, or immediately after reboot.`
+          : `Saved · rev ${lastRev}. ${SAVED_TAIL}`,
+        "ok",
       );
       router.refresh();
     } finally {
@@ -636,58 +322,13 @@ export function BridgeWorkspace({
     }
   }
 
-  const lightCount = snapshot.lights.length;
-  const roomCount = snapshot.rooms.length;
-  const sceneCount = snapshot.scenes.length;
-  const topologyEmpty = lightCount === 0 && roomCount === 0 && sceneCount === 0;
-  const selectedPage =
-    round && roundDraft
-      ? (roundDraft.pages.find((page) => page.id === pageSlot?.pageId) ??
-        roundDraft.pages[0] ??
-        null)
-      : null;
-  const pageGroup = selectedPage?.group ?? null;
-  const pageGroupName = pageGroup
-    ? (snapshot.rooms.find((room) => room.id === pageGroup.rid)?.name ?? null)
-    : null;
-  const simpleGroup = !round ? (selectedConfig?.group ?? null) : null;
-  const simpleGroupName = simpleGroup
-    ? (groupRoom(snapshot, simpleGroup)?.name ?? null)
-    : null;
-  const focusGroup = round ? pageGroup : simpleGroup;
-  const visibleRooms = focusGroup
-    ? grouped.rooms.filter((item) => item.room.id === focusGroup.rid)
-    : [];
-
-  function itemDirty(item: WorkspaceSwitch): boolean {
-    if (isRoundItem(item)) {
-      const draft = roundDrafts[item.mac];
-      const base = roundSaved[item.mac];
-      return Boolean(
-        draft &&
-          base &&
-          (draft.pageSwipeAxis !== base.pageSwipeAxis ||
-            draft.screenTimeoutSec !== base.screenTimeoutSec ||
-            !pagesEqual(draft.pages, base.pages) ||
-            !roundRecipesEqual(draft.recipes, base.recipes)),
-      );
-    }
-    return !simpleChannelsEqual(drafts[item.mac] ?? [], saved[item.mac] ?? []);
-  }
-
   function selectBoard(item: WorkspaceSwitch) {
     if (item.mac === selectedMac) return;
     setSelectedMac(item.mac);
     setEditingMac(null);
-    if (isRoundItem(item)) {
-      const draft = roundDrafts[item.mac] ?? roundDraftOf(item);
-      setSelectedSlot(null);
-      setPageSlot(firstOpenPageSlot(draft.pages, draft.recipes));
-    } else {
-      setPageSlot(null);
-      setSelectedSlot(firstSimpleSlot(item, drafts[item.mac] ?? item.simpleChannels));
-    }
-    setNotice(null);
+    setOpenGesture(null);
+    setOpenChannel(null);
+    showNotice(null);
     setError(null);
   }
 
@@ -700,6 +341,26 @@ export function BridgeWorkspace({
   function boardName(item: WorkspaceSwitch): string {
     return (names[item.mac] || "").trim() || formatMac(item.mac);
   }
+
+  const lightCount = snapshot.lights.length;
+  const roomCount = snapshot.rooms.length;
+  const sceneCount = snapshot.scenes.length;
+  const topologyEmpty = lightCount === 0 && roomCount === 0 && sceneCount === 0;
+
+  const statusText =
+    notice?.text ??
+    (dirty
+      ? "Unsaved changes"
+      : round
+        ? "Empty gestures do nothing."
+        : "Channels without a room do nothing.");
+  const statusClass = notice
+    ? notice.tone === "ok"
+      ? "text-ok"
+      : "text-muted"
+    : dirty
+      ? "text-filament"
+      : "text-muted";
 
   return (
     <div className="flex flex-col gap-5">
@@ -724,6 +385,16 @@ export function BridgeWorkspace({
         </p>
       ) : null}
 
+      {topologyEmpty ? (
+        <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
+          <p className="font-medium text-foreground">No lights yet</p>
+          <p className="mt-2">
+            A switch paired with this Bridge sends its rooms, lights, and scenes
+            when it checks in.
+          </p>
+        </div>
+      ) : null}
+
       {switches.length === 0 ? (
         <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
           <p className="font-medium text-foreground">No switches on this Bridge</p>
@@ -739,7 +410,6 @@ export function BridgeWorkspace({
         <nav aria-label="Switches" className="flex flex-wrap gap-2">
           {switches.map((item) => {
             const active = item.mac === selectedMac;
-            const dirtyItem = itemDirty(item);
             return (
               <button
                 key={item.mac}
@@ -754,7 +424,7 @@ export function BridgeWorkspace({
               >
                 <span className="flex max-w-full items-center gap-2">
                   <span className="truncate text-sm font-medium">{boardName(item)}</span>
-                  {dirtyItem ? (
+                  {itemDirty(item) ? (
                     <span
                       className="h-2 w-2 shrink-0 rounded-full bg-filament"
                       aria-label="Unsaved changes"
@@ -764,12 +434,8 @@ export function BridgeWorkspace({
                 </span>
                 <span className="text-xs text-muted">
                   {isRoundItem(item) ? "Round" : "Simple"}
-                  {item.last_seen_at
-                    ? ` · seen ${formatWhen(item.last_seen_at)}`
-                    : " · never seen"}
-                  {updateFor(item) ? (
-                    <span className="text-filament"> · update</span>
-                  ) : null}
+                  {item.last_seen_at ? ` · seen ${formatWhen(item.last_seen_at)}` : " · never seen"}
+                  {updateFor(item) ? <span className="text-filament"> · update</span> : null}
                 </span>
               </button>
             );
@@ -777,309 +443,158 @@ export function BridgeWorkspace({
         </nav>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start">
-        {selected ? (
-          <section
-            aria-label={`${boardName(selected)} settings`}
-            className="rounded-xl border border-line bg-cream"
-          >
-            <header className="flex items-start gap-2 px-4 py-3">
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <h2 className="flex flex-wrap items-center gap-2 text-base font-medium">
-                  <span className="truncate">{boardName(selected)}</span>
-                  <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
-                    {round ? "Round" : "Simple"}
+      {selected ? (
+        <section
+          aria-label={`${boardName(selected)} settings`}
+          className="rounded-xl border border-line bg-cream"
+        >
+          <header className="flex items-start gap-2 px-5 py-3.5">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <h2 className="flex flex-wrap items-center gap-2 text-base font-medium">
+                <span className="truncate">{boardName(selected)}</span>
+                <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
+                  {round ? "Round" : "Simple"}
+                </span>
+                {dirty ? (
+                  <span className="rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
+                    Unsaved
                   </span>
-                  {dirty ? (
-                    <span className="rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
-                      Unsaved
-                    </span>
-                  ) : savedAt === selected.mac ? (
-                    <span className="rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
-                      Saved
-                    </span>
-                  ) : null}
-                  {updateFor(selected) ? (
-                    <Link
-                      href="/devices"
-                      title="Plug the board in over USB and install from Devices"
-                      className="rounded-full border border-filament/50 px-2 py-0.5 text-[11px] font-medium text-filament hover:bg-filament-soft"
-                    >
-                      Update to {updateFor(selected)}
-                    </Link>
-                  ) : null}
-                </h2>
-                <p className="text-xs text-muted">
-                  <span className="font-mono">{formatMac(selected.mac)}</span>
-                  {selected.firmware ? ` · firmware ${selected.firmware}` : ""}
-                  {` · rev ${revs[selected.mac] ?? selected.rev}`}
-                  {" · "}
+                ) : savedAt === selected.mac ? (
+                  <span className="rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
+                    Saved
+                  </span>
+                ) : null}
+                {updateFor(selected) ? (
                   <Link
-                    href={round ? "/how-to#round" : "/how-to#simple"}
-                    className="text-filament underline underline-offset-2"
+                    href="/devices"
+                    title="Plug the board in over USB and install from Devices"
+                    className="rounded-full border border-filament/50 px-2 py-0.5 text-[11px] font-medium text-filament hover:bg-filament-soft"
                   >
-                    {round ? "What the screen shows" : "What the LED shows"}
+                    Update to {updateFor(selected)}
                   </Link>
-                </p>
-              </div>
+                ) : null}
+              </h2>
+              <p className="text-xs text-muted">
+                <span className="font-mono">{formatMac(selected.mac)}</span>
+                {selected.firmware ? ` · firmware ${selected.firmware}` : ""}
+                {` · rev ${revs[selected.mac] ?? selected.rev}`}
+                {" · "}
+                <Link
+                  href={round ? "/how-to#round" : "/how-to#simple"}
+                  className="text-filament underline underline-offset-2"
+                >
+                  {round ? "What the screen shows" : "What the LED shows"}
+                </Link>
+              </p>
+            </div>
+            <button
+              type="button"
+              className="mt-0.5 shrink-0 rounded-md p-1.5 text-muted hover:bg-filament-soft hover:text-filament"
+              aria-label={`Rename ${boardName(selected)}`}
+              onClick={() => setEditingMac(selected.mac)}
+            >
+              <PencilIcon />
+            </button>
+          </header>
+          {editingMac === selected.mac ? (
+            <SwitchRenameForm
+              key={selected.mac}
+              mac={selected.mac}
+              initial={(names[selected.mac] || "").trim()}
+              onCancel={() => setEditingMac(null)}
+              onSaved={(label) => {
+                setNames((current) => ({ ...current, [selected.mac]: label }));
+                setEditingMac(null);
+              }}
+              onError={setError}
+            />
+          ) : null}
+
+          {round && roundDraft ? (
+            <RoundPagesEditor
+              key={selected.mac}
+              snapshot={snapshot}
+              draft={roundDraft}
+              openGesture={openGesture}
+              onOpenGesture={setOpenGesture}
+              onChange={(next) => setRoundDraft(selected.mac, next)}
+              onNotice={(text) => showNotice(text)}
+            />
+          ) : null}
+
+          {!round ? (
+            <SimpleChannelsEditor
+              key={selected.mac}
+              channels={selected.channels}
+              configs={simpleConfigs}
+              snapshot={snapshot}
+              firmware={supportsChannelTypes(selected.firmware)}
+              dimSupported={supportsHoldDim(selected.firmware)}
+              openChannel={openChannel}
+              openGesture={openGesture}
+              onOpenChannel={setOpenChannel}
+              onOpenGesture={setOpenGesture}
+              onChange={(next) => setSimpleFor(selected.mac, next)}
+              onNotice={(text) => showNotice(text)}
+            />
+          ) : null}
+
+          {staleCount > 0 ? (
+            <div className="mx-3 mt-3 flex flex-wrap items-center gap-2 px-1">
+              <p className="text-xs text-warn">
+                {staleCount} assignment{staleCount === 1 ? " is" : "s are"} missing
+                from this snapshot. Saving will be rejected until{" "}
+                {staleCount === 1 ? "it is" : "they are"} cleared.
+              </p>
               <button
                 type="button"
-                className="mt-0.5 shrink-0 rounded-md p-1.5 text-muted hover:bg-filament-soft hover:text-filament"
-                aria-label={`Rename ${boardName(selected)}`}
-                onClick={() => setEditingMac(selected.mac)}
+                onClick={clearStale}
+                className="text-xs font-medium text-warn hover:underline"
               >
-                <PencilIcon />
+                Clear stale
               </button>
-            </header>
-            {editingMac === selected.mac ? (
-              <SwitchRenameForm
-                key={selected.mac}
-                mac={selected.mac}
-                initial={(names[selected.mac] || "").trim()}
-                onCancel={() => setEditingMac(null)}
-                onSaved={(label) => {
-                  setNames((current) => ({ ...current, [selected.mac]: label }));
-                  setEditingMac(null);
-                }}
-                onError={setError}
-              />
-            ) : null}
-
-            {round && roundDraft ? (
-              <RoundPagesEditor
-                snapshot={snapshot}
-                draft={roundDraft}
-                selectedSlot={pageSlot}
-                pending={pending}
-                dirty={dirty}
-                savedFlash={savedAt === selected.mac}
-                staleCount={staleCount}
-                onSelectSlot={setPageSlot}
-                onChange={(next) => setRoundDraft(selected.mac, next)}
-                onSave={save}
-                onDiscard={discard}
-                onClearStale={clearStale}
-              />
-            ) : null}
-
-            {!round ? (
-              <SimpleChannelsEditor
-                channels={selected.channels}
-                configs={simpleConfigs}
-                snapshot={snapshot}
-                firmware={simpleFirmwareOk}
-                dimSupported={simpleDimOk}
-                selectedSlot={selectedSlot}
-                pending={pending}
-                dirty={dirty}
-                savedFlash={savedAt === selected.mac}
-                staleCount={staleCount}
-                onSelectSlot={selectSimpleSlot}
-                onChange={(next) => setSimpleFor(selected.mac, next)}
-                onSave={save}
-                onDiscard={discard}
-                onClearStale={clearStale}
-              />
-            ) : null}
-          </section>
-        ) : (
-          <div />
-        )}
-
-        <section
-          aria-label="Lights and scenes"
-          className="flex flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1"
-        >
-          <header className="flex flex-col gap-1">
-            <h2 className="text-sm font-medium uppercase tracking-[0.12em] text-muted">
-              Lights and scenes
-            </h2>
-            <p className="text-sm text-muted">
-              {round
-                ? roundAssignHint(pageSlot, pageGroupName)
-                : simpleAssignHint(
-                    selectedSlot,
-                    selectedChannel?.label ?? null,
-                    selectedConfig,
-                    simpleGroupName,
-                  )}
-            </p>
-            {notice ? (
-              <p className="text-sm text-filament" role="status">
-                {notice}
-              </p>
-            ) : null}
-          </header>
-
-          {topologyEmpty ? (
-            <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
-              <p className="font-medium text-foreground">No lights yet</p>
-              <p className="mt-2">
-                A switch paired with this Bridge sends its rooms, lights, and
-                scenes when it checks in.
-              </p>
             </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {round && !pageGroup ? (
-                <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
-                  Pick a room or zone for this page. Topology then shows only
-                  that group&apos;s lights and scenes.
-                </p>
-              ) : null}
-              {round && pageGroup && visibleRooms.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
-                  This page&apos;s room or zone is missing from the snapshot.
-                  Pick another group, or wait for a new topology upload.
-                </p>
-              ) : null}
-              {!round && !simpleGroup ? (
-                <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
-                  Pick a room or zone for a channel. Topology then shows only
-                  that group&apos;s lights and scenes.
-                </p>
-              ) : null}
-              {!round && simpleGroup && visibleRooms.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-line bg-cream p-4 text-sm text-muted">
-                  This channel&apos;s room or zone is missing from the snapshot.
-                  Pick another group, or wait for a new topology upload.
-                </p>
-              ) : null}
+          ) : null}
 
-              {visibleRooms.map(({ room, lights, scenes }) => (
-                <article
-                  key={room.id}
-                  className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4"
+          <div className="sticky bottom-3 m-3 flex flex-wrap items-center gap-2 rounded-[10px] border border-line bg-cream/95 px-3 py-2 backdrop-blur">
+            <button
+              type="button"
+              onClick={() => (dirty ? saveMany([selected]) : undefined)}
+              disabled={!dirty || pending}
+              className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50"
+            >
+              {pending ? "Saving…" : round ? "Save pages" : "Save channels"}
+            </button>
+            <button
+              type="button"
+              onClick={discard}
+              disabled={!dirty || pending}
+              className="rounded-md border border-line px-3 py-1.5 text-sm disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <span className={`text-xs ${statusClass}`} role="status">
+              {statusText}
+            </span>
+            {dirtyOthers.length > 0 ? (
+              <span className="ml-auto flex items-center gap-2.5 text-xs text-muted">
+                <span>Also unsaved: {dirtyOthers.map(boardName).join(", ")}</span>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() =>
+                    saveMany(switches.filter((item) => itemDirty(item)))
+                  }
+                  className="rounded-md border border-filament px-2.5 py-[5px] text-[13px] font-medium text-filament disabled:opacity-50"
                 >
-                  <header className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="text-base font-medium">{room.name}</h3>
-                    <span className="text-xs uppercase tracking-[0.12em] text-muted">
-                      {room.rtype === "zone" ? "Zone" : "Room"}
-                    </span>
-                  </header>
-
-                  {room.grouped_light_id ? (
-                    <div className="flex flex-wrap gap-2">
-                      <TargetButton
-                        label="Whole room"
-                        detail="grouped light"
-                        active={isTargetActive(room.grouped_light_id)}
-                        onClick={() =>
-                          assignTarget({
-                            rtype: "grouped_light",
-                            rid: room.grouped_light_id as string,
-                          })
-                        }
-                      />
-                      {round ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            assignRoomTapAndOff(room.grouped_light_id as string, room.name)
-                          }
-                          className="rounded-md border border-filament/40 bg-filament-soft px-3 py-1.5 text-sm font-medium"
-                        >
-                          Use this room for tap and double-tap
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted">
-                      This room has no grouped light. Assign individual lamps.
-                    </p>
-                  )}
-
-                  {lights.length > 0 ? (
-                    <TargetGroup title="Lights">
-                      {lights.map((light) => (
-                        <TargetButton
-                          key={light.id}
-                          label={light.name}
-                          detail={light.on === true ? "on" : light.on === false ? "off" : undefined}
-                          active={isTargetActive(light.id)}
-                          onClick={() =>
-                            assignTarget({ rtype: "light", rid: light.id })
-                          }
-                        />
-                      ))}
-                    </TargetGroup>
-                  ) : (
-                    <p className="text-xs text-muted">No lights listed in this room.</p>
-                  )}
-
-                  {scenes.length > 0 ? (
-                    <TargetGroup title="Scenes">
-                      {scenes.map((scene) => (
-                        <TargetButton
-                          key={scene.id}
-                          label={scene.name}
-                          detail="scene"
-                          active={isTargetActive(scene.id)}
-                          onClick={() =>
-                            assignTarget({ rtype: "scene", rid: scene.id })
-                          }
-                        />
-                      ))}
-                    </TargetGroup>
-                  ) : (
-                    <p className="text-xs text-muted">
-                      No scenes for this room. The scene list can stay empty.
-                    </p>
-                  )}
-                </article>
-              ))}
-
-            </div>
-          )}
+                  Save all ({dirtyCount})
+                </button>
+              </span>
+            ) : null}
+          </div>
         </section>
-      </div>
-    </div>
-  );
-}
-
-function TargetGroup({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <h4 className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-        {title}
-      </h4>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
-
-function TargetButton({
-  label,
-  detail,
-  active,
-  onClick,
-}: {
-  label: string;
-  detail?: string;
-  active?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-md border px-3 py-1.5 text-left text-sm ${
-        active
-          ? "border-filament bg-filament-soft"
-          : "border-line hover:border-filament/50"
-      }`}
-    >
-      <span>{label}</span>
-      {detail ? (
-        <span className="ml-2 text-xs text-muted">{detail}</span>
       ) : null}
-    </button>
+    </div>
   );
 }
 
@@ -1138,11 +653,11 @@ function SwitchRenameForm({
   }
 
   return (
-    <form
-      onSubmit={save}
-      className="flex flex-col gap-2 border-t border-line px-4 py-3"
-    >
-      <label className="text-xs font-medium uppercase tracking-[0.12em] text-muted" htmlFor={`rename-${mac}`}>
+    <form onSubmit={save} className="flex flex-col gap-2 border-t border-line px-5 py-3">
+      <label
+        className="text-xs font-medium uppercase tracking-[0.12em] text-muted"
+        htmlFor={`rename-${mac}`}
+      >
         Display name
       </label>
       <input

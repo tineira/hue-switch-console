@@ -111,20 +111,12 @@ Not needed in v1: triple click, long-off, double_off. Noise and long wires eat t
 
 ## Display and recipes (Simple: per channel and event)
 
-One Bridge at a time. Two columns.
-
-**Left — switches.** XIAOs of *this* `bridgeid`.
+One Bridge at a time. Switches of *this* `bridgeid` are tabs; the selected one opens below. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
 
 - **Simple:** channels. Each one gets a room or zone, a type (toggle switch or push button) and a target. A toggle switch adds a double-click scene list; a push button adds a double-click and a hold action. A channel without a room does nothing.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.
 
-The XIAO is not drawn inside the Hue tree.
-
-**Right — Bridge topology.** Filtered to the selected page's or channel's room or zone:
-
-1. The whole room (`grouped_light`)
-2. The lights
-3. That room's scenes
+The XIAO is not drawn inside the Hue tree. A gesture's light chips are the whole room or zone (`grouped_light`) and its lights; its scene chips are that group's scenes, shown only for Cycle scenes.
 
 **Simple channel settings → recipes**
 
@@ -158,23 +150,23 @@ Wipe round→simple **only** if the body carries an explicit `"product": "simple
 
 ### How the user assigns (console, Simple)
 
-1. Pick a **switch** (left).
+1. Pick a **switch** tab, then open a **channel** row (one at a time).
 2. For each **channel**, pick a **room or zone**. "Not used" = the channel does nothing.
 3. Pick a **type**: Toggle switch or Push button. BOOT is always a push button.
-4. Pick the **target** in the topology (right, filtered to that group): the whole group (`grouped_light`) or one light. It defaults to the whole group.
+4. Pick the **target** on the On / Off or Click card: the whole group (`grouped_light`) or one light of it. It defaults to the whole group.
 5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: **double-click** is nothing or Cycle scenes; **hold** is nothing, **Dim** (firmware ≥ 0.4.0), or Turn off the whole room or zone (offered only when the click target is one light). On BOOT, a hold set to nothing re-pairs with the Bridge.
 
 | Type | Gesture | What it does |
 | --- | --- | --- |
 | Toggle switch | lever closes / opens | `on` / `off` the target (automatic) |
-| Toggle switch | double-click | next scene in the list; empty list → `on` |
+| Toggle switch | double-click | next scene in the list; empty list → `on` (the lever ends up; the console says "Does nothing") |
 | Push button | click | `toggle` the target (automatic) |
 | Push button | double-click | next scene in the list; nothing = no-op |
 | Push button | hold | dim, or turn off the whole group; nothing = no-op (BOOT: re-pair) |
 
 If the target is one light, a scene still applies to the whole group; the console warns.
 
-Confirmation sentence (not just UUIDs): *"D0 · Living · toggle switch: on/off all of Living · double-click cycles Relax, Bright"*.
+Each channel row sums up its gestures in words (not UUIDs): *"On / Off: lever up turns on, down turns off all of Living · Double-click: cycles Relax → Bright"*.
 
 Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only toggle switches have a scene list; only push buttons have double-click and hold actions. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
 

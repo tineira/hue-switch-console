@@ -1,10 +1,15 @@
 "use client";
 
+import {
+  GesturePicker,
+  choiceClass,
+  type GestureOption,
+} from "@/app/bridges/[bridgeid]/gesture-picker";
+import { summarizeGesture, targetInGroup, type GestureAction } from "@/lib/gestures";
 import { pickableGroups } from "@/lib/pages";
 import {
   SIMPLE_DIM_FIRMWARE,
   SIMPLE_MIN_FIRMWARE,
-  confirmationForSimpleChannel,
   defaultSimpleChannel,
   groupFromRoomId,
   groupRoom,
@@ -12,33 +17,171 @@ import {
   isBootChannel,
   isSimpleChannelStale,
   kindLabel,
-  targetName,
   withGroup,
   withKind,
+  withTarget,
 } from "@/lib/simple-channels";
 import type {
   Channel,
   ChannelKind,
+  RecipeTarget,
   SceneListItem,
   SimpleChannelConfig,
   SimpleGesture,
   TopologySnapshot,
 } from "@/lib/types";
 import Link from "next/link";
+import { useState } from "react";
 
-export type SimpleSlot = "target" | "scenes" | "double" | "hold";
-export type SimpleSlotRef = { channelId: string; slot: SimpleSlot };
+type GestureSlot = "primary" | "double" | "hold";
 
-type GestureChoice = "none" | "recall_scene" | "dim" | "off";
+type GestureView = {
+  slot: GestureSlot;
+  label: string;
+  action: GestureAction;
+  summary: string;
+  options?: GestureOption[];
+  fixedTarget?: boolean;
+  target: RecipeTarget | null;
+  scenes: SceneListItem[];
+};
 
-type ChoiceOption = { value: GestureChoice; label: string; disabled?: boolean };
+function gestureAction(gesture: SimpleGesture | null): GestureAction {
+  if (!gesture) return "none";
+  return gesture.action === "recall_scene" ? "scenes" : gesture.action;
+}
 
-function moveItem<T>(items: T[], index: number, dir: -1 | 1): T[] {
-  const next = [...items];
-  const to = index + dir;
-  if (to < 0 || to >= next.length) return items;
-  [next[index], next[to]] = [next[to], next[index]];
-  return next;
+function gestureTarget(gesture: SimpleGesture | null): RecipeTarget | null {
+  return gesture && gesture.action !== "recall_scene" ? gesture.target : null;
+}
+
+function gestureScenes(gesture: SimpleGesture | null): SceneListItem[] {
+  return gesture?.action === "recall_scene" ? gesture.targets : [];
+}
+
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+const SCENE_OPTIONS: GestureOption[] = [
+  { value: "none", label: "Nothing" },
+  { value: "scenes", label: "Cycle scenes" },
+];
+
+/** The gesture cards a configured channel shows, with their summaries. */
+function channelGestures(
+  config: SimpleChannelConfig,
+  snapshot: TopologySnapshot,
+  dimSupported: boolean,
+  wantsScenes: boolean,
+): GestureView[] {
+  const boot = isBootChannel(config.id);
+  if (config.kind === "maintained") {
+    const doubleAction: GestureAction =
+      config.scenes.length > 0 || wantsScenes ? "scenes" : "none";
+    return [
+      {
+        slot: "primary",
+        label: "On / Off",
+        action: "onoff",
+        summary: summarizeGesture("onoff", config.target, [], snapshot, ""),
+        target: config.target,
+        scenes: [],
+      },
+      {
+        slot: "double",
+        label: "Double-click",
+        action: doubleAction,
+        summary: summarizeGesture(doubleAction, null, config.scenes, snapshot, "Does nothing"),
+        options: SCENE_OPTIONS,
+        target: null,
+        scenes: config.scenes,
+      },
+    ];
+  }
+  const doubleAction = gestureAction(config.double);
+  const holdAction = gestureAction(config.hold);
+  const roomName = groupRoom(snapshot, config.group)?.name ?? "the group";
+  const holdOptions: GestureOption[] = [
+    { value: "none", label: boot ? "Re-pair with Bridge" : "Nothing" },
+    {
+      value: "dim",
+      label: dimSupported ? "Dim" : `Dim (needs firmware ${SIMPLE_DIM_FIRMWARE})`,
+      disabled: !dimSupported && holdAction !== "dim",
+    },
+  ];
+  if (holdOffAvailable(config) || holdAction === "off") {
+    holdOptions.push({ value: "off", label: `Turn off all of ${roomName}` });
+  }
+  return [
+    {
+      slot: "primary",
+      label: "Click",
+      action: "toggle",
+      summary: summarizeGesture("toggle", config.target, [], snapshot, ""),
+      target: config.target,
+      scenes: [],
+    },
+    {
+      slot: "double",
+      label: "Double-click",
+      action: doubleAction,
+      summary: summarizeGesture(
+        doubleAction,
+        null,
+        gestureScenes(config.double),
+        snapshot,
+        "Does nothing",
+      ),
+      options: SCENE_OPTIONS,
+      target: null,
+      scenes: gestureScenes(config.double),
+    },
+    {
+      slot: "hold",
+      label: "Hold",
+      action: holdAction,
+      summary: summarizeGesture(
+        holdAction,
+        gestureTarget(config.hold),
+        gestureScenes(config.hold),
+        snapshot,
+        boot ? "Re-pairs with the Bridge" : "Does nothing",
+      ),
+      options: holdOptions,
+      fixedTarget: holdAction === "off",
+      target: gestureTarget(config.hold),
+      scenes: gestureScenes(config.hold),
+    },
+  ];
+}
+
+/** Changing the action keeps what still fits: the current target if it is in the group, or the scene list. */
+function gestureFromAction(
+  action: GestureAction,
+  config: SimpleChannelConfig,
+  current: SimpleGesture | null,
+  snapshot: TopologySnapshot,
+): SimpleGesture | null {
+  switch (action) {
+    case "scenes":
+      return current?.action === "recall_scene"
+        ? current
+        : { action: "recall_scene", targets: [] };
+    case "off":
+      return {
+        action: "off",
+        target: { rtype: "grouped_light", rid: config.group.groupedLightRid },
+      };
+    case "dim":
+    case "toggle":
+    case "on": {
+      const base = gestureTarget(current) ?? config.target;
+      return { action, target: targetInGroup(base, config.group, snapshot) };
+    }
+    default:
+      return null;
+  }
 }
 
 export function SimpleChannelsEditor({
@@ -47,16 +190,12 @@ export function SimpleChannelsEditor({
   snapshot,
   firmware,
   dimSupported,
-  selectedSlot,
-  pending,
-  dirty,
-  savedFlash,
-  staleCount,
-  onSelectSlot,
+  openChannel,
+  openGesture,
+  onOpenChannel,
+  onOpenGesture,
   onChange,
-  onSave,
-  onDiscard,
-  onClearStale,
+  onNotice,
 }: {
   channels: Channel[];
   configs: SimpleChannelConfig[];
@@ -65,17 +204,16 @@ export function SimpleChannelsEditor({
   firmware: boolean;
   /** False when the board runs firmware older than SIMPLE_DIM_FIRMWARE. */
   dimSupported: boolean;
-  selectedSlot: SimpleSlotRef | null;
-  pending: boolean;
-  dirty: boolean;
-  savedFlash: boolean;
-  staleCount: number;
-  onSelectSlot: (slot: SimpleSlotRef) => void;
+  openChannel: string | null;
+  openGesture: string | null;
+  onOpenChannel: (channelId: string | null) => void;
+  onOpenGesture: (key: string | null) => void;
   onChange: (next: SimpleChannelConfig[]) => void;
-  onSave: () => void;
-  onDiscard: () => void;
-  onClearStale: () => void;
+  onNotice: (text: string | null) => void;
 }) {
+  // A toggle switch with "Cycle scenes" picked but no scene yet: an empty list in the draft reads as Nothing.
+  const [wantsScenes, setWantsScenes] = useState<Record<string, boolean>>({});
+
   function patch(channelId: string, next: SimpleChannelConfig | null) {
     const without = configs.filter((config) => config.id !== channelId);
     onChange(next ? [...without, next] : without);
@@ -83,7 +221,7 @@ export function SimpleChannelsEditor({
 
   if (channels.length === 0) {
     return (
-      <div className="border-t border-line px-4 py-3">
+      <div className="border-t border-line px-5 py-4">
         <p className="text-sm text-muted">
           This board registered without channels. Re-register from the firmware
           so BOOT / D0 / D1 / D2 appear.
@@ -93,9 +231,9 @@ export function SimpleChannelsEditor({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
+    <div className="border-t border-line">
       {!firmware ? (
-        <div className="rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-sm">
+        <div className="m-4 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-sm">
           <p className="font-medium">Update firmware to configure this switch</p>
           <p className="mt-1 text-muted">
             Channel types need Simple firmware {SIMPLE_MIN_FIRMWARE} or later.
@@ -109,107 +247,78 @@ export function SimpleChannelsEditor({
         </div>
       ) : null}
 
-      <fieldset disabled={!firmware} className="flex flex-col gap-3 disabled:opacity-60">
+      <fieldset disabled={!firmware} className="disabled:opacity-60">
         {channels.map((channel) => (
-          <ChannelCard
+          <ChannelRow
             key={channel.id}
             channel={channel}
-            config={configs.find((config) => config.id === channel.id)}
+            config={configs.find((item) => item.id === channel.id)}
             snapshot={snapshot}
             dimSupported={dimSupported}
-            selectedSlot={selectedSlot}
-            onSelectSlot={onSelectSlot}
+            wantsScenes={Boolean(wantsScenes[channel.id])}
+            open={openChannel === channel.id}
+            openGesture={openGesture}
+            onToggle={() => {
+              onOpenChannel(openChannel === channel.id ? null : channel.id);
+              onOpenGesture(null);
+            }}
+            onOpenGesture={onOpenGesture}
+            onWantsScenes={(value) =>
+              setWantsScenes((current) => ({ ...current, [channel.id]: value }))
+            }
             onPatch={(next) => patch(channel.id, next)}
+            onNotice={onNotice}
           />
         ))}
       </fieldset>
-
-      <div className="flex flex-col gap-2 rounded-lg bg-background/70 px-3 py-2">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-          Confirmation
-        </p>
-        <div className="flex flex-col gap-1 text-sm leading-relaxed">
-          {channels.map((channel) => (
-            <p key={channel.id}>
-              {confirmationForSimpleChannel(
-                channel.label,
-                configs.find((config) => config.id === channel.id),
-                snapshot,
-              )}
-            </p>
-          ))}
-        </div>
-        {staleCount > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs text-warn">
-              {staleCount} channel{staleCount === 1 ? " uses" : "s use"} lights
-              or scenes missing from this snapshot. Saving will be rejected
-              until {staleCount === 1 ? "it is" : "they are"} fixed.
-            </p>
-            <button
-              type="button"
-              onClick={onClearStale}
-              className="text-xs font-medium text-warn hover:underline"
-            >
-              Clear stale
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="sticky bottom-3 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-cream/95 px-3 py-2 backdrop-blur">
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={!dirty || pending || !firmware}
-          className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50"
-        >
-          {pending ? "Saving…" : "Save channels"}
-        </button>
-        <button
-          type="button"
-          onClick={onDiscard}
-          disabled={!dirty || pending}
-          className="rounded-md border border-line px-3 py-1.5 text-sm disabled:opacity-50"
-        >
-          Discard
-        </button>
-        {!dirty && savedFlash ? <span className="text-xs text-ok">Saved</span> : null}
-        {dirty ? <span className="text-xs text-filament">Unsaved changes</span> : null}
-        {!dirty && !savedFlash ? (
-          <span className="text-xs text-muted">Channels without a room do nothing.</span>
-        ) : null}
-      </div>
     </div>
   );
 }
 
-function ChannelCard({
+function ChannelRow({
   channel,
   config,
   snapshot,
   dimSupported,
-  selectedSlot,
-  onSelectSlot,
+  wantsScenes,
+  open,
+  openGesture,
+  onToggle,
+  onOpenGesture,
+  onWantsScenes,
   onPatch,
+  onNotice,
 }: {
   channel: Channel;
   config: SimpleChannelConfig | undefined;
   snapshot: TopologySnapshot;
   dimSupported: boolean;
-  selectedSlot: SimpleSlotRef | null;
-  onSelectSlot: (slot: SimpleSlotRef) => void;
+  wantsScenes: boolean;
+  open: boolean;
+  openGesture: string | null;
+  onToggle: () => void;
+  onOpenGesture: (key: string | null) => void;
+  onWantsScenes: (value: boolean) => void;
   onPatch: (next: SimpleChannelConfig | null) => void;
+  onNotice: (text: string | null) => void;
 }) {
   const boot = isBootChannel(channel.id);
   const rooms = pickableGroups(snapshot);
-  const groupRid = config?.group.rid ?? "";
-  const groupMissing = config ? !groupRoom(snapshot, config.group) : false;
+  const room = config ? groupRoom(snapshot, config.group) : undefined;
+  const roomName = room?.name ?? "the group";
   const stale = config ? isSimpleChannelStale(config, snapshot) : false;
-  const isSelected = (slot: SimpleSlot) =>
-    selectedSlot?.channelId === channel.id && selectedSlot.slot === slot;
+  const gestures = config ? channelGestures(config, snapshot, dimSupported, wantsScenes) : [];
+
+  const headline = config ? `${room?.name ?? "Unknown group"} · ${kindLabel(config.kind)}` : "Not used";
+  const subline = config
+    ? gestures.map((gesture) => `${gesture.label}: ${lowerFirst(gesture.summary)}`).join(" · ")
+    : boot
+      ? "Push button. Hold re-pairs with the Bridge."
+      : "Pick a room or zone to use this channel.";
 
   function changeGroup(roomId: string) {
+    onWantsScenes(false);
+    onOpenGesture(null);
     if (!roomId) {
       onPatch(null);
       return;
@@ -217,372 +326,195 @@ function ChannelCard({
     const group = groupFromRoomId(snapshot, roomId);
     if (!group) return;
     onPatch(config ? withGroup(config, group) : defaultSimpleChannel(channel.id, group));
-    onSelectSlot({ channelId: channel.id, slot: "target" });
+  }
+
+  function changeKind(kind: ChannelKind) {
+    if (!config || config.kind === kind) return;
+    onWantsScenes(false);
+    onOpenGesture(null);
+    onPatch(withKind(config, kind));
+  }
+
+  function setAction(slot: GestureSlot, action: GestureAction) {
+    if (!config) return;
+    if (config.kind === "maintained") {
+      onWantsScenes(action === "scenes");
+      if (action === "none") onPatch({ ...config, scenes: [] });
+      return;
+    }
+    if (slot === "double") {
+      onPatch({ ...config, double: gestureFromAction(action, config, config.double, snapshot) });
+    } else if (slot === "hold") {
+      onPatch({ ...config, hold: gestureFromAction(action, config, config.hold, snapshot) });
+    }
+  }
+
+  function setTarget(slot: GestureSlot, target: RecipeTarget) {
+    if (!config) return;
+    if (slot === "primary") {
+      const next = withTarget(config, target);
+      onPatch(next);
+      onNotice(
+        next.hold === null && config.hold?.action === "off"
+          ? `Hold turn off removed: Click already controls all of ${roomName}.`
+          : null,
+      );
+      return;
+    }
+    const current = slot === "double" ? config.double : config.hold;
+    if (!current || current.action === "recall_scene") return;
+    const next: SimpleGesture = { action: current.action, target };
+    onPatch(slot === "double" ? { ...config, double: next } : { ...config, hold: next });
+  }
+
+  function setScenes(slot: GestureSlot, scenes: SceneListItem[]) {
+    if (!config) return;
+    if (config.kind === "maintained") {
+      // Removing the last scene keeps the chooser open instead of flipping to Nothing.
+      onWantsScenes(true);
+      onPatch({ ...config, scenes });
+      return;
+    }
+    const next: SimpleGesture = { action: "recall_scene", targets: scenes };
+    onPatch(slot === "double" ? { ...config, double: next } : { ...config, hold: next });
+  }
+
+  const notes: { text: string; warn?: boolean }[] = [];
+  if (config?.kind === "maintained" && config.target.rtype === "light" && config.scenes.length > 0) {
+    notes.push({ text: `Scenes apply to the whole ${config.group.rtype}, not only this light.` });
+  }
+  if (config?.kind === "momentary") {
+    if (config.double) {
+      notes.push({ text: "With a double-click set, a single click waits a moment before it acts." });
+    }
+    if (config.hold?.action === "dim") {
+      notes.push({ text: "Hold ramps the light up or down, alternating each time. Let go to stop." });
+    }
+    if (!holdOffAvailable(config) && !config.hold) {
+      notes.push({
+        text: `Hold can turn off all of ${roomName} when Click controls a single light.`,
+      });
+    }
+    if (boot && config.hold) {
+      notes.push({
+        text: "The button no longer re-pairs with the Bridge. To re-pair, reinstall over USB from Devices.",
+        warn: true,
+      });
+    }
   }
 
   return (
-    <div
-      className={`flex flex-col gap-2.5 border-l-2 pl-3 ${
-        config ? "border-filament/70" : "border-line"
-      }`}
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-medium">
-          {channel.label}
-          <span className="ml-2 text-xs font-normal text-muted">GPIO {channel.gpio}</span>
-        </p>
-        {stale ? <span className="text-xs text-warn">Missing from snapshot</span> : null}
-      </div>
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-          Room or zone
+    <div className="border-b border-line">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`grid w-full grid-cols-[84px_minmax(0,1fr)_auto] items-baseline gap-3.5 px-5 py-4 text-left ${
+          open ? "bg-background" : ""
+        }`}
+      >
+        <span className="flex flex-col gap-0.5">
+          <span className="font-mono text-sm font-semibold">{channel.label}</span>
+          <span className="text-[11px] text-muted">GPIO {channel.gpio}</span>
         </span>
-        <select
-          value={groupRid}
-          onChange={(event) => changeGroup(event.target.value)}
-          className="rounded-md border border-line bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament"
-        >
-          <option value="">Not used</option>
-          {groupMissing && config ? (
-            <option value={config.group.rid}>Unknown group — pick another</option>
-          ) : null}
-          {rooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              {room.name} ({room.rtype === "zone" ? "zone" : "room"})
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {config ? (
-        <>
-          <KindPicker
-            channelId={channel.id}
-            kind={config.kind}
-            locked={boot}
-            onChange={(kind) => onPatch(withKind(config, kind))}
-          />
-
-          <SlotRow
-            label={config.kind === "maintained" ? "On / Off" : "Click"}
-            selected={isSelected("target")}
-            onSelect={() => onSelectSlot({ channelId: channel.id, slot: "target" })}
-          >
-            {config.kind === "maintained"
-              ? `Lever up turns on, down turns off ${targetName(config.target, config.group, snapshot)}`
-              : `Toggles ${targetName(config.target, config.group, snapshot)}`}
-          </SlotRow>
-
-          {config.kind === "maintained" ? (
-            <SceneSlot
-              label="Double-click"
-              emptyText="Empty — double-click turns the target on"
-              scenes={config.scenes}
-              selected={isSelected("scenes")}
-              onSelect={() => onSelectSlot({ channelId: channel.id, slot: "scenes" })}
-              onChange={(scenes) => onPatch({ ...config, scenes })}
-            />
-          ) : null}
-
-          {config.kind === "maintained" &&
-          config.target.rtype === "light" &&
-          config.scenes.length > 0 ? (
-            <p className="text-xs text-warn">
-              Scenes apply to the whole {config.group.rtype}, not only this light.
-            </p>
-          ) : null}
-
-          {config.kind === "momentary" ? (
-            <>
-              <GestureSettings
-                label="Double-click"
-                choices={[
-                  { value: "none", label: "Nothing" },
-                  { value: "recall_scene", label: "Cycle scenes" },
-                ]}
-                gesture={config.double}
-                config={config}
-                snapshot={snapshot}
-                selected={isSelected("double")}
-                onSelect={() => onSelectSlot({ channelId: channel.id, slot: "double" })}
-                onChange={(double) => onPatch({ ...config, double })}
-              />
-              {config.double ? (
-                <p className="text-xs text-muted">
-                  With a double-click set, a single click waits a moment before it acts.
-                </p>
-              ) : null}
-              <GestureSettings
-                label="Hold"
-                choices={[
-                  { value: "none", label: boot ? "Re-pair with Bridge" : "Nothing" },
-                  {
-                    value: "dim",
-                    label: dimSupported ? "Dim" : `Dim (needs firmware ${SIMPLE_DIM_FIRMWARE})`,
-                    disabled: !dimSupported && config.hold?.action !== "dim",
-                  },
-                  ...(holdOffAvailable(config) || config.hold?.action === "off"
-                    ? [
-                        {
-                          value: "off" as const,
-                          label: `Turn off all of ${groupRoom(snapshot, config.group)?.name ?? "the group"}`,
-                        },
-                      ]
-                    : []),
-                ]}
-                gesture={config.hold}
-                config={config}
-                snapshot={snapshot}
-                selected={isSelected("hold")}
-                onSelect={() => onSelectSlot({ channelId: channel.id, slot: "hold" })}
-                onChange={(hold) => onPatch({ ...config, hold })}
-              />
-              {config.hold?.action === "dim" ? (
-                <p className="text-xs text-muted">
-                  Hold ramps the light up or down, alternating each time. Let go
-                  to stop.
-                </p>
-              ) : null}
-              {boot && config.hold ? (
-                <p className="text-xs text-warn">
-                  The button no longer re-pairs with the Bridge. To re-pair,
-                  reinstall over USB from Devices.
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </>
-      ) : (
-        <p className="text-xs text-muted">
-          {boot
-            ? "BOOT is a push button. Hold re-pairs with the Bridge."
-            : "Pick a room or zone to use this channel."}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function KindPicker({
-  channelId,
-  kind,
-  locked,
-  onChange,
-}: {
-  channelId: string;
-  kind: ChannelKind;
-  locked: boolean;
-  onChange: (kind: ChannelKind) => void;
-}) {
-  const options: ChannelKind[] = locked ? ["momentary"] : ["maintained", "momentary"];
-  return (
-    <div className="flex flex-col gap-1.5" role="radiogroup" aria-label={`${channelId} type`}>
-      <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-        Type
-      </span>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={kind === option}
-            onClick={() => onChange(option)}
-            className={`rounded-md border px-3 py-1.5 text-sm ${
-              kind === option
-                ? "border-filament bg-filament-soft"
-                : "border-line hover:border-filament/50"
-            }`}
-          >
-            {kindLabel(option)}
-          </button>
-        ))}
-        {locked ? (
-          <span className="self-center text-xs text-muted">BOOT is always a push button.</span>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function SlotRow({
-  label,
-  selected,
-  onSelect,
-  children,
-}: {
-  label: string;
-  selected: boolean;
-  onSelect: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`flex flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left ${
-        selected ? "border-filament bg-filament-soft" : "border-line bg-background/40"
-      }`}
-    >
-      <span className="text-xs font-medium uppercase tracking-[0.1em] text-muted">{label}</span>
-      <span className="text-sm">{children}</span>
-    </button>
-  );
-}
-
-function SceneSlot({
-  label,
-  emptyText,
-  scenes,
-  selected,
-  onSelect,
-  onChange,
-}: {
-  label: string;
-  emptyText: string;
-  scenes: SceneListItem[];
-  selected: boolean;
-  onSelect: () => void;
-  onChange: (scenes: SceneListItem[]) => void;
-}) {
-  return (
-    <div
-      className={`flex flex-col gap-1.5 rounded-lg border px-2.5 py-2 ${
-        selected
-          ? "border-filament bg-filament-soft"
-          : scenes.length > 0
-            ? "border-line bg-background/40"
-            : "border-dashed border-line"
-      }`}
-    >
-      <button type="button" onClick={onSelect} className="flex flex-col items-start gap-0.5 text-left">
-        <span className="text-xs font-medium uppercase tracking-[0.1em] text-muted">{label}</span>
-        <span className={`text-sm ${scenes.length === 0 ? "text-muted" : ""}`}>
-          {scenes.length === 0
-            ? emptyText
-            : scenes.length === 1
-              ? "Recalls one scene"
-              : `Cycles ${scenes.length} scenes in this order`}
+        <span className="flex min-w-0 flex-col gap-[3px]">
+          <span className={`text-sm font-medium ${config ? "" : "text-muted"}`}>
+            {headline}
+            {stale ? (
+              <span className="ml-2 text-xs font-normal text-warn">Missing from snapshot</span>
+            ) : null}
+          </span>
+          <span className="text-[13px] text-pretty text-muted">{subline}</span>
+        </span>
+        <span className="text-xs font-medium text-filament">
+          {open ? "Close" : config ? "Edit" : "Set up"}
         </span>
       </button>
-      {scenes.length > 0 ? (
-        <ol className="flex flex-col gap-1">
-          {scenes.map((scene, index) => (
-            <li key={scene.rid} className="flex items-center gap-1 text-sm">
-              <span className="w-5 text-xs text-muted">{index + 1}.</span>
-              <span className="min-w-0 flex-1 truncate">{scene.name || "Unknown scene"}</span>
-              <button
-                type="button"
-                aria-label={`Move ${scene.name} up`}
-                disabled={index === 0}
-                onClick={() => onChange(moveItem(scenes, index, -1))}
-                className="rounded px-1.5 text-xs text-muted hover:text-filament disabled:opacity-30"
+
+      {open ? (
+        <div className="flex flex-col gap-3.5 px-5 pb-5">
+          <div className="flex flex-wrap items-end gap-4">
+            <label className="flex min-w-0 flex-[1_1_220px] flex-col gap-1.5">
+              <span className="text-xs text-muted">Room or zone</span>
+              <select
+                value={config?.group.rid ?? ""}
+                onChange={(event) => changeGroup(event.target.value)}
+                className="rounded-md border border-line bg-cream px-2 py-[7px] text-sm outline-none focus:border-filament"
               >
-                ↑
-              </button>
-              <button
-                type="button"
-                aria-label={`Move ${scene.name} down`}
-                disabled={index === scenes.length - 1}
-                onClick={() => onChange(moveItem(scenes, index, 1))}
-                className="rounded px-1.5 text-xs text-muted hover:text-filament disabled:opacity-30"
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                onClick={() => onChange(scenes.filter((item) => item.rid !== scene.rid))}
-                className="rounded px-1.5 text-xs text-muted hover:text-danger"
-              >
-                Remove
-              </button>
-            </li>
+                <option value="">Not used</option>
+                {config && !room ? (
+                  <option value={config.group.rid}>Unknown group — pick another</option>
+                ) : null}
+                {rooms.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} ({item.rtype === "zone" ? "zone" : "room"})
+                  </option>
+                ))}
+              </select>
+            </label>
+            {config ? (
+              <div className="flex shrink-0 flex-col gap-1.5">
+                <span className="text-xs text-muted">Type</span>
+                <div
+                  className="flex flex-wrap items-center gap-1.5"
+                  role="radiogroup"
+                  aria-label={`${channel.label} type`}
+                >
+                  {(boot
+                    ? (["momentary"] as const)
+                    : (["maintained", "momentary"] as const)
+                  ).map((kind) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      role="radio"
+                      aria-checked={config.kind === kind}
+                      onClick={() => changeKind(kind)}
+                      className={choiceClass(config.kind === kind)}
+                    >
+                      {kindLabel(kind)}
+                    </button>
+                  ))}
+                  {boot ? (
+                    <span className="text-xs text-muted">BOOT is always a push button.</span>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {config
+            ? gestures.map((gesture) => {
+                const key = `${channel.id}:${gesture.slot}`;
+                return (
+                  <GesturePicker
+                    key={key}
+                    label={gesture.label}
+                    summary={gesture.summary}
+                    muted={gesture.action === "none"}
+                    open={openGesture === key}
+                    onToggle={() => onOpenGesture(openGesture === key ? null : key)}
+                    options={gesture.options}
+                    action={gesture.action}
+                    onAction={(action) => setAction(gesture.slot, action)}
+                    fixedTarget={gesture.fixedTarget}
+                    group={config.group}
+                    snapshot={snapshot}
+                    target={gesture.target}
+                    onTarget={(target) => setTarget(gesture.slot, target)}
+                    scenes={gesture.scenes}
+                    onScenes={(scenes) => setScenes(gesture.slot, scenes)}
+                  />
+                );
+              })
+            : null}
+
+          {notes.map((note) => (
+            <p key={note.text} className={`text-xs ${note.warn ? "text-warn" : "text-muted"}`}>
+              {note.text}
+            </p>
           ))}
-        </ol>
-      ) : null}
-    </div>
-  );
-}
-
-function GestureSettings({
-  label,
-  choices,
-  gesture,
-  config,
-  snapshot,
-  selected,
-  onSelect,
-  onChange,
-}: {
-  label: string;
-  choices: ChoiceOption[];
-  gesture: SimpleGesture | null;
-  config: SimpleChannelConfig;
-  snapshot: TopologySnapshot;
-  selected: boolean;
-  onSelect: () => void;
-  onChange: (gesture: SimpleGesture | null) => void;
-}) {
-  const choice = (gesture?.action ?? "none") as GestureChoice;
-
-  function pick(next: GestureChoice) {
-    if (next === "none") {
-      onChange(null);
-      return;
-    }
-    if (next === "recall_scene") {
-      // An empty list cannot be saved; the user fills it from the scenes on the right.
-      onChange(
-        gesture?.action === "recall_scene" ? gesture : { action: "recall_scene", targets: [] },
-      );
-      onSelect();
-      return;
-    }
-    if (next === "off") {
-      onChange({
-        action: "off",
-        target: { rtype: "grouped_light", rid: config.group.groupedLightRid },
-      });
-      return;
-    }
-    const target =
-      gesture && gesture.action !== "recall_scene" ? gesture.target : config.target;
-    onChange({ action: next, target });
-    onSelect();
-  }
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-          {label}
-        </span>
-        <select
-          value={choice}
-          onChange={(event) => pick(event.target.value as GestureChoice)}
-          className="rounded-md border border-line bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament"
-        >
-          {choices.map((item) => (
-            <option key={item.value} value={item.value} disabled={item.disabled}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      {gesture?.action === "recall_scene" ? (
-        <SceneSlot
-          label={`${label} scenes`}
-          emptyText="Pick at least one scene on the right"
-          scenes={gesture.targets}
-          selected={selected}
-          onSelect={onSelect}
-          onChange={(targets) => onChange({ action: "recall_scene", targets })}
-        />
-      ) : gesture?.action === "dim" ? (
-        <SlotRow label={`${label} target`} selected={selected} onSelect={onSelect}>
-          {targetName(gesture.target, config.group, snapshot)}
-        </SlotRow>
+        </div>
       ) : null}
     </div>
   );

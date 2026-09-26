@@ -1,29 +1,4 @@
-import type {
-  HueAction,
-  Light,
-  RecipeTarget,
-  Room,
-  Scene,
-  TargetRtype,
-  TopologySnapshot,
-} from "@/lib/types";
-
-export function actionLabel(action: HueAction): string {
-  switch (action) {
-    case "on":
-      return "Turn on";
-    case "off":
-      return "Turn off";
-    case "toggle":
-      return "Toggle";
-    case "recall_scene":
-      return "Recall scene";
-  }
-}
-
-export function actionsForTarget(rtype: TargetRtype): HueAction[] {
-  return rtype === "scene" ? ["recall_scene"] : ["on", "off", "toggle"];
-}
+import type { RecipeTarget, TopologySnapshot } from "@/lib/types";
 
 export function nameForTarget(
   snapshot: TopologySnapshot,
@@ -49,55 +24,6 @@ export function isTargetStale(
   target: RecipeTarget,
 ): boolean {
   return nameForTarget(snapshot, target) === null;
-}
-
-export function actionClause(action: HueAction, targetName: string): string {
-  switch (action) {
-    case "on":
-      return `turn on ${targetName}`;
-    case "off":
-      return `turn off ${targetName}`;
-    case "toggle":
-      return `toggle ${targetName}`;
-    case "recall_scene":
-      return `scene ${targetName}`;
-  }
-}
-
-export type RoomGroup = {
-  room: Room;
-  lights: Light[];
-  scenes: Scene[];
-};
-
-export type GroupedTopology = {
-  rooms: RoomGroup[];
-  ungroupedLights: Light[];
-  ungroupedScenes: Scene[];
-};
-
-export function groupTopology(snapshot: TopologySnapshot): GroupedTopology {
-  const lightsById = new Map(snapshot.lights.map((light) => [light.id, light]));
-  const usedLightIds = new Set<string>();
-  const usedSceneIds = new Set<string>();
-
-  const rooms: RoomGroup[] = snapshot.rooms.map((room) => {
-    const lights = (room.light_ids ?? [])
-      .map((id) => lightsById.get(id))
-      .filter((light): light is Light => Boolean(light));
-    lights.forEach((light) => usedLightIds.add(light.id));
-    const scenes = snapshot.scenes.filter((scene) => scene.group_rid === room.id);
-    scenes.forEach((scene) => usedSceneIds.add(scene.id));
-    return { room, lights, scenes };
-  });
-
-  return {
-    rooms,
-    ungroupedLights: snapshot.lights.filter((light) => !usedLightIds.has(light.id)),
-    ungroupedScenes: snapshot.scenes.filter(
-      (scene) => !usedSceneIds.has(scene.id),
-    ),
-  };
 }
 
 export function snapshotFromJson(raw: unknown): TopologySnapshot | null {

@@ -349,7 +349,9 @@ option {
   color-scheme: inherit;
 }
 
+/* Drawn at 104 px; RoundDial sets --k = size / 104 so ring, inset and type scale with it. */
 .round-dial {
+  --k: 1;
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
@@ -364,10 +366,10 @@ option {
 .round-dial-track,
 .round-dial-level {
   position: absolute;
-  inset: 4px;
+  inset: calc(4px * var(--k));
   border-radius: 50%;
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
-          mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px * var(--k)), #000 calc(100% - 8px * var(--k) + 1px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 8px * var(--k)), #000 calc(100% - 8px * var(--k) + 1px));
 }
 .round-dial-track {
   background: conic-gradient(
@@ -385,14 +387,14 @@ option {
 }
 .round-dial-fill {
   position: absolute;
-  inset: 16px;
+  inset: calc(16px * var(--k));
   border-radius: 50%;
   background: var(--t-fill);
-  box-shadow: inset 0 0 0 2px var(--t-ring);
+  box-shadow: inset 0 0 0 max(1px, calc(2px * var(--k))) var(--t-ring);
 }
 .round-dial-copy {
   position: absolute;
-  inset: 16px;
+  inset: calc(16px * var(--k));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -402,18 +404,18 @@ option {
   font-family: var(--font-mono), ui-monospace, monospace;
 }
 .round-dial-name {
-  font-size: 11px;
-  letter-spacing: 0.3px;
+  font-size: max(7px, calc(11px * var(--k)));
+  letter-spacing: calc(0.3px * var(--k));
   color: var(--t-ink);
-  margin-bottom: 3px;
+  margin-bottom: calc(3px * var(--k));
   max-width: 78%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .round-dial-scene {
-  font-size: 7px;
-  letter-spacing: 0.2px;
+  font-size: calc(7px * var(--k));
+  letter-spacing: calc(0.2px * var(--k));
   color: color-mix(in srgb, var(--t-ink) 88%, var(--t-fill));
   max-width: 78%;
   line-height: 1.2;
@@ -424,14 +426,14 @@ option {
 .round-dial-dots {
   position: absolute;
   left: 50%;
-  bottom: 22px;
+  bottom: calc(22px * var(--k));
   transform: translateX(-50%);
   display: flex;
-  gap: 3px;
+  gap: calc(3px * var(--k));
 }
 .round-dial-dots i {
-  width: 4px;
-  height: 4px;
+  width: calc(4px * var(--k));
+  height: calc(4px * var(--k));
   border-radius: 50%;
   background: color-mix(in srgb, var(--t-ink) 42%, var(--t-fill));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--t-ink) 28%, transparent);

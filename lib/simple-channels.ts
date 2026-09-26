@@ -387,17 +387,6 @@ export function clearStaleSimple(
   });
 }
 
-function sceneNames(items: SceneListItem[], snapshot: TopologySnapshot): string {
-  return items
-    .map(
-      (item) =>
-        item.name ||
-        nameForTarget(snapshot, { rtype: "scene", rid: item.rid }) ||
-        "unknown scene",
-    )
-    .join(", ");
-}
-
 export function targetName(
   target: RecipeTarget,
   group: PageGroup,
@@ -406,55 +395,6 @@ export function targetName(
   const groupName = groupRoom(snapshot, group)?.name ?? "unknown group";
   if (target.rtype === "grouped_light") return `all of ${groupName}`;
   return nameForTarget(snapshot, target) ?? "unknown light";
-}
-
-function gestureClause(
-  what: string,
-  gesture: SimpleGesture | null,
-  empty: string,
-  group: PageGroup,
-  snapshot: TopologySnapshot,
-): string {
-  if (!gesture) return `${what} ${empty}`;
-  if (gesture.action === "recall_scene") {
-    return gesture.targets.length === 1
-      ? `${what} → scene ${sceneNames(gesture.targets, snapshot)}`
-      : `${what} → cycle ${sceneNames(gesture.targets, snapshot)}`;
-  }
-  const verbs = { toggle: "toggle", on: "turn on", off: "turn off", dim: "dim" } as const;
-  const verb = verbs[gesture.action];
-  return `${what} → ${verb} ${targetName(gesture.target, group, snapshot)}`;
-}
-
-/** e.g. "D0 · Living · toggle switch: on/off all of Living · double-click cycles Relax, Bright". */
-export function confirmationForSimpleChannel(
-  label: string,
-  config: SimpleChannelConfig | undefined,
-  snapshot: TopologySnapshot,
-): string {
-  if (!config) return `${label} · not used`;
-  const groupName = groupRoom(snapshot, config.group)?.name ?? "unknown group";
-  const target = targetName(config.target, config.group, snapshot);
-  if (config.kind === "maintained") {
-    const dbl =
-      config.scenes.length === 0
-        ? "double-click turns on"
-        : config.scenes.length === 1
-          ? `double-click → scene ${sceneNames(config.scenes, snapshot)}`
-          : `double-click cycles ${sceneNames(config.scenes, snapshot)}`;
-    return `${label} · ${groupName} · toggle switch: on/off ${target} · ${dbl}`;
-  }
-  return [
-    `${label} · ${groupName} · push button: click toggles ${target}`,
-    gestureClause("double-click", config.double, "does nothing", config.group, snapshot),
-    gestureClause(
-      "hold",
-      config.hold,
-      isBootChannel(config.id) ? "re-pairs with the Bridge" : "does nothing",
-      config.group,
-      snapshot,
-    ),
-  ].join(" · ");
 }
 
 export function groupRoom(

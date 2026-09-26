@@ -341,24 +341,24 @@ When a Round Display is selected (not a Simple switch), the left column does **n
 ### 9.2 Page list
 
 - Add page.
-- Delete (with confirmation). That page's recipes go with it.
-- Reorder (drag or arrows). The list order **is** the swipe order.
+- Delete (confirmed inline). That page's recipes go with it.
+- Reorder (← Move / Move →). The list order **is** the swipe order.
 - Pick a page to edit it.
 
 Minimum 1 page (the last one cannot be deleted: it stays empty, assignable). Maximum **6**.
 
-New page (in the UI): the **group must be chosen** (room/zone). Default name = the group's Hue name trimmed to 12 / ASCII (editable; accents are folded). Theme `ember`. Tap and double empty. `dim` null until there are recipes.
+New page (in the UI): the **group must be chosen** (room/zone). Default name = the group's Hue name trimmed to 12 / ASCII (editable; accents are folded). Theme `ember`. Tap = `toggle` and double tap = `off`, both on the group's `grouped_light`.
 
 The device **register** may create `p1` without a group. The human **Save** (PUT pages) **requires a group on every page**. Once saved, there is no product page "without a room".
 
 ### 9.3 Page editor
 
-- **Group** — room or zone, required. Changing the group **clears** recipes that no longer belong (with a warning). The topology column **only** shows child lights and scenes of that group.
+- **Group** — room or zone, required. Changing the group **resets** tap and double tap to the new-page defaults (toggle / off on the new group) with a notice; nothing else survives a room change anyway. Gesture choices **only** show that group's lights and scenes.
 - **Name** — input, ASCII-folded (`Niños` → `Ninos`), max 12 characters (warning if cut; the device truncates). It's what the circle shows.
 - **Theme** — visual picker of **round dials**, the same language as `hue-round-switch/docs/round-themes.html` (not the site's CSS dropdown). One palette per page: clicking a circle picks it (selection ring). On/Off in the preview to see lights on vs off. The name on the sample dial can be the page's. The user does not edit hex.
-- **Recipe slots** — always **Tap** and **Double tap**, assignable or empty. Click in the filtered topology. Defaults per §8. Empty = no-op; if double is empty, the tap does not wait.
-- **Scene list** — clicking a scene of the group adds it; clicking again removes it; reorder. Max 8. Off is not a list item.
-- Confirmation sentence, e.g. *"Living · tap → cycle Relax, Bright, Night · double-tap → turn off Living · ring dims Living (on lights)"* or *"Lamps · tap → Bedside 1 · double-tap → Bedside 2 · ring dims those lights"*.
+- **Gestures** — always **Tap** and **Double tap**, each a card that opens in place: Nothing, Toggle, Turn on, Turn off (with a light chip: the whole group or one light) or Cycle scenes. Empty = no-op; if double is empty, the tap does not wait.
+- **Scene list** — clicking a scene chip of the group adds it (numbered in cycle order); clicking again removes it; reorder with ↑ ↓. Max 8. Off is not a list item.
+- Each card's header says in words what it does, e.g. *"Cycles Relax → Bright → Night"*, *"Turns off all of Living"*, and a **Ring** line says *"Dims Living (lights that are on)"*, *"Dims those lights"* or *"Unused"*.
 
 ### 9.4 Simple switch
 

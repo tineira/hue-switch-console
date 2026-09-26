@@ -12,6 +12,11 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-26
 
+- The Bridge page is redesigned: each gesture opens where it is shown and offers only choices that work for it, instead of picking a slot and then a light or scene in a side list.
+- Round pages show a large preview of the screen, a strip of page dials, and the theme picker next to it. A new page starts with tap toggling its room and double tap turning it off; changing a page's room resets both the same way.
+- Simple inputs are rows that sum up every gesture in one line. A toggle switch's empty double-click now reads "Does nothing".
+- Save all saves every switch with unsaved changes at once.
+
 - On a Simple push button, double-click now only cycles scenes, and hold dims or turns off the whole room or zone. Choices that repeated the click (toggle, turn on) are gone.
 
 ### 2026-09-25

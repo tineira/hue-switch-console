@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,html[data-theme="paper"]{color-scheme:light;--background:#f3eee4;--foreground:#1c1814;--cream:#fffaf2;--muted:#6e675c;--line:#e0d4c4;--filament:#c45c26;--filament-ink:#fffaf2;--filament-soft:#f6e4d6;--ok:#2f5d38;--ok-soft:#e4f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="ember"]{color-scheme:dark;--background:#14110f;--foreground:#f4eee6;--cream:#1e1a17;--muted:#a89a8c;--line:#3a322c;--filament:#e07a3d;--filament-ink:#1c140e;--filament-soft:#3a2618;--ok:#9dce9a;--ok-soft:#1d2b1e;--warn:#e0c078;--warn-soft:#2f2718;--danger:#e08a7a;--danger-soft:#2f1c18}
+html[data-theme="graphite"]{color-scheme:dark;--background:#121314;--foreground:#ececec;--cream:#1c1d1f;--muted:#9a9ca3;--line:#2e3035;--filament:#d4b483;--filament-ink:#1a1610;--filament-soft:#2f2a22;--ok:#8fbf9a;--ok-soft:#1a2620;--warn:#d4b483;--warn-soft:#2a261c;--danger:#d9897c;--danger-soft:#2f1c18}
+html[data-theme="night"]{color-scheme:dark;--background:#070708;--foreground:#f2f2f0;--cream:#111114;--muted:#8e8e96;--line:#24242b;--filament:#ffb020;--filament-ink:#16110a;--filament-soft:#2a220e;--ok:#6ee7b7;--ok-soft:#10231c;--warn:#ffb020;--warn-soft:#2a220e;--danger:#fb7185;--danger-soft:#2f1c18}
+html[data-theme="ink"]{color-scheme:dark;--background:#0b1016;--foreground:#e8eef6;--cream:#121a24;--muted:#8fa0b5;--line:#243040;--filament:#3dd6c6;--filament-ink:#06201c;--filament-soft:#143330;--ok:#7dcea0;--ok-soft:#15261c;--warn:#e0c078;--warn-soft:#2f2718;--danger:#f07a72;--danger-soft:#2f1c18}
+html[data-theme="plum"]{color-scheme:dark;--background:#140f14;--foreground:#f3e8ee;--cream:#1d161d;--muted:#b39aa8;--line:#3a2c36;--filament:#e8a0b4;--filament-ink:#2a1218;--filament-soft:#3a222a;--ok:#a8d5b5;--ok-soft:#1c2a20;--warn:#e8c090;--warn-soft:#2f2718;--danger:#e07a7a;--danger-soft:#2f1c18}
+html[data-theme="matrix"]{color-scheme:dark;--background:#020402;--foreground:#d0ffd4;--cream:#071208;--muted:#5f9e68;--line:#1a3d1e;--filament:#00ff41;--filament-ink:#021006;--filament-soft:#0a2a12;--ok:#00ff41;--ok-soft:#062410;--warn:#b8ff4d;--warn-soft:#1a2a08;--danger:#ff4d4d;--danger-soft:#2a1010}
+html[data-theme="nord"]{color-scheme:dark;--background:#2e3440;--foreground:#eceff4;--cream:#3b4252;--muted:#a0a8b8;--line:#4c566a;--filament:#88c0d0;--filament-ink:#2e3440;--filament-soft:#434c5e;--ok:#a3be8c;--ok-soft:#3b4252;--warn:#ebcb8b;--warn-soft:#3b4252;--danger:#bf616a;--danger-soft:#3b4252}
+html[data-theme="dracula"]{color-scheme:dark;--background:#1e1f29;--foreground:#f8f8f2;--cream:#282a36;--muted:#b0b3c8;--line:#44475a;--filament:#bd93f9;--filament-ink:#1e1f29;--filament-soft:#3b3354;--ok:#50fa7b;--ok-soft:#1e3328;--warn:#f1fa8c;--warn-soft:#2a2e1c;--danger:#ff5555;--danger-soft:#3a1c22}
+html[data-theme="ocean"]{color-scheme:dark;--background:#071018;--foreground:#dceef8;--cream:#0d1b28;--muted:#7fa3bb;--line:#1c3348;--filament:#38bdf8;--filament-ink:#062033;--filament-soft:#123044;--ok:#5eead4;--ok-soft:#0f2a28;--warn:#fbbf24;--warn-soft:#2a220e;--danger:#fb7185;--danger-soft:#2f1c18}
+html[data-theme="snow"]{color-scheme:light;--background:#f4f6f8;--foreground:#1a2330;--cream:#ffffff;--muted:#5c6b7a;--line:#d5dde4;--filament:#2563eb;--filament-ink:#ffffff;--filament-soft:#dbe7ff;--ok:#157a3a;--ok-soft:#ddf5e4;--warn:#b45309;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="mist"]{color-scheme:light;--background:#eef0f2;--foreground:#1f2328;--cream:#ffffff;--muted:#5e656e;--line:#d4d8de;--filament:#4b5563;--filament-ink:#ffffff;--filament-soft:#e5e7eb;--ok:#2f6b48;--ok-soft:#dcefe4;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="meadow"]{color-scheme:light;--background:#eef3e8;--foreground:#1c2418;--cream:#f7fbf3;--muted:#5d6b55;--line:#d4e0cc;--filament:#3f7a4a;--filament-ink:#f7fbf3;--filament-soft:#dcead8;--ok:#2f6b48;--ok-soft:#d8f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="porcelain"]{color-scheme:light;--background:#f6f1f3;--foreground:#2a1c22;--cream:#fffafb;--muted:#7a6570;--line:#eadde2;--filament:#c45c78;--filament-ink:#fffafb;--filament-soft:#f6e0e8;--ok:#2f6b48;--ok-soft:#e0f0e4;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="sky"]{color-scheme:light;--background:#eaf3f8;--foreground:#152030;--cream:#f7fcff;--muted:#4e6a80;--line:#c9dde8;--filament:#0284c7;--filament-ink:#f7fcff;--filament-soft:#d4eef8;--ok:#157a3a;--ok-soft:#ddf5e4;--warn:#b45309;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="linen"]{color-scheme:light;--background:#f3efe4;--foreground:#242018;--cream:#fbf8f0;--muted:#6a6558;--line:#ddd6c4;--filament:#6b7a3a;--filament-ink:#fbf8f0;--filament-soft:#e6ead4;--ok:#3d6b3a;--ok-soft:#e0f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="phosphor"]{color-scheme:light;--background:#e8f5e9;--foreground:#0b2e14;--cream:#f4fbf4;--muted:#3d6b45;--line:#c5e0c8;--filament:#15803d;--filament-ink:#f4fbf4;--filament-soft:#d1f0d6;--ok:#166534;--ok-soft:#d8f5dc;--warn:#a16207;--warn-soft:#f8ecd0;--danger:#b91c1c;--danger-soft:#f8e2dc}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:"Geist",ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html[data-theme="matrix"] body,html[data-theme="phosphor"] body{font-family:"Geist Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+select,option{background-color:var(--cream);color:var(--foreground)}
+::selection{background:var(--filament-soft);color:var(--foreground)}
+a{color:var(--filament);text-underline-offset:2px}
+a:hover{color:var(--foreground)}
+</style>
+</helmet>
+<div style="min-height:100vh; background:var(--background); color:var(--foreground);">
+<div style="max-width:1280px; margin:0 auto; padding:32px 20px 64px; display:flex; flex-direction:column; gap:24px;">
+
+  <header style="display:flex; flex-wrap:wrap; align-items:center; column-gap:24px; row-gap:8px;">
+    <a href="#" style="font-size:14px; font-weight:600; letter-spacing:-0.01em; color:var(--foreground); text-decoration:none;">Hue switch console</a>
+    <nav style="display:flex; gap:4px; font-size:14px; font-weight:500;">
+      <a href="#" style="border-radius:6px; padding:4px 10px; background:var(--filament-soft); color:var(--foreground); text-decoration:none;">Bridge</a>
+      <a href="#" style="border-radius:6px; padding:4px 10px; color:var(--muted); text-decoration:none;">Devices</a>
+      <a href="#" style="border-radius:6px; padding:4px 10px; color:var(--muted); text-decoration:none;">How-to</a>
+    </nav>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+      <div style="position:relative;">
+        <button type="button" onClick="{{ toggleThemePicker }}" style="border-radius:6px; border:1px solid var(--line); background:var(--cream); padding:4px 10px; font-size:14px; cursor:pointer;">Theme · {{ appThemeName }}</button>
+        <sc-if value="{{ themeOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeThemePicker }}" style="position:fixed; inset:0; z-index:40;"></div>
+          <div role="dialog" aria-label="Choose theme" style="position:absolute; right:0; top:100%; margin-top:8px; z-index:50; width:min(36rem, calc(100vw - 2.5rem)); max-height:min(70vh, 36rem); overflow-y:auto; border-radius:12px; border:1px solid var(--line); background:var(--background); padding:12px; box-shadow:0 10px 30px rgb(0 0 0 / 25%); display:flex; flex-direction:column; gap:16px;">
+            <sc-for list="{{ themeGroups }}" as="grp">
+              <div>
+                <p style="margin:0 0 8px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.14em; color:var(--muted);">{{ grp.title }}</p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px;">
+                  <sc-for list="{{ grp.items }}" as="t">
+                    <button type="button" onClick="{{ t.onClick }}" style="border-radius:12px; border:1px solid {{ t.bc }}; box-shadow:{{ t.shadow }}; background:var(--cream); padding:10px; text-align:left; cursor:pointer;">
+                      <span style="display:block; font-size:14px; font-weight:500;">{{ t.name }}</span>
+                      <span style="display:block; margin-top:2px; font-size:11px; color:var(--muted);">{{ t.blurb }}</span>
+                      <span style="display:flex; gap:4px; margin-top:8px;">
+                        <sc-for list="{{ t.colors }}" as="c"><i style="{{ c.style }}"></i></sc-for>
+                      </span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <button type="button" style="display:flex; align-items:center; gap:6px; border:0; background:transparent; border-radius:6px; padding:4px 10px; font-size:14px; color:var(--muted); cursor:pointer;">
+        <span>you@tineira.com</span>
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <section style="display:flex; flex-direction:column; gap:4px;">
+    <h1 style="margin:0; font-size:24px; font-weight:600; letter-spacing:-0.02em;">Bridge</h1>
+    <p style="margin:0; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:12px; row-gap:4px; font-size:14px; color:var(--muted);">
+      <span style="font-family:'Geist Mono',ui-monospace,monospace; color:var(--foreground);">ecb5fafffe1a2b3c</span>
+      <span style="font-family:'Geist Mono',ui-monospace,monospace;">192.168.100.12</span>
+      <span>12 lights · 4 rooms · 13 scenes</span>
+      <span>Snapshot 2 h ago</span>
+    </p>
+  </section>
+
+  <nav aria-label="Switches" style="display:flex; flex-wrap:wrap; gap:8px;">
+    <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="3">
+      <button type="button" onClick="{{ tab.onClick }}" style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; border-radius:12px; border:1px solid {{ tab.bc }}; background:{{ tab.bg }}; box-shadow:{{ tab.shadow }}; padding:8px 14px; text-align:left; cursor:pointer; max-width:100%;">
+        <span style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500;">
+          <span>{{ tab.name }}</span>
+          <sc-if value="{{ tab.dirty }}"><span title="Unsaved changes" style="width:8px; height:8px; border-radius:50%; background:var(--filament);"></span></sc-if>
+        </span>
+        <span style="font-size:12px; color:var(--muted);">{{ tab.meta }}<sc-if value="{{ tab.update }}"><span style="color:var(--filament);"> · update</span></sc-if></span>
+      </button>
+    </sc-for>
+  </nav>
+
+  <section data-screen-label="Switch editor" style="border-radius:12px; border:1px solid var(--line); background:var(--cream);">
+    <header style="display:flex; align-items:flex-start; gap:8px; padding:14px 20px;">
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+        <sc-if value="{{ renaming }}">
+          <form onSubmit="{{ submitRename }}" style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+            <input value="{{ nameDraft }}" onChange="{{ onNameDraft }}" placeholder="{{ macFormatted }}" maxlength="80" autofocus="autofocus" style="min-width:0; flex:1 1 220px; border-radius:6px; border:1px solid var(--filament); background:var(--background); padding:6px 10px; font-size:14px; outline:none;">
+            <button type="submit" style="border-radius:6px; border:0; background:var(--filament); color:var(--filament-ink); padding:6px 12px; font-size:14px; font-weight:500; cursor:pointer;">Save</button>
+            <button type="button" onClick="{{ cancelRename }}" style="border-radius:6px; border:1px solid var(--line); background:transparent; padding:6px 12px; font-size:14px; cursor:pointer;">Cancel</button>
+            <span style="flex-basis:100%; font-size:12px; color:var(--muted);">Shown only in this console. The switch keeps using its MAC.</span>
+          </form>
+        </sc-if>
+        <sc-if value="{{ notRenaming }}" hint-placeholder-val="{{ true }}">
+          <h2 style="margin:0; display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:16px; font-weight:500;">
+            <span>{{ selName }}</span>
+            <span style="border-radius:999px; border:1px solid var(--line); padding:2px 8px; font-size:11px; font-weight:500; color:var(--muted);">{{ productLabel }}</span>
+            <sc-if value="{{ dirty }}"><span style="border-radius:999px; background:var(--filament-soft); padding:2px 8px; font-size:11px; font-weight:500; color:var(--filament);">Unsaved</span></sc-if>
+            <sc-if value="{{ showSavedPill }}"><span style="border-radius:999px; background:var(--ok-soft); padding:2px 8px; font-size:11px; font-weight:500; color:var(--ok);">Saved</span></sc-if>
+            <sc-if value="{{ update }}"><a href="#" title="Plug the board in over USB and install from Devices" style="border-radius:999px; border:1px solid var(--filament); padding:2px 8px; font-size:11px; font-weight:500; color:var(--filament); text-decoration:none;">Update to {{ update }}</a></sc-if>
+          </h2>
+        </sc-if>
+        <p style="margin:0; font-size:12px; color:var(--muted);"><span style="font-family:'Geist Mono',ui-monospace,monospace;">{{ macFormatted }}</span> · firmware {{ selFirmware }} · rev {{ selRev }} · <a href="#" style="color:var(--filament);">{{ howToLabel }}</a></p>
+      </div>
+      <button type="button" onClick="{{ startRename }}" aria-label="Rename" style="margin-top:2px; flex-shrink:0; border:0; background:transparent; border-radius:6px; padding:6px; color:var(--muted); cursor:pointer;" style-hover="background:var(--filament-soft); color:var(--filament);">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M13.586 3.586a2 2 0 0 1 2.828 2.828l-8.486 8.486a2 2 0 0 1-.707.464l-3.04 1.013a.5.5 0 0 1-.64-.64l1.013-3.04a2 2 0 0 1 .464-.707l8.486-8.486ZM15 5l-1-1"></path></svg>
+      </button>
+    </header>
+
+    <sc-if value="{{ isRound }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-wrap:wrap; border-top:1px solid var(--line);">
+
+        <div style="flex:1 1 300px; max-width:100%; display:flex; flex-direction:column; align-items:center; gap:20px; padding:28px 24px; background:var(--background); border-bottom-left-radius:0;">
+          <div style="{{ bigDial.outer }}"><div style="{{ bigDial.track }}"></div><div style="{{ bigDial.level }}"></div><div style="{{ bigDial.fill }}"></div><div style="{{ bigDial.copy }}"><div style="{{ bigDial.nameStyle }}">{{ bigDial.name }}</div><sc-if value="{{ bigDial.hasScene }}"><div style="{{ bigDial.sceneStyle }}">{{ bigDial.scene }}</div></sc-if></div><div style="{{ bigDial.dotsStyle }}"><sc-for list="{{ bigDial.dots }}" as="dot"><i style="{{ dot.style }}"></i></sc-for></div></div>
+          <button type="button" onClick="{{ togglePreview }}" style="border:1px solid var(--line); background:var(--cream); border-radius:999px; padding:3px 10px; font-size:12px; color:var(--muted); cursor:pointer;">Preview · lights {{ previewLabel }}</button>
+
+          <div style="width:100%; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between;">
+              <span style="font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Pages</span>
+              <span style="font-size:12px; color:var(--muted);">{{ pageCountLabel }}</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:12px;">
+              <sc-for list="{{ strip }}" as="p" hint-placeholder-count="2">
+                <button type="button" onClick="{{ p.onClick }}" style="display:flex; flex-direction:column; align-items:center; gap:6px; border:0; background:transparent; padding:0; cursor:pointer; width:68px;">
+                  <span style="display:block; padding:3px; border-radius:50%; border:2px solid {{ p.ring }};">
+                    <div style="{{ p.d.outer }}"><div style="{{ p.d.track }}"></div><div style="{{ p.d.level }}"></div><div style="{{ p.d.fill }}"></div><div style="{{ p.d.copy }}"><div style="{{ p.d.nameStyle }}">{{ p.d.name }}</div></div></div>
+                  </span>
+                  <span style="max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:{{ p.nameColor }};">{{ p.name }}</span>
+                </button>
+              </sc-for>
+              <sc-if value="{{ canAddPage }}">
+                <button type="button" onClick="{{ startAddPage }}" style="display:flex; flex-direction:column; align-items:center; gap:6px; border:0; background:transparent; padding:0; cursor:pointer; width:68px;">
+                  <span style="display:grid; place-items:center; width:62px; height:62px; border-radius:50%; border:1.5px dashed var(--line); color:var(--muted); font-size:22px; line-height:1;">+</span>
+                  <span style="font-size:12px; color:var(--filament);">Add page</span>
+                </button>
+              </sc-if>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; font-size:12px; color:var(--muted);">
+              <sc-if value="{{ confirmingDelete }}">
+                <span style="color:var(--danger);">Delete {{ pageName }} and its gestures?</span>
+                <button type="button" onClick="{{ doDelete }}" style="border:0; background:transparent; padding:0; color:var(--danger); font-weight:500; cursor:pointer;">Delete</button>
+                <button type="button" onClick="{{ cancelDelete }}" style="border:0; background:transparent; padding:0; color:var(--muted); cursor:pointer;">Keep</button>
+              </sc-if>
+              <sc-if value="{{ notConfirmingDelete }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ moveLeft }}" style="border:0; background:transparent; padding:0; color:var(--muted); cursor:pointer; opacity:{{ moveLeftOp }};">← Move</button>
+                <button type="button" onClick="{{ moveRight }}" style="border:0; background:transparent; padding:0; color:var(--muted); cursor:pointer; opacity:{{ moveRightOp }};">Move →</button>
+                <button type="button" onClick="{{ askDelete }}" style="border:0; background:transparent; padding:0; color:var(--muted); cursor:pointer; opacity:{{ deleteOp }};" style-hover="color:var(--danger);">Delete page</button>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="width:100%; display:flex; flex-direction:column; gap:10px; border-top:1px solid var(--line); padding-top:16px;">
+            <button type="button" onClick="{{ togglePageTheme }}" style="display:flex; align-items:center; gap:8px; border:0; background:transparent; padding:0; text-align:left; cursor:pointer;">
+              <span style="font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Theme</span>
+              <span style="font-size:14px; font-weight:500;">{{ pageThemeName }}</span>
+              <span style="margin-left:auto; font-size:12px; color:var(--filament);">{{ pageThemeToggleLabel }}</span>
+            </button>
+            <sc-if value="{{ pageThemeOpen }}">
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(72px, 1fr)); gap:8px;">
+                <sc-for list="{{ themeGrid }}" as="t">
+                  <button type="button" onClick="{{ t.onClick }}" style="display:flex; flex-direction:column; align-items:center; gap:6px; border-radius:12px; border:1px solid {{ t.bc }}; box-shadow:{{ t.shadow }}; background:var(--cream); padding:8px 4px; cursor:pointer;">
+                    <div style="{{ t.d.outer }}"><div style="{{ t.d.track }}"></div><div style="{{ t.d.level }}"></div><div style="{{ t.d.fill }}"></div><div style="{{ t.d.copy }}"><div style="{{ t.d.nameStyle }}">{{ t.d.name }}</div></div></div>
+                    <span style="font-size:12px; font-weight:500;">{{ t.name }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="flex:999 1 420px; min-width:0; display:flex; flex-direction:column; gap:20px; padding:24px;">
+          <sc-if value="{{ adding }}">
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div>
+                <h3 style="margin:0; font-size:18px; font-weight:600; letter-spacing:-0.01em;">New page</h3>
+                <p style="margin:4px 0 0; font-size:14px; color:var(--muted); text-wrap:pretty;">Pick a room or zone. Tap will toggle it and double tap will turn it off. You can change both after.</p>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:8px;">
+                <sc-for list="{{ roomChoices }}" as="rc">
+                  <button type="button" onClick="{{ rc.onClick }}" style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; border-radius:10px; border:1px solid var(--line); background:var(--background); padding:12px 14px; text-align:left; cursor:pointer;" style-hover="border-color:var(--filament);">
+                    <span style="font-size:14px; font-weight:500;">{{ rc.name }}</span>
+                    <span style="font-size:12px; color:var(--muted);">{{ rc.detail }}</span>
+                  </button>
+                </sc-for>
+              </div>
+              <button type="button" onClick="{{ cancelAddPage }}" style="align-self:flex-start; border:0; background:transparent; padding:0; font-size:12px; color:var(--muted); cursor:pointer;">Cancel</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ notAdding }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px;">
+              <label style="flex:1 1 200px; display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12px; color:var(--muted);">Page name <span style="font-family:'Geist Mono',ui-monospace,monospace;">· {{ pageNameCount }}/12</span></span>
+                <input value="{{ pageName }}" onChange="{{ onPageName }}" maxlength="12" style="border:0; border-bottom:1px solid var(--line); background:transparent; padding:2px 0 6px; font-size:20px; font-weight:600; letter-spacing:-0.01em; outline:none;" style-focus="border-bottom-color:var(--filament);">
+              </label>
+              <label style="flex:1 1 200px; display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12px; color:var(--muted);">Room or zone</span>
+                <select value="{{ pageGroup }}" onChange="{{ onPageGroup }}" style="border-radius:6px; border:1px solid var(--line); padding:7px 8px; font-size:14px; outline:none;">
+                  <sc-for list="{{ roomOptions }}" as="o"><option value="{{ o.id }}">{{ o.label }}</option></sc-for>
+                </select>
+              </label>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ roundGestures }}" as="g" hint-placeholder-count="2">
+                <div style="border-radius:10px; border:1px solid {{ g.border }}; background:{{ g.bg }};">
+                  <button type="button" onClick="{{ g.onToggle }}" style="width:100%; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; border:0; background:transparent; padding:14px 16px; text-align:left; cursor:pointer;">
+                    <span style="width:88px; flex-shrink:0; font-size:12px; font-weight:500; color:var(--muted);">{{ g.label }}</span>
+                    <span style="flex:1 1 200px; min-width:0; font-size:15px; color:{{ g.summaryColor }}; text-wrap:pretty;">{{ g.summary }}</span>
+                    <span style="font-size:12px; font-weight:500; color:var(--filament);">{{ g.editLabel }}</span>
+                  </button>
+                  <sc-if value="{{ g.open }}">
+                    <div style="display:flex; flex-direction:column; gap:14px; padding:0 16px 16px;">
+                      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <sc-for list="{{ g.actions }}" as="a">
+                          <button type="button" onClick="{{ a.onClick }}" style="border-radius:6px; border:1px solid {{ a.bc }}; background:{{ a.bg }}; padding:6px 12px; font-size:14px; cursor:pointer;">{{ a.label }}</button>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ g.showTargets }}">
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                          <span style="font-size:12px; color:var(--muted);">Which lights in {{ g.roomName }}</span>
+                          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            <sc-for list="{{ g.targets }}" as="c">
+                              <button type="button" onClick="{{ c.onClick }}" style="display:inline-flex; align-items:baseline; gap:8px; border-radius:6px; border:1px solid {{ c.bc }}; background:{{ c.bg }}; padding:6px 12px; font-size:14px; cursor:pointer;"><span>{{ c.label }}</span><span style="font-size:12px; color:var(--muted);">{{ c.detail }}</span></button>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ g.showScenes }}">
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                          <span style="font-size:12px; color:var(--muted);">{{ g.sceneHint }}</span>
+                          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            <sc-for list="{{ g.sceneChips }}" as="c">
+                              <button type="button" onClick="{{ c.onClick }}" style="display:inline-flex; align-items:center; gap:8px; border-radius:6px; border:1px solid {{ c.bc }}; background:{{ c.bg }}; padding:6px 12px; font-size:14px; cursor:pointer; opacity:{{ c.op }};">
+                                <sc-if value="{{ c.hasOrder }}"><span style="display:inline-grid; place-items:center; min-width:18px; height:18px; border-radius:9px; background:var(--filament); color:var(--filament-ink); font-size:11px; font-weight:600;">{{ c.order }}</span></sc-if>
+                                <span>{{ c.label }}</span>
+                              </button>
+                            </sc-for>
+                          </div>
+                          <sc-if value="{{ g.hasSceneList }}">
+                            <ol style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:2px; max-width:360px;">
+                              <sc-for list="{{ g.sceneList }}" as="s">
+                                <li style="display:flex; align-items:center; gap:8px; font-size:13px; padding:3px 0;">
+                                  <span style="width:18px; font-family:'Geist Mono',ui-monospace,monospace; font-size:12px; color:var(--muted);">{{ s.n }}</span>
+                                  <span style="flex:1; min-width:0;">{{ s.name }}</span>
+                                  <button type="button" aria-label="Move up" onClick="{{ s.up }}" style="border:0; background:transparent; padding:0 4px; font-size:12px; color:var(--muted); cursor:pointer; opacity:{{ s.upOp }};">↑</button>
+                                  <button type="button" aria-label="Move down" onClick="{{ s.down }}" style="border:0; background:transparent; padding:0 4px; font-size:12px; color:var(--muted); cursor:pointer; opacity:{{ s.downOp }};">↓</button>
+                                </li>
+                              </sc-for>
+                            </ol>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <p style="margin:4px 0 0; display:flex; gap:14px; font-size:13px; color:var(--muted);"><span style="width:88px; flex-shrink:0; font-size:12px; font-weight:500;">Ring</span><span>{{ ringText }}</span></p>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--line);">
+        <button type="button" onClick="{{ toggleDevice }}" style="width:100%; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; border:0; background:transparent; padding:14px 24px; text-align:left; cursor:pointer;">
+          <span style="font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Device</span>
+          <span style="flex:1; font-size:13px; color:var(--muted);">{{ deviceSummary }}</span>
+          <span style="font-size:12px; font-weight:500; color:var(--filament);">{{ deviceToggleLabel }}</span>
+        </button>
+        <sc-if value="{{ deviceOpen }}">
+          <div style="display:flex; flex-wrap:wrap; gap:24px; padding:0 24px 18px;">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12px; color:var(--muted);">Page swipe</span>
+              <div style="display:flex; gap:6px;">
+                <sc-for list="{{ swipeOptions }}" as="a">
+                  <button type="button" onClick="{{ a.onClick }}" style="border-radius:6px; border:1px solid {{ a.bc }}; background:{{ a.bg }}; padding:6px 12px; font-size:14px; cursor:pointer;">{{ a.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12px; color:var(--muted);">Screen timeout, seconds</span>
+              <input type="number" min="0" max="600" value="{{ timeoutText }}" onChange="{{ onTimeout }}" onBlur="{{ onTimeoutBlur }}" style="width:96px; border-radius:6px; border:1px solid {{ timeoutBorder }}; background:var(--cream); padding:6px 8px; font-size:14px; outline:none;">
+              <span style="font-size:12px; color:{{ timeoutHintColor }};">{{ timeoutHint }}</span>
+            </label>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSimple }}">
+      <div style="border-top:1px solid var(--line);">
+        <sc-for list="{{ channels }}" as="ch" hint-placeholder-count="4">
+          <div style="border-bottom:1px solid var(--line);">
+            <button type="button" onClick="{{ ch.onToggle }}" style="width:100%; display:grid; grid-template-columns:84px minmax(0,1fr) auto; gap:14px; align-items:baseline; border:0; background:{{ ch.headBg }}; padding:16px 20px; text-align:left; cursor:pointer;">
+              <span style="display:flex; flex-direction:column; gap:2px;">
+                <span style="font-size:14px; font-weight:600; font-family:'Geist Mono',ui-monospace,monospace;">{{ ch.label }}</span>
+                <span style="font-size:11px; color:var(--muted);">GPIO {{ ch.gpio }}</span>
+              </span>
+              <span style="display:flex; flex-direction:column; gap:3px; min-width:0;">
+                <span style="font-size:14px; font-weight:500; color:{{ ch.headColor }};">{{ ch.headline }}</span>
+                <span style="font-size:13px; color:var(--muted); text-wrap:pretty;">{{ ch.subline }}</span>
+              </span>
+              <span style="font-size:12px; font-weight:500; color:var(--filament);">{{ ch.toggleLabel }}</span>
+            </button>
+            <sc-if value="{{ ch.open }}">
+              <div style="display:flex; flex-direction:column; gap:14px; padding:0 20px 20px;">
+                <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end;">
+                  <label style="flex:1 1 220px; display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12px; color:var(--muted);">Room or zone</span>
+                    <select value="{{ ch.group }}" onChange="{{ ch.onGroup }}" style="border-radius:6px; border:1px solid var(--line); padding:7px 8px; font-size:14px; outline:none;">
+                      <sc-for list="{{ ch.roomOptions }}" as="o"><option value="{{ o.id }}">{{ o.label }}</option></sc-for>
+                    </select>
+                  </label>
+                  <sc-if value="{{ ch.hasRoom }}">
+                    <div style="flex-shrink:0; display:flex; flex-direction:column; gap:6px;">
+                      <span style="font-size:12px; color:var(--muted);">Type</span>
+                      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
+                        <sc-for list="{{ ch.kinds }}" as="a">
+                          <button type="button" onClick="{{ a.onClick }}" style="border-radius:6px; border:1px solid {{ a.bc }}; background:{{ a.bg }}; padding:6px 12px; font-size:14px; cursor:pointer;">{{ a.label }}</button>
+                        </sc-for>
+                        <sc-if value="{{ ch.boot }}"><span style="font-size:12px; color:var(--muted);">BOOT is always a push button.</span></sc-if>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+                <sc-for list="{{ ch.gestures }}" as="g">
+                  <div style="border-radius:10px; border:1px solid {{ g.border }}; background:{{ g.bg }};">
+                    <button type="button" onClick="{{ g.onToggle }}" style="width:100%; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; border:0; background:transparent; padding:14px 16px; text-align:left; cursor:pointer;">
+                      <span style="width:88px; flex-shrink:0; font-size:12px; font-weight:500; color:var(--muted);">{{ g.label }}</span>
+                      <span style="flex:1 1 200px; min-width:0; font-size:15px; color:{{ g.summaryColor }}; text-wrap:pretty;">{{ g.summary }}</span>
+                      <span style="font-size:12px; font-weight:500; color:var(--filament);">{{ g.editLabel }}</span>
+                    </button>
+                    <sc-if value="{{ g.open }}">
+                      <div style="display:flex; flex-direction:column; gap:14px; padding:0 16px 16px;">
+                        <sc-if value="{{ g.showActions }}">
+                          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            <sc-for list="{{ g.actions }}" as="a">
+                              <button type="button" onClick="{{ a.onClick }}" style="border-radius:6px; border:1px solid {{ a.bc }}; background:{{ a.bg }}; padding:6px 12px; font-size:14px; cursor:pointer;">{{ a.label }}</button>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ g.showTargets }}">
+                          <div style="display:flex; flex-direction:column; gap:8px;">
+                            <span style="font-size:12px; color:var(--muted);">Which lights in {{ g.roomName }}</span>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                              <sc-for list="{{ g.targets }}" as="c">
+                                <button type="button" onClick="{{ c.onClick }}" style="display:inline-flex; align-items:baseline; gap:8px; border-radius:6px; border:1px solid {{ c.bc }}; background:{{ c.bg }}; padding:6px 12px; font-size:14px; cursor:pointer;"><span>{{ c.label }}</span><span style="font-size:12px; color:var(--muted);">{{ c.detail }}</span></button>
+                              </sc-for>
+                            </div>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ g.showScenes }}">
+                          <div style="display:flex; flex-direction:column; gap:8px;">
+                            <span style="font-size:12px; color:var(--muted);">{{ g.sceneHint }}</span>
+                            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                              <sc-for list="{{ g.sceneChips }}" as="c">
+                                <button type="button" onClick="{{ c.onClick }}" style="display:inline-flex; align-items:center; gap:8px; border-radius:6px; border:1px solid {{ c.bc }}; background:{{ c.bg }}; padding:6px 12px; font-size:14px; cursor:pointer; opacity:{{ c.op }};">
+                                  <sc-if value="{{ c.hasOrder }}"><span style="display:inline-grid; place-items:center; min-width:18px; height:18px; border-radius:9px; background:var(--filament); color:var(--filament-ink); font-size:11px; font-weight:600;">{{ c.order }}</span></sc-if>
+                                  <span>{{ c.label }}</span>
+                                </button>
+                              </sc-for>
+                            </div>
+                            <sc-if value="{{ g.hasSceneList }}">
+                              <ol style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:2px; max-width:360px;">
+                                <sc-for list="{{ g.sceneList }}" as="s">
+                                  <li style="display:flex; align-items:center; gap:8px; font-size:13px; padding:3px 0;">
+                                    <span style="width:18px; font-family:'Geist Mono',ui-monospace,monospace; font-size:12px; color:var(--muted);">{{ s.n }}</span>
+                                    <span style="flex:1; min-width:0;">{{ s.name }}</span>
+                                    <button type="button" aria-label="Move up" onClick="{{ s.up }}" style="border:0; background:transparent; padding:0 4px; font-size:12px; color:var(--muted); cursor:pointer; opacity:{{ s.upOp }};">↑</button>
+                                    <button type="button" aria-label="Move down" onClick="{{ s.down }}" style="border:0; background:transparent; padding:0 4px; font-size:12px; color:var(--muted); cursor:pointer; opacity:{{ s.downOp }};">↓</button>
+                                  </li>
+                                </sc-for>
+                              </ol>
+                            </sc-if>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+                <sc-for list="{{ ch.notes }}" as="n">
+                  <p style="margin:0; font-size:12px; color:{{ n.color }};">{{ n.text }}</p>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="position:sticky; bottom:12px; margin:12px; display:flex; flex-wrap:wrap; align-items:center; gap:8px; border-radius:10px; border:1px solid var(--line); background:color-mix(in srgb, var(--cream) 95%, transparent); backdrop-filter:blur(8px); padding:8px 12px;">
+      <button type="button" onClick="{{ save }}" style="border-radius:6px; border:0; background:var(--filament); color:var(--filament-ink); padding:6px 12px; font-size:14px; font-weight:500; cursor:pointer; opacity:{{ saveOp }};">{{ saveLabel }}</button>
+      <button type="button" onClick="{{ discard }}" style="border-radius:6px; border:1px solid var(--line); background:transparent; padding:6px 12px; font-size:14px; cursor:pointer; opacity:{{ saveOp }};">Discard</button>
+      <span style="font-size:12px; color:{{ statusColor }};">{{ statusText }}</span>
+      <sc-if value="{{ multiDirty }}">
+        <span style="margin-left:auto; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted);">
+          <span>{{ otherDirtyText }}</span>
+          <button type="button" onClick="{{ saveAll }}" style="border-radius:6px; border:1px solid var(--filament); background:transparent; color:var(--filament); padding:5px 10px; font-size:13px; font-weight:500; cursor:pointer;">{{ saveAllLabel }}</button>
+        </span>
+      </sc-if>
+    </div>
+  </section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;initialSwitch&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Living room dial&quot;,&quot;Kitchen wall&quot;,&quot;Bedroom dial&quot;],&quot;default&quot;:&quot;Living room dial&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;dialSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:160,&quot;max&quot;:280,&quot;step&quot;:4,&quot;unit&quot;:&quot;px&quot;,&quot;default&quot;:208,&quot;tsType&quot;:&quot;number&quot;}}">
+const RT = {
+  ember:{name:'Ember',bg:'#101410',ink:'#eee8e0',mute:'#7c7a74',fillOn:'#a54a00',fillOff:'#212021',accent:'#ff9e00',track:'#313131'},
+  night:{name:'Night',bg:'#050506',ink:'#f4f1ea',mute:'#d8cfc4',fillOn:'#c47a10',fillOff:'#121214',accent:'#ffb020',track:'#2a2a22'},
+  coal:{name:'Coal',bg:'#0a0a0a',ink:'#d8d0c8',mute:'#6a6660',fillOn:'#5c2e12',fillOff:'#161616',accent:'#c45c18',track:'#242424'},
+  graphite:{name:'Graphite',bg:'#121314',ink:'#ecece8',mute:'#9a9ca0',fillOn:'#6a5a40',fillOff:'#1c1d1f',accent:'#d4b483',track:'#2e3035'},
+  ink:{name:'Ink',bg:'#0b1016',ink:'#e8eef6',mute:'#8fa0b5',fillOn:'#0e4a48',fillOff:'#121a24',accent:'#3dd6c6',track:'#243040'},
+  ocean:{name:'Ocean',bg:'#071018',ink:'#dceef8',mute:'#7fa3bb',fillOn:'#0a4a6a',fillOff:'#0d1b28',accent:'#38bdf8',track:'#1c3348'},
+  nord:{name:'Nord',bg:'#2e3440',ink:'#eceff4',mute:'#a0a8b8',fillOn:'#4c566a',fillOff:'#3b4252',accent:'#88c0d0',track:'#434c5e'},
+  plum:{name:'Plum',bg:'#140f14',ink:'#f3e8ee',mute:'#b39aa8',fillOn:'#6a3048',fillOff:'#1d161d',accent:'#e8a0b4',track:'#3a2c36'},
+  violet:{name:'Violet',bg:'#120e18',ink:'#f0e8ff',mute:'#a090b8',fillOn:'#4a3470',fillOff:'#1a1524',accent:'#c4a0ff',track:'#322848'},
+  dracula:{name:'Dracula',bg:'#1e1f29',ink:'#f8f8f2',mute:'#b0b3c8',fillOn:'#5a3d78',fillOff:'#282a36',accent:'#bd93f9',track:'#44475a'},
+  matrix:{name:'Matrix',bg:'#020402',ink:'#d0ffd4',mute:'#5f9e68',fillOn:'#0a3a14',fillOff:'#071208',accent:'#00ff41',track:'#1a3d1e'},
+  forest:{name:'Forest',bg:'#0c120e',ink:'#e8f0e6',mute:'#8fa88c',fillOn:'#3a4a18',fillOff:'#151e17',accent:'#c9a227',track:'#2a3a2c'},
+  copper:{name:'Copper',bg:'#16100c',ink:'#f4ece4',mute:'#b09078',fillOn:'#8a4020',fillOff:'#241810',accent:'#e07a3d',track:'#3a2a20'},
+  snow:{name:'Snow',bg:'#e8eef4',ink:'#1a2330',mute:'#5c6b7a',fillOn:'#c5d8f0',fillOff:'#f4f6f8',accent:'#2563eb',track:'#c8d4e0'},
+  paper:{name:'Paper',bg:'#e8e0d4',ink:'#1c1814',mute:'#6e675c',fillOn:'#e8c4a0',fillOff:'#f3eee4',accent:'#c45c26',track:'#d4c8b8'},
+  sand:{name:'Sand',bg:'#e8dcc8',ink:'#2a2118',mute:'#7a6a58',fillOn:'#e0b090',fillOff:'#f4ecdf',accent:'#b85c38',track:'#d4c4a8'},
+  linen:{name:'Linen',bg:'#e6e2d4',ink:'#2a2a1c',mute:'#6e6e58',fillOn:'#c8c4a0',fillOff:'#f2efe4',accent:'#6a7a38',track:'#d0ccb8'},
+  meadow:{name:'Meadow',bg:'#dce8d8',ink:'#1c2a1c',mute:'#5a7058',fillOn:'#a8c898',fillOff:'#e8f0e4',accent:'#3d8a4a',track:'#c0d4bc'},
+  sky:{name:'Sky',bg:'#d4e4f0',ink:'#183040',mute:'#5a7088',fillOn:'#a0c8e8',fillOff:'#e8f2f8',accent:'#2a8ad4',track:'#b8d0e0'},
+  porcelain:{name:'Porcelain',bg:'#f0e4e4',ink:'#3a2028',mute:'#8a6870',fillOn:'#e8b8c0',fillOff:'#f8eeee',accent:'#c45a70',track:'#e0c8cc'},
+};
+const APP_THEMES = [
+  ['ember','Ember','Charcoal, copper','dark',['#14110f','#1e1a17','#e07a3d','#f4eee6']],
+  ['graphite','Graphite','Zinc, champagne','dark',['#121314','#1c1d1f','#d4b483','#ececec']],
+  ['night','Night','OLED, electric amber','dark',['#070708','#111114','#ffb020','#f2f2f0']],
+  ['ink','Ink','Blue-black, teal','dark',['#0b1016','#121a24','#3dd6c6','#e8eef6']],
+  ['plum','Plum','Espresso, rose','dark',['#140f14','#1d161d','#e8a0b4','#f3e8ee']],
+  ['matrix','Matrix','Black, phosphor green','dark',['#020402','#071208','#00ff41','#d0ffd4']],
+  ['nord','Nord','Polar night, frost','dark',['#2e3440','#3b4252','#88c0d0','#eceff4']],
+  ['dracula','Dracula','Purple, pink','dark',['#1e1f29','#282a36','#bd93f9','#f8f8f2']],
+  ['ocean','Ocean','Navy, sky cyan','dark',['#071018','#0d1b28','#38bdf8','#dceef8']],
+  ['paper','Paper','Cream, filament','light',['#f3eee4','#fffaf2','#c45c26','#1c1814']],
+  ['snow','Snow','Cool white, blue','light',['#f4f6f8','#ffffff','#2563eb','#1a2330']],
+  ['mist','Mist','Gray, slate','light',['#eef0f2','#ffffff','#4b5563','#1f2328']],
+  ['meadow','Meadow','Sage, leaf','light',['#eef3e8','#f7fbf3','#3f7a4a','#1c2418']],
+  ['porcelain','Porcelain','Blush, rose','light',['#f6f1f3','#fffafb','#c45c78','#2a1c22']],
+  ['sky','Sky','Pale blue, azure','light',['#eaf3f8','#f7fcff','#0284c7','#152030']],
+  ['linen','Linen','Ivory, olive','light',['#f3efe4','#fbf8f0','#6b7a3a','#242018']],
+  ['phosphor','Phosphor','Mint paper, matrix green','light',['#e8f5e9','#f4fbf4','#15803d','#0b2e14']],
+];
+const ROOMS = [
+  {id:'r-living',name:'Living room',rtype:'room',gl:'gl-living',lights:[['l1','Floor lamp'],['l2','Ceiling'],['l3','Shelf strip'],['l4','TV backlight']],scenes:[['s1','Bright'],['s2','Relax'],['s3','Movie'],['s4','Read'],['s5','Nightlight']]},
+  {id:'r-kitchen',name:'Kitchen',rtype:'room',gl:'gl-kitchen',lights:[['lk1','Pendants'],['lk2','Counter'],['lk3','Spots']],scenes:[['k1','Cooking'],['k2','Dinner'],['k3','Concentrate']]},
+  {id:'r-bed',name:'Bedroom',rtype:'room',gl:'gl-bed',lights:[['lb1','Bedside left'],['lb2','Bedside right'],['lb3','Ceiling']],scenes:[['b1','Wake up'],['b2','Relax'],['b3','Nightlight']]},
+  {id:'z-hall',name:'Hallway',rtype:'zone',gl:'gl-hall',lights:[['lh1','Hall ceiling'],['lh2','Entry']],scenes:[['h1','Evening'],['h2','Night path']]},
+];
+const ROOM = {}, NAME = {}, GL = {};
+ROOMS.forEach(r => { ROOM[r.id] = r; GL[r.gl] = r; r.lights.forEach(([i,n]) => NAME[i] = n); r.scenes.forEach(([i,n]) => NAME[i] = n); });
+const LATEST = { round: '0.5.31', simple: '0.4.12' };
+const G = (action, target, scenes) => ({ action, target: target || null, scenes: scenes || [] });
+const initialSwitches = () => [
+  { mac:'a0b1c2d3e4f5', label:'Living room dial', product:'round', firmware:'0.5.31', rev:12, seen:'2 min ago',
+    round:{ swipe:'horizontal', timeout:30,
+      pages:[{id:'p1',name:'Living',theme:'ember',group:'r-living'},{id:'p2',name:'Hallway',theme:'ink',group:'z-hall'}],
+      recipes:{ p1:{short:G('toggle','gl-living'),double:G('scenes',null,['s2','s3','s1'])}, p2:{short:G('toggle','gl-hall'),double:G('off','gl-hall')} } } },
+  { mac:'b4c5d6e7f809', label:'Kitchen wall', product:'simple', firmware:'0.4.12', rev:7, seen:'1 min ago',
+    channels:[
+      {id:'boot',label:'BOOT',gpio:9,group:null,kind:'momentary',g:{primary:G('toggle'),double:G('none'),hold:G('none')}},
+      {id:'d0',label:'D0',gpio:0,group:'r-kitchen',kind:'maintained',g:{primary:G('onoff','gl-kitchen'),double:G('scenes',null,['k1','k2']),hold:G('none')}},
+      {id:'d1',label:'D1',gpio:1,group:'r-kitchen',kind:'momentary',g:{primary:G('toggle','lk1'),double:G('scenes',null,['k1','k3']),hold:G('off','gl-kitchen')}},
+      {id:'d2',label:'D2',gpio:2,group:null,kind:'maintained',g:{primary:G('onoff'),double:G('none'),hold:G('none')}},
+    ] },
+  { mac:'c7d8e9f0a1b2', label:'Bedroom dial', product:'round', firmware:'0.5.27', rev:4, seen:'3 h ago',
+    round:{ swipe:'horizontal', timeout:0,
+      pages:[{id:'p3',name:'Bedroom',theme:'coal',group:'r-bed'}],
+      recipes:{ p3:{short:G('toggle','gl-bed'),double:G('scenes',null,['b3'])} } } },
+];
+const fmtMac = m => m.match(/../g).join(':').toUpperCase();
+const cmpVer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i]||0) < (y[i]||0)) return -1; if ((x[i]||0) > (y[i]||0)) return 1; } return 0; };
+const tName = rid => GL[rid] ? 'all of ' + GL[rid].name : (NAME[rid] || 'unknown target');
+function summarize(g, empty) {
+  const s = g.scenes || [];
+  switch (g.action) {
+    case 'none': return empty;
+    case 'toggle': return 'Toggles ' + tName(g.target);
+    case 'on': return 'Turns on ' + tName(g.target);
+    case 'off': return 'Turns off ' + tName(g.target);
+    case 'dim': return 'Dims ' + tName(g.target) + ' up or down while held';
+    case 'onoff': return 'Lever up turns on, down turns off ' + tName(g.target);
+    case 'scenes': return s.length === 0 ? 'Cycles scenes — none picked yet' : s.length === 1 ? 'Recalls ' + NAME[s[0]] : 'Cycles ' + s.map(i => NAME[i]).join(' → ');
+  }
+  return empty;
+}
+const ROUND_ACTIONS = [['none','Nothing'],['toggle','Toggle'],['on','Turn on'],['off','Turn off'],['scenes','Cycle scenes']];
+const defaultRecipes = room => ({ short: G('toggle', room.gl), double: G('off', room.gl) });
+const sel = on => ({ bg: on ? 'var(--filament-soft)' : 'transparent', bc: on ? 'var(--filament)' : 'var(--line)' });
+
+function dial(themeId, name, scene, count, active, on, S) {
+  const p = RT[themeId] || RT.ember, k = S / 104;
+  const fill = on ? p.fillOn : p.fillOff, ink = on ? p.ink : p.mute, accent = on ? p.accent : p.track;
+  const rw = 8 * k;
+  const mask = `radial-gradient(farthest-side, transparent calc(100% - ${rw}px), #000 calc(100% - ${rw - 1}px))`;
+  const ring = { position:'absolute', inset:4 * k, borderRadius:'50%', WebkitMask:mask, mask };
+  return {
+    outer:{ position:'relative', overflow:'hidden', flexShrink:0, borderRadius:'50%', width:S, height:S, background:p.bg, boxShadow:'0 6px 16px rgb(0 0 0 / 35%)' },
+    track:{ ...ring, background:`conic-gradient(from 225deg, ${p.track} 0 270deg, transparent 270deg 360deg)` },
+    level:{ ...ring, background:`conic-gradient(from 225deg, ${accent} 0 170deg, transparent 170deg 360deg)`, opacity: on ? 1 : 0.35 },
+    fill:{ position:'absolute', inset:16 * k, borderRadius:'50%', background:fill, boxShadow:`inset 0 0 0 ${Math.max(1, 2 * k)}px ${accent}` },
+    copy:{ position:'absolute', inset:16 * k, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', pointerEvents:'none', fontFamily:'"Geist Mono", ui-monospace, monospace' },
+    nameStyle:{ fontSize:Math.max(7, 11 * k), letterSpacing:0.3 * k, color:ink, marginBottom:3 * k, maxWidth:'78%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
+    sceneStyle:{ fontSize:7 * k, letterSpacing:0.2 * k, color:`color-mix(in srgb, ${ink} 88%, ${fill})`, maxWidth:'78%', lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
+    name: name || 'Page', scene: scene || '', hasScene: Boolean(on && scene),
+    dotsStyle:{ position:'absolute', left:'50%', bottom:22 * k, transform:'translateX(-50%)', display:'flex', gap:3 * k },
+    dots: count > 1 ? Array.from({ length: count }, (_, i) => ({ style:{ display:'block', width:4 * k, height:4 * k, borderRadius:'50%', background: i === active ? ink : `color-mix(in srgb, ${ink} 42%, ${fill})`, boxShadow: i === active ? 'none' : `0 0 0 1px color-mix(in srgb, ${ink} 28%, transparent)` } })) : [],
+  };
+}
+
+class Component extends DCLogic {
+  state = (() => {
+    const sw = initialSwitches();
+    const idx = { 'Living room dial':0, 'Kitchen wall':1, 'Bedroom dial':2 }[this.props.initialSwitch] ?? 0;
+    return { sw, saved: Object.fromEntries(sw.map(s => [s.mac, JSON.stringify(s)])), sel: sw[idx].mac, pageSel:{}, open:null, openCh:null,
+      appTheme:'ember', themeOpen:false, pageThemeOpen:false, preview:true, deviceOpen:false, notice:null, flash:null,
+      adding:false, confirmDel:false, renaming:false, nameDraft:'', toDraft:null };
+  })();
+
+  componentDidMount() {
+    let t = null; try { t = localStorage.getItem('hsw-theme'); } catch (e) {}
+    this.applyTheme(APP_THEMES.some(x => x[0] === t) ? t : 'ember', false);
+  }
+  applyTheme(id, persist = true) {
+    document.documentElement.setAttribute('data-theme', id);
+    if (persist) try { localStorage.setItem('hsw-theme', id); } catch (e) {}
+    this.setState({ appTheme: id });
+  }
+  mut(mac, fn, extra) {
+    this.setState(s => { const sw = JSON.parse(JSON.stringify(s.sw)); fn(sw.find(x => x.mac === mac)); return { sw, flash:null, notice:null, ...(extra || {}) }; });
+  }
+  isDirty(s) { return JSON.stringify(s) !== this.state.saved[s.mac]; }
+  doSave(macs) {
+    this.setState(st => {
+      const sw = JSON.parse(JSON.stringify(st.sw)); const saved = { ...st.saved }; let rev = 0;
+      sw.forEach(s => { if (macs.includes(s.mac)) { s.rev += 1; rev = s.rev; saved[s.mac] = JSON.stringify(s); } });
+      const notice = macs.length > 1 ? `Saved ${macs.length} switches. Each picks this up on poll, or immediately after reboot.` : `Saved · rev ${rev}. The switch picks this up on poll, or immediately after reboot.`;
+      return { sw, saved, flash: st.sel, notice, open:null };
+    });
+  }
+
+  gv({ key, label, g, actions, room, empty, onSet, noTarget = [] }) {
+    const open = this.state.open === key;
+    const valid = [room.gl, ...room.lights.map(l => l[0])];
+    const scenes = (g.scenes || []).filter(id => room.scenes.some(s => s[0] === id));
+    const setAction = v => {
+      if (v === g.action) return;
+      if (v === 'none') onSet(G('none', null, scenes));
+      else if (v === 'scenes') onSet(G('scenes', g.target, scenes));
+      else if (noTarget.includes(v)) onSet(G(v, room.gl, scenes));
+      else onSet(G(v, valid.includes(g.target) ? g.target : room.gl, scenes));
+    };
+    const move = (i, d) => { const j = i + d; if (j < 0 || j >= scenes.length) return; const n = [...scenes]; [n[i], n[j]] = [n[j], n[i]]; onSet({ ...g, scenes:n }); };
+    return {
+      key, label, open, summary: summarize({ ...g, scenes }, empty),
+      summaryColor: g.action === 'none' ? 'var(--muted)' : 'var(--foreground)',
+      editLabel: open ? 'Done' : 'Change',
+      border: open ? 'var(--filament)' : 'var(--line)', bg: open ? 'var(--background)' : 'transparent',
+      onToggle: () => this.setState({ open: open ? null : key }),
+      roomName: room.name,
+      showActions: actions.length > 0,
+      actions: actions.map(([v, l]) => ({ label:l, onClick: () => setAction(v), ...sel(v === g.action) })),
+      showTargets: ['toggle','on','off','dim','onoff'].includes(g.action) && !noTarget.includes(g.action),
+      targets: [[room.gl, 'Whole ' + room.rtype, 'all lights'], ...room.lights.map(([i, n]) => [i, n, ''])].map(([id, l, d]) => ({ label:l, detail:d, onClick: () => onSet({ ...g, target:id }), ...sel(g.target === id) })),
+      showScenes: g.action === 'scenes',
+      sceneHint: scenes.length ? `${scenes.length} of 8 · click order is cycle order` : `Click scenes in ${room.name} in the order to cycle them. Up to 8.`,
+      sceneChips: room.scenes.map(([id, n]) => { const i = scenes.indexOf(id); const full = scenes.length >= 8 && i < 0; const s = sel(i >= 0);
+        return { label:n, hasOrder: i >= 0, order: i + 1, bg:s.bg, bc:s.bc, op: full ? 0.4 : 1, onClick: () => { if (full) return; onSet({ ...g, scenes: i >= 0 ? scenes.filter(x => x !== id) : [...scenes, id] }); } }; }),
+      hasSceneList: scenes.length > 1,
+      sceneList: scenes.map((id, i) => ({ n: i + 1, name: NAME[id], up: () => move(i, -1), down: () => move(i, 1), upOp: i === 0 ? 0.3 : 1, downOp: i === scenes.length - 1 ? 0.3 : 1 })),
+    };
+  }
+
+  renderVals() {
+    const st = this.state;
+    const sw = st.sw.find(s => s.mac === st.sel);
+    const dirtyMacs = st.sw.filter(s => this.isDirty(s)).map(s => s.mac);
+    const dirty = dirtyMacs.includes(sw.mac);
+    const isRound = sw.product === 'round';
+    const upd = s => cmpVer(s.firmware, LATEST[s.product]) < 0 ? LATEST[s.product] : null;
+    const mac = sw.mac;
+    const themeCur = APP_THEMES.find(t => t[0] === st.appTheme) || APP_THEMES[0];
+    const others = dirtyMacs.filter(m => m !== mac).map(m => st.sw.find(s => s.mac === m).label);
+
+    const v = {
+      appThemeName: themeCur[1], themeOpen: st.themeOpen,
+      toggleThemePicker: () => this.setState({ themeOpen: !st.themeOpen }),
+      closeThemePicker: () => this.setState({ themeOpen:false }),
+      themeGroups: [['Dark','dark'],['Light','light']].map(([title, grp]) => ({ title, items: APP_THEMES.filter(t => t[3] === grp).map(t => ({
+        name:t[1], blurb:t[2], bc: t[0] === st.appTheme ? 'var(--filament)' : 'var(--line)', shadow: t[0] === st.appTheme ? '0 0 0 1px var(--filament)' : 'none',
+        colors: t[4].map(c => ({ style:{ display:'inline-block', width:14, height:14, borderRadius:'50%', background:c, border:'1px solid color-mix(in srgb, var(--foreground) 15%, transparent)' } })),
+        onClick: () => this.applyTheme(t[0]) })) })),
+      tabs: st.sw.map(s => { const a = s.mac === st.sel; return {
+        name: s.label || fmtMac(s.mac), dirty: this.isDirty(s), update: Boolean(upd(s)),
+        meta: `${s.product === 'round' ? 'Round' : 'Simple'} · seen ${s.seen}`,
+        bc: a ? 'color-mix(in srgb, var(--filament) 60%, transparent)' : 'var(--line)', bg: a ? 'var(--filament-soft)' : 'var(--cream)', shadow: a ? '0 0 0 1px var(--filament)' : 'none',
+        onClick: () => { if (!a) this.setState({ sel:s.mac, open:null, openCh:null, adding:false, confirmDel:false, renaming:false, notice:null, flash:null, toDraft:null }); } }; }),
+      selName: sw.label || fmtMac(mac), productLabel: isRound ? 'Round' : 'Simple',
+      dirty, showSavedPill: !dirty && st.flash === mac, update: upd(sw),
+      macFormatted: fmtMac(mac), selFirmware: sw.firmware, selRev: sw.rev,
+      howToLabel: isRound ? 'What the screen shows' : 'What the LED shows',
+      renaming: st.renaming, notRenaming: !st.renaming, nameDraft: st.nameDraft,
+      startRename: () => this.setState({ renaming:true, nameDraft: sw.label || '' }),
+      cancelRename: () => this.setState({ renaming:false }),
+      onNameDraft: e => this.setState({ nameDraft: e.target.value }),
+      submitRename: e => { e.preventDefault(); const label = st.nameDraft.trim() || null;
+        this.setState(s => { const swl = s.sw.map(x => x.mac === mac ? { ...x, label } : x); const sv = JSON.parse(s.saved[mac]); sv.label = label; return { sw: swl, saved: { ...s.saved, [mac]: JSON.stringify(sv) }, renaming:false }; }); },
+      isRound, isSimple: !isRound,
+      save: () => { if (dirty) this.doSave([mac]); },
+      discard: () => { if (dirty) this.setState(s => ({ sw: s.sw.map(x => x.mac === mac ? JSON.parse(s.saved[mac]) : x), notice: isRound ? 'Reverted to the last saved pages.' : 'Reverted to the last saved channels.', flash:null, open:null, adding:false })); },
+      saveOp: dirty ? 1 : 0.5,
+      saveLabel: isRound ? 'Save pages' : 'Save channels',
+      statusText: st.notice || (dirty ? 'Unsaved changes' : (isRound ? 'Empty gestures do nothing.' : 'Channels without a room do nothing.')),
+      statusColor: st.notice ? (st.flash ? 'var(--ok)' : 'var(--muted)') : dirty ? 'var(--filament)' : 'var(--muted)',
+      multiDirty: others.length > 0, otherDirtyText: 'Also unsaved: ' + others.join(', '),
+      saveAllLabel: `Save all (${dirtyMacs.length})`, saveAll: () => this.doSave(dirtyMacs),
+    };
+
+    if (isRound) {
+      const r = sw.round;
+      const pid = r.pages.some(p => p.id === st.pageSel[mac]) ? st.pageSel[mac] : r.pages[0].id;
+      const idx = r.pages.findIndex(p => p.id === pid), page = r.pages[idx];
+      const room = ROOM[page.group];
+      const rec = r.recipes[pid] || defaultRecipes(room);
+      const sample = [rec.short, rec.double].map(g => g.action === 'scenes' && g.scenes[0] ? NAME[g.scenes[0]] : null).find(Boolean) || null;
+      const size = Number(this.props.dialSize ?? 208);
+      const selPage = id => this.setState(s => ({ pageSel: { ...s.pageSel, [mac]: id }, open:null, adding:false, confirmDel:false }));
+      const movePage = d => { const j = idx + d; if (j < 0 || j >= r.pages.length) return; this.mut(mac, s => { const p = s.round.pages; [p[idx], p[j]] = [p[j], p[idx]]; }); };
+      const targets = [rec.short, rec.double].filter(g => ['toggle','on','off'].includes(g.action));
+      const ringText = targets.some(g => g.target === room.gl) || [rec.short, rec.double].some(g => g.action === 'scenes')
+        ? `Dims ${room.name} (lights that are on)` : targets.length ? 'Dims those lights' : 'Unused';
+      const toInvalid = st.toDraft !== null && !(Number(st.toDraft) === 0 || (Number(st.toDraft) >= 10 && Number(st.toDraft) <= 600));
+      Object.assign(v, {
+        bigDial: dial(page.theme, page.name, sample, r.pages.length, idx, st.preview, size),
+        previewLabel: st.preview ? 'on' : 'off', togglePreview: () => this.setState({ preview: !st.preview }),
+        pageCountLabel: `${r.pages.length} of 6`,
+        strip: r.pages.map(p => ({ d: dial(p.theme, p.name, null, 0, 0, true, 56), name: p.name || 'Page', ring: p.id === pid ? 'var(--filament)' : 'transparent', nameColor: p.id === pid ? 'var(--foreground)' : 'var(--muted)', onClick: () => selPage(p.id) })),
+        canAddPage: r.pages.length < 6, startAddPage: () => this.setState({ adding:true, open:null, confirmDel:false }),
+        cancelAddPage: () => this.setState({ adding:false }),
+        adding: st.adding, notAdding: !st.adding,
+        roomChoices: ROOMS.map(rm => ({ name: rm.name, detail: `${rm.rtype === 'zone' ? 'Zone' : 'Room'} · ${rm.lights.length} lights · ${rm.scenes.length} scenes`, onClick: () => {
+          const id = 'p' + Date.now();
+          this.mut(mac, s => { s.round.pages.push({ id, name: rm.name.slice(0, 12), theme:'ember', group: rm.id }); s.round.recipes[id] = defaultRecipes(rm); },
+            { adding:false, pageSel: { ...st.pageSel, [mac]: id } });
+        } })),
+        confirmingDelete: st.confirmDel, notConfirmingDelete: !st.confirmDel,
+        moveLeft: () => movePage(-1), moveRight: () => movePage(1),
+        moveLeftOp: idx === 0 ? 0.35 : 1, moveRightOp: idx === r.pages.length - 1 ? 0.35 : 1,
+        deleteOp: r.pages.length <= 1 ? 0.35 : 1,
+        askDelete: () => { if (r.pages.length > 1) this.setState({ confirmDel:true }); },
+        cancelDelete: () => this.setState({ confirmDel:false }),
+        doDelete: () => this.mut(mac, s => { s.round.pages = s.round.pages.filter(p => p.id !== pid); delete s.round.recipes[pid]; }, { confirmDel:false }),
+        pageThemeName: (RT[page.theme] || RT.ember).name, pageThemeOpen: st.pageThemeOpen,
+        pageThemeToggleLabel: st.pageThemeOpen ? 'Done' : 'Change',
+        togglePageTheme: () => this.setState({ pageThemeOpen: !st.pageThemeOpen }),
+        themeGrid: Object.keys(RT).map(id => ({ d: dial(id, page.name, sample, r.pages.length, idx, st.preview, 60), name: RT[id].name,
+          bc: id === page.theme ? 'var(--filament)' : 'var(--line)', shadow: id === page.theme ? '0 0 0 1px var(--filament)' : 'none',
+          onClick: () => this.mut(mac, s => { s.round.pages.find(p => p.id === pid).theme = id; }) })),
+        pageName: page.name, pageNameCount: page.name.length,
+        onPageName: e => { const val = e.target.value.slice(0, 12); this.mut(mac, s => { s.round.pages.find(p => p.id === pid).name = val; }); },
+        pageGroup: page.group,
+        roomOptions: ROOMS.map(rm => ({ id: rm.id, label: `${rm.name} (${rm.rtype})` })),
+        onPageGroup: e => { const nr = ROOM[e.target.value]; if (!nr || nr.id === page.group) return;
+          this.mut(mac, s => { s.round.pages.find(p => p.id === pid).group = nr.id; s.round.recipes[pid] = defaultRecipes(nr); },
+            { notice: `Gestures reset for ${nr.name}: tap toggles it, double tap turns it off.` }); },
+        roundGestures: [['short','Tap'],['double','Double tap']].map(([k, l]) => this.gv({ key: mac + pid + k, label: l, g: rec[k], actions: ROUND_ACTIONS, room, empty: 'Does nothing',
+          onSet: ng => this.mut(mac, s => { const rr = s.round.recipes; rr[pid] = rr[pid] || defaultRecipes(room); rr[pid][k] = ng; }, { open: this.state.open }) })),
+        ringText,
+        deviceOpen: st.deviceOpen, toggleDevice: () => this.setState({ deviceOpen: !st.deviceOpen }),
+        deviceToggleLabel: st.deviceOpen ? 'Done' : 'Change',
+        deviceSummary: `Swipe ${r.swipe === 'horizontal' ? 'left / right' : 'up / down'} between pages · ${r.timeout === 0 ? 'Screen always on' : `Screen sleeps after ${r.timeout} s`}`,
+        swipeOptions: [['horizontal','Left / right'],['vertical','Up / down']].map(([id, l]) => ({ label:l, ...sel(r.swipe === id), onClick: () => this.mut(mac, s => { s.round.swipe = id; }) })),
+        timeoutText: st.toDraft ?? String(r.timeout),
+        onTimeout: e => { const raw = e.target.value; const n = Number.parseInt(raw, 10); this.setState({ toDraft: raw });
+          if (n === 0 || (n >= 10 && n <= 600)) this.mut(mac, s => { s.round.timeout = n; }, { toDraft: raw }); },
+        onTimeoutBlur: () => this.setState({ toDraft:null }),
+        timeoutBorder: toInvalid ? 'var(--danger)' : 'var(--line)',
+        timeoutHintColor: toInvalid ? 'var(--danger)' : 'var(--muted)',
+        timeoutHint: toInvalid ? 'Must be 0 (always on) or 10–600 seconds.' : '0 = always on. Not 1–9.',
+      });
+    } else {
+      v.channels = sw.channels.map(ch => {
+        const key = mac + ':' + ch.id, open = st.openCh === key, boot = ch.id === 'boot';
+        const room = ch.group ? ROOM[ch.group] : null;
+        const setG = slot => ng => this.mut(mac, s => { s.channels.find(c => c.id === ch.id).g[slot] = ng; }, { open: this.state.open, openCh: key });
+        let gestures = [], notes = [];
+        if (room) {
+          if (ch.kind === 'maintained') {
+            gestures = [
+              this.gv({ key:key + 'p', label:'On / Off', g:ch.g.primary, actions:[], room, empty:'', onSet:setG('primary') }),
+              this.gv({ key:key + 'd', label:'Double-click', g:ch.g.double, actions:[['none','Nothing'],['scenes','Cycle scenes']], room, empty:'Does nothing', onSet:setG('double') }),
+            ];
+          } else {
+            const holdOffOk = ch.g.primary.target !== room.gl;
+            const holdActions = [['none', boot ? 'Re-pair with Bridge' : 'Nothing'], ['dim','Dim']];
+            if (holdOffOk || ch.g.hold.action === 'off') holdActions.push(['off', `Turn off all of ${room.name}`]);
+            const setPrimary = ng => this.mut(mac, s => { const c = s.channels.find(x => x.id === ch.id); c.g.primary = ng;
+              if (c.g.hold.action === 'off' && ng.target === room.gl) c.g.hold = G('none'); },
+              { open: this.state.open, openCh: key, notice: ch.g.hold.action === 'off' && ng.target === room.gl ? `Hold turn off removed: Click already controls all of ${room.name}.` : null });
+            gestures = [
+              this.gv({ key:key + 'p', label:'Click', g:ch.g.primary, actions:[], room, empty:'', onSet:setPrimary }),
+              this.gv({ key:key + 'd', label:'Double-click', g:ch.g.double, actions:[['none','Nothing'],['scenes','Cycle scenes']], room, empty:'Does nothing', onSet:setG('double') }),
+              this.gv({ key:key + 'h', label:'Hold', g:ch.g.hold, actions:holdActions, room, empty: boot ? 'Re-pairs with the Bridge' : 'Does nothing', onSet:setG('hold'), noTarget:['off'] }),
+            ];
+            if (ch.g.double.action !== 'none') notes.push({ text:'With a double-click set, a single click waits a moment before it acts.', color:'var(--muted)' });
+            if (ch.g.hold.action === 'dim') notes.push({ text:'Hold ramps the light up or down, alternating each time. Let go to stop.', color:'var(--muted)' });
+            if (!holdOffOk && ch.g.hold.action === 'none') notes.push({ text:`Hold can turn off all of ${room.name} when Click controls a single light.`, color:'var(--muted)' });
+            if (boot && ch.g.hold.action !== 'none') notes.push({ text:'The button no longer re-pairs with the Bridge. To re-pair, reinstall over USB from Devices.', color:'var(--warn)' });
+          }
+        }
+        const kindName = ch.kind === 'maintained' ? 'Toggle switch' : 'Push button';
+        return {
+          label: ch.label, gpio: ch.gpio, open, boot, hasRoom: Boolean(room), group: ch.group || '',
+          headBg: open ? 'var(--background)' : 'transparent',
+          headline: room ? `${room.name} · ${kindName}` : 'Not used',
+          headColor: room ? 'var(--foreground)' : 'var(--muted)',
+          subline: room ? gestures.map(g => `${g.label}: ${g.summary.charAt(0).toLowerCase() + g.summary.slice(1)}`).join(' · ') : boot ? 'Push button. Hold re-pairs with the Bridge.' : 'Pick a room or zone to use this channel.',
+          toggleLabel: open ? 'Close' : room ? 'Edit' : 'Set up',
+          onToggle: () => this.setState({ openCh: open ? null : key, open:null }),
+          roomOptions: [{ id:'', label:'Not used' }, ...ROOMS.map(rm => ({ id: rm.id, label: `${rm.name} (${rm.rtype})` }))],
+          onGroup: e => { const nr = ROOM[e.target.value];
+            this.mut(mac, s => { const c = s.channels.find(x => x.id === ch.id); c.group = nr ? nr.id : null;
+              c.g = { primary: G(c.kind === 'maintained' ? 'onoff' : 'toggle', nr ? nr.gl : null), double: G('none'), hold: G('none') }; }, { openCh:key }); },
+          kinds: (boot ? [['momentary','Push button']] : [['maintained','Toggle switch'],['momentary','Push button']]).map(([k, l]) => ({ label:l, ...sel(ch.kind === k),
+            onClick: () => { if (ch.kind === k) return; this.mut(mac, s => { const c = s.channels.find(x => x.id === ch.id); c.kind = k;
+              c.g = { primary: G(k === 'maintained' ? 'onoff' : 'toggle', c.g.primary.target), double: k === 'maintained' && c.g.double.action !== 'scenes' ? G('none') : c.g.double, hold: G('none') }; }, { openCh:key }); } })),
+          gestures, notes,
+        };
+      });
+    }
+    return v;
+  }
+}
+</script>
+</body>
+</html>
