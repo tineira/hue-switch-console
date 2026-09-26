@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#14110f;color:#f4eee6;-webkit-font-smoothing:antialiased}
+a{color:#e07a3d}a:hover{color:#f4eee6}
+::selection{background:#3a2618;color:#f4eee6}
+@keyframes led-fast{0%{opacity:1}50%{opacity:0}}
+@keyframes led-burst-2{0%{opacity:1}5.556%{opacity:0}16.667%{opacity:1}22.222%{opacity:0}}
+@keyframes led-burst-3{0%{opacity:1}4.762%{opacity:0}14.286%{opacity:1}19.048%{opacity:0}28.571%{opacity:1}33.333%{opacity:0}}
+@keyframes led-burst-4{0%{opacity:1}4.167%{opacity:0}12.5%{opacity:1}16.667%{opacity:0}25%{opacity:1}29.167%{opacity:0}37.5%{opacity:1}41.667%{opacity:0}}
+@keyframes led-heart{0%{opacity:1}2.667%{opacity:0}}
+@keyframes rf-loading{0%{box-shadow:0 0 0 2px #7a4a10,0 6px 14px rgb(0 0 0 / 35%)}50%{box-shadow:0 0 0 2px #8e8e96,0 6px 14px rgb(0 0 0 / 35%)}}
+@keyframes rf-pairing{0%{box-shadow:0 0 0 2px #ff9f1c,0 6px 14px rgb(0 0 0 / 35%)}50%{box-shadow:0 0 0 2px #ffe000,0 6px 14px rgb(0 0 0 / 35%)}}
+@keyframes rf-flash{0%{box-shadow:0 0 0 2px #ff5a5a,0 6px 14px rgb(0 0 0 / 35%)}50%{box-shadow:0 6px 14px rgb(0 0 0 / 35%)}}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#14110f;color:#f4eee6;font-family:Geist, ui-sans-serif, system-ui, sans-serif;font-size:14px;line-height:20px">
+<div style="max-width:1024px;margin:0 auto;padding:32px 20px;display:flex;flex-direction:column;gap:24px;box-sizing:border-box">
+
+<header style="display:flex;flex-wrap:wrap;align-items:center;column-gap:24px;row-gap:8px">
+  <a href="/" style="font-size:14px;font-weight:600;letter-spacing:-0.025em;color:#f4eee6;text-decoration:none">Hue switch console</a>
+  <nav style="display:flex;gap:4px;font-size:14px;font-weight:500">
+    <a href="/switches" style="border-radius:6px;padding:4px 10px;color:#a89a8c;text-decoration:none" style-hover="color:#f4eee6">Switches</a>
+    <a href="/lights" style="border-radius:6px;padding:4px 10px;color:#a89a8c;text-decoration:none" style-hover="color:#f4eee6">Lights</a>
+    <a href="/setup" style="border-radius:6px;padding:4px 10px;color:#a89a8c;text-decoration:none" style-hover="color:#f4eee6">Setup</a>
+    <a href="/how-to" aria-current="page" style="border-radius:6px;padding:4px 10px;background:#3a2618;color:#f4eee6;text-decoration:none">How-to</a>
+  </nav>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <button type="button" style="border-radius:6px;border:1px solid #3a322c;background:#1e1a17;padding:4px 10px;font:inherit;font-size:14px;color:#f4eee6;cursor:pointer">Theme · Ember</button>
+    <button type="button" style="display:flex;align-items:center;gap:6px;border:0;background:transparent;border-radius:6px;padding:4px 10px;font:inherit;font-size:14px;color:#a89a8c;cursor:pointer">
+      <span>you@example.com</span>
+      <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"></path></svg>
+    </button>
+  </div>
+</header>
+
+<section style="display:flex;flex-direction:column;gap:8px;max-width:672px">
+  <h1 style="margin:0;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-0.025em">How-to</h1>
+  <p style="margin:0;color:#a89a8c;text-wrap:pretty">Set up a switch, change what it does, and read what it's telling you. Pick your switch and the guide shows only what applies to it.</p>
+</section>
+
+<div style="display:flex;flex-wrap:wrap;gap:8px" role="radiogroup" aria-label="Which switch">
+  <sc-for list="{{ products }}" as="p" hint-placeholder-count="2">
+    <button type="button" role="radio" aria-checked="{{ p.on }}" onClick="{{ p.choose }}" style="display:flex;align-items:center;gap:12px;min-width:240px;flex:1 1 240px;max-width:332px;text-align:left;border-radius:12px;border:1px solid {{ p.border }};box-shadow:{{ p.ring }};background:#1e1a17;padding:12px 14px;font:inherit;color:#f4eee6;cursor:pointer">
+      <span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:#14110f;flex-shrink:0">{{ p.visual }}</span>
+      <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+        <span style="font-size:14px;font-weight:600">{{ p.name }}</span>
+        <span style="font-size:12px;line-height:16px;color:#a89a8c">{{ p.blurb }}</span>
+      </span>
+    </button>
+  </sc-for>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+  <aside style="flex:0 0 172px;position:sticky;top:24px;display:flex;flex-direction:column;gap:4px">
+    <p style="margin:0 0 6px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.14em;color:#a89a8c">On this page</p>
+    <a href="#setup" style="display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:#f4eee6;text-decoration:none" style-hover="background:#1e1a17"><span style="color:#a89a8c;font-variant-numeric:tabular-nums">1</span>Set up a switch</a>
+    <a href="#tasks" style="display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:#f4eee6;text-decoration:none" style-hover="background:#1e1a17"><span style="color:#a89a8c;font-variant-numeric:tabular-nums">2</span>Everyday tasks</a>
+    <a href="#status" style="display:flex;gap:10px;padding:6px 8px;border-radius:6px;color:#f4eee6;text-decoration:none" style-hover="background:#1e1a17"><span style="color:#a89a8c;font-variant-numeric:tabular-nums">3</span>{{ statusTitle }}</a>
+  </aside>
+
+  <main style="flex:1 1 520px;min-width:0;max-width:720px;display:flex;flex-direction:column;gap:56px">
+
+    <section id="setup" style="display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-size:18px;line-height:28px;font-weight:500">Set up a {{ productName }}</h2>
+        <p style="margin:0;color:#a89a8c;text-wrap:pretty">About five minutes, once per board. After each step the switch itself shows what it needs next, so you always know where you are.</p>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+        <span style="font-size:12px;color:#a89a8c;margin-right:2px">You need</span>
+        <sc-for list="{{ needs }}" as="n" hint-placeholder-count="4">
+          <span style="font-size:12px;line-height:16px;padding:4px 8px;border-radius:999px;border:1px solid #3a322c;color:#f4eee6">{{ n }}</span>
+        </sc-for>
+      </div>
+
+      <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="6">
+          <li style="display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:16px">
+            <div style="display:flex;flex-direction:column;align-items:center">
+              <span style="display:flex;width:24px;height:24px;flex-shrink:0;align-items:center;justify-content:center;border-radius:999px;background:#3a2618;color:#e07a3d;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:16px">{{ s.n }}</span>
+              <span style="flex:1;width:1px;background:#3a322c;margin-top:6px"></span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:16px;border:1px solid #3a322c;background:#1e1a17;border-radius:12px;padding:16px;margin-bottom:12px">
+              <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:8px">
+                <p style="margin:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px">
+                  <span style="font-weight:600">{{ s.title }}</span>
+                  <sc-if value="{{ s.href }}" hint-placeholder-val="{{ true }}">
+                    <a href="{{ s.href }}" style="font-size:12px;color:#e07a3d;text-decoration:underline;text-underline-offset:2px">{{ s.where }}</a>
+                  </sc-if>
+                </p>
+                <p style="margin:0;color:#a89a8c;text-wrap:pretty"><sc-for list="{{ s.body }}" as="t"><span style="font-weight:{{ t.w }};color:{{ t.c }}">{{ t.t }}</span></sc-for></p>
+                <sc-if value="{{ s.note }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:0;font-size:12px;line-height:18px;color:#a89a8c;border-top:1px solid #3a322c;padding-top:8px;text-wrap:pretty"><sc-for list="{{ s.note }}" as="t"><span style="font-weight:{{ t.w }};color:{{ t.c }}">{{ t.t }}</span></sc-for></p>
+                </sc-if>
+              </div>
+              <sc-if value="{{ s.shows }}" hint-placeholder-val="{{ true }}">
+                <div style="flex:0 0 148px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:10px;background:#14110f;padding:12px;text-align:center">
+                  <span style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.14em;color:#a89a8c">Then it shows</span>
+                  <span style="display:flex;align-items:center;justify-content:center;min-height:64px">{{ s.visual }}</span>
+                  <span style="font-size:12px;line-height:16px;color:#f4eee6;text-wrap:balance">{{ s.shows }}</span>
+                </div>
+              </sc-if>
+            </div>
+          </li>
+        </sc-for>
+        <li style="display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:16px">
+          <div style="display:flex;justify-content:center">
+            <span style="display:flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:999px;background:#1d2b1e;color:#9dce9a;margin-top:16px"><svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.58l7.3-7.3a1 1 0 0 1 1.4 0Z"></path></svg></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;border:1px solid rgb(157 206 154 / 40%);background:#1d2b1e;border-radius:12px;padding:16px">
+            <span style="font-weight:600;color:#9dce9a">Unplug it and mount it</span>
+            <span style="color:#a89a8c;text-wrap:pretty">Setup's card turns green and says <b style="font-weight:500;color:#f4eee6">This board is set up</b>. Later changes reach the switch within an hour, or right away if you unplug it and plug it back in.</span>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="tasks" style="display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-size:18px;line-height:28px;font-weight:500">Everyday tasks</h2>
+        <p style="margin:0;color:#a89a8c">Once it's set up, this is what you'll come back for.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;border:1px solid #3a322c;background:#1e1a17;border-radius:12px;overflow:hidden">
+        <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="8">
+          <div style="border-top:1px solid #3a322c;margin-top:-1px">
+            <button type="button" onClick="{{ t.toggle }}" aria-expanded="{{ t.open }}" style="display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;border:0;background:transparent;padding:14px 16px;font:inherit;font-weight:500;color:#f4eee6;text-align:left;cursor:pointer" style-hover="background:#231e1a">
+              <span>{{ t.title }}</span>
+              <svg viewBox="0 0 20 20" fill="#a89a8c" width="16" height="16" aria-hidden="true" style="flex-shrink:0;transform:{{ t.chev }};transition:transform 150ms"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"></path></svg>
+            </button>
+            <sc-if value="{{ t.open }}" hint-placeholder-val="{{ false }}">
+              <ol style="list-style:none;margin:0;padding:0 16px 16px;display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ t.steps }}" as="x">
+                  <li style="display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;color:#a89a8c;text-wrap:pretty">
+                    <span style="font-size:12px;color:#e07a3d;font-weight:600;font-variant-numeric:tabular-nums;line-height:20px">{{ x.n }}</span>
+                    <span><sc-for list="{{ x.parts }}" as="q"><span style="font-weight:{{ q.w }};color:{{ q.c }}">{{ q.t }}</span></sc-for></span>
+                  </li>
+                </sc-for>
+              </ol>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section id="status" style="display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-size:18px;line-height:28px;font-weight:500">{{ statusTitle }}</h2>
+        <p style="margin:0;color:#a89a8c;text-wrap:pretty">{{ statusIntro }}</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <p style="margin:0;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.14em;color:#a89a8c">Setting up, in order</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:8px">
+          <sc-for list="{{ setupTiles }}" as="s" hint-placeholder-count="5">
+            <button type="button" onClick="{{ s.onClick }}" aria-pressed="{{ s.on }}" style="display:flex;flex-direction:column;align-items:center;gap:10px;border-radius:12px;border:1px solid {{ s.border }};box-shadow:{{ s.ring }};background:#1e1a17;padding:14px 10px 12px;font:inherit;color:#f4eee6;cursor:pointer">
+              <span style="display:flex;align-items:center;justify-content:center;height:72px">{{ s.visual }}</span>
+              <span style="display:flex;flex-direction:column;gap:2px;text-align:center">
+                <span style="font-size:13px;line-height:18px;font-weight:500">{{ s.state }}</span>
+                <span style="font-size:11px;line-height:14px;color:{{ s.tagC }}">{{ s.tag }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <p style="margin:0;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.14em;color:#a89a8c">Something's wrong</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:8px">
+          <sc-for list="{{ badTiles }}" as="s" hint-placeholder-count="4">
+            <button type="button" onClick="{{ s.onClick }}" aria-pressed="{{ s.on }}" style="display:flex;flex-direction:column;align-items:center;gap:10px;border-radius:12px;border:1px solid {{ s.border }};box-shadow:{{ s.ring }};background:#1e1a17;padding:14px 10px 12px;font:inherit;color:#f4eee6;cursor:pointer">
+              <span style="display:flex;align-items:center;justify-content:center;height:72px">{{ s.visual }}</span>
+              <span style="display:flex;flex-direction:column;gap:2px;text-align:center">
+                <span style="font-size:13px;line-height:18px;font-weight:500">{{ s.state }}</span>
+                <span style="font-size:11px;line-height:14px;color:{{ s.tagC }}">{{ s.tag }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div aria-live="polite" style="display:flex;flex-wrap:wrap;gap:20px;border:1px solid #3a322c;background:#1e1a17;border-radius:12px;padding:20px">
+        <div style="flex:0 0 152px;height:152px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#14110f">{{ sel.visual }}</div>
+        <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:16px;line-height:24px;font-weight:600;color:{{ sel.tone }}">{{ sel.state }}</span>
+            <span style="font-size:12px;line-height:16px;color:#a89a8c">{{ sel.see }}</span>
+          </div>
+          <p style="margin:0;color:#a89a8c;text-wrap:pretty"><sc-for list="{{ sel.means }}" as="q"><span style="font-weight:{{ q.w }};color:{{ q.c }}">{{ q.t }}</span></sc-for></p>
+          <sc-if value="{{ sel.fix }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid #3a322c;padding-top:12px">
+              <p style="margin:0;color:#f4eee6;text-wrap:pretty"><span style="font-weight:600">What to do: </span><sc-for list="{{ sel.fix }}" as="q"><span style="font-weight:{{ q.w }};color:{{ q.c }}">{{ q.t }}</span></sc-for></p>
+              <sc-if value="{{ sel.href }}" hint-placeholder-val="{{ false }}">
+                <a href="{{ sel.href }}" style="align-self:flex-start;border-radius:6px;background:#e07a3d;color:#1c140e;padding:6px 12px;font-size:14px;font-weight:500;text-decoration:none">{{ sel.cta }}</a>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;product&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;round&quot;,&quot;simple&quot;],&quot;default&quot;:&quot;round&quot;,&quot;tsType&quot;:&quot;'round'|'simple'&quot;},&quot;showIndicators&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;tasksExpanded&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { product: null, pick: null, open: 0, V: null };
+
+  componentDidMount() {
+    try { const p = localStorage.getItem("howto-product"); if (p === "round" || p === "simple") this.setState({ product: p }); } catch (e) {}
+    import("./device-visuals.js").then((V) => this.setState({ V }));
+  }
+
+  rt(s) {
+    if (!s) return null;
+    return s.split(/(\*\*[^*]+\*\*)/).filter(Boolean).map((t) =>
+      t.startsWith("**") ? { t: t.slice(2, -2), w: 500, c: "#f4eee6" } : { t, w: 400, c: "inherit" });
+  }
+
+  vis(x, size) {
+    const V = this.state.V;
+    if (!V || !x) return null;
+    return x.led ? V.led(x.led, size ? size / 5 : 14) : V.face(x.face, size || 64);
+  }
+
+  data(p) {
+    const R = p === "round";
+    const steps = [
+      { title: "Plug it in", where: "Open Setup", href: "/setup",
+        body: "Connect the board to this computer with a USB-C cable that carries data. Charge-only cables never show up. On Setup, click **Detect device** and pick the board's port in the window Chrome opens." },
+      { title: "Install the firmware", where: "Setup", href: "/setup",
+        body: R ? "Click **Install** and keep the cable in until it finishes." : "Hold **BOOT** on the board while you click **Install**, then keep the cable in until it finishes. A new Simple switch only accepts firmware this way.",
+        shows: R ? "No Wi-Fi. Expected: none saved yet." : "Fast blink: no Wi-Fi yet",
+        v: R ? { face: "nowifi" } : { led: "fast" } },
+      { title: "Save Wi-Fi", where: "Setup", href: "/setup",
+        body: "Click **Set up Wi-Fi** and pick a **2.4 GHz** network. The board can't join 5 GHz.",
+        note: R ? "The Round needs its U.FL antenna plugged in to reach the router." : null,
+        shows: R ? "Loading…: looking for the Bridge" : "Two blinks: needs the console",
+        v: R ? { face: "loading" } : { led: "burst-2" } },
+      { title: "Link it to this console", where: "Setup", href: "/setup",
+        body: "Click **Link to console**. This saves a device key on the board so it can fetch what its buttons do.",
+        note: "Wi-Fi or Console can turn amber for a moment while the board joins. Setup checks again every 10 seconds, up to three times, then offers **Check again**.",
+        shows: R ? "Press Bridge button" : "Three blinks: needs pairing",
+        v: R ? { face: "pairing" } : { led: "burst-3" } },
+      { title: "Approve it on the Hue Bridge",
+        body: "Press the round button on top of the Hue Bridge.",
+        note: "Missed it? Click **Pair with Bridge** on Setup, or hold **BOOT** on the board for about 3 seconds.",
+        shows: R ? "Blank disc: needs a page" : "Four blinks: needs a recipe",
+        v: R ? { face: "empty" } : { led: "burst-4" } },
+      { title: R ? "Give it a page" : "Give its buttons a job", where: "Open Switches", href: "/switches",
+        body: R ? "Pick the switch, click **Add page** and choose a room or zone. Tap toggles its lights and double tap turns them off. Click **Save pages**."
+                : "Pick the switch, then choose a room or zone for each input and its type: **Toggle switch** for a wall lever, **Push button** for a momentary button. Click **Save channels**.",
+        shows: "Ready", v: R ? { face: "ready" } : { led: "heart" } },
+    ];
+
+    const tasks = [
+      R ? { title: "Change what a page does", steps: [
+            "Open **Switches** and pick the switch from the tabs.",
+            "On a page, click **Change** next to Tap or Double tap. Pick another action, one light, or scenes.",
+            "Several scenes make a list the press steps through: up to 8, from the page's room or zone.",
+            "Click **Save pages**. The dimmer ring always follows the page's lights."] }
+        : { title: "Change what a button does", steps: [
+            "Open **Switches** and pick the switch from the tabs.",
+            "**Toggle switch**: the lever turns the lights on and off. A quick off-on flick steps through the scenes under **Double-click**.",
+            "**Push button**: a click toggles the lights. **Double-click** can step through scenes. **Hold** can dim (it ramps while you hold) or turn off the whole room.",
+            "Every gesture targets the whole room until you click **Change** to pick one light or scenes. Click **Save channels**."] },
+      R ? { title: "Name a page, pick its theme, set the screen", steps: [
+            "On Switches, each page has a name and a theme. The theme sets the colours on the Round's screen.",
+            "Under **Device**, set which way you swipe between pages and how long the screen stays on."] }
+        : { title: "Use the BOOT button", steps: [
+            "BOOT is always a push button.",
+            "Its **Hold** pairs the board with the Bridge again, unless you give Hold another action."] },
+      { title: "Make a change apply right away", steps: [
+          "Each gesture says in words what it will do. Save, and the switch picks the change up the next time it checks in, within an hour.",
+          "To apply it now, unplug the board and plug it back in.",
+          "Changes on several switches? **Save all** saves them together."] },
+      { title: "Update the firmware", steps: [
+          "On Switches, a switch with newer firmware shows **Update to**. Click it.",
+          "Plug the board in, click **Detect device**, then **Update**.",
+          "Wi-Fi, the console link and its " + (R ? "pages" : "buttons") + " are kept."] },
+      { title: "Pair with the Bridge again", steps: [
+          "Hold **BOOT** on the board for about 3 seconds, or plug it in and click **Pair with Bridge** on Setup.",
+          "Press the button on top of the Hue Bridge."] },
+      { title: "Rename a switch", steps: ["On Switches, click the pencil next to its name. The name is only used in this console."] },
+      { title: "Let Arduino IDE use the USB port", steps: ["The console holds the port while a board is detected. Click **Disconnect** on Setup to release it."] },
+      { title: "Retire a lost or given-away board", steps: [
+          "Open **API keys** from the menu under your email and revoke the board's key.",
+          "Keys under **Not in use** belong to no board and can go too."] },
+    ];
+
+    const status = R ? [
+      { key: "wifi", g: "setup", v: { face: "wifi" }, state: "Joining Wi-Fi", see: "Wi-Fi… and the firmware version", means: "The board is joining the saved network. This usually takes a few seconds. Nothing to do." },
+      { key: "loading", g: "setup", v: { face: "loading" }, state: "Finding the Bridge", see: "Loading…, Connecting, ring pulses", means: "Wi-Fi is up. The board is looking for the Hue Bridge on the network. Nothing to do." },
+      { key: "pairing", g: "setup", v: { face: "pairing" }, state: "Needs pairing", see: "Press Bridge button, ring flashes yellow", means: "The board found the Bridge and waits for you to approve it. It also shows this when the Bridge rejects the saved key twice, and then pairs again by itself.", fix: "Press the round button on top of the Hue Bridge. To pair again later, hold **BOOT** for about 3 seconds." },
+      { key: "empty", g: "setup", v: { face: "empty" }, state: "Needs a page", see: "A blank disc that says Page", means: "The Bridge is paired, and this Round has no pages yet.", fix: "Add at least one page.", href: "/switches", cta: "Open Switches" },
+      { key: "ready", g: "ok", v: { face: "ready" }, state: "Ready", see: "Page name, scene, brightness ring, page dots", means: "Tap or double tap runs the page, swipe changes page, the ring dims. The disc shows … while a press is sent. After the screen timeout it goes dark, and the first touch only wakes it." },
+      { key: "nowifi", g: "bad", v: { face: "nowifi" }, state: "No Wi-Fi", see: "No Wi-Fi, Plug the antenna", means: "The board couldn't join Wi-Fi, or no network is saved. The XIAO S3 needs its U.FL antenna to reach the router.", fix: "Plug in the antenna. If it's already in, save a 2.4 GHz network on Setup.", href: "/setup", cta: "Open Setup" },
+      { key: "nobridge", g: "bad", v: { face: "nobridge" }, state: "Bridge not reachable", see: "No Bridge, same LAN as Bridge", means: "The board can't find the Bridge on this network. It keeps retrying, and after a short outage it reconnects by itself.", fix: "Check that the Bridge is on and on the same network as the board." },
+      { key: "flash", g: "bad", v: { face: "flash" }, state: "Command failed", see: "Ring flashes red for about 0.7 s", means: "A press didn't reach the Bridge. The screen stays on the page, so you can tap again right away.", fix: "If it keeps happening, check that the Bridge is on and on the same network." },
+      { key: "token", g: "bad", v: { face: "token" }, state: "Token rejected", see: "Red dot at the bottom, stays until fixed", means: "The console rejected the device token. The switch keeps working with what it has, but can't get changes.", fix: "Save a new token on Setup.", href: "/setup", cta: "Open Setup" },
+      { key: "tokenfull", g: "bad", v: { face: "tokenfull" }, state: "Token rejected, nothing saved", see: "Full-screen message, stays until fixed", means: "The console rejected the token and this Round has no recipes yet, so presses have nothing to run.", fix: "Save a new token on Setup.", href: "/setup", cta: "Open Setup" },
+    ] : [
+      { key: "fast", g: "setup", v: { led: "fast" }, state: "No Wi-Fi", see: "Fast blink, no pause", means: "The board is not on Wi-Fi.", fix: "Connect the board over USB and save a 2.4 GHz network on Setup.", href: "/setup", cta: "Open Setup" },
+      { key: "b2", g: "setup", v: { led: "burst-2" }, state: "Needs the console", see: "Two blinks, then a pause", means: "Wi-Fi is up. The console address or the device token is missing.", fix: "Save a token on Setup.", href: "/setup", cta: "Open Setup" },
+      { key: "b3", g: "setup", v: { led: "burst-3" }, state: "Needs pairing", see: "Three blinks, then a pause", means: "The board can't use the Hue Bridge yet. It isn't paired, pairing is running, or the Bridge is missing or rejected it.", fix: "Hold **BOOT** for about 3 seconds, or use **Pair** on Setup, then press the button on the Hue Bridge." },
+      { key: "b4", g: "setup", v: { led: "burst-4" }, state: "Needs a recipe", see: "Four blinks, then a pause", means: "The Bridge is paired, and no recipes are saved.", fix: "Save at least one recipe on Switches.", href: "/switches", cta: "Open Switches" },
+      { key: "heart", g: "ok", v: { led: "heart" }, state: "Ready", see: "One short blink about every 3 seconds", means: "Wi-Fi, the console, the Bridge and at least one recipe are set. One recipe on any channel is enough. A press that doesn't reach the Bridge doesn't change the pattern." },
+      { key: "solid", g: "bad", v: { led: "solid" }, state: "Error", see: "Solid on", means: "The console rejected the device token, or the console task on the board didn't start. This wins over every blink, and losing Wi-Fi doesn't turn it off. It clears once the console accepts the board.", fix: "Save a new token on Setup.", href: "/setup", cta: "Open Setup" },
+    ];
+    return { steps, tasks, status };
+  }
+
+  renderVals() {
+    const p = this.state.product ?? this.props.product ?? "round";
+    const R = p === "round";
+    const showInd = this.props.showIndicators ?? true;
+    const expanded = this.props.tasksExpanded ?? false;
+    const { steps, tasks, status } = this.data(p);
+    const choose = (id) => () => { try { localStorage.setItem("howto-product", id); } catch (e) {} this.setState({ product: id, pick: null, open: 0 }); };
+
+    const products = [
+      { id: "round", name: "Round switch", blurb: "Round touch screen · XIAO ESP32-S3", v: { face: "ready" }, size: 40 },
+      { id: "simple", name: "Simple switch", blurb: "Wall buttons, one orange LED · XIAO ESP32-C6", v: { led: "heart" }, size: 70 },
+    ].map((x) => ({ ...x, on: x.id === p, choose: choose(x.id), visual: this.vis(x.v, x.size),
+      border: x.id === p ? "#e07a3d" : "#3a322c", ring: x.id === p ? "0 0 0 1px #e07a3d" : "none" }));
+
+    const pickKey = this.state.pick ?? status.find((s) => s.g === "bad").key;
+    const tile = (s) => {
+      const on = s.key === pickKey;
+      return { ...s, on, visual: this.vis(s.v, 64), onClick: () => this.setState({ pick: s.key }),
+        border: on ? "#e07a3d" : "#3a322c", ring: on ? "0 0 0 1px #e07a3d" : "none",
+        tag: s.g === "ok" ? "All good" : s.g === "bad" ? "Problem" : "Setting up",
+        tagC: s.g === "ok" ? "#9dce9a" : s.g === "bad" ? "#e08a7a" : "#a89a8c" };
+    };
+    const sel = status.find((s) => s.key === pickKey);
+    const tone = sel.g === "ok" ? "#9dce9a" : sel.g === "bad" ? "#e08a7a" : "#f4eee6";
+
+    return {
+      products,
+      productName: R ? "Round switch" : "Simple switch",
+      statusTitle: R ? "Reading the screen" : "Reading the LED",
+      needs: ["The switch", "A USB-C data cable", "Chrome or Edge", "The Hue Bridge on the same network"],
+      steps: steps.map((s, i) => ({ ...s, n: i + 1, body: this.rt(s.body), note: this.rt(s.note),
+        shows: showInd ? s.shows : null, visual: this.vis(s.v, 64), href: s.href || null })),
+      tasks: tasks.map((t, i) => {
+        const open = expanded || this.state.open === i;
+        return { title: t.title, open, steps: t.steps.map((x, j) => ({ n: j + 1, parts: this.rt(x) })),
+          toggle: () => this.setState((st) => ({ open: st.open === i ? -1 : i })),
+          chev: open ? "rotate(180deg)" : "none" };
+      }),
+      statusIntro: R ? "Match the Round's screen to one below. Colours on your Round follow its page theme." : "Match the orange LED on the XIAO to one below. The red charge LED, BOOT and RESET aren't part of this list.",
+      setupTiles: status.filter((s) => s.g !== "bad").map(tile),
+      badTiles: status.filter((s) => s.g === "bad").map(tile),
+      sel: { ...sel, tone, visual: this.vis(sel.v, 112), means: this.rt(sel.means), fix: this.rt(sel.fix), href: sel.href || null },
+    };
+  }
+}
+</script>
+</body>
+</html>
