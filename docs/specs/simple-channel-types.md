@@ -19,8 +19,8 @@ Today each Simple channel gets up to three free recipes (`on`, `off`, `double_cl
 | Toggle switch | lever opens | `off` the target | automatic |
 | Toggle switch | double-click | cycle a scene list from the group | the list (1–8 scenes), or empty |
 | Push button | click | `toggle` the target | automatic |
-| Push button | double-click | a Hue action (§2.6) | Toggle, Turn on, Turn off, Cycle scenes, or nothing |
-| Push button | hold | a Hue action (§2.6) | same choices; on BOOT, nothing = re-pair (§2.4) |
+| Push button | double-click | cycle a scene list (§2.7) | the list (1–8 scenes), or nothing |
+| Push button | hold | dim, or turn off the whole group (§2.7) | Dim, Turn off all, or nothing; on BOOT, nothing = re-pair (§2.4) |
 
 The goal is a channel you configure in one pass, not three free slots, and odd mixes (on → one lamp, off → another room) can no longer be saved.
 
@@ -150,6 +150,17 @@ The first draft reserved push-button double-click and hold, and only BOOT's hold
 - Switching a channel from toggle switch to push button moves its scene list to the push-button double-click, and back.
 
 Console only: firmware 0.3.0 already handles `double_click` and `hold` on every momentary channel (§2.3). Storage adds `simple_channels.double_click`; the PUT body adds `double`.
+
+### 2.7 Push-button gestures narrowed (amended 2026-09-26)
+
+Click always toggles the target, so double-click and hold only offer what a click cannot do:
+
+| Gesture | Choices | Why the others are gone |
+| --- | --- | --- |
+| Double-click | nothing, **Cycle scenes** | Toggle / Turn on repeat the click. A double-click also delays every single click (~400 ms), so it should earn that. Same meaning as a toggle switch's double-click. |
+| Hold | nothing (BOOT: re-pair), **Dim** (`docs/specs/simple-hold-dim.md`), **Turn off** the whole room or zone | Cycling scenes by holding is awkward. Turn off only helps when the click controls less than the group, so it is offered only when the channel's target is one light, and always targets the group's `grouped_light`. Changing the click target to the whole group clears it. |
+
+Console only: the console offers and accepts fewer combinations; the firmware contract is unchanged. No saved channel used a removed choice when this shipped.
 
 ## 3. Compatibility
 

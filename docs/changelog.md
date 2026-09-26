@@ -10,6 +10,10 @@ What changed in the console, the Round switch, and the Simple switch. Newest fir
 
 The console has no version number. Each heading is the day the change went live.
 
+### 2026-09-26
+
+- On a Simple push button, double-click now only cycles scenes, and hold dims or turns off the whole room or zone. Choices that repeated the click (toggle, turn on) are gone.
+
 ### 2026-09-25
 
 - Each Simple switch input is set up like a Round page: pick a room or zone, then choose Toggle switch or Push button. A toggle switch turns the lights on and off with the lever, and a double-click cycles up to 8 scenes. A push button toggles the lights on each click, and its double-click and hold can each toggle, turn on, turn off, or cycle scenes.

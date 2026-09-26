@@ -35,6 +35,7 @@ import {
   simpleChannelsEqual,
   supportsChannelTypes,
   supportsHoldDim,
+  withTarget,
 } from "@/lib/simple-channels";
 import type {
   RecipeTarget,
@@ -126,6 +127,7 @@ function simpleAssignHint(
     const name = slot.slot === "double" ? "Double-click" : "Hold";
     const gesture = slot.slot === "double" ? config.double : config.hold;
     if (!gesture) return `Assigning ${label} · ${name} — pick what it does first.`;
+    if (gesture.action === "off") return `${label} · Hold turns off all of ${where}.`;
     return gesture.action === "recall_scene"
       ? `Assigning ${label} · ${name} — click scenes in ${where} to add or remove them.`
       : `Assigning ${label} · ${name} — click the whole ${config.group.rtype} or a light in ${where}.`;
@@ -428,9 +430,12 @@ export function BridgeWorkspace({
       const targets = toggleScene(gesture.targets, target.rid);
       if (!targets) return;
       next = withGesture({ action: "recall_scene", targets });
+    } else if (gesture?.action === "off") {
+      setNotice("Hold turns off the whole room or zone. There is nothing to pick.");
+      return;
     } else if (gesture) {
       if (target.rtype === "scene") {
-        setNotice("To use scenes here, choose Cycle scenes for this gesture.");
+        setNotice("Dim needs a light or the whole room or zone, not a scene.");
         return;
       }
       next = withGesture({ action: gesture.action, target });
@@ -451,13 +456,17 @@ export function BridgeWorkspace({
       setNotice("Double-click cycles scenes. Pick a scene from the list.");
       return;
     } else {
-      next = { ...config, target };
+      next = withTarget(config, target);
     }
     setSimpleFor(
       selected.mac,
       simpleConfigs.map((item) => (item.id === config.id ? next : item)),
     );
-    setNotice(null);
+    setNotice(
+      next.hold === null && config.hold?.action === "off"
+        ? "Hold turn off was cleared: the click now controls the whole room or zone."
+        : null,
+    );
   }
 
   function assignRoomTapAndOff(groupedLightId: string, roomName: string) {

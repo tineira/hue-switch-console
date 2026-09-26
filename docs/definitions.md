@@ -162,14 +162,15 @@ Wipe round→simple **only** if the body carries an explicit `"product": "simple
 2. For each **channel**, pick a **room or zone**. "Not used" = the channel does nothing.
 3. Pick a **type**: Toggle switch or Push button. BOOT is always a push button.
 4. Pick the **target** in the topology (right, filtered to that group): the whole group (`grouped_light`) or one light. It defaults to the whole group.
-5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: pick **double-click** and **hold** — nothing, Toggle, Turn on, Turn off (a target in the group), or Cycle scenes. Hold can also be **Dim** (firmware ≥ 0.4.0). On BOOT, a hold set to nothing re-pairs with the Bridge.
+5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: **double-click** is nothing or Cycle scenes; **hold** is nothing, **Dim** (firmware ≥ 0.4.0), or Turn off the whole room or zone (offered only when the click target is one light). On BOOT, a hold set to nothing re-pairs with the Bridge.
 
 | Type | Gesture | What it does |
 | --- | --- | --- |
 | Toggle switch | lever closes / opens | `on` / `off` the target (automatic) |
 | Toggle switch | double-click | next scene in the list; empty list → `on` |
 | Push button | click | `toggle` the target (automatic) |
-| Push button | double-click, hold | the action picked for each; nothing = no-op (BOOT hold: re-pair) |
+| Push button | double-click | next scene in the list; nothing = no-op |
+| Push button | hold | dim, or turn off the whole group; nothing = no-op (BOOT: re-pair) |
 
 If the target is one light, a scene still applies to the whole group; the console warns.
 

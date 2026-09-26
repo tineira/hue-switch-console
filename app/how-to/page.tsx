@@ -411,9 +411,9 @@ export default async function HowToPage() {
               its type. A <b>Toggle switch</b> (wall lever) turns the lights on
               and off with the lever; a quick off-on flick cycles the scenes you
               add under <b>Double-click</b>. A <b>Push button</b> toggles the
-              lights on each click, and you choose what its{" "}
-              <b>Double-click</b> and <b>Hold</b> do. Hold set to <b>Dim</b>{" "}
-              ramps the light while you hold and stops when you let go. The whole room is the
+              lights on each click. Its <b>Double-click</b> can cycle scenes,
+              and its <b>Hold</b> can dim (ramps while you hold, stops when you
+              let go) or turn off the whole room. The whole room is the
               default target; click a light or scene on the right to change it.
               BOOT is always a push button, and its <b>Hold</b> re-pairs with
               the Bridge unless you give it another action.

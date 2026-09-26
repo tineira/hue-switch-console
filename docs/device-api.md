@@ -298,9 +298,9 @@ Unknown MAC for this key’s account: `404`.
 | `target` | `{ rtype: light \| grouped_light, rid }` for `on` / `off` / `toggle` / `dim` |
 | `targets[]` | 1–8 `{ rtype: scene, rid, name }` for `recall_scene` |
 
-A toggle switch's `double_click` is always a scene list. A push button's
-`double_click` and `hold` are any action with a target in the group, or a
-scene list. `hold` may also be `dim`: ramp the target with Clip v2
+A toggle switch's and a push button's `double_click` are always a scene list.
+A push button's `hold` is `off` on the group's `grouped_light` (only when the
+click target is one light) or `dim`: ramp the target with Clip v2
 `dimming_delta` while held, `stop` on release, alternating up and down
 (`docs/specs/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
 keeps the rest, so its hold does nothing (BOOT still re-pairs).
@@ -362,19 +362,20 @@ Content-Type: application/json
 ```
 
 A channel left out is not used. `scenes` is the toggle-switch double-click
-list. `double` and `hold` (push button only) are `null`,
-`{ "action": "on" | "off" | "toggle", "target": … }` (`hold` may also use
-`"dim"`), or
-`{ "action": "recall_scene", "targets": ["<scene rid>", …] }`. On BOOT,
-`hold: null` means the 3 s press re-pairs with the Bridge.
+list. For a push button, `double` is `null` or
+`{ "action": "recall_scene", "targets": ["<scene rid>", …] }`, and `hold` is
+`null`, `{ "action": "dim", "target": … }`, or
+`{ "action": "off", "target": { "rtype": "grouped_light", "rid": "<the group's>" } }`.
+On BOOT, `hold: null` means the 3 s press re-pairs with the Bridge.
 
 Validation, with the `error` code:
 
 | Rule | `error` |
 | --- | --- |
 | `id` is a channel the switch registered, listed once | `invalid_channel` |
-| `boot` is `momentary`; only `maintained` has `scenes`; only `momentary` has `double` / `hold` | `channel_kind_not_allowed` |
-| `target` (and a `double` / `hold` target) is the group's `grouped_light` or one of its lights | `target_outside_group` |
+| `boot` is `momentary`; only `maintained` has `scenes`; only `momentary` has `double` / `hold`; `double` is a scene list; `hold` is `dim` or `off` | `channel_kind_not_allowed` |
+| `target` and a `dim` target are the group's `grouped_light` or one of its lights; an `off` hold targets the group's `grouped_light` | `target_outside_group` |
+| An `off` hold while the click target is already the whole group | `validation_error` |
 | Every scene belongs to the group | `scene_outside_group` |
 | `group` is a room or zone in the snapshot; `scenes` holds 0–8, a `double` / `hold` list 1–8, no duplicates | `validation_error` |
 | Switch firmware is older than 0.3.0 | `409 firmware_update_required` |

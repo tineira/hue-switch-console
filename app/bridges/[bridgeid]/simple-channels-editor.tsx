@@ -8,6 +8,7 @@ import {
   defaultSimpleChannel,
   groupFromRoomId,
   groupRoom,
+  holdOffAvailable,
   isBootChannel,
   isSimpleChannelStale,
   kindLabel,
@@ -28,14 +29,9 @@ import Link from "next/link";
 export type SimpleSlot = "target" | "scenes" | "double" | "hold";
 export type SimpleSlotRef = { channelId: string; slot: SimpleSlot };
 
-type GestureChoice = "none" | "toggle" | "on" | "off" | "recall_scene" | "dim";
+type GestureChoice = "none" | "recall_scene" | "dim" | "off";
 
-const GESTURE_CHOICES: { value: Exclude<GestureChoice, "none" | "dim">; label: string }[] = [
-  { value: "toggle", label: "Toggle" },
-  { value: "on", label: "Turn on" },
-  { value: "off", label: "Turn off" },
-  { value: "recall_scene", label: "Cycle scenes" },
-];
+type ChoiceOption = { value: GestureChoice; label: string; disabled?: boolean };
 
 function moveItem<T>(items: T[], index: number, dir: -1 | 1): T[] {
   const next = [...items];
@@ -301,7 +297,10 @@ function ChannelCard({
             <>
               <GestureSettings
                 label="Double-click"
-                emptyLabel="Nothing"
+                choices={[
+                  { value: "none", label: "Nothing" },
+                  { value: "recall_scene", label: "Cycle scenes" },
+                ]}
                 gesture={config.double}
                 config={config}
                 snapshot={snapshot}
@@ -316,8 +315,22 @@ function ChannelCard({
               ) : null}
               <GestureSettings
                 label="Hold"
-                emptyLabel={boot ? "Re-pair with Bridge" : "Nothing"}
-                dim={dimSupported ? "enabled" : "disabled"}
+                choices={[
+                  { value: "none", label: boot ? "Re-pair with Bridge" : "Nothing" },
+                  {
+                    value: "dim",
+                    label: dimSupported ? "Dim" : `Dim (needs firmware ${SIMPLE_DIM_FIRMWARE})`,
+                    disabled: !dimSupported && config.hold?.action !== "dim",
+                  },
+                  ...(holdOffAvailable(config) || config.hold?.action === "off"
+                    ? [
+                        {
+                          value: "off" as const,
+                          label: `Turn off all of ${groupRoom(snapshot, config.group)?.name ?? "the group"}`,
+                        },
+                      ]
+                    : []),
+                ]}
                 gesture={config.hold}
                 config={config}
                 snapshot={snapshot}
@@ -494,8 +507,7 @@ function SceneSlot({
 
 function GestureSettings({
   label,
-  emptyLabel,
-  dim = "hidden",
+  choices,
   gesture,
   config,
   snapshot,
@@ -504,9 +516,7 @@ function GestureSettings({
   onChange,
 }: {
   label: string;
-  emptyLabel: string;
-  /** Hold only; disabled below firmware SIMPLE_DIM_FIRMWARE. */
-  dim?: "hidden" | "enabled" | "disabled";
+  choices: ChoiceOption[];
   gesture: SimpleGesture | null;
   config: SimpleChannelConfig;
   snapshot: TopologySnapshot;
@@ -514,7 +524,7 @@ function GestureSettings({
   onSelect: () => void;
   onChange: (gesture: SimpleGesture | null) => void;
 }) {
-  const choice: GestureChoice = gesture ? gesture.action : "none";
+  const choice = (gesture?.action ?? "none") as GestureChoice;
 
   function pick(next: GestureChoice) {
     if (next === "none") {
@@ -527,6 +537,13 @@ function GestureSettings({
         gesture?.action === "recall_scene" ? gesture : { action: "recall_scene", targets: [] },
       );
       onSelect();
+      return;
+    }
+    if (next === "off") {
+      onChange({
+        action: "off",
+        target: { rtype: "grouped_light", rid: config.group.groupedLightRid },
+      });
       return;
     }
     const target =
@@ -546,17 +563,11 @@ function GestureSettings({
           onChange={(event) => pick(event.target.value as GestureChoice)}
           className="rounded-md border border-line bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament"
         >
-          <option value="none">{emptyLabel}</option>
-          {GESTURE_CHOICES.map((item) => (
-            <option key={item.value} value={item.value}>
+          {choices.map((item) => (
+            <option key={item.value} value={item.value} disabled={item.disabled}>
               {item.label}
             </option>
           ))}
-          {dim !== "hidden" ? (
-            <option value="dim" disabled={dim === "disabled" && choice !== "dim"}>
-              {dim === "disabled" ? `Dim (needs firmware ${SIMPLE_DIM_FIRMWARE})` : "Dim"}
-            </option>
-          ) : null}
         </select>
       </label>
       {gesture?.action === "recall_scene" ? (
@@ -568,7 +579,7 @@ function GestureSettings({
           onSelect={onSelect}
           onChange={(targets) => onChange({ action: "recall_scene", targets })}
         />
-      ) : gesture ? (
+      ) : gesture?.action === "dim" ? (
         <SlotRow label={`${label} target`} selected={selected} onSelect={onSelect}>
           {targetName(gesture.target, config.group, snapshot)}
         </SlotRow>

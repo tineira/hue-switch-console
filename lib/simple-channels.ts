@@ -78,6 +78,22 @@ export function withGroup(
   return { ...next, kind: config.kind };
 }
 
+/** Hold turn off only exists when the click controls less than the whole group. */
+export function holdOffAvailable(config: SimpleChannelConfig): boolean {
+  return config.target.rtype !== "grouped_light";
+}
+
+/** New click target; drops a hold turn off that would now repeat the click. */
+export function withTarget(
+  config: SimpleChannelConfig,
+  target: RecipeTarget,
+): SimpleChannelConfig {
+  const next = { ...config, target };
+  return next.hold?.action === "off" && !holdOffAvailable(next)
+    ? { ...next, hold: null }
+    : next;
+}
+
 export function withKind(
   config: SimpleChannelConfig,
   kind: ChannelKind,
@@ -89,6 +105,7 @@ export function withKind(
       ...config,
       kind,
       scenes: [],
+      // Same scene list, now on the push-button double-click.
       double:
         config.scenes.length > 0
           ? { action: "recall_scene", targets: config.scenes }
@@ -288,8 +305,23 @@ export function validateSimpleChannels(
     if (config.scenes.length > 0) {
       return fail("channel_kind_not_allowed", "A push button sets its double-click as an action, not a scene list.");
     }
-    if (config.double?.action === "dim") {
-      return fail("channel_kind_not_allowed", "Dim is a hold action. A double-click has nothing to release.");
+    // Click already toggles the target, so the other gestures only get what a click cannot do.
+    if (config.double && config.double.action !== "recall_scene") {
+      return fail("channel_kind_not_allowed", "A push button's double-click cycles scenes.");
+    }
+    if (config.hold && config.hold.action !== "dim" && config.hold.action !== "off") {
+      return fail("channel_kind_not_allowed", "A push button's hold dims, or turns off the whole room or zone.");
+    }
+    if (config.hold?.action === "off") {
+      if (
+        config.hold.target.rtype !== "grouped_light" ||
+        config.hold.target.rid !== group.groupedLightRid
+      ) {
+        return fail("target_outside_group", "Hold turns off the whole room or zone.");
+      }
+      if (config.target.rtype === "grouped_light") {
+        return fail("validation_error", "Hold turn off repeats the click when the click already controls the whole room or zone.");
+      }
     }
     for (const [gesture, what] of [
       [config.double, "double-click"],
