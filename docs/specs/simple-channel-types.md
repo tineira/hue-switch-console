@@ -170,14 +170,14 @@ No change.
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] Reads `channels[]` (`kind`, group) from config. Pins absent from it are ignored. The old payload falls back to compiled defaults.
-- [ ] Momentary state machine: `short` / `double_click` / `hold` per §2.3, with no double-click wait when there is no `double_click` recipe.
-- [ ] BOOT: `hold` recipe present → run it, no re-pair from the button. Absent → 3 s re-pair as today.
-- [ ] `recall_scene` with `targets[]`: per-channel last scene `rid` in NVS, cleared by `off`, skip 404, wrap.
-- [ ] Register omits `channels[].kind`.
-- [ ] `FIRMWARE_VERSION` → `0.3.0`.
-- [ ] `CHANGELOG.md` entry (user-facing wording).
-- [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.3.0.
+- [x] Reads `channels[]` (`kind`, group) from config. Pins absent from it are ignored. The old payload falls back to compiled defaults.
+- [x] Momentary state machine: `short` / `double_click` / `hold` per §2.3, with no double-click wait when there is no `double_click` recipe.
+- [x] BOOT: `hold` recipe present → run it, no re-pair from the button. Absent → 3 s re-pair as today.
+- [x] `recall_scene` with `targets[]`: per-channel last scene `rid` in NVS, cleared by `off`, skip 404, wrap.
+- [x] Register omits `channels[].kind`.
+- [x] `FIRMWARE_VERSION` → `0.3.0`.
+- [x] `CHANGELOG.md` entry (user-facing wording).
+- [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.3.0.
 - [ ] Tested on a board by the user: toggle switch (on, off, double-click cycle), push button (instant click without a double), BOOT hold both ways.
 
 ### Cleanup
