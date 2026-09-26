@@ -295,7 +295,12 @@ function parseSimpleGesture(raw: unknown): SimpleGesture | null | undefined {
     if (!targets) return undefined;
     return { action: "recall_scene", targets };
   }
-  if (row.action !== "on" && row.action !== "off" && row.action !== "toggle") {
+  if (
+    row.action !== "on" &&
+    row.action !== "off" &&
+    row.action !== "toggle" &&
+    row.action !== "dim"
+  ) {
     return undefined;
   }
   const target = parseRecipeTarget(row.target);

@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/simple-channel-types.md`.
 
-**Status:** approved (2026-09-25)
+**Status:** in progress (console done on branch `simple-hold-dim`)
 
 ## 1. What and why
 
@@ -62,10 +62,10 @@ Rules:
 
 ### Console (`hue-switch-console`)
 
-- [ ] `SimpleGesture` gets `{ action: "dim", target }`. Validation: only on `hold`, target in the group.
-- [ ] Hold selector: **Dim** option, disabled below firmware 0.4.0. Confirmation reads *"hold → dim all of Living"*.
-- [ ] `docs/device-api.md` and `docs/definitions.md` updated in the same commit.
-- [ ] `docs/changelog.md` entry.
+- [x] `SimpleGesture` gets `{ action: "dim", target }`. Validation: only on `hold`, target in the group.
+- [x] Hold selector: **Dim** option, disabled below firmware 0.4.0. Confirmation reads *"hold → dim all of Living"*.
+- [x] `docs/device-api.md` and `docs/definitions.md` updated in the same commit.
+- [x] `docs/changelog.md` entry.
 - [ ] Deployed; checked on production.
 
 ### Round (`hue-round-switch`)

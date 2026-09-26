@@ -431,7 +431,10 @@ function asSimpleGesture(value: unknown): SimpleGesture | null {
   }
   const target = row.target as Record<string, unknown> | undefined;
   if (
-    (row.action === "on" || row.action === "off" || row.action === "toggle") &&
+    (row.action === "on" ||
+      row.action === "off" ||
+      row.action === "toggle" ||
+      row.action === "dim") &&
     target &&
     (target.rtype === "light" || target.rtype === "grouped_light") &&
     typeof target.rid === "string"

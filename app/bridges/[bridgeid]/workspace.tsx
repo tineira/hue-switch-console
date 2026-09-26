@@ -34,6 +34,7 @@ import {
   isSimpleChannelStale,
   simpleChannelsEqual,
   supportsChannelTypes,
+  supportsHoldDim,
 } from "@/lib/simple-channels";
 import type {
   RecipeTarget,
@@ -235,6 +236,7 @@ export function BridgeWorkspace({
     (config) => config.id === selectedSlot?.channelId,
   );
   const simpleFirmwareOk = selected ? supportsChannelTypes(selected.firmware) : false;
+  const simpleDimOk = selected ? supportsHoldDim(selected.firmware) : false;
   const staleCount = round
     ? staleRoundCount(roundDraft?.recipes ?? [], snapshot)
     : simpleConfigs.filter((config) => isSimpleChannelStale(config, snapshot)).length;
@@ -857,6 +859,7 @@ export function BridgeWorkspace({
                 configs={simpleConfigs}
                 snapshot={snapshot}
                 firmware={simpleFirmwareOk}
+                dimSupported={simpleDimOk}
                 selectedSlot={selectedSlot}
                 pending={pending}
                 dirty={dirty}

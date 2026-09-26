@@ -2,6 +2,7 @@
 
 import { pickableGroups } from "@/lib/pages";
 import {
+  SIMPLE_DIM_FIRMWARE,
   SIMPLE_MIN_FIRMWARE,
   confirmationForSimpleChannel,
   defaultSimpleChannel,
@@ -27,9 +28,9 @@ import Link from "next/link";
 export type SimpleSlot = "target" | "scenes" | "double" | "hold";
 export type SimpleSlotRef = { channelId: string; slot: SimpleSlot };
 
-type GestureChoice = "none" | "toggle" | "on" | "off" | "recall_scene";
+type GestureChoice = "none" | "toggle" | "on" | "off" | "recall_scene" | "dim";
 
-const GESTURE_CHOICES: { value: Exclude<GestureChoice, "none">; label: string }[] = [
+const GESTURE_CHOICES: { value: Exclude<GestureChoice, "none" | "dim">; label: string }[] = [
   { value: "toggle", label: "Toggle" },
   { value: "on", label: "Turn on" },
   { value: "off", label: "Turn off" },
@@ -49,6 +50,7 @@ export function SimpleChannelsEditor({
   configs,
   snapshot,
   firmware,
+  dimSupported,
   selectedSlot,
   pending,
   dirty,
@@ -65,6 +67,8 @@ export function SimpleChannelsEditor({
   snapshot: TopologySnapshot;
   /** False when the board runs firmware older than SIMPLE_MIN_FIRMWARE. */
   firmware: boolean;
+  /** False when the board runs firmware older than SIMPLE_DIM_FIRMWARE. */
+  dimSupported: boolean;
   selectedSlot: SimpleSlotRef | null;
   pending: boolean;
   dirty: boolean;
@@ -116,6 +120,7 @@ export function SimpleChannelsEditor({
             channel={channel}
             config={configs.find((config) => config.id === channel.id)}
             snapshot={snapshot}
+            dimSupported={dimSupported}
             selectedSlot={selectedSlot}
             onSelectSlot={onSelectSlot}
             onPatch={(next) => patch(channel.id, next)}
@@ -187,6 +192,7 @@ function ChannelCard({
   channel,
   config,
   snapshot,
+  dimSupported,
   selectedSlot,
   onSelectSlot,
   onPatch,
@@ -194,6 +200,7 @@ function ChannelCard({
   channel: Channel;
   config: SimpleChannelConfig | undefined;
   snapshot: TopologySnapshot;
+  dimSupported: boolean;
   selectedSlot: SimpleSlotRef | null;
   onSelectSlot: (slot: SimpleSlotRef) => void;
   onPatch: (next: SimpleChannelConfig | null) => void;
@@ -310,6 +317,7 @@ function ChannelCard({
               <GestureSettings
                 label="Hold"
                 emptyLabel={boot ? "Re-pair with Bridge" : "Nothing"}
+                dim={dimSupported ? "enabled" : "disabled"}
                 gesture={config.hold}
                 config={config}
                 snapshot={snapshot}
@@ -317,6 +325,12 @@ function ChannelCard({
                 onSelect={() => onSelectSlot({ channelId: channel.id, slot: "hold" })}
                 onChange={(hold) => onPatch({ ...config, hold })}
               />
+              {config.hold?.action === "dim" ? (
+                <p className="text-xs text-muted">
+                  Hold ramps the light up or down, alternating each time. Let go
+                  to stop.
+                </p>
+              ) : null}
               {boot && config.hold ? (
                 <p className="text-xs text-warn">
                   The button no longer re-pairs with the Bridge. To re-pair,
@@ -481,6 +495,7 @@ function SceneSlot({
 function GestureSettings({
   label,
   emptyLabel,
+  dim = "hidden",
   gesture,
   config,
   snapshot,
@@ -490,6 +505,8 @@ function GestureSettings({
 }: {
   label: string;
   emptyLabel: string;
+  /** Hold only; disabled below firmware SIMPLE_DIM_FIRMWARE. */
+  dim?: "hidden" | "enabled" | "disabled";
   gesture: SimpleGesture | null;
   config: SimpleChannelConfig;
   snapshot: TopologySnapshot;
@@ -535,6 +552,11 @@ function GestureSettings({
               {item.label}
             </option>
           ))}
+          {dim !== "hidden" ? (
+            <option value="dim" disabled={dim === "disabled" && choice !== "dim"}>
+              {dim === "disabled" ? `Dim (needs firmware ${SIMPLE_DIM_FIRMWARE})` : "Dim"}
+            </option>
+          ) : null}
         </select>
       </label>
       {gesture?.action === "recall_scene" ? (

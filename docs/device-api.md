@@ -294,13 +294,16 @@ Unknown MAC for this key’s account: `404`.
 | Recipe field | Values |
 | --- | --- |
 | `event` | Simple: `on` \| `off` \| `double_click` (maintained) or `short` \| `double_click` \| `hold` (momentary). Round: `short` \| `double_click` |
-| `action` | `on` \| `off` \| `recall_scene` \| `toggle` |
-| `target` | `{ rtype: light \| grouped_light, rid }` for `on` / `off` / `toggle` |
+| `action` | `on` \| `off` \| `recall_scene` \| `toggle` \| `dim` (Simple `hold` only, firmware ≥ 0.4.0) |
+| `target` | `{ rtype: light \| grouped_light, rid }` for `on` / `off` / `toggle` / `dim` |
 | `targets[]` | 1–8 `{ rtype: scene, rid, name }` for `recall_scene` |
 
 A toggle switch's `double_click` is always a scene list. A push button's
 `double_click` and `hold` are any action with a target in the group, or a
-scene list.
+scene list. `hold` may also be `dim`: ramp the target with Clip v2
+`dimming_delta` while held, `stop` on release, alternating up and down
+(`docs/specs/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
+keeps the rest, so its hold does nothing (BOOT still re-pairs).
 
 Poll cadence (firmware): no recipes in NVS → about 1 minute; after recipes
 exist → at boot and every 1 hour. GPIO never waits on this GET.
@@ -360,7 +363,8 @@ Content-Type: application/json
 
 A channel left out is not used. `scenes` is the toggle-switch double-click
 list. `double` and `hold` (push button only) are `null`,
-`{ "action": "on" | "off" | "toggle", "target": … }`, or
+`{ "action": "on" | "off" | "toggle", "target": … }` (`hold` may also use
+`"dim"`), or
 `{ "action": "recall_scene", "targets": ["<scene rid>", …] }`. On BOOT,
 `hold: null` means the 3 s press re-pairs with the Bridge.
 

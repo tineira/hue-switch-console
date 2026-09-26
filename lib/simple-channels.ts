@@ -27,11 +27,22 @@ import type {
 /** First Simple firmware that reads `channels[]` from the config poll. */
 export const SIMPLE_MIN_FIRMWARE = "0.3.0";
 
+/** First Simple firmware that runs a `dim` hold. */
+export const SIMPLE_DIM_FIRMWARE = "0.4.0";
+
 export const BOOT_CHANNEL_ID = "boot";
 
-export function supportsChannelTypes(firmware: string | null | undefined): boolean {
-  const cmp = compareVersions(firmware ?? "", SIMPLE_MIN_FIRMWARE);
+function atLeast(firmware: string | null | undefined, version: string): boolean {
+  const cmp = compareVersions(firmware ?? "", version);
   return cmp === 0 || cmp === 1;
+}
+
+export function supportsChannelTypes(firmware: string | null | undefined): boolean {
+  return atLeast(firmware, SIMPLE_MIN_FIRMWARE);
+}
+
+export function supportsHoldDim(firmware: string | null | undefined): boolean {
+  return atLeast(firmware, SIMPLE_DIM_FIRMWARE);
 }
 
 export function isBootChannel(channelId: string): boolean {
@@ -277,6 +288,9 @@ export function validateSimpleChannels(
     if (config.scenes.length > 0) {
       return fail("channel_kind_not_allowed", "A push button sets its double-click as an action, not a scene list.");
     }
+    if (config.double?.action === "dim") {
+      return fail("channel_kind_not_allowed", "Dim is a hold action. A double-click has nothing to release.");
+    }
     for (const [gesture, what] of [
       [config.double, "double-click"],
       [config.hold, "hold"],
@@ -375,8 +389,8 @@ function gestureClause(
       ? `${what} → scene ${sceneNames(gesture.targets, snapshot)}`
       : `${what} → cycle ${sceneNames(gesture.targets, snapshot)}`;
   }
-  const verb =
-    gesture.action === "toggle" ? "toggle" : gesture.action === "on" ? "turn on" : "turn off";
+  const verbs = { toggle: "toggle", on: "turn on", off: "turn off", dim: "dim" } as const;
+  const verb = verbs[gesture.action];
   return `${what} → ${verb} ${targetName(gesture.target, group, snapshot)}`;
 }
 

@@ -162,7 +162,7 @@ Wipe round→simple **only** if the body carries an explicit `"product": "simple
 2. For each **channel**, pick a **room or zone**. "Not used" = the channel does nothing.
 3. Pick a **type**: Toggle switch or Push button. BOOT is always a push button.
 4. Pick the **target** in the topology (right, filtered to that group): the whole group (`grouped_light`) or one light. It defaults to the whole group.
-5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: pick **double-click** and **hold** — nothing, Toggle, Turn on, Turn off (a target in the group), or Cycle scenes. On BOOT, a hold set to nothing re-pairs with the Bridge.
+5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: pick **double-click** and **hold** — nothing, Toggle, Turn on, Turn off (a target in the group), or Cycle scenes. Hold can also be **Dim** (firmware ≥ 0.4.0). On BOOT, a hold set to nothing re-pairs with the Bridge.
 
 | Type | Gesture | What it does |
 | --- | --- | --- |
@@ -225,6 +225,7 @@ Channels come from `channels[]` in the config; a pin not listed is ignored. For 
 | `off` | same with `false` |
 | `recall_scene` | `PUT …/scene/{rid}` `{ "recall": { "action": "active" } }`, next `rid` of `targets[]` (Round §8.1; an `off` on the channel restarts the cycle) |
 | `toggle` | GET `on` + inverse PUT (mostly `momentary` / `short`) |
+| `dim` (`hold` only) | GET `on` + `dimming`; if off, turn on at 1 %. Then `{ "dimming_delta": { "action": "up" \| "down", "brightness_delta": 100 }, "dynamics": { "duration": 5000 } }`; on release `{ "dimming_delta": { "action": "stop" } }`. Direction alternates per channel (≥ 95 % → down, ≤ 5 % → up). Never turns the light off. Spec: `docs/specs/simple-hold-dim.md` |
 
 5. The contact path does **not** use the console URL. If the PUT fails, log and move on; do not block other channels.
 
