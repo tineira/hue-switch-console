@@ -2,7 +2,7 @@
 
 Console-only spec. Copy to `hue-switch-console/docs/specs/how-to-guide.md`. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
 
-**Status:** implemented, waiting on the production check
+**Status:** implemented, waiting on the production check. Three open questions remain (§9).
 
 Design reference: `hue-switch-console/docs/specs/design_handoff_lights_map/How-to Guide.dc.html` (Claude Design handoff, Ember theme; committed under the Lights handoff's folder name). The design is the reference for layout, copy and behaviour. Colours in it are Ember literals: the code uses theme tokens (§6).
 
@@ -150,12 +150,25 @@ States. Copy comes from today's `SIMPLE_STEPS`, `roundSteps()` and `ErrorCard`s,
 1. **Product default:** a stored choice with `round` as the default. It is not inferred from the account's switches.
 2. **One page, filtered.** Not separate `/how-to/round` and `/how-to/simple` routes.
 
-## 9. Open questions (for the implementer to verify)
+## 9. Open questions
 
-1. **Round setup order (§4.1, steps 3–4).** The design assumes that after Wi-Fi is saved, and before the console link, the Round shows `Loading… / Connecting`, and shows `Press Bridge button` after linking. Check the state order in `hue-round-switch` `ui.h` and the boot flow. If the Round doesn't depend on the console link to look for the Bridge, fix the "Then it shows" of steps 3 and 4. Also check whether the Round has a "needs console" screen the design is missing.
-2. **Simple step 2.** After a first install with no Wi-Fi saved, confirm the LED is the `fast` pattern.
-3. **"Set a new one in Devices"** on the Round's Token rejected screen. The how-to drawing follows the firmware (`page-structure.md` §2). Decide whether to keep drawing the firmware's text as is, or to open a Round change that renames it to Setup and update the drawing when that ships.
+**Three questions are still open.** None blocks the console page. Each one needs the firmware tree or a decision from the user. Until they are answered, the page follows the design.
 
-Implementation notes on §9: the firmware trees are not in this repo, so 1 and 2 are not verified yet, and the page follows the design. For 3, the drawing keeps the firmware's text ("Set a new one in Devices") until a Round change renames it.
+1. **OPEN: Round setup order (§4.1, steps 3–4).** Needs the `hue-round-switch` tree.
+   - Assumption: after Wi-Fi is saved, and before the console link, the Round shows `Loading… / Connecting`. It shows `Press Bridge button` after linking.
+   - To check: the state order in `ui.h` and the boot flow. Also check whether the Round has a "needs console" screen the design is missing.
+   - If wrong: fix the "Then it shows" of steps 3 and 4 in `setupSteps()` in `lib/how-to.ts`, and add any missing screen to `ROUND_STATUS`.
+   - Today: the page ships the design's assumption.
+2. **OPEN: Simple step 2.** Needs the `hue-simple-switch` tree or a board.
+   - Assumption: after a first install with no Wi-Fi saved, the LED shows the `fast` pattern.
+   - To check: `led.h` and the boot flow, or flash a board.
+   - If wrong: fix step 2's "Then it shows" in `setupSteps()` in `lib/how-to.ts`.
+   - Today: the page ships `fast`.
+3. **OPEN: "Set a new one in Devices"** on the Round's Token rejected screen. Needs the user's decision.
+   - The how-to drawing follows the firmware text (`page-structure.md` §2), and the page is now called Setup.
+   - Options: keep drawing the firmware's text as it is, or open a Round change that renames it to Setup and update the drawing in `faceParts()` in `app/how-to/visuals.tsx` once that ships.
+   - Today: the drawing keeps "Set a new one in Devices".
 
-One change to §3: the `.led` and `.round-face` rules now size by `--k` (default 1, so every value at the default size is unchanged), as §6 asks. Colours and timings are untouched.
+## 10. Implementation notes
+
+- §3 said the `.led` and `.round-face` CSS is reused unchanged. It now sizes by `--k` (default 1, so every value at the default size is unchanged), as §6 asks. Colours and timings are untouched.
