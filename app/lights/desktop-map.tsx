@@ -1,7 +1,7 @@
 "use client";
 
 // Lights map, desktop (≥ 1024px): rooms and lights | connectors | zones.
-// Port of `Lights map desktop.dc.html` (docs/specs/design_handoff_lights_map/).
+// Port of `Lights map desktop.dc.html` (docs/specs/finished/design_handoff_lights_map/).
 
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import {

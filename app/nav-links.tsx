@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Pages: docs/specs/page-structure.md.
+// Pages: docs/specs/finished/page-structure.md.
 export function NavLinks() {
   const path = usePathname();
   const links = [

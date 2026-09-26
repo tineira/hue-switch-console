@@ -111,7 +111,7 @@ Not needed in v1: triple click, long-off, double_off. Noise and long wires eat t
 
 ## Display and recipes (Simple: per channel and event)
 
-A switch is configured against its own Bridge only. **Switches** shows every switch in the account as tabs, grouped in one section per `bridgeid`; each switch has its own URL (`/switches/<mac>`), and tabs move between switches without losing unsaved changes (pages: `docs/specs/page-structure.md`). **Lights** is read-only: per Bridge, which switch gestures reach each room, zone and light, directly or through a group. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
+A switch is configured against its own Bridge only. **Switches** shows every switch in the account as tabs, grouped in one section per `bridgeid`; each switch has its own URL (`/switches/<mac>`), and tabs move between switches without losing unsaved changes (pages: `docs/specs/finished/page-structure.md`). **Lights** is read-only: per Bridge, which switch gestures reach each room, zone and light, directly or through a group. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
 
 - **Simple:** channels. Each one gets a room or zone, a type (toggle switch or push button) and a target. A toggle switch adds a double-click scene list; a push button adds a double-click and a hold action. A channel without a room does nothing.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.

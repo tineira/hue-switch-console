@@ -1,7 +1,7 @@
 "use client";
 
 // Lights map, mobile (< 1024px): sticky search, switch chips, Rooms | Zones, bottom sheets.
-// Port of `Lights map mobile.dc.html` (docs/specs/design_handoff_lights_map/).
+// Port of `Lights map mobile.dc.html` (docs/specs/finished/design_handoff_lights_map/).
 
 import { useState } from "react";
 import { SearchIcon } from "@/app/lights/desktop-map";

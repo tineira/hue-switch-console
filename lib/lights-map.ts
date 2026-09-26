@@ -1,5 +1,5 @@
 // The Lights map model: who reaches which light, room and zone. A port of the logic in
-// docs/specs/design_handoff_lights_map/ (`build`, `reach`, `lines` and the phrase
+// docs/specs/finished/design_handoff_lights_map/ (`build`, `reach`, `lines` and the phrase
 // helpers), fed from a Bridge snapshot and its switches' saved configuration.
 
 import { agoText, minutesSince } from "@/lib/ago";

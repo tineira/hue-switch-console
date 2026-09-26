@@ -1,7 +1,7 @@
 "use client";
 
-// Lights: one map per Bridge (docs/specs/page-structure.md §8,
-// docs/specs/design_handoff_lights_map/). Desktop and mobile layouts are both rendered and
+// Lights: one map per Bridge (docs/specs/finished/page-structure.md §8,
+// docs/specs/finished/design_handoff_lights_map/). Desktop and mobile layouts are both rendered and
 // switched by CSS at 1024px, so there is no flash on load.
 
 import Link from "next/link";

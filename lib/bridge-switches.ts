@@ -1,4 +1,4 @@
-// Server loaders for the Switches page (docs/specs/page-structure.md): every Bridge of
+// Server loaders for the Switches page (docs/specs/finished/page-structure.md): every Bridge of
 // the account and every switch registered against one of them.
 
 import { cache } from "react";

@@ -1,5 +1,5 @@
 // Pieces both Lights layouts share: marks, detail blocks, scene chips, the stale banner.
-// Styles follow docs/specs/design_handoff_lights_map/.
+// Styles follow docs/specs/finished/design_handoff_lights_map/.
 
 import Link from "next/link";
 import type { CSSProperties } from "react";

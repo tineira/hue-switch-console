@@ -308,7 +308,7 @@ html[data-theme="phosphor"] {
 }
 
 /* Switch colours on Lights: oklch(var(--switch-l) var(--switch-c) <hue by switch index>)
-   (docs/specs/design_handoff_lights_map/README.md). Lighter on dark themes; keep this
+   (docs/specs/finished/design_handoff_lights_map/README.md). Lighter on dark themes; keep this
    list in step with the dark group in app/themes.ts. */
 :root {
   --switch-l: 0.56;

@@ -1,6 +1,6 @@
 import { permanentRedirect } from "next/navigation";
 
-// Devices was renamed Setup (docs/specs/page-structure.md). Keep `?mac=` and any other query.
+// Devices was renamed Setup (docs/specs/finished/page-structure.md). Keep `?mac=` and any other query.
 export default async function DevicesPage({
   searchParams,
 }: {

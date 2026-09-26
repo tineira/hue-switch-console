@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
 
-**Status:** approved. Revised on 2026-09-26 after the first deploy: the per-Bridge overview is gone and Switches opens straight on the editor (§12, decision 5).
+**Status:** done (2026-09-26; checked on production by the user). Revised on 2026-09-26 after the first deploy: the per-Bridge overview is gone and Switches opens straight on the editor (§12, decision 5).
 
 ## 1. What and why
 
@@ -115,7 +115,7 @@ The first deploy had a per-Bridge overview at `/bridges/<id>/switches`: cards wi
 
 ## 8. Lights (`/lights`)
 
-**Design:** `docs/specs/design_handoff_lights_map/`. Its `README.md` is the spec; the two prototypes are the reference for layout and behaviour.
+**Design:** `docs/specs/finished/design_handoff_lights_map/`. Its `README.md` is the spec; the two prototypes are the reference for layout and behaviour.
 - The `build`, `reach`, `marks`, `lightMarks`, `groupDetail`, `lightDetail`, `lines` and phrase helpers are ported to `lib/lights-map.ts`. It is pure and client-side: the snapshot plus each switch's saved pages or channels, with no new API.
 - The page is `app/lights/`:
   - `desktop-map.tsx`: three columns with SVG connectors.
@@ -199,7 +199,7 @@ The first deploy had a per-Bridge overview at `/bridges/<id>/switches`: cards wi
 - [x] Separate room and zone counts
 - [x] Docs and copy (§9)
 - [x] `npm run build` passes; `npm run lint` passes except the existing `app/theme-picker.tsx` error (set-state-in-effect), which this change does not touch
-- [ ] Deployed; checked on production:
+- [x] Deployed; checked on production:
   - login lands on Switches;
   - a Round and a Simple switch;
   - tab switching with a draft, then Back and Forward;
@@ -212,16 +212,16 @@ The first deploy had a per-Bridge overview at `/bridges/<id>/switches`: cards wi
 
 ### Phase 2: Lights (console)
 
-- [x] Claude Design handoff in `docs/specs/design_handoff_lights_map/`; §8 filled in
+- [x] Claude Design handoff in `docs/specs/finished/design_handoff_lights_map/`; §8 filled in
 - [x] `lib/lights-map.ts` (replaces the planned `lib/control-index.ts`)
 - [x] `/lights`; Lights nav item
 - [x] Compared with both prototypes on the four houses, stale on and off (§8)
 - [x] Changelog entry
-- [ ] Deployed; checked on production (desktop and phone; a light, a room and a zone opened; a switch chip pinned; search)
+- [x] Deployed; checked on production (desktop and phone; a light, a room and a zone opened; a switch chip pinned; search)
 
 ### Cleanup
 
-- [ ] Move this spec and `design_handoff_lights_map/` to `docs/specs/finished/`
+- [x] Move this spec and `design_handoff_lights_map/` to `docs/specs/finished/`
 
 ## 12. Decisions (grilled 2026-09-26)
 
