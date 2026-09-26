@@ -74,12 +74,12 @@ No change.
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `recipeActionOk` accepts `dim` (hold only).
-- [ ] Hold with `dim`: GET, direction, start `dimming_delta`, then `stop` on release, per §2.3.
-- [ ] Per-channel last direction in RAM.
-- [ ] `FIRMWARE_VERSION` → `0.4.0`.
-- [ ] `CHANGELOG.md` entry (user-facing wording).
-- [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.4.0.
+- [x] `recipeActionOk` accepts `dim` (hold only).
+- [x] Hold with `dim`: GET, direction, start `dimming_delta`, then `stop` on release, per §2.3.
+- [x] Per-channel last direction in RAM.
+- [x] `FIRMWARE_VERSION` → `0.4.0`.
+- [x] `CHANGELOG.md` entry (user-facing wording).
+- [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.4.0.
 - [ ] Tested on a board by the user: hold up, release, hold down; hold from off; release at a mid level stops there; whole room and one light.
 
 ### Cleanup
