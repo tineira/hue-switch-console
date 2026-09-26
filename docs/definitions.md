@@ -105,7 +105,7 @@ v1 events:
 
 Not needed in v1: triple click, long-off, double_off. Noise and long wires eat the double-click if the window is too short; it is calibrated in firmware.
 
-**`momentary` channel** (push button): `short` (click), `double_click` (two clicks within the window), `hold` (held past ~800 ms; fires once while still pressed). A push button does **not** generate stable `on`/`off`. The console only offers `short` today, plus `hold` on BOOT; the firmware already emits the others. BOOT's 3 s long press re-pairs with the Bridge unless BOOT has a `hold` recipe.
+**`momentary` channel** (push button): `short` (click), `double_click` (two clicks within the window), `hold` (held past ~800 ms; fires once while still pressed). A push button does **not** generate stable `on`/`off`. All three are configurable on every push button, BOOT included. BOOT's 3 s long press re-pairs with the Bridge unless BOOT has a `hold` recipe.
 
 **Round:** does not use this GPIO state machine. Recipe events per page: `short` (tap) and `double_click` (double tap). There is **no** `double_click` → `on` fallback on the circle (empty slot = no-op). Details: `docs/round-pages.md`.
 
@@ -115,7 +115,7 @@ One Bridge at a time. Two columns.
 
 **Left — switches.** XIAOs of *this* `bridgeid`.
 
-- **Simple:** channels. Each one gets a room or zone, a type (toggle switch or push button), a target, and for a toggle switch a double-click scene list. A channel without a room does nothing.
+- **Simple:** channels. Each one gets a room or zone, a type (toggle switch or push button) and a target. A toggle switch adds a double-click scene list; a push button adds a double-click and a hold action. A channel without a room does nothing.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.
 
 The XIAO is not drawn inside the Hue tree.
@@ -129,9 +129,9 @@ The XIAO is not drawn inside the Hue tree.
 **Simple channel settings → recipes**
 
 ```text
-switch + channelId → group (room | zone), kind, target (light | grouped_light), scenes[], hold (BOOT)
+switch + channelId → group (room | zone), kind, target (light | grouped_light), scenes[], double, hold
   maintained: on → on target · off → off target · double_click → recall_scene scenes[] (if any)
-  momentary:  short → toggle target · hold → BOOT's hold action (if any)
+  momentary:  short → toggle target · double_click → double (if any) · hold → hold (if any)
 ```
 
 The user edits channel settings; the console derives the recipes the switch runs. `toggle` (GET + invert) is a Hue action, not a GPIO event.
@@ -162,20 +162,20 @@ Wipe round→simple **only** if the body carries an explicit `"product": "simple
 2. For each **channel**, pick a **room or zone**. "Not used" = the channel does nothing.
 3. Pick a **type**: Toggle switch or Push button. BOOT is always a push button.
 4. Pick the **target** in the topology (right, filtered to that group): the whole group (`grouped_light`) or one light. It defaults to the whole group.
-5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button on BOOT: pick **hold** — Re-pair with Bridge (default), Toggle, Turn on, Turn off, or Cycle scenes.
+5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: pick **double-click** and **hold** — nothing, Toggle, Turn on, Turn off (a target in the group), or Cycle scenes. On BOOT, a hold set to nothing re-pairs with the Bridge.
 
 | Type | Gesture | What it does |
 | --- | --- | --- |
 | Toggle switch | lever closes / opens | `on` / `off` the target (automatic) |
 | Toggle switch | double-click | next scene in the list; empty list → `on` |
 | Push button | click | `toggle` the target (automatic) |
-| Push button | double-click, hold | reserved (BOOT: hold is configurable) |
+| Push button | double-click, hold | the action picked for each; nothing = no-op (BOOT hold: re-pair) |
 
 If the target is one light, a scene still applies to the whole group; the console warns.
 
 Confirmation sentence (not just UUIDs): *"D0 · Living · toggle switch: on/off all of Living · double-click cycles Relax, Bright"*.
 
-Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only toggle switches have scenes; only BOOT has a hold. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
+Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only toggle switches have a scene list; only push buttons have double-click and hold actions. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
 
 `rev` increments. That is what the poll compares.
 

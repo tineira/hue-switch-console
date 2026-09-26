@@ -109,9 +109,12 @@ create table if not exists simple_channels (
   target_rtype text not null check (target_rtype in ('light', 'grouped_light')),
   target_rid text not null,
   scenes jsonb not null default '[]'::jsonb,
+  double_click jsonb,
   hold jsonb,
   primary key (switch_id, channel_id)
 );
+
+alter table simple_channels add column if not exists double_click jsonb;
 
 -- Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
 create table if not exists firmware_releases (

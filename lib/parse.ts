@@ -11,7 +11,7 @@ import type {
   Scene,
   SceneListItem,
   SimpleChannelConfig,
-  SimpleHold,
+  SimpleGesture,
   SwitchPage,
   SwitchProduct,
   TargetRtype,
@@ -285,7 +285,7 @@ function parseSceneRids(raw: unknown): SceneListItem[] | null {
   return items;
 }
 
-function parseSimpleHold(raw: unknown): SimpleHold | null | undefined {
+function parseSimpleGesture(raw: unknown): SimpleGesture | null | undefined {
   if (raw === undefined || raw === null) return null;
   if (typeof raw !== "object") return undefined;
   const row = raw as Record<string, unknown>;
@@ -322,14 +322,16 @@ export function parseSimpleChannels(raw: unknown): SimpleChannelConfig[] | null 
     }
     const target = parseRecipeTarget(row.target);
     const scenes = parseSceneRids(row.scenes);
-    const hold = parseSimpleHold(row.hold);
-    if (!target || !scenes || hold === undefined) return null;
+    const double = parseSimpleGesture(row.double);
+    const hold = parseSimpleGesture(row.hold);
+    if (!target || !scenes || double === undefined || hold === undefined) return null;
     configs.push({
       id,
       kind: row.kind,
       group: { rtype: groupRaw.rtype, rid: groupRid, groupedLightRid: "" },
       target,
       scenes,
+      double,
       hold,
     });
   }

@@ -47,8 +47,8 @@ export type Recipe = {
 
 export type SimpleEvent = "on" | "off" | "double_click" | "short" | "hold";
 
-/** BOOT hold: null = re-pair with the Bridge (no recipe). */
-export type SimpleHold =
+/** What a push-button double-click or hold does. */
+export type SimpleGesture =
   | { action: "on" | "off" | "toggle"; target: RecipeTarget }
   | { action: "recall_scene"; targets: SceneListItem[] };
 
@@ -61,8 +61,10 @@ export type SimpleChannelConfig = {
   target: RecipeTarget;
   /** Double-click scene list (maintained only). */
   scenes: SceneListItem[];
-  /** BOOT only. */
-  hold: SimpleHold | null;
+  /** Double-click (momentary only). */
+  double: SimpleGesture | null;
+  /** Hold (momentary only). On BOOT, null = re-pair with the Bridge. */
+  hold: SimpleGesture | null;
 };
 
 export type SimpleRecipe = {

@@ -12,8 +12,8 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-25
 
-- Each Simple switch input is set up like a Round page: pick a room or zone, then choose Toggle switch or Push button. A toggle switch turns the lights on and off with the lever, and a double-click cycles up to 8 scenes. A push button toggles the lights on each click.
-- BOOT's hold can do something other than re-pair with the Bridge.
+- Each Simple switch input is set up like a Round page: pick a room or zone, then choose Toggle switch or Push button. A toggle switch turns the lights on and off with the lever, and a double-click cycles up to 8 scenes. A push button toggles the lights on each click, and its double-click and hold can each toggle, turn on, turn off, or cycle scenes.
+- BOOT is a push button with the same double-click and hold. Its hold still re-pairs with the Bridge unless you give it another action.
 - Simple switches need firmware 0.3.0 or later. Assignments made before this change were removed; set each switch up again after updating it.
 
 ### 2026-09-24

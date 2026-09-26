@@ -19,7 +19,7 @@ import type {
   Room,
   SceneListItem,
   SimpleChannelConfig,
-  SimpleHold,
+  SimpleGesture,
   SimpleRecipe,
   TopologySnapshot,
 } from "@/lib/types";
@@ -52,6 +52,7 @@ export function defaultSimpleChannel(
     group,
     target: { rtype: "grouped_light", rid: group.groupedLightRid },
     scenes: [],
+    double: null,
     hold: null,
   };
 }
@@ -70,8 +71,27 @@ export function withKind(
   config: SimpleChannelConfig,
   kind: ChannelKind,
 ): SimpleChannelConfig {
-  if (isBootChannel(config.id)) return config;
-  return { ...config, kind, scenes: kind === "maintained" ? config.scenes : [] };
+  if (isBootChannel(config.id) || config.kind === kind) return config;
+  // Carry a scene list across: toggle-switch double-click <-> push-button double-click.
+  if (kind === "momentary") {
+    return {
+      ...config,
+      kind,
+      scenes: [],
+      double:
+        config.scenes.length > 0
+          ? { action: "recall_scene", targets: config.scenes }
+          : null,
+      hold: null,
+    };
+  }
+  return {
+    ...config,
+    kind,
+    scenes: config.double?.action === "recall_scene" ? config.double.targets : [],
+    double: null,
+    hold: null,
+  };
 }
 
 /** Recipes the switch runs, derived from the channel settings. */
@@ -95,7 +115,10 @@ export function deriveSimpleRecipes(
       continue;
     }
     recipes.push({ channelId: config.id, event: "short", action: "toggle", target });
-    if (isBootChannel(config.id) && config.hold) {
+    if (config.double) {
+      recipes.push({ channelId: config.id, event: "double_click", ...config.double });
+    }
+    if (config.hold) {
       recipes.push({ channelId: config.id, event: "hold", ...config.hold });
     }
   }
@@ -143,14 +166,16 @@ export function withSnapshotNames(
   if (!snapshot) return configs;
   const rename = (items: SceneListItem[]) =>
     items.map((item) => sceneListItem(snapshot, item.rid, item.name));
+  const renameGesture = (gesture: SimpleGesture | null): SimpleGesture | null =>
+    gesture?.action === "recall_scene"
+      ? { action: "recall_scene", targets: rename(gesture.targets) }
+      : gesture;
   return configs.map((config) => ({
     ...config,
     group: resolvePageGroup(snapshot, config.group) ?? config.group,
     scenes: rename(config.scenes),
-    hold:
-      config.hold?.action === "recall_scene"
-        ? { action: "recall_scene", targets: rename(config.hold.targets) }
-        : config.hold,
+    double: renameGesture(config.double),
+    hold: renameGesture(config.hold),
   }));
 }
 
@@ -198,6 +223,21 @@ function checkTarget(
   return null;
 }
 
+function checkGesture(
+  gesture: SimpleGesture,
+  group: PageGroup,
+  snapshot: TopologySnapshot,
+  what: string,
+): SimpleValidationError | null {
+  if (gesture.action === "recall_scene") {
+    if (gesture.targets.length === 0) {
+      return fail("validation_error", `The ${what} scene list is empty`);
+    }
+    return checkScenes(gesture.targets, group, snapshot, `The ${what} list`);
+  }
+  return checkTarget(gesture.target, group, snapshot);
+}
+
 export function validateSimpleChannels(
   configs: SimpleChannelConfig[],
   registered: Channel[],
@@ -223,25 +263,27 @@ export function validateSimpleChannels(
     }
     const targetError = checkTarget(config.target, group, snapshot);
     if (targetError) return targetError;
-    if (config.kind !== "maintained" && config.scenes.length > 0) {
-      return fail("channel_kind_not_allowed", "Only a toggle switch cycles scenes on double-click.");
+    if (config.kind === "maintained") {
+      if (config.double || config.hold) {
+        return fail(
+          "channel_kind_not_allowed",
+          "A toggle switch has no hold, and its double-click only cycles scenes.",
+        );
+      }
+      const scenesError = checkScenes(config.scenes, group, snapshot, "The double-click list");
+      if (scenesError) return scenesError;
+      continue;
     }
-    const scenesError = checkScenes(config.scenes, group, snapshot, "The double-click list");
-    if (scenesError) return scenesError;
-    if (config.hold) {
-      if (!boot) {
-        return fail("channel_kind_not_allowed", "Only BOOT has a configurable hold.");
-      }
-      if (config.hold.action === "recall_scene") {
-        if (config.hold.targets.length === 0) {
-          return fail("validation_error", "The hold scene list is empty");
-        }
-        const holdError = checkScenes(config.hold.targets, group, snapshot, "The hold list");
-        if (holdError) return holdError;
-      } else {
-        const holdTargetError = checkTarget(config.hold.target, group, snapshot);
-        if (holdTargetError) return holdTargetError;
-      }
+    if (config.scenes.length > 0) {
+      return fail("channel_kind_not_allowed", "A push button sets its double-click as an action, not a scene list.");
+    }
+    for (const [gesture, what] of [
+      [config.double, "double-click"],
+      [config.hold, "hold"],
+    ] as const) {
+      if (!gesture) continue;
+      const gestureError = checkGesture(gesture, group, snapshot, what);
+      if (gestureError) return gestureError;
     }
   }
   return null;
@@ -253,11 +295,16 @@ export function isSimpleChannelStale(
 ): boolean {
   if (!resolvePageGroup(snapshot, config.group)) return true;
   if (isTargetStale(snapshot, config.target)) return true;
-  const scenes = [
-    ...config.scenes,
-    ...(config.hold?.action === "recall_scene" ? config.hold.targets : []),
-  ];
-  return scenes.some((item) => isTargetStale(snapshot, { rtype: "scene", rid: item.rid }));
+  const sceneStale = (item: SceneListItem) =>
+    isTargetStale(snapshot, { rtype: "scene", rid: item.rid });
+  if (config.scenes.some(sceneStale)) return true;
+  return [config.double, config.hold].some((gesture) =>
+    gesture?.action === "recall_scene"
+      ? gesture.targets.some(sceneStale)
+      : gesture
+        ? isTargetStale(snapshot, gesture.target)
+        : false,
+  );
 }
 
 /** Drop missing scenes; a missing light falls back to the whole group. Missing groups stay (the user picks another). */
@@ -273,14 +320,24 @@ export function clearStaleSimple(
     const target = isTargetStale(snapshot, config.target)
       ? { rtype: "grouped_light" as const, rid: group.groupedLightRid }
       : config.target;
-    let hold: SimpleHold | null = config.hold;
-    if (hold?.action === "recall_scene") {
-      const targets = alive(hold.targets);
-      hold = targets.length > 0 ? { action: "recall_scene", targets } : null;
-    } else if (hold && isTargetStale(snapshot, hold.target)) {
-      hold = { ...hold, target };
-    }
-    return { ...config, group, target, scenes: alive(config.scenes), hold };
+    const clean = (gesture: SimpleGesture | null): SimpleGesture | null => {
+      if (gesture?.action === "recall_scene") {
+        const targets = alive(gesture.targets);
+        return targets.length > 0 ? { action: "recall_scene", targets } : null;
+      }
+      if (gesture && isTargetStale(snapshot, gesture.target)) {
+        return { ...gesture, target };
+      }
+      return gesture;
+    };
+    return {
+      ...config,
+      group,
+      target,
+      scenes: alive(config.scenes),
+      double: clean(config.double),
+      hold: clean(config.hold),
+    };
   });
 }
 
@@ -305,15 +362,22 @@ export function targetName(
   return nameForTarget(snapshot, target) ?? "unknown light";
 }
 
-function holdClause(hold: SimpleHold | null, group: PageGroup, snapshot: TopologySnapshot): string {
-  if (!hold) return "hold re-pairs with the Bridge";
-  if (hold.action === "recall_scene") {
-    return hold.targets.length === 1
-      ? `hold → scene ${sceneNames(hold.targets, snapshot)}`
-      : `hold → cycle ${sceneNames(hold.targets, snapshot)}`;
+function gestureClause(
+  what: string,
+  gesture: SimpleGesture | null,
+  empty: string,
+  group: PageGroup,
+  snapshot: TopologySnapshot,
+): string {
+  if (!gesture) return `${what} ${empty}`;
+  if (gesture.action === "recall_scene") {
+    return gesture.targets.length === 1
+      ? `${what} → scene ${sceneNames(gesture.targets, snapshot)}`
+      : `${what} → cycle ${sceneNames(gesture.targets, snapshot)}`;
   }
-  const verb = hold.action === "toggle" ? "toggle" : hold.action === "on" ? "turn on" : "turn off";
-  return `hold → ${verb} ${targetName(hold.target, group, snapshot)}`;
+  const verb =
+    gesture.action === "toggle" ? "toggle" : gesture.action === "on" ? "turn on" : "turn off";
+  return `${what} → ${verb} ${targetName(gesture.target, group, snapshot)}`;
 }
 
 /** e.g. "D0 · Living · toggle switch: on/off all of Living · double-click cycles Relax, Bright". */
@@ -334,9 +398,17 @@ export function confirmationForSimpleChannel(
           : `double-click cycles ${sceneNames(config.scenes, snapshot)}`;
     return `${label} · ${groupName} · toggle switch: on/off ${target} · ${dbl}`;
   }
-  const parts = [`${label} · ${groupName} · push button: click toggles ${target}`];
-  if (isBootChannel(config.id)) parts.push(holdClause(config.hold, config.group, snapshot));
-  return parts.join(" · ");
+  return [
+    `${label} · ${groupName} · push button: click toggles ${target}`,
+    gestureClause("double-click", config.double, "does nothing", config.group, snapshot),
+    gestureClause(
+      "hold",
+      config.hold,
+      isBootChannel(config.id) ? "re-pairs with the Bridge" : "does nothing",
+      config.group,
+      snapshot,
+    ),
+  ].join(" · ");
 }
 
 export function groupRoom(
@@ -358,6 +430,12 @@ export function simpleChannelsEqual(
   a: SimpleChannelConfig[],
   b: SimpleChannelConfig[],
 ): boolean {
+  const gestureKey = (gesture: SimpleGesture | null) =>
+    gesture
+      ? gesture.action === "recall_scene"
+        ? [gesture.action, gesture.targets.map((item) => item.rid)]
+        : [gesture.action, gesture.target.rtype, gesture.target.rid]
+      : null;
   const serialize = (list: SimpleChannelConfig[]) =>
     [...list]
       .map((config) =>
@@ -368,11 +446,8 @@ export function simpleChannelsEqual(
           config.target.rtype,
           config.target.rid,
           config.scenes.map((item) => item.rid),
-          config.hold
-            ? config.hold.action === "recall_scene"
-              ? [config.hold.action, config.hold.targets.map((item) => item.rid)]
-              : [config.hold.action, config.hold.target.rtype, config.hold.target.rid]
-            : null,
+          gestureKey(config.double),
+          gestureKey(config.hold),
         ]),
       )
       .sort()

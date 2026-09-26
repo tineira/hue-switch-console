@@ -22,7 +22,7 @@ import type {
   RoundRecipe,
   SceneListItem,
   SimpleChannelConfig,
-  SimpleHold,
+  SimpleGesture,
   SwitchPage,
   SwitchProduct,
   SwitchPublic,
@@ -414,7 +414,7 @@ export async function touchSwitch(id: string, apiKeyId: string) {
   `;
 }
 
-function asSimpleHold(value: unknown): SimpleHold | null {
+function asSimpleGesture(value: unknown): SimpleGesture | null {
   let raw = value;
   if (typeof raw === "string") {
     try {
@@ -455,7 +455,8 @@ function mapSimpleChannel(row: Record<string, unknown>): SimpleChannelConfig {
       rid: String(row.target_rid),
     },
     scenes: asTargets(row.scenes),
-    hold: asSimpleHold(row.hold),
+    double: asSimpleGesture(row.double_click),
+    hold: asSimpleGesture(row.hold),
   };
 }
 
@@ -464,7 +465,7 @@ export async function listSimpleChannels(
 ): Promise<SimpleChannelConfig[]> {
   const rows = await sql()`
     select channel_id, kind, group_rtype, group_rid, grouped_light_rid,
-           target_rtype, target_rid, scenes, hold
+           target_rtype, target_rid, scenes, double_click, hold
     from simple_channels
     where switch_id = ${switchId}
     order by channel_id asc
@@ -481,13 +482,14 @@ export async function replaceSimpleChannels(
     await sql()`
       insert into simple_channels (
         switch_id, channel_id, kind, group_rtype, group_rid, grouped_light_rid,
-        target_rtype, target_rid, scenes, hold
+        target_rtype, target_rid, scenes, double_click, hold
       )
       values (
         ${switchId}, ${config.id}, ${config.kind}, ${config.group.rtype},
         ${config.group.rid}, ${config.group.groupedLightRid},
         ${config.target.rtype}, ${config.target.rid},
         ${JSON.stringify(config.scenes)}::jsonb,
+        ${config.double ? JSON.stringify(config.double) : null}::jsonb,
         ${config.hold ? JSON.stringify(config.hold) : null}::jsonb
       )
     `;

@@ -40,6 +40,7 @@ import type {
   RoundRecipe,
   SceneListItem,
   SimpleChannelConfig,
+  SimpleGesture,
   SwitchPage,
   SwitchPublic,
   TopologySnapshot,
@@ -120,10 +121,13 @@ function simpleAssignHint(
   if (slot.slot === "scenes") {
     return `Assigning ${label} · Double-click — click scenes in ${where} to add or remove them. Up to 8, cycled in order.`;
   }
-  if (slot.slot === "hold") {
-    return config.hold?.action === "recall_scene"
-      ? `Assigning ${label} · Hold — click scenes in ${where} to add or remove them.`
-      : `Assigning ${label} · Hold — click the whole ${config.group.rtype} or a light in ${where}.`;
+  if (slot.slot === "double" || slot.slot === "hold") {
+    const name = slot.slot === "double" ? "Double-click" : "Hold";
+    const gesture = slot.slot === "double" ? config.double : config.hold;
+    if (!gesture) return `Assigning ${label} · ${name} — pick what it does first.`;
+    return gesture.action === "recall_scene"
+      ? `Assigning ${label} · ${name} — click scenes in ${where} to add or remove them.`
+      : `Assigning ${label} · ${name} — click the whole ${config.group.rtype} or a light in ${where}.`;
   }
   return config.kind === "maintained"
     ? `Assigning ${label} · On / Off — click the whole ${config.group.rtype} or one light in ${where}.`
@@ -252,12 +256,13 @@ export function BridgeWorkspace({
     if (selectedSlot.slot === "scenes") {
       return selectedConfig.scenes.some((item) => item.rid === rid);
     }
-    if (selectedSlot.slot === "hold") {
-      const hold = selectedConfig.hold;
-      if (!hold) return false;
-      return hold.action === "recall_scene"
-        ? hold.targets.some((item) => item.rid === rid)
-        : hold.target.rid === rid;
+    if (selectedSlot.slot === "double" || selectedSlot.slot === "hold") {
+      const gesture =
+        selectedSlot.slot === "double" ? selectedConfig.double : selectedConfig.hold;
+      if (!gesture) return false;
+      return gesture.action === "recall_scene"
+        ? gesture.targets.some((item) => item.rid === rid)
+        : gesture.target.rid === rid;
     }
     return selectedConfig.target.rid === rid;
   }
@@ -400,38 +405,49 @@ export function BridgeWorkspace({
       setNotice("That light or scene is not in this channel's room or zone.");
       return;
     }
-    const holdScenes =
-      selectedSlot.slot === "hold" && config.hold?.action === "recall_scene";
-    const wantsScenes = selectedSlot.slot === "scenes" || holdScenes;
+    const gestureSlot =
+      selectedSlot.slot === "double" || selectedSlot.slot === "hold"
+        ? selectedSlot.slot
+        : null;
+    const gesture =
+      gestureSlot === "double" ? config.double : gestureSlot === "hold" ? config.hold : null;
+    const withGesture = (value: SimpleGesture): SimpleChannelConfig =>
+      gestureSlot === "double" ? { ...config, double: value } : { ...config, hold: value };
     let next: SimpleChannelConfig;
-    if (target.rtype === "scene") {
-      if (config.hold?.action === "recall_scene" && holdScenes) {
-        const targets = toggleScene(config.hold.targets, target.rid);
-        if (!targets) return;
-        next = { ...config, hold: { action: "recall_scene", targets } };
-      } else {
-        if (config.kind !== "maintained") {
-          setNotice(
-            "A push button click toggles a light or the whole room. Scenes are not available here.",
-          );
-          return;
-        }
-        const scenes = toggleScene(config.scenes, target.rid);
-        if (!scenes) return;
-        next = { ...config, scenes };
-        if (selectedSlot.slot !== "scenes") {
-          setSelectedSlot({ channelId: config.id, slot: "scenes" });
-        }
-      }
-    } else if (wantsScenes) {
-      setNotice("This slot takes scenes. Pick a scene from the list.");
+    if (gestureSlot && !gesture) {
+      setNotice("Pick what this gesture does first.");
       return;
-    } else if (
-      selectedSlot.slot === "hold" &&
-      config.hold &&
-      config.hold.action !== "recall_scene"
-    ) {
-      next = { ...config, hold: { action: config.hold.action, target } };
+    }
+    if (gesture?.action === "recall_scene") {
+      if (target.rtype !== "scene") {
+        setNotice("This gesture cycles scenes. Pick a scene from the list.");
+        return;
+      }
+      const targets = toggleScene(gesture.targets, target.rid);
+      if (!targets) return;
+      next = withGesture({ action: "recall_scene", targets });
+    } else if (gesture) {
+      if (target.rtype === "scene") {
+        setNotice("To use scenes here, choose Cycle scenes for this gesture.");
+        return;
+      }
+      next = withGesture({ action: gesture.action, target });
+    } else if (target.rtype === "scene") {
+      if (config.kind !== "maintained") {
+        setNotice(
+          "A click toggles a light or the whole room. For scenes, set Double-click or Hold to Cycle scenes.",
+        );
+        return;
+      }
+      const scenes = toggleScene(config.scenes, target.rid);
+      if (!scenes) return;
+      next = { ...config, scenes };
+      if (selectedSlot.slot !== "scenes") {
+        setSelectedSlot({ channelId: config.id, slot: "scenes" });
+      }
+    } else if (selectedSlot.slot === "scenes") {
+      setNotice("Double-click cycles scenes. Pick a scene from the list.");
+      return;
     } else {
       next = { ...config, target };
     }
@@ -577,6 +593,7 @@ export function BridgeWorkspace({
             group: { rtype: config.group.rtype, rid: config.group.rid },
             target: config.target,
             scenes: config.scenes.map((item) => item.rid),
+            double: config.double,
             hold: config.hold,
           })),
         }),

@@ -114,9 +114,11 @@ const STATEMENTS = [
   target_rtype text not null check (target_rtype in ('light', 'grouped_light')),
   target_rid text not null,
   scenes jsonb not null default '[]'::jsonb,
+  double_click jsonb,
   hold jsonb,
   primary key (switch_id, channel_id)
 )`,
+  `alter table simple_channels add column if not exists double_click jsonb`,
   `create table if not exists firmware_releases (
   id uuid primary key default gen_random_uuid(),
   product text not null check (product in ('round', 'simple')),

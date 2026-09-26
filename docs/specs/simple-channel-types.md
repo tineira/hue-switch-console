@@ -19,8 +19,8 @@ Today each Simple channel gets up to three free recipes (`on`, `off`, `double_cl
 | Toggle switch | lever opens | `off` the target | automatic |
 | Toggle switch | double-click | cycle a scene list from the group | the list (1–8 scenes), or empty |
 | Push button | click | `toggle` the target | automatic |
-| Push button | double-click | reserved | not offered yet |
-| Push button | hold | reserved (BOOT: see §2.4) | not offered yet, except BOOT |
+| Push button | double-click | a Hue action (§2.6) | Toggle, Turn on, Turn off, Cycle scenes, or nothing |
+| Push button | hold | a Hue action (§2.6) | same choices; on BOOT, nothing = re-pair (§2.4) |
 
 The goal is a channel you configure in one pass, not three free slots, and odd mixes (on → one lamp, off → another room) can no longer be saved.
 
@@ -80,7 +80,7 @@ The Simple payload gains `product` and `channels[]`, shaped like Round's `pages[
 | `action` | `on` \| `off` \| `recall_scene` \| `toggle` |
 | `target` / `targets[]` | `target` for `light` / `grouped_light`; `targets[]` for a scene list |
 
-The console sends only what the UI offers today: `on`, `off`, `double_click` (scene list) on maintained; `short` on momentary; `hold` on BOOT only. The firmware accepts any combination in the table, so a future release can open the reserved slots without a flash.
+The console sends `on`, `off` and `double_click` (scene list) on maintained, and `short`, `double_click` and `hold` on momentary (§2.6). The firmware accepts any combination in the table.
 
 ### 2.3 Firmware behavior (Simple ≥ 0.3.0)
 
@@ -122,6 +122,7 @@ The console sends only what the UI offers today: `on`, `off`, `double_click` (sc
       "kind": "momentary",
       "group": { "rtype": "zone", "rid": "…" },
       "target": { "rtype": "light", "rid": "…" },
+      "double": null,
       "hold": null
     }
   ]
@@ -135,9 +136,20 @@ Validation:
 - `group` is a room or zone in the snapshot.
 - `target` is that group's `grouped_light` or one of its `light_ids`.
 - `scenes` holds 0–8 scenes whose `group_rid` is the group, on `maintained` only.
-- `hold` is `null` (re-pair) or `{ action, target | targets }` inside the group, on `boot` only.
+- `double` and `hold` are `null` or `{ action, target | targets }` inside the group, on `momentary` only (§2.6). On `boot`, `hold: null` means re-pair.
 
 Errors: `400 invalid_channel`, `400 target_outside_group`, `400 scene_outside_group`, `400 channel_kind_not_allowed`.
+
+### 2.6 Push-button double-click and hold (amended 2026-09-25)
+
+The first draft reserved push-button double-click and hold, and only BOOT's hold was configurable. The user clarified that **every** push button, BOOT included, has click, double-click and hold:
+
+- Click: `toggle` the channel's target (automatic, as before).
+- Double-click and hold: each is **nothing** or one of Toggle, Turn on, Turn off (a target in the group, defaulting to the channel's target) or Cycle scenes (1–8 scenes from the group).
+- BOOT hold set to nothing keeps the 3 s re-pair (§2.4). On D0–D2, nothing means nothing.
+- Switching a channel from toggle switch to push button moves its scene list to the push-button double-click, and back.
+
+Console only: firmware 0.3.0 already handles `double_click` and `hold` on every momentary channel (§2.3). Storage adds `simple_channels.double_click`; the PUT body adds `double`.
 
 ## 3. Compatibility
 
@@ -162,6 +174,7 @@ The user approved an exception to "never ship a console that breaks boards alrea
 - [x] UI per channel: group → type → target → scene list (maintained) or BOOT hold choice. Show a confirmation sentence, e.g. *"D0 · Living · toggle switch: on/off whole room · double-click cycles Relax, Bright"*. Warn when the target is one light and scenes are set: "Scenes apply to the whole room". Show the read-only state for old firmware.
 - [x] `docs/device-api.md` and `docs/definitions.md` (channel, events, assign flow, firmware rules) updated in the same commit.
 - [x] `docs/changelog.md` entry.
+- [x] §2.6: double-click and hold on every push button (`double` in the PUT body, `simple_channels.double_click`).
 - [ ] Deployed; checked on production.
 
 ### Round (`hue-round-switch`)
@@ -178,7 +191,7 @@ No change.
 - [x] `FIRMWARE_VERSION` → `0.3.0`.
 - [x] `CHANGELOG.md` entry (user-facing wording).
 - [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.3.0.
-- [ ] Tested on a board by the user: toggle switch (on, off, double-click cycle), push button (instant click without a double), BOOT hold both ways.
+- [ ] Tested on a board by the user: toggle switch (on, off, double-click cycle), push button (instant click without a double; double-click and hold on D0–D2), BOOT hold both ways.
 
 ### Cleanup
 

@@ -230,7 +230,8 @@ Simple switch (firmware ≥ 0.3.0):
   (push button); the user picks it, not the firmware.
 - The console **derives** the recipes from each channel: a toggle switch gets
   `on` + `off` on its target and, if it has scenes, `double_click` →
-  `recall_scene`; a push button gets `short` → `toggle`. BOOT may add `hold`.
+  `recall_scene`; a push button gets `short` → `toggle` plus its `double_click`
+  and `hold` actions, when set.
   With no `hold` recipe, BOOT's 3 s long press re-pairs with the Bridge; with
   one, the button never re-pairs (only USB install does).
 - A scene list is `targets[]` (1–8 scenes, same rules as Round §8.1: cycle from
@@ -297,10 +298,9 @@ Unknown MAC for this key’s account: `404`.
 | `target` | `{ rtype: light \| grouped_light, rid }` for `on` / `off` / `toggle` |
 | `targets[]` | 1–8 `{ rtype: scene, rid, name }` for `recall_scene` |
 
-The console sends only the Simple events its UI offers today (`on`, `off`,
-`double_click` on maintained; `short` on momentary; `hold` on BOOT). Firmware
-accepts every combination in the table, so a later console can open the
-reserved slots (push-button double-click and hold) without a flash.
+A toggle switch's `double_click` is always a scene list. A push button's
+`double_click` and `hold` are any action with a target in the group, or a
+scene list.
 
 Poll cadence (firmware): no recipes in NVS → about 1 minute; after recipes
 exist → at boot and every 1 hour. GPIO never waits on this GET.
@@ -342,6 +342,7 @@ Content-Type: application/json
       "group": { "rtype": "room", "rid": "11111111-2222-3333-4444-555555555555" },
       "target": { "rtype": "grouped_light", "rid": "66666666-7777-8888-9999-000000000000" },
       "scenes": ["99999999-aaaa-bbbb-cccc-dddddddddddd"],
+      "double": null,
       "hold": null
     },
     {
@@ -350,25 +351,28 @@ Content-Type: application/json
       "group": { "rtype": "room", "rid": "11111111-2222-3333-4444-555555555555" },
       "target": { "rtype": "light", "rid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
       "scenes": [],
+      "double": null,
       "hold": null
     }
   ]
 }
 ```
 
-A channel left out is not used. `hold` is `null` (BOOT re-pairs with the
-Bridge), `{ "action": "on" | "off" | "toggle", "target": … }`, or
-`{ "action": "recall_scene", "targets": ["<scene rid>", …] }`.
+A channel left out is not used. `scenes` is the toggle-switch double-click
+list. `double` and `hold` (push button only) are `null`,
+`{ "action": "on" | "off" | "toggle", "target": … }`, or
+`{ "action": "recall_scene", "targets": ["<scene rid>", …] }`. On BOOT,
+`hold: null` means the 3 s press re-pairs with the Bridge.
 
 Validation, with the `error` code:
 
 | Rule | `error` |
 | --- | --- |
 | `id` is a channel the switch registered, listed once | `invalid_channel` |
-| `boot` is `momentary`; only `maintained` has `scenes`; only `boot` has `hold` | `channel_kind_not_allowed` |
-| `target` (and a hold target) is the group's `grouped_light` or one of its lights | `target_outside_group` |
-| Every scene (double-click and hold) belongs to the group | `scene_outside_group` |
-| `group` is a room or zone in the snapshot; lists hold 0–8 scenes (hold: 1–8), no duplicates | `validation_error` |
+| `boot` is `momentary`; only `maintained` has `scenes`; only `momentary` has `double` / `hold` | `channel_kind_not_allowed` |
+| `target` (and a `double` / `hold` target) is the group's `grouped_light` or one of its lights | `target_outside_group` |
+| Every scene belongs to the group | `scene_outside_group` |
+| `group` is a room or zone in the snapshot; `scenes` holds 0–8, a `double` / `hold` list 1–8, no duplicates | `validation_error` |
 | Switch firmware is older than 0.3.0 | `409 firmware_update_required` |
 
 Response:

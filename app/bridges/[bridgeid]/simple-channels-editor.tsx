@@ -19,18 +19,17 @@ import type {
   ChannelKind,
   SceneListItem,
   SimpleChannelConfig,
-  SimpleHold,
+  SimpleGesture,
   TopologySnapshot,
 } from "@/lib/types";
 import Link from "next/link";
 
-export type SimpleSlot = "target" | "scenes" | "hold";
+export type SimpleSlot = "target" | "scenes" | "double" | "hold";
 export type SimpleSlotRef = { channelId: string; slot: SimpleSlot };
 
-type HoldChoice = "repair" | "toggle" | "on" | "off" | "recall_scene";
+type GestureChoice = "none" | "toggle" | "on" | "off" | "recall_scene";
 
-const HOLD_CHOICES: { value: HoldChoice; label: string }[] = [
-  { value: "repair", label: "Re-pair with Bridge" },
+const GESTURE_CHOICES: { value: Exclude<GestureChoice, "none">; label: string }[] = [
   { value: "toggle", label: "Toggle" },
   { value: "on", label: "Turn on" },
   { value: "off", label: "Turn off" },
@@ -291,18 +290,40 @@ function ChannelCard({
             </p>
           ) : null}
 
-          {config.kind === "momentary" && !boot ? (
-            <p className="text-xs text-muted">Double-click and hold are not available yet.</p>
-          ) : null}
-
-          {boot ? (
-            <HoldSettings
-              config={config}
-              snapshot={snapshot}
-              selected={isSelected("hold")}
-              onSelect={() => onSelectSlot({ channelId: channel.id, slot: "hold" })}
-              onChange={(hold) => onPatch({ ...config, hold })}
-            />
+          {config.kind === "momentary" ? (
+            <>
+              <GestureSettings
+                label="Double-click"
+                emptyLabel="Nothing"
+                gesture={config.double}
+                config={config}
+                snapshot={snapshot}
+                selected={isSelected("double")}
+                onSelect={() => onSelectSlot({ channelId: channel.id, slot: "double" })}
+                onChange={(double) => onPatch({ ...config, double })}
+              />
+              {config.double ? (
+                <p className="text-xs text-muted">
+                  With a double-click set, a single click waits a moment before it acts.
+                </p>
+              ) : null}
+              <GestureSettings
+                label="Hold"
+                emptyLabel={boot ? "Re-pair with Bridge" : "Nothing"}
+                gesture={config.hold}
+                config={config}
+                snapshot={snapshot}
+                selected={isSelected("hold")}
+                onSelect={() => onSelectSlot({ channelId: channel.id, slot: "hold" })}
+                onChange={(hold) => onPatch({ ...config, hold })}
+              />
+              {boot && config.hold ? (
+                <p className="text-xs text-warn">
+                  The button no longer re-pairs with the Bridge. To re-pair,
+                  reinstall over USB from Devices.
+                </p>
+              ) : null}
+            </>
           ) : null}
         </>
       ) : (
@@ -457,40 +478,42 @@ function SceneSlot({
   );
 }
 
-function HoldSettings({
+function GestureSettings({
+  label,
+  emptyLabel,
+  gesture,
   config,
   snapshot,
   selected,
   onSelect,
   onChange,
 }: {
+  label: string;
+  emptyLabel: string;
+  gesture: SimpleGesture | null;
   config: SimpleChannelConfig;
   snapshot: TopologySnapshot;
   selected: boolean;
   onSelect: () => void;
-  onChange: (hold: SimpleHold | null) => void;
+  onChange: (gesture: SimpleGesture | null) => void;
 }) {
-  const choice: HoldChoice = config.hold ? config.hold.action : "repair";
+  const choice: GestureChoice = gesture ? gesture.action : "none";
 
-  function pick(next: HoldChoice) {
-    if (next === "repair") {
+  function pick(next: GestureChoice) {
+    if (next === "none") {
       onChange(null);
       return;
     }
     if (next === "recall_scene") {
-      // An empty list is not a valid hold; the user fills it from the scene list on the right.
+      // An empty list cannot be saved; the user fills it from the scenes on the right.
       onChange(
-        config.hold?.action === "recall_scene"
-          ? config.hold
-          : { action: "recall_scene", targets: [] },
+        gesture?.action === "recall_scene" ? gesture : { action: "recall_scene", targets: [] },
       );
       onSelect();
       return;
     }
     const target =
-      config.hold && config.hold.action !== "recall_scene"
-        ? config.hold.target
-        : config.target;
+      gesture && gesture.action !== "recall_scene" ? gesture.target : config.target;
     onChange({ action: next, target });
     onSelect();
   }
@@ -499,39 +522,34 @@ function HoldSettings({
     <div className="flex flex-col gap-1.5">
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
-          Hold
+          {label}
         </span>
         <select
           value={choice}
-          onChange={(event) => pick(event.target.value as HoldChoice)}
+          onChange={(event) => pick(event.target.value as GestureChoice)}
           className="rounded-md border border-line bg-cream px-2 py-1.5 text-sm outline-none focus:border-filament"
         >
-          {HOLD_CHOICES.map((item) => (
+          <option value="none">{emptyLabel}</option>
+          {GESTURE_CHOICES.map((item) => (
             <option key={item.value} value={item.value}>
               {item.label}
             </option>
           ))}
         </select>
       </label>
-      {config.hold?.action === "recall_scene" ? (
+      {gesture?.action === "recall_scene" ? (
         <SceneSlot
-          label="Hold scenes"
+          label={`${label} scenes`}
           emptyText="Pick at least one scene on the right"
-          scenes={config.hold.targets}
+          scenes={gesture.targets}
           selected={selected}
           onSelect={onSelect}
           onChange={(targets) => onChange({ action: "recall_scene", targets })}
         />
-      ) : config.hold ? (
-        <SlotRow label="Hold target" selected={selected} onSelect={onSelect}>
-          {targetName(config.hold.target, config.group, snapshot)}
+      ) : gesture ? (
+        <SlotRow label={`${label} target`} selected={selected} onSelect={onSelect}>
+          {targetName(gesture.target, config.group, snapshot)}
         </SlotRow>
-      ) : null}
-      {config.hold ? (
-        <p className="text-xs text-warn">
-          The button no longer re-pairs with the Bridge. To re-pair, reinstall
-          over USB from Devices.
-        </p>
       ) : null}
     </div>
   );
