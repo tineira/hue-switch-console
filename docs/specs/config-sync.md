@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved
+**Status:** in progress (board tests pending)
 
 ## 1. What and why
 
@@ -228,36 +228,36 @@ Status, in this order:
 
 ### Console (`hue-switch-console`)
 
-- [ ] Schema columns (§4.1) in `db/schema.sql` and `lib/ensure-schema.ts`
-- [ ] `rev_changed_at` set everywhere `rev` changes
-- [ ] `editing_until` set on channels/pages `GET` and `PUT`
-- [ ] `GET /api/device/config`: optional `rev`, auto-bump, `apply_failed`, `204`, `X-Poll-Sec` / `pollSec`, `served_rev`, `next_poll_at` (§4.2–§4.4)
-- [ ] Status helper (§4.5); `applied_rev`, `config_status`, `next_poll_at` in `GET /api/switches` and `GET /api/switches/{mac}`
-- [ ] UI (§4.6), including the "Replace the switch's config" action
-- [ ] `docs/device-api.md` updated in the same commit (§2.5)
-- [ ] `docs/changelog.md` entry
-- [ ] Deployed; checked on production: old boards get `200` as before and show **Unknown**
+- [x] Schema columns (§4.1) in `db/schema.sql` and `lib/ensure-schema.ts`
+- [x] `rev_changed_at` set everywhere `rev` changes
+- [x] `editing_until` set on channels/pages `GET` and `PUT`
+- [x] `GET /api/device/config`: optional `rev`, auto-bump, `apply_failed`, `204`, `X-Poll-Sec` / `pollSec`, `served_rev`, `next_poll_at` (§4.2–§4.4)
+- [x] Status helper (§4.5); `applied_rev`, `config_status`, `next_poll_at` in `GET /api/switches` and `GET /api/switches/{mac}`
+- [x] UI (§4.6), including the "Replace the switch's config" action
+- [x] `docs/device-api.md` updated in the same commit (§2.5)
+- [x] `docs/changelog.md` entry
+- [x] Deployed; checked on production: old boards get `200` as before and show **Unknown**
 
 ### Round (`hue-round-switch`)
 
-- [ ] `consoleFetchConfigHttp` appends `&rev=<gRecipeRev>`
-- [ ] `204` handled as "keep NVS", no parse; nothing queued to the loop
-- [ ] Read `X-Poll-Sec` on `200` and `204`; clamp 30–3600 s; fall back to the old constants when missing; 3600 s after `401` (§2.3)
-- [ ] Confirmation poll after `consoleApplyConfig` replaces NVS (§2.4); the queue still keeps a second body from being sent before the first is applied or rejected
-- [ ] `FIRMWARE_VERSION` bumped (from `0.5.28`)
-- [ ] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
-- [ ] Release uploaded; `/firmware/round/manifest.json` shows the new version
+- [x] `consoleFetchConfigHttp` appends `&rev=<gRecipeRev>`
+- [x] `204` handled as "keep NVS", no parse; nothing queued to the loop
+- [x] Read `X-Poll-Sec` on `200` and `204`; clamp 30–3600 s; fall back to the old constants when missing; 3600 s after `401` (§2.3)
+- [x] Confirmation poll after `consoleApplyConfig` replaces NVS (§2.4); the queue still keeps a second body from being sent before the first is applied or rejected
+- [x] `FIRMWARE_VERSION` bumped (from `0.5.28`)
+- [x] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
+- [x] Release uploaded; `/firmware/round/manifest.json` shows the new version
 - [ ] Tested on a board by the user: with the switch page open, save pages → **Up to date** within about a minute
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `consoleFetchConfig` appends `&rev=<gRecipeRev>` (read under `recipesLock`)
-- [ ] `204` handled as "keep NVS", no parse
-- [ ] Read `X-Poll-Sec` on `200` and `204`; clamp 30–3600 s; fall back to the old constants when missing; 3600 s after `401` (§2.3)
-- [ ] Confirmation poll after a successful `recipesSave()` with a new `rev` (§2.4)
-- [ ] `FIRMWARE_VERSION` bumped (from `0.4.0`)
-- [ ] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
-- [ ] Release uploaded; `/firmware/simple/manifest.json` shows the new version
+- [x] `consoleFetchConfig` appends `&rev=<gRecipeRev>` (read under `recipesLock`)
+- [x] `204` handled as "keep NVS", no parse
+- [x] Read `X-Poll-Sec` on `200` and `204`; clamp 30–3600 s; fall back to the old constants when missing; 3600 s after `401` (§2.3)
+- [x] Confirmation poll after a successful `recipesSave()` with a new `rev` (§2.4)
+- [x] `FIRMWARE_VERSION` bumped (from `0.4.0`)
+- [x] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
+- [x] Release uploaded; `/firmware/simple/manifest.json` shows the new version
 - [ ] Tested on a board by the user: with the switch page open, save channels → **Up to date** within about a minute
 
 ### Cleanup
