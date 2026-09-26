@@ -37,14 +37,15 @@ export function ringStyle(sw: MapSwitch | null, size: number): CSSProperties {
   };
 }
 
-export function chipStyle(sw: MapSwitch, lineHeight: number): CSSProperties {
+/** A Round page chip: filled when it controls the light, outlined when through a group. */
+export function chipStyle(sw: MapSwitch, lineHeight: number, via = false): CSSProperties {
   const color = switchColor(sw);
   return {
     display: "inline-flex",
     alignItems: "center",
     borderRadius: 999,
     border: `1px solid ${color}`,
-    background: `color-mix(in oklch, ${color} 22%, transparent)`,
+    background: via ? "transparent" : `color-mix(in oklch, ${color} 22%, transparent)`,
     color: "var(--foreground)",
     padding: "0 7px",
     fontSize: 11,
@@ -71,7 +72,7 @@ export function Marks({
     <>
       {marks.map((mark, index) =>
         mark.kind === "chip" ? (
-          <span key={index} title={mark.title} style={chipStyle(mark.sw, chipLine)}>
+          <span key={index} title={mark.title} style={chipStyle(mark.sw, chipLine, mark.via)}>
             {mark.label}
           </span>
         ) : (

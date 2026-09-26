@@ -420,7 +420,8 @@ export function staleText(g: Gesture): string {
 // ---- marks
 
 export type Mark =
-  | { kind: "chip"; label: string; title: string; sw: MapSwitch }
+  /** A Round page. `via`: it reaches the light through a room or zone (drawn outlined). */
+  | { kind: "chip"; label: string; title: string; sw: MapSwitch; via?: boolean }
   | { kind: "dot"; title: string; sw: MapSwitch }
   | { kind: "ring"; title: string; sw: MapSwitch };
 
@@ -445,17 +446,31 @@ export function marks(gs: Gesture[]): Mark[] {
   return out;
 }
 
-/** Direct marks, then a ring per switch that reaches the light through a group (not scenes). */
+/**
+ * Direct marks, then what reaches the light through a room or zone (not scenes): an
+ * outlined chip per Round page, and a ring per other switch that isn't already direct.
+ */
 export function lightMarks(model: LightsModel, light: MapLight): Mark[] {
   const directIds = new Set(light.direct.map((g) => g.sw.id));
+  const directUnits = new Set(light.direct.map((g) => g.u));
   const viaG = light.viaGroups.flatMap((key) => light.via[key].filter((g) => g.act !== "scenes"));
+  const through = (gs: Gesture[]) =>
+    [...new Set(gs.map((g) => model.gmap[(g.t as { key: string }).key].name))].join(", ");
+  const pages: Mark[] = [];
   const rings: Mark[] = [];
   for (const sw of [...new Set(viaG.map((g) => g.sw))]) {
-    if (directIds.has(sw.id)) continue;
-    const through = [...new Set(viaG.filter((g) => g.sw === sw).map((g) => model.gmap[(g.t as { key: string }).key].name))];
-    rings.push({ kind: "ring", title: `${sw.name} · through ${through.join(", ")}`, sw });
+    const mine = viaG.filter((g) => g.sw === sw);
+    if (sw.named) {
+      for (const u of [...new Set(mine.map((g) => g.u))]) {
+        if (directUnits.has(u) || !u.title) continue;
+        const gs = mine.filter((g) => g.u === u);
+        pages.push({ kind: "chip", via: true, label: u.title, title: `${sw.name} · ${u.sub} · through ${through(gs)}`, sw });
+      }
+    } else if (!directIds.has(sw.id)) {
+      rings.push({ kind: "ring", title: `${sw.name} · through ${through(mine)}`, sw });
+    }
   }
-  return [...marks(light.direct), ...rings];
+  return [...marks(light.direct), ...pages, ...rings];
 }
 
 // ---- details

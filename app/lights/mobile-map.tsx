@@ -281,7 +281,11 @@ export function MobileMap({ model }: { model: LightsModel }) {
           </span>
           {named ? (
             <span className="flex items-center gap-2">
-              <span style={chipStyle(named, 17)}>Page</span>a page on a Round
+              <span className="inline-flex" style={{ gap: 3 }}>
+                <span style={chipStyle(named, 17)}>Page</span>
+                <span style={chipStyle(named, 17, true)}>Page</span>
+              </span>
+              a page on a Round: filled when it controls it, outlined through its room or a zone
             </span>
           ) : null}
           <span className="flex items-center gap-2">

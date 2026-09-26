@@ -12,7 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-26
 
-- New **Lights** page: a map of the Bridge's rooms, lights and zones that shows which switch reaches each one, directly or through a room or zone, and which lights no switch reaches. Hover or click a light, room or zone to see who controls it; hover or click a switch to see everything it reaches. On a phone, tap anything to open its details.
+- New **Lights** page: a map of the Bridge's rooms, lights and zones that shows which switch reaches each one, directly or through a room or zone, and which lights no switch reaches. A Round page shows as a chip with its name: filled when it controls the light, outlined when it reaches it through a room or zone. Hover or click a light, room or zone to see who controls it; hover or click a switch to see everything it reaches. On a phone, tap anything to open its details.
 
 - The menu is now Switches, Setup and How-to. **Switches** opens on your switches, grouped by Bridge; a tab is marked when its switch has not been seen for 3 hours or points at lights or scenes the Bridge no longer has. Each switch has its own link. **Setup** is the old Devices page. Old links still work.
 - Leaving a switch page with unsaved changes asks first.

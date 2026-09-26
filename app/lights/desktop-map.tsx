@@ -481,8 +481,15 @@ export function DesktopMap({ model }: { model: LightsModel }) {
             switches that reach it through its room or a zone
           </LegendItem>
           {named ? (
-            <LegendItem mark={<span style={chipStyle(named, 16)}>Page</span>}>
-              a page on a Round, same rules as the dots
+            <LegendItem
+              mark={
+                <span className="inline-flex" style={{ gap: 3 }}>
+                  <span style={chipStyle(named, 16)}>Page</span>
+                  <span style={chipStyle(named, 16, true)}>Page</span>
+                </span>
+              }
+            >
+              a page on a Round: filled when it controls it, outlined through its room or a zone
             </LegendItem>
           ) : null}
           <LegendItem mark={<SceneOnlyRing size={8} />}>only scenes, through its room or a zone</LegendItem>

@@ -147,6 +147,10 @@ The first deploy had a per-Bridge overview at `/bridges/<id>/switches`: cards wi
   - "a room" or "a zone" names the missing group after the input's own room or zone; "a room or zone" is used when that's unknown.
   - A missing scene in a list reads "cycles a scene that isn't in this snapshot" (the prototype has no such case).
   - "Fix in Switches" opens that switch (`/switches/<mac>`).
+- **Round pages through a group (user request, after the first deploy).** The design says "rings stay rings" for Round. Instead, a light reached through a room or zone by a Round page shows that page's chip, **outlined** (border only). A filled chip still means the page controls the light itself.
+  - Outlined chips come after the direct marks, smallest group first. A page already shown filled is not repeated.
+  - Simple switches keep their rings.
+  - A zone with every light (Brasilia 243) puts its chip on every row. That is intended.
 - **Roomless lights.** A light that isn't in any room is shown under "Not in a room". The design assumes this never happens.
 
 **Checked against the prototypes** (2026-09-26, local preview with the production export as "This house"):
