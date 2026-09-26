@@ -169,7 +169,7 @@ Authorization: Bearer hsw_…
 `rev` is optional: the recipe revision stored in NVS, a non-negative decimal
 integer read at request time (`0` = nothing applied yet). The console records
 it to show whether the switch runs the saved config
-(`docs/specs/config-sync.md`). Missing or malformed `rev` is ignored: no `400`,
+(`docs/specs/finished/config-sync.md`). Missing or malformed `rev` is ignored: no `400`,
 and the response is always a full `200`.
 
 ### Response `204`

@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 /**
  * A switch ahead of the console keeps its own config. This moves `rev` past the
  * switch's so its next poll replaces NVS with what the console has, even when that
- * is nothing (docs/specs/config-sync.md §4.4).
+ * is nothing (docs/specs/finished/config-sync.md §4.4).
  */
 export async function POST(
   _req: Request,

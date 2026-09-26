@@ -63,7 +63,7 @@ function syncOf(item: SyncInfo): SyncInfo {
 
 /**
  * Keeps every switch polling fast while this page is open, and returns each one's
- * config status (docs/specs/config-sync.md §4.6). Null when the request fails.
+ * config status (docs/specs/finished/config-sync.md §4.6). Null when the request fails.
  */
 async function fetchSync(): Promise<Record<string, SyncInfo> | null> {
   try {
@@ -515,7 +515,7 @@ export function SwitchesWorkspace({
     }
   }
 
-  // One line on whether the switch runs the saved config (docs/specs/config-sync.md §4.6).
+  // One line on whether the switch runs the saved config (docs/specs/finished/config-sync.md §4.6).
   function syncLine(item: WorkspaceSwitch): { text: string; tone: "ok" | "muted" | "warn" } | null {
     const info = syncFor(item);
     switch (info.config_status) {

@@ -60,7 +60,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const mac = normalizeMac(url.searchParams.get("mac") ?? "");
   if (!mac) return jsonError(400, "mac query parameter is required");
-  // Optional: the revision in the switch's NVS (docs/specs/config-sync.md §2.1).
+  // Optional: the revision in the switch's NVS (docs/specs/finished/config-sync.md §2.1).
   const reported = parseReportedRev(url.searchParams.get("rev"));
 
   try {

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /**
  * The Switches area calls this while it is open: every switch of the account polls
  * fast for the next few minutes, and the reply carries each switch's config status
- * (docs/specs/config-sync.md §4.3, §4.6).
+ * (docs/specs/finished/config-sync.md §4.3, §4.6).
  */
 export async function POST() {
   if (!isDbConfigured()) {

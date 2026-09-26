@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress (board tests pending)
+**Status:** done
 
 ## 1. What and why
 
@@ -247,7 +247,7 @@ Status, in this order:
 - [x] `FIRMWARE_VERSION` bumped (from `0.5.28`)
 - [x] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
 - [x] Release uploaded; `/firmware/round/manifest.json` shows the new version
-- [ ] Tested on a board by the user: with the switch page open, save pages → **Up to date** within about a minute
+- [x] Tested on a board by the user: with the switch page open, save pages → **Up to date** within about a minute
 
 ### Simple (`hue-simple-switch`)
 
@@ -258,7 +258,7 @@ Status, in this order:
 - [x] `FIRMWARE_VERSION` bumped (from `0.4.0`)
 - [x] `CHANGELOG.md` entry in the firmware repo (user-facing wording)
 - [x] Release uploaded; `/firmware/simple/manifest.json` shows the new version
-- [ ] Tested on a board by the user: with the switch page open, save channels → **Up to date** within about a minute
+- [x] Tested on a board by the user: with the switch page open, save channels → **Up to date** within about a minute
 
 ### Cleanup
 

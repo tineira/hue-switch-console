@@ -446,7 +446,7 @@ export async function touchSwitch(id: string, apiKeyId: string) {
 }
 
 /**
- * One config poll (docs/specs/config-sync.md §4.2): what the switch reported, what it
+ * One config poll (docs/specs/finished/config-sync.md §4.2): what the switch reported, what it
  * was served, and when it is next expected. `reported` null leaves the applied
  * revision and the failure flag as they were (firmware that does not send `rev`).
  */
