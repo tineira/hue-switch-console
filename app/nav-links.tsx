@@ -3,44 +3,49 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const LINKS = [
-  {
-    href: "/",
-    label: "Bridge",
-    match: (path: string) => path === "/" || path.startsWith("/bridges"),
-  },
-  {
-    href: "/devices",
-    label: "Devices",
-    match: (path: string) => path.startsWith("/devices"),
-  },
-  {
-    href: "/how-to",
-    label: "How-to",
-    match: (path: string) => path.startsWith("/how-to"),
-  },
-];
+// Inside a Bridge, Switches (and later Lights) stay on it; elsewhere `/switches`
+// redirects to the only Bridge or the Bridge picker (docs/specs/page-structure.md).
+function bridgeBase(path: string): string | null {
+  const match = /^\/bridges\/([^/]+)/.exec(path);
+  return match ? `/bridges/${match[1]}` : null;
+}
 
 export function NavLinks() {
   const path = usePathname();
+  const base = bridgeBase(path);
+  const links = [
+    {
+      href: base ? `${base}/switches` : "/switches",
+      label: "Switches",
+      active: path === "/" || path === "/switches" || /^\/bridges\/[^/]+\/switches(\/|$)/.test(path),
+    },
+    {
+      href: "/setup",
+      label: "Setup",
+      active: path.startsWith("/setup"),
+    },
+    {
+      href: "/how-to",
+      label: "How-to",
+      active: path.startsWith("/how-to"),
+    },
+  ];
   return (
     <nav className="flex gap-1 text-sm font-medium">
-      {LINKS.map((link) => {
-        const active = link.match(path);
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`rounded-md px-2.5 py-1 ${
-              active
-                ? "bg-filament-soft text-foreground"
-                : "text-muted hover:text-foreground"
-            }`}
-          >
-            {link.label}
-          </Link>
-        );
-      })}
+      {links.map((link) => (
+        <Link
+          key={link.label}
+          href={link.href}
+          aria-current={link.active ? "page" : undefined}
+          className={`rounded-md px-2.5 py-1 ${
+            link.active
+              ? "bg-filament-soft text-foreground"
+              : "text-muted hover:text-foreground"
+          }`}
+        >
+          {link.label}
+        </Link>
+      ))}
     </nav>
   );
 }

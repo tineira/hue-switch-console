@@ -15,9 +15,11 @@ export const metadata = {
 function snapshotCounts(snapshot: TopologySnapshot | null) {
   if (!snapshot) return "No snapshot";
   const lights = snapshot.lights?.length ?? 0;
-  const rooms = snapshot.rooms?.length ?? 0;
+  const groups = snapshot.rooms ?? [];
+  const rooms = groups.filter((room) => room.rtype !== "zone").length;
+  const zones = groups.length - rooms;
   const scenes = snapshot.scenes?.length ?? 0;
-  return `${lights} lights · ${rooms} rooms · ${scenes} scenes`;
+  return `${lights} lights · ${rooms} rooms · ${zones} zones · ${scenes} scenes`;
 }
 
 export default async function Home() {
@@ -28,7 +30,7 @@ export default async function Home() {
   ]);
 
   if (bridges.length === 1) {
-    redirect(`/bridges/${encodeURIComponent(bridges[0].bridgeid)}`);
+    redirect(`/bridges/${encodeURIComponent(bridges[0].bridgeid)}/switches`);
   }
 
   return (
@@ -45,7 +47,7 @@ export default async function Home() {
         <section className="flex flex-col gap-4 rounded-xl border border-dashed border-line bg-cream p-6">
           <h2 className="text-lg font-medium">No Bridge yet</h2>
           <ol className="flex max-w-xl list-decimal flex-col gap-2 pl-5 text-sm text-muted">
-            <li>Set up a board on Devices, in Chrome or Edge.</li>
+            <li>Set up a board on Setup, in Chrome or Edge.</li>
             <li>When the board asks, press the button on the Hue Bridge.</li>
             <li>
               Come back here. The Bridge&apos;s rooms, lights, and scenes appear
@@ -54,10 +56,10 @@ export default async function Home() {
           </ol>
           <p className="flex flex-wrap gap-4">
             <Link
-              href="/devices"
+              href="/setup"
               className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
             >
-              Go to Devices
+              Go to Setup
             </Link>
           </p>
           {switches.length > 0 ? (
@@ -93,10 +95,10 @@ export default async function Home() {
                     </p>
                   </div>
                   <Link
-                    href={`/bridges/${encodeURIComponent(bridge.bridgeid)}`}
+                    href={`/bridges/${encodeURIComponent(bridge.bridgeid)}/switches`}
                     className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
                   >
-                    Open workspace
+                    Open
                   </Link>
                 </div>
                 {boards.length > 0 ? (

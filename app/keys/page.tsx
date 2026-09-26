@@ -18,7 +18,7 @@ export default async function KeysPage() {
       <section className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">API keys</h1>
         <p className="max-w-2xl text-sm text-muted">
-          Each switch uses a key to talk to this console. Devices gives every
+          Each switch uses a key to talk to this console. Setup gives every
           board its own, so come here to see which board uses which key and to
           revoke the ones nothing uses.
         </p>

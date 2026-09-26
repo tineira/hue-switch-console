@@ -63,7 +63,7 @@ None. No device endpoint, payload, NVS key or installer change. The firmware rep
 - `h1` "Switches" and the Bridge context line (§4).
 - On the right, a primary button **Add a switch**, linking to `/setup`.
 
-**One card per switch** on this Bridge, in `created_at` order as today. The whole card links to the switch page. Each card contains:
+**One card per switch** on this Bridge, oldest first (`created_at`). The same order applies to the tabs on a switch page; until now they were sorted by last seen, so they moved around as boards checked in. The whole card links to the switch page. Each card contains:
 
 - **Title row:**
   - the name (or formatted MAC)
@@ -101,7 +101,10 @@ The current v2 workspace (`app/bridges/[bridgeid]/workspace.tsx` and the editors
   - Every in-app link that leaves the switch page (nav, wordmark, `← Switches`, Update → Setup, how-to links) asks first with a `window.confirm`: "Unsaved changes on {names}. Leave without saving?". Cancel stays on the page, OK navigates.
   - Tab switches between switches do not ask, because they keep the drafts.
   - Implementation: a capture-phase click listener on `document`, registered by the workspace. It checks `<a>` elements whose pathname is not `/bridges/<id>/switches/*`, so the nav in `Shell` needs no changes.
-- **Data loading.** Unchanged: the page loads every switch of the Bridge, with channels, pages and recipes, as `app/bridges/[bridgeid]/page.tsx` does today. That code moves to `switches/[mac]/page.tsx`, and the loaders move into a shared server helper so the overview (§5) uses the same function.
+- **Data loading and where the editor mounts.** Every switch of the Bridge is loaded with its channels, pages and recipes, as before, by a shared server loader (`lib/bridge-switches.ts`) that the overview uses too.
+  - The editor is rendered by `app/bridges/[bridgeid]/switches/layout.tsx`, not by `[mac]/page.tsx`. A layout stays mounted when the MAC in the URL changes, but a page is keyed by its param. That keeps drafts through tab switches and through the `router.refresh()` after a save, which Back needs to avoid showing pre-save data.
+  - `[mac]/page.tsx` only canonicalises the MAC, follows a switch to its Bridge, or says it is not found.
+  - With a single switch, the tabs row is hidden.
 
 ## 7. Setup (`/setup`)
 
@@ -168,16 +171,16 @@ Control = { mac, switchName, product,
 
 ### Phase 1: structure (console, `hue-switch-console`)
 
-- [ ] `app/bridges/[bridgeid]/layout.tsx` (Shell wide, Bridge lookup, not-found)
-- [ ] Shared server loader for a Bridge's switches with config
-- [ ] `/bridges/[id]/switches` overview (§5), with warnings and empty states
-- [ ] `/bridges/[id]/switches/[mac]` editor (§6): pathname-driven selection, `pushState` tabs, `← Switches`, `h1`, leave-with-drafts confirm (reload and in-app links)
-- [ ] `/bridges/[id]` → redirects; `/switches` redirect route; `/` one-Bridge redirect target changed
-- [ ] `app/devices` → `app/setup`; `/devices` and `/install` redirects; `?mac=` hint; "Open in Switches" link
-- [ ] Nav: Switches · Setup · How-to, with active states (§4)
-- [ ] Context line with separate room and zone counts
-- [ ] Docs and copy (§9)
-- [ ] `npm run lint` and `npm run build` pass
+- [x] `app/bridges/[bridgeid]/layout.tsx` (Shell wide, Bridge lookup, not-found)
+- [x] Shared server loader for a Bridge's switches with config
+- [x] `/bridges/[id]/switches` overview (§5), with warnings and empty states
+- [x] `/bridges/[id]/switches/[mac]` editor (§6): pathname-driven selection, `pushState` tabs, `← Switches`, `h1`, leave-with-drafts confirm (reload and in-app links)
+- [x] `/bridges/[id]` → redirects; `/switches` redirect route; `/` one-Bridge redirect target changed
+- [x] `app/devices` → `app/setup`; `/devices` and `/install` redirects; `?mac=` hint; "Open in Switches" link
+- [x] Nav: Switches · Setup · How-to, with active states (§4)
+- [x] Context line with separate room and zone counts
+- [x] Docs and copy (§9)
+- [x] `npm run build` passes; `npm run lint` passes except the existing `app/theme-picker.tsx` error (set-state-in-effect), which this change does not touch
 - [ ] Deployed; checked on production (login, overview, a Round and a Simple switch page, tab switching with a draft, Back/Forward, Save all, old URLs redirect, Setup with `?mac=`). Per `AGENTS.md`, not with local Playwright.
 
 ### Phase 2: Lights (console)

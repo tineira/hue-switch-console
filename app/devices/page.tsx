@@ -1,26 +1,17 @@
-import { DevicesPanel } from "@/app/devices/devices-panel";
-import { Shell } from "@/app/shell";
-import { requireSessionUser } from "@/lib/auth";
+import { permanentRedirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export const metadata = {
-  title: "Devices",
-};
-
-export default async function DevicesPage() {
-  const user = await requireSessionUser();
-
-  return (
-    <Shell email={user.email}>
-      <section className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Devices</h1>
-        <p className="max-w-2xl text-sm text-muted">
-          Plug a XIAO into this computer over USB to install firmware, save
-          Wi-Fi, and link it to this console. Use Chrome or Edge.
-        </p>
-      </section>
-      <DevicesPanel />
-    </Shell>
-  );
+// Devices was renamed Setup (docs/specs/page-structure.md). Keep `?mac=` and any other query.
+export default async function DevicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) {
+      params.append(key, item);
+    }
+  }
+  const query = params.toString();
+  permanentRedirect(query ? `/setup?${query}` : "/setup");
 }

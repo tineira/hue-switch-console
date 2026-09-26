@@ -5,7 +5,15 @@ import {
   choiceClass,
   type GestureOption,
 } from "@/app/bridges/[bridgeid]/gesture-picker";
-import { summarizeGesture, targetInGroup, type GestureAction } from "@/lib/gestures";
+import {
+  gestureTarget,
+  gesturesLine,
+  simpleChannelGestures,
+  targetInGroup,
+  type GestureAction,
+  type GestureSlot,
+  type GestureSummary,
+} from "@/lib/gestures";
 import { pickableGroups } from "@/lib/pages";
 import {
   SIMPLE_DIM_FIRMWARE,
@@ -33,42 +41,17 @@ import type {
 import Link from "next/link";
 import { useState } from "react";
 
-type GestureSlot = "primary" | "double" | "hold";
-
-type GestureView = {
-  slot: GestureSlot;
-  label: string;
-  action: GestureAction;
-  summary: string;
+type GestureView = GestureSummary & {
   options?: GestureOption[];
   fixedTarget?: boolean;
-  target: RecipeTarget | null;
-  scenes: SceneListItem[];
 };
-
-function gestureAction(gesture: SimpleGesture | null): GestureAction {
-  if (!gesture) return "none";
-  return gesture.action === "recall_scene" ? "scenes" : gesture.action;
-}
-
-function gestureTarget(gesture: SimpleGesture | null): RecipeTarget | null {
-  return gesture && gesture.action !== "recall_scene" ? gesture.target : null;
-}
-
-function gestureScenes(gesture: SimpleGesture | null): SceneListItem[] {
-  return gesture?.action === "recall_scene" ? gesture.targets : [];
-}
-
-function lowerFirst(text: string): string {
-  return text.charAt(0).toLowerCase() + text.slice(1);
-}
 
 const SCENE_OPTIONS: GestureOption[] = [
   { value: "none", label: "Nothing" },
   { value: "scenes", label: "Cycle scenes" },
 ];
 
-/** The gesture cards a configured channel shows, with their summaries. */
+/** The gesture cards a configured channel shows, with their summaries and choices. */
 function channelGestures(
   config: SimpleChannelConfig,
   snapshot: TopologySnapshot,
@@ -76,84 +59,23 @@ function channelGestures(
   wantsScenes: boolean,
 ): GestureView[] {
   const boot = isBootChannel(config.id);
-  if (config.kind === "maintained") {
-    const doubleAction: GestureAction =
-      config.scenes.length > 0 || wantsScenes ? "scenes" : "none";
-    return [
+  const roomName = groupRoom(snapshot, config.group)?.name ?? "the group";
+  return simpleChannelGestures(config, snapshot, wantsScenes).map((gesture) => {
+    if (gesture.slot === "double") return { ...gesture, options: SCENE_OPTIONS };
+    if (gesture.slot !== "hold") return gesture;
+    const holdOptions: GestureOption[] = [
+      { value: "none", label: boot ? "Re-pair with Bridge" : "Nothing" },
       {
-        slot: "primary",
-        label: "On / Off",
-        action: "onoff",
-        summary: summarizeGesture("onoff", config.target, [], snapshot, ""),
-        target: config.target,
-        scenes: [],
-      },
-      {
-        slot: "double",
-        label: "Double-click",
-        action: doubleAction,
-        summary: summarizeGesture(doubleAction, null, config.scenes, snapshot, "Does nothing"),
-        options: SCENE_OPTIONS,
-        target: null,
-        scenes: config.scenes,
+        value: "dim",
+        label: dimSupported ? "Dim" : `Dim (needs firmware ${SIMPLE_DIM_FIRMWARE})`,
+        disabled: !dimSupported && gesture.action !== "dim",
       },
     ];
-  }
-  const doubleAction = gestureAction(config.double);
-  const holdAction = gestureAction(config.hold);
-  const roomName = groupRoom(snapshot, config.group)?.name ?? "the group";
-  const holdOptions: GestureOption[] = [
-    { value: "none", label: boot ? "Re-pair with Bridge" : "Nothing" },
-    {
-      value: "dim",
-      label: dimSupported ? "Dim" : `Dim (needs firmware ${SIMPLE_DIM_FIRMWARE})`,
-      disabled: !dimSupported && holdAction !== "dim",
-    },
-  ];
-  if (holdOffAvailable(config) || holdAction === "off") {
-    holdOptions.push({ value: "off", label: `Turn off all of ${roomName}` });
-  }
-  return [
-    {
-      slot: "primary",
-      label: "Click",
-      action: "toggle",
-      summary: summarizeGesture("toggle", config.target, [], snapshot, ""),
-      target: config.target,
-      scenes: [],
-    },
-    {
-      slot: "double",
-      label: "Double-click",
-      action: doubleAction,
-      summary: summarizeGesture(
-        doubleAction,
-        null,
-        gestureScenes(config.double),
-        snapshot,
-        "Does nothing",
-      ),
-      options: SCENE_OPTIONS,
-      target: null,
-      scenes: gestureScenes(config.double),
-    },
-    {
-      slot: "hold",
-      label: "Hold",
-      action: holdAction,
-      summary: summarizeGesture(
-        holdAction,
-        gestureTarget(config.hold),
-        gestureScenes(config.hold),
-        snapshot,
-        boot ? "Re-pairs with the Bridge" : "Does nothing",
-      ),
-      options: holdOptions,
-      fixedTarget: holdAction === "off",
-      target: gestureTarget(config.hold),
-      scenes: gestureScenes(config.hold),
-    },
-  ];
+    if (holdOffAvailable(config) || gesture.action === "off") {
+      holdOptions.push({ value: "off", label: `Turn off all of ${roomName}` });
+    }
+    return { ...gesture, options: holdOptions, fixedTarget: gesture.action === "off" };
+  });
 }
 
 /** Changing the action keeps what still fits: the current target if it is in the group, or the scene list. */
@@ -239,8 +161,8 @@ export function SimpleChannelsEditor({
             Channel types need Simple firmware {SIMPLE_MIN_FIRMWARE} or later.
             Until then this switch does nothing on the wall. Plug it in over USB
             and install from{" "}
-            <Link href="/devices" className="text-filament underline underline-offset-2">
-              Devices
+            <Link href="/setup" className="text-filament underline underline-offset-2">
+              Setup
             </Link>
             .
           </p>
@@ -311,7 +233,7 @@ function ChannelRow({
 
   const headline = config ? `${room?.name ?? "Unknown group"} · ${kindLabel(config.kind)}` : "Not used";
   const subline = config
-    ? gestures.map((gesture) => `${gesture.label}: ${lowerFirst(gesture.summary)}`).join(" · ")
+    ? gesturesLine(gestures)
     : boot
       ? "Push button. Hold re-pairs with the Bridge."
       : "Pick a room or zone to use this channel.";
@@ -397,7 +319,7 @@ function ChannelRow({
     }
     if (boot && config.hold) {
       notes.push({
-        text: "The button no longer re-pairs with the Bridge. To re-pair, reinstall over USB from Devices.",
+        text: "The button no longer re-pairs with the Bridge. To re-pair, reinstall over USB from Setup.",
         warn: true,
       });
     }

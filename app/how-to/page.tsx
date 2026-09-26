@@ -36,7 +36,7 @@ const SIMPLE_STEPS: (Step & { pattern: Pattern })[] = [
     see: "Fast blink, no pause",
     state: "No Wi-Fi",
     means: "The board is not on Wi-Fi.",
-    fix: { text: "Connect the board over USB and save Wi-Fi on", href: "/devices", link: "Devices" },
+    fix: { text: "Connect the board over USB and save Wi-Fi on", href: "/setup", link: "Setup" },
   },
   {
     key: "burst-2",
@@ -44,7 +44,7 @@ const SIMPLE_STEPS: (Step & { pattern: Pattern })[] = [
     see: "Two blinks, then a pause",
     state: "Needs console",
     means: "Wi-Fi is up. The console address or the device token is missing.",
-    fix: { text: "Save a token on", href: "/devices", link: "Devices" },
+    fix: { text: "Save a token on", href: "/setup", link: "Setup" },
   },
   {
     key: "burst-3",
@@ -54,7 +54,7 @@ const SIMPLE_STEPS: (Step & { pattern: Pattern })[] = [
     means:
       "The board cannot use the Hue Bridge yet. It is not paired, pairing is running, or the Bridge is missing or rejected the board.",
     fix: {
-      text: "Hold BOOT for about 3 seconds, or use Pair on Devices, then press the button on the Hue Bridge.",
+      text: "Hold BOOT for about 3 seconds, or use Pair on Setup, then press the button on the Hue Bridge.",
     },
   },
   {
@@ -97,8 +97,8 @@ function roundSteps(version: string | null): (Step & { ring: Ring; face: ReactNo
         "The board could not join Wi-Fi, or no network is saved. The XIAO S3 needs its U.FL antenna to reach the router.",
       fix: {
         text: "Plug in the antenna. If it is already in, save a 2.4 GHz network on",
-        href: "/devices",
-        link: "Devices",
+        href: "/setup",
+        link: "Setup",
       },
     },
     {
@@ -358,13 +358,13 @@ export default async function HowToPage() {
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-medium">Using the console</h2>
           <p className="text-sm text-muted">
-            Set up a board once on Devices, then choose what its buttons or
-            pages do on Bridge.
+            Set up a board once on Setup, then choose what its buttons or
+            pages do on Switches.
           </p>
         </div>
 
         <ol className="flex flex-col gap-3">
-          <GuideStep n={1} title="Set up a board" where="Devices" href="/devices">
+          <GuideStep n={1} title="Set up a board" where="Setup" href="/setup">
             <li>
               Plug the board into this computer with a USB-C cable that carries
               data, and use Chrome or Edge.
@@ -401,7 +401,7 @@ export default async function HowToPage() {
             </li>
           </GuideStep>
 
-          <GuideStep n={2} title="Choose what it does" where="Bridge" href="/">
+          <GuideStep n={2} title="Choose what it does" where="Switches" href="/switches">
             <li>
               Pick the switch from the tabs at the top. The pencil renames it;
               the name is only used in the console.
@@ -449,8 +449,8 @@ export default async function HowToPage() {
 
           <GuideStep n={4} title="Keep it up to date">
             <li>
-              A switch tab on Bridge says <b>update</b> when newer firmware is
-              out. Plug the board in, detect it on Devices, and click{" "}
+              A switch on Switches shows <b>Update to</b> when newer firmware is
+              out. Click it, plug the board in, detect it on Setup, and click{" "}
               <b>Update</b>. Wi-Fi, the console link, and its buttons or pages
               stay.
             </li>
@@ -497,7 +497,7 @@ export default async function HowToPage() {
             does not turn it off.
           </p>
           <FixLine
-            fix={{ text: "Save a new token on", href: "/devices", link: "Devices" }}
+            fix={{ text: "Save a new token on", href: "/setup", link: "Setup" }}
           />
           <p className="text-muted">It clears once the console accepts the board.</p>
         </ErrorCard>
@@ -548,7 +548,7 @@ export default async function HowToPage() {
             The console rejected the device token. The switch keeps working
             with the recipes it already has, but it cannot get new ones.
           </p>
-          <FixLine fix={{ text: "Save a new token on", href: "/devices", link: "Devices" }} />
+          <FixLine fix={{ text: "Save a new token on", href: "/setup", link: "Setup" }} />
         </ErrorCard>
 
         <ErrorCard
@@ -565,7 +565,7 @@ export default async function HowToPage() {
             The full screen only shows when the console rejected the token and
             this Round has no recipes yet, so presses have nothing to run.
           </p>
-          <FixLine fix={{ text: "Save a new token on", href: "/devices", link: "Devices" }} />
+          <FixLine fix={{ text: "Save a new token on", href: "/setup", link: "Setup" }} />
         </ErrorCard>
 
         <ErrorCard

@@ -32,7 +32,7 @@ export const PRODUCTS: Record<ProductId, ProductSpec> = {
   },
 };
 
-// Names the key after the board when Devices knows it, so API keys reads as a list of boards.
+// Names the key after the board when Setup knows it, so API keys reads as a list of boards.
 export function usbKeyName({
   mac,
   productId,

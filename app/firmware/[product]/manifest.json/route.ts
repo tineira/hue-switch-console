@@ -3,7 +3,7 @@ import { jsonError } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
-// What /install and Devices flash: the product's current uploaded release.
+// What Setup (/setup) flashes: the product's current uploaded release.
 export async function GET(_req: Request, context: { params: Promise<{ product: string }> }) {
   const product = parseProductId((await context.params).product);
   if (!product) return jsonError(404, "unknown_product");

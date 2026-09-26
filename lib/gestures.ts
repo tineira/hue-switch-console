@@ -1,13 +1,18 @@
 // Sentences for a gesture card header and a Simple channel's summary line
 // (docs/specs/design-bridge-v2/README.md, "Summary sentences").
 
+import { findRoundRecipe, ROUND_EVENTS } from "@/lib/pages";
 import { nameForTarget } from "@/lib/recipes";
+import { isBootChannel } from "@/lib/simple-channels";
 import type {
   Light,
   PageGroup,
   RecipeTarget,
+  RoundRecipe,
   Scene,
   SceneListItem,
+  SimpleChannelConfig,
+  SimpleGesture,
   TopologySnapshot,
 } from "@/lib/types";
 
@@ -89,4 +94,133 @@ export function targetInGroup(
     return target;
   }
   return { rtype: "grouped_light", rid: group.groupedLightRid };
+}
+
+export type GestureSlot = "primary" | "double" | "hold";
+
+/** One gesture of a configured Simple channel or a Round page, with its sentence. */
+export type GestureSummary = {
+  slot: GestureSlot;
+  label: string;
+  action: GestureAction;
+  summary: string;
+  target: RecipeTarget | null;
+  scenes: SceneListItem[];
+};
+
+export function gestureAction(gesture: SimpleGesture | null): GestureAction {
+  if (!gesture) return "none";
+  return gesture.action === "recall_scene" ? "scenes" : gesture.action;
+}
+
+export function gestureTarget(gesture: SimpleGesture | null): RecipeTarget | null {
+  return gesture && gesture.action !== "recall_scene" ? gesture.target : null;
+}
+
+export function gestureScenes(gesture: SimpleGesture | null): SceneListItem[] {
+  return gesture?.action === "recall_scene" ? gesture.targets : [];
+}
+
+export function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+/**
+ * The gestures a configured Simple channel has. `wantsScenes` shows a toggle switch's
+ * double-click as Cycle scenes while the editor has it open with no scene picked yet.
+ */
+export function simpleChannelGestures(
+  config: SimpleChannelConfig,
+  snapshot: TopologySnapshot,
+  wantsScenes = false,
+): GestureSummary[] {
+  if (config.kind === "maintained") {
+    const doubleAction: GestureAction =
+      config.scenes.length > 0 || wantsScenes ? "scenes" : "none";
+    return [
+      {
+        slot: "primary",
+        label: "On / Off",
+        action: "onoff",
+        summary: summarizeGesture("onoff", config.target, [], snapshot, ""),
+        target: config.target,
+        scenes: [],
+      },
+      {
+        slot: "double",
+        label: "Double-click",
+        action: doubleAction,
+        summary: summarizeGesture(doubleAction, null, config.scenes, snapshot, "Does nothing"),
+        target: null,
+        scenes: config.scenes,
+      },
+    ];
+  }
+  const doubleAction = gestureAction(config.double);
+  const holdAction = gestureAction(config.hold);
+  return [
+    {
+      slot: "primary",
+      label: "Click",
+      action: "toggle",
+      summary: summarizeGesture("toggle", config.target, [], snapshot, ""),
+      target: config.target,
+      scenes: [],
+    },
+    {
+      slot: "double",
+      label: "Double-click",
+      action: doubleAction,
+      summary: summarizeGesture(
+        doubleAction,
+        null,
+        gestureScenes(config.double),
+        snapshot,
+        "Does nothing",
+      ),
+      target: null,
+      scenes: gestureScenes(config.double),
+    },
+    {
+      slot: "hold",
+      label: "Hold",
+      action: holdAction,
+      summary: summarizeGesture(
+        holdAction,
+        gestureTarget(config.hold),
+        gestureScenes(config.hold),
+        snapshot,
+        isBootChannel(config.id) ? "Re-pairs with the Bridge" : "Does nothing",
+      ),
+      target: gestureTarget(config.hold),
+      scenes: gestureScenes(config.hold),
+    },
+  ];
+}
+
+/** "Label: sentence · Label: sentence" for a list of gestures. */
+export function gesturesLine(gestures: { label: string; summary: string }[]): string {
+  return gestures.map((gesture) => `${gesture.label}: ${lowerFirst(gesture.summary)}`).join(" · ");
+}
+
+/** Tap and Double tap of one Round page. */
+export function roundPageGestures(
+  pageId: string,
+  recipes: RoundRecipe[],
+  snapshot: TopologySnapshot,
+): { label: string; action: GestureAction; summary: string }[] {
+  return ROUND_EVENTS.map((event) => {
+    const recipe = findRoundRecipe(recipes, pageId, event);
+    const action: GestureAction = !recipe
+      ? "none"
+      : recipe.action === "recall_scene"
+        ? "scenes"
+        : recipe.action;
+    const scenes = recipe?.action === "recall_scene" ? (recipe.targets ?? []) : [];
+    return {
+      label: event === "short" ? "Tap" : "Double tap",
+      action,
+      summary: summarizeGesture(action, recipe?.target, scenes, snapshot, "Does nothing"),
+    };
+  });
 }

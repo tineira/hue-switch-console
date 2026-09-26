@@ -9,7 +9,7 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Devices (detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA + firmware in the switch list: `docs/specs/ota.md` (not implemented).
+Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA + firmware in the switch list: `docs/specs/ota.md` (not implemented).
 
 Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
@@ -322,6 +322,7 @@ Used by the console UI. Firmware does not call these.
 | `GET` | `/api/bridges` | snapshots |
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
 | `GET` | `/api/switches` | registered boards |
+| `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, bridgeid, label, key_revoked }` (Setup reads it after Detect) |
 | `PATCH` | `/api/switches/{mac}` | `{ "label": "Kitchen" }` or `{ "label": null }` — console display name |
 | `GET` | `/api/switches/{mac}/channels` | Simple channel settings (`channelSettings[]`). Round Display: `400 round_switch_uses_pages` |
 | `PUT` | `/api/switches/{mac}/channels` | replace Simple channel settings; increments `rev`. Round: `400 round_switch_uses_pages` |

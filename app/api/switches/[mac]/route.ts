@@ -32,6 +32,8 @@ export async function GET(
       found: true,
       last_seen_at: sw.last_seen_at,
       firmware: sw.firmware,
+      bridgeid: sw.bridgeid,
+      label: sw.label,
       key_revoked: sw.api_key_id ? await isApiKeyRevoked(sw.api_key_id) : false,
     });
   } catch (err) {

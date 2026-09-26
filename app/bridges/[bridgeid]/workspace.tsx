@@ -21,23 +21,19 @@ import {
   supportsChannelTypes,
   supportsHoldDim,
 } from "@/lib/simple-channels";
+import type { BridgeSwitch } from "@/lib/bridge-switches";
 import type {
   RoundRecipe,
   SimpleChannelConfig,
   SwitchPage,
-  SwitchPublic,
   TopologySnapshot,
 } from "@/lib/types";
 import { compareVersions } from "@/lib/web-setup/devices";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
-export type WorkspaceSwitch = SwitchPublic & {
-  simpleChannels: SimpleChannelConfig[];
-  pages: SwitchPage[];
-  roundRecipes: RoundRecipe[];
-};
+type WorkspaceSwitch = BridgeSwitch;
 
 type Notice = { text: string; tone: "ok" | "muted" };
 
@@ -91,26 +87,47 @@ function formatWhen(iso: string | null | undefined): string {
   return new Date(iso).toLocaleString();
 }
 
+/** A plain left click on a link that leaves the switch pages; modified clicks open elsewhere. */
+function leavingLink(event: MouseEvent, switchesPath: string): HTMLAnchorElement | null {
+  if (event.defaultPrevented || event.button !== 0) return null;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+  const link = (event.target as Element | null)?.closest?.("a[href]");
+  if (!(link instanceof HTMLAnchorElement)) return null;
+  if (link.target && link.target !== "_self") return null;
+  if (link.hasAttribute("download")) return null;
+  const url = new URL(link.href, window.location.href);
+  if (url.origin !== window.location.origin) return null;
+  if (url.pathname.startsWith(switchesPath) && url.pathname.length > switchesPath.length) {
+    return null;
+  }
+  return link;
+}
+
+/**
+ * The editor for every switch on one Bridge. The URL names the selected switch
+ * (`/bridges/<id>/switches/<mac>`); tabs change it with `pushState`, so drafts on
+ * other switches survive and Back / Forward move between switches.
+ */
 export function BridgeWorkspace({
   bridgeid,
-  bridgeIp,
-  updatedAt,
   snapshot,
   switches,
-  initialMac,
   latestFirmware,
 }: {
   bridgeid: string;
-  bridgeIp: string | null;
-  updatedAt: string;
   snapshot: TopologySnapshot;
   switches: WorkspaceSwitch[];
-  initialMac?: string | null;
   latestFirmware: { round: string; simple: string };
 }) {
   const router = useRouter();
-  const first = switches.find((item) => item.mac === initialMac) ?? switches[0];
-  const [selectedMac, setSelectedMac] = useState<string | null>(first?.mac ?? null);
+  const pathname = usePathname();
+  const overviewPath = `/bridges/${encodeURIComponent(bridgeid)}/switches`;
+  const switchesPath = `${overviewPath}/`;
+  const pathMac = pathname.startsWith(switchesPath)
+    ? pathname.slice(switchesPath.length).split("/")[0]
+    : null;
+  const selectedMac =
+    switches.find((item) => item.mac === pathMac)?.mac ?? switches[0]?.mac ?? null;
   const [drafts, setDrafts] = useState<Record<string, SimpleChannelConfig[]>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, item.simpleChannels])),
   );
@@ -141,6 +158,17 @@ export function BridgeWorkspace({
   // Only one gesture card, and one Simple channel row, open on the page at a time.
   const [openGesture, setOpenGesture] = useState<string | null>(null);
   const [openChannel, setOpenChannel] = useState<string | null>(null);
+  // The switch the open cards, notice and rename form belong to. A tab or Back / Forward
+  // changes the URL; reset them during render when it does.
+  const [shownMac, setShownMac] = useState(selectedMac);
+  if (shownMac !== selectedMac) {
+    setShownMac(selectedMac);
+    setEditingMac(null);
+    setOpenGesture(null);
+    setOpenChannel(null);
+    setNotice(null);
+    setError(null);
+  }
 
   const selected = switches.find((item) => item.mac === selectedMac) ?? null;
   const round = isRoundItem(selected);
@@ -154,6 +182,39 @@ export function BridgeWorkspace({
     (item) => item.mac !== selected?.mac && itemDirty(item),
   );
   const dirtyCount = dirtyOthers.length + (dirty ? 1 : 0);
+  const dirtyNames = switches.filter((item) => itemDirty(item)).map(boardName);
+  const leaveQuestion =
+    dirtyNames.length > 0
+      ? `Unsaved changes on ${dirtyNames.join(", ")}. Leave without saving?`
+      : null;
+  const selectedName = selected ? boardName(selected) : null;
+
+  useEffect(() => {
+    if (selectedName) document.title = `${selectedName} · Hue switch console`;
+  }, [selectedName]);
+
+  // Ask before a reload, a tab close, or a link out of the switch pages loses drafts.
+  // Tabs between switches keep them, so they do not ask.
+  useEffect(() => {
+    if (!leaveQuestion) return;
+    const question = leaveQuestion;
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    function onClick(event: MouseEvent) {
+      if (!leavingLink(event, switchesPath)) return;
+      if (window.confirm(question)) return;
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("click", onClick, true);
+    };
+  }, [leaveQuestion, switchesPath]);
 
   function itemDirty(item: WorkspaceSwitch): boolean {
     if (isRoundItem(item)) {
@@ -316,6 +377,8 @@ export function BridgeWorkspace({
           : `Saved · rev ${lastRev}. ${SAVED_TAIL}`,
         "ok",
       );
+      // Refresh the server data so Back and the overview show what was saved. The
+      // switches layout keeps this component mounted, so drafts on other switches stay.
       router.refresh();
     } finally {
       setPending(false);
@@ -324,12 +387,7 @@ export function BridgeWorkspace({
 
   function selectBoard(item: WorkspaceSwitch) {
     if (item.mac === selectedMac) return;
-    setSelectedMac(item.mac);
-    setEditingMac(null);
-    setOpenGesture(null);
-    setOpenChannel(null);
-    showNotice(null);
-    setError(null);
+    window.history.pushState(null, "", `${switchesPath}${item.mac}`);
   }
 
   // Newer uploaded firmware for this board's product, or null when it is current.
@@ -342,10 +400,8 @@ export function BridgeWorkspace({
     return (names[item.mac] || "").trim() || formatMac(item.mac);
   }
 
-  const lightCount = snapshot.lights.length;
-  const roomCount = snapshot.rooms.length;
-  const sceneCount = snapshot.scenes.length;
-  const topologyEmpty = lightCount === 0 && roomCount === 0 && sceneCount === 0;
+  const topologyEmpty =
+    snapshot.lights.length === 0 && snapshot.rooms.length === 0 && snapshot.scenes.length === 0;
 
   const statusText =
     notice?.text ??
@@ -364,17 +420,9 @@ export function BridgeWorkspace({
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Bridge</h1>
-        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-muted">
-          <span className="font-mono text-foreground">{bridgeid}</span>
-          {bridgeIp ? <span className="font-mono">{bridgeIp}</span> : null}
-          <span>
-            {lightCount} lights · {roomCount} rooms · {sceneCount} scenes
-          </span>
-          <span>Snapshot {formatWhen(updatedAt)}</span>
-        </p>
-      </section>
+      <Link href={overviewPath} className="w-fit text-sm font-medium text-filament hover:underline">
+        ← Switches
+      </Link>
 
       {error ? (
         <p
@@ -395,18 +443,7 @@ export function BridgeWorkspace({
         </div>
       ) : null}
 
-      {switches.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-line bg-cream p-5 text-sm text-muted">
-          <p className="font-medium text-foreground">No switches on this Bridge</p>
-          <p className="mt-2">
-            Set up a board on{" "}
-            <Link href="/devices" className="text-filament underline underline-offset-2">
-              Devices
-            </Link>
-            . It shows up here once it pairs with this Bridge.
-          </p>
-        </div>
-      ) : (
+      {switches.length > 1 ? (
         <nav aria-label="Switches" className="flex flex-wrap gap-2">
           {switches.map((item) => {
             const active = item.mac === selectedMac;
@@ -441,7 +478,7 @@ export function BridgeWorkspace({
             );
           })}
         </nav>
-      )}
+      ) : null}
 
       {selected ? (
         <section
@@ -450,7 +487,7 @@ export function BridgeWorkspace({
         >
           <header className="flex items-start gap-2 px-5 py-3.5">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <h2 className="flex flex-wrap items-center gap-2 text-base font-medium">
+              <h1 className="flex flex-wrap items-center gap-2 text-base font-medium">
                 <span className="truncate">{boardName(selected)}</span>
                 <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
                   {round ? "Round" : "Simple"}
@@ -466,14 +503,14 @@ export function BridgeWorkspace({
                 ) : null}
                 {updateFor(selected) ? (
                   <Link
-                    href="/devices"
-                    title="Plug the board in over USB and install from Devices"
+                    href={`/setup?mac=${selected.mac}`}
+                    title="Plug the board in over USB and install from Setup"
                     className="rounded-full border border-filament/50 px-2 py-0.5 text-[11px] font-medium text-filament hover:bg-filament-soft"
                   >
                     Update to {updateFor(selected)}
                   </Link>
                 ) : null}
-              </h2>
+              </h1>
               <p className="text-xs text-muted">
                 <span className="font-mono">{formatMac(selected.mac)}</span>
                 {selected.firmware ? ` · firmware ${selected.firmware}` : ""}

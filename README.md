@@ -33,8 +33,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) and sign in.
 
-Boards are flashed and provisioned from **Devices** (`/devices`; `/install`
-redirects there) in Chrome or Edge over USB. That screen writes Wi-Fi (Improv)
+Boards are flashed and provisioned from **Setup** (`/setup`; `/devices` and
+`/install` redirect there) in Chrome or Edge over USB. That screen writes Wi-Fi (Improv)
 and a device token (`HUESET`); it always points the XIAO at
 `https://hue.tineira.com`, not localhost. Nothing is compiled into the firmware:
 `config.h` holds only `SERIAL_DEBUG`, in dev too. Firmware images are uploaded by
@@ -67,7 +67,7 @@ Firmware TLS against `https://hue.tineira.com` must **verify** the certificate.
 ## Firmware release pipeline
 
 A push to `main` in a firmware repo **is a release**: it is uploaded to the
-console, and Devices offers that build to every board plugged in over USB at
+console, and Setup offers that build to every board plugged in over USB at
 once. No commit lands in this repo and nothing redeploys.
 
 ```text
@@ -80,7 +80,7 @@ push to main (hue-round-switch / hue-simple-switch)
 ```
 
 `FIRMWARE_VERSION` in the firmware source is the version the wizard shows.
-Bumping it is what makes Devices offer **Update**. A rebuild without a bump is
+Bumping it is what makes Setup offer **Update**. A rebuild without a bump is
 answered `409 version_exists`: the bins stay as they were (their URLs are cached
 forever) and only the notes are updated. Spec:
 [`docs/specs/finished/firmware-uploads.md`](docs/specs/finished/firmware-uploads.md).

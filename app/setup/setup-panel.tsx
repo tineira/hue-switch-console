@@ -59,6 +59,8 @@ const CLEAR_CONFIRM =
 type ConsoleRecord = {
   lastSeenAt: string | null;
   firmware: string | null;
+  bridgeid: string | null;
+  label: string | null;
   // The key this board last used was revoked on API keys.
   keyRevoked: boolean;
 };
@@ -136,12 +138,16 @@ async function lookupConsole(
       found?: unknown;
       last_seen_at?: unknown;
       firmware?: unknown;
+      bridgeid?: unknown;
+      label?: unknown;
       key_revoked?: unknown;
     };
     if (body.found !== true) return "missing";
     return {
       lastSeenAt: typeof body.last_seen_at === "string" ? body.last_seen_at : null,
       firmware: typeof body.firmware === "string" ? body.firmware : null,
+      bridgeid: typeof body.bridgeid === "string" ? body.bridgeid : null,
+      label: typeof body.label === "string" ? body.label : null,
       keyRevoked: body.key_revoked === true,
     };
   } catch {
@@ -292,6 +298,7 @@ function SetupChecklist({
   versionCmp,
   lastSeenAt,
   consoleLookup,
+  switchHref,
   recheck,
 }: {
   huesta: Huesta;
@@ -301,6 +308,7 @@ function SetupChecklist({
   versionCmp: -1 | 0 | 1 | null;
   lastSeenAt: string | null;
   consoleLookup: ConsoleLookup;
+  switchHref: string | null;
   recheck: Recheck;
 }) {
   const { seenMin, wifiSaved, wifiState, linked, consoleQuiet, consoleState, settling } =
@@ -434,9 +442,12 @@ function SetupChecklist({
           </>
         ) : (
           <>
-            Edit its {productId === "round" ? "pages" : "buttons"} on{" "}
-            <Link href="/" className="text-filament underline underline-offset-2">
-              Bridge
+            Edit its {productId === "round" ? "pages" : "buttons"}:{" "}
+            <Link
+              href={switchHref ?? "/switches"}
+              className="text-filament underline underline-offset-2"
+            >
+              Open in Switches
             </Link>
             .{" "}
           </>
@@ -475,7 +486,12 @@ function SetupChecklist({
   );
 }
 
-export function DevicesPanel() {
+export function SetupPanel({
+  expected,
+}: {
+  // The switch a "Update to x" link came from (`/setup?mac=`), when this account has it.
+  expected: { mac: string; name: string } | null;
+}) {
   const blocked = useSyncExternalStore(
     subscribeNoop,
     webSerialBlockedReason,
@@ -1141,6 +1157,12 @@ export function DevicesPanel() {
 
       <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
         <h2 className="text-sm font-medium">Detect</h2>
+        {expected ? (
+          <p className="text-sm">
+            Updating <span className="font-medium">{expected.name}</span>. Plug
+            it in over USB and press Detect.
+          </p>
+        ) : null}
         <p className="text-sm text-muted">
           Plug the board in with a USB-C cable that carries data, then choose
           its port. It is usually listed as a USB serial or JTAG device.
@@ -1171,6 +1193,13 @@ export function DevicesPanel() {
         {busy && status === PICK_PORT ? (
           <p className="text-sm text-filament" role="status">
             {PICK_PORT}
+          </p>
+        ) : null}
+        {expected && detected?.huesta?.mac && detected.huesta.mac !== expected.mac ? (
+          <p className="text-sm text-warn" role="status">
+            This is{" "}
+            {detected.consoleRecord?.label?.trim() || formatMac(detected.huesta.mac)},
+            not {expected.name}.
           </p>
         ) : null}
       </section>
@@ -1211,6 +1240,11 @@ export function DevicesPanel() {
               versionCmp={versionCmp}
               lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
               consoleLookup={consoleLookup}
+              switchHref={
+                detected.consoleRecord?.bridgeid && detected.huesta.mac
+                  ? `/bridges/${encodeURIComponent(detected.consoleRecord.bridgeid)}/switches/${detected.huesta.mac}`
+                  : null
+              }
               recheck={{
                 countdown: autoRecheck ? (countdown ?? RECHECK_SECONDS) : null,
                 checking: rechecking,

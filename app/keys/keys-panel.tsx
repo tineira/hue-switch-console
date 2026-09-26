@@ -34,7 +34,7 @@ function revokeWarning(key: ApiKeyPublic): string {
   if (!board) {
     return "No board uses this key, so nothing stops working.";
   }
-  return `${board} will stop getting config changes until you give it a new key on Devices. What it already saved keeps working on the LAN.`;
+  return `${board} will stop getting config changes until you give it a new key on Setup. What it already saved keeps working on the LAN.`;
 }
 
 function LastUsed({ value, mounted }: { value: string | null; mounted: boolean }) {
@@ -108,7 +108,7 @@ function KeyRow({
             <div className="flex flex-col">
               {key.last_switch_bridgeid ? (
                 <Link
-                  href={`/bridges/${encodeURIComponent(key.last_switch_bridgeid)}?mac=${key.last_switch_mac}`}
+                  href={`/bridges/${encodeURIComponent(key.last_switch_bridgeid)}/switches/${key.last_switch_mac}`}
                   className="font-medium hover:text-filament hover:underline"
                 >
                   {board}
@@ -325,8 +325,8 @@ export function KeysPanel({ initialKeys }: { initialKeys: ApiKeyPublic[] }) {
           <p className="font-medium text-foreground">No keys yet</p>
           <p className="mt-2">
             Set up a switch on{" "}
-            <Link href="/devices" className="text-filament hover:underline">
-              Devices
+            <Link href="/setup" className="text-filament hover:underline">
+              Setup
             </Link>{" "}
             and it gets a key of its own.
           </p>
@@ -345,7 +345,7 @@ export function KeysPanel({ initialKeys }: { initialKeys: ApiKeyPublic[] }) {
           <div>
             <h2 className="text-sm font-semibold">Not in use</h2>
             <p className="text-sm text-muted">
-              No board uses these keys. A board set up again on Devices gets a
+              No board uses these keys. A board set up again on Setup gets a
               new key and leaves the old one here. You can revoke them safely.
             </p>
           </div>

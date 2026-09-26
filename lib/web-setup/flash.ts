@@ -208,7 +208,7 @@ function loaderFor(
       return open(baud, serialOptions);
     };
   }
-  // esptool's own lines (sync attempts, the boot mode it saw) go to the USB log on Devices.
+  // esptool's own lines (sync attempts, the boot mode it saw) go to the USB log on Setup.
   const esploader = new ESPLoader({
     transport,
     baudrate: 115200,

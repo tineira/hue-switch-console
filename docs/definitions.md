@@ -12,7 +12,7 @@ Three repos:
 
 The console **never** calls the Bridge. The Bridge **never** sees Vercel. A finger on the switch **never** waits for the web.
 
-HTTP wire format: `docs/device-api.md`. Round pages: `docs/round-pages.md` (that copy is authoritative for state). Product boards are flashed and provisioned from the browser (`/install`: firmware, Wi‑Fi and device token over USB); see `docs/device-api.md`.
+HTTP wire format: `docs/device-api.md`. Round pages: `docs/round-pages.md` (that copy is authoritative for state). Product boards are flashed and provisioned from the browser (**Setup**, `/setup`: firmware, Wi‑Fi and device token over USB); see `docs/device-api.md`.
 
 ## Parts
 
@@ -111,7 +111,7 @@ Not needed in v1: triple click, long-off, double_off. Noise and long wires eat t
 
 ## Display and recipes (Simple: per channel and event)
 
-One Bridge at a time. Switches of *this* `bridgeid` are tabs; the selected one opens below. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
+One Bridge at a time. **Switches** lists the switches of *this* `bridgeid`; each has its own page (`/bridges/<bridgeid>/switches/<mac>`), and tabs on it move between the Bridge's switches without losing unsaved changes (pages: `docs/specs/page-structure.md`). Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
 
 - **Simple:** channels. Each one gets a room or zone, a type (toggle switch or push button) and a target. A toggle switch adds a double-click scene list; a push button adds a double-click and a hold action. A channel without a room does nothing.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.

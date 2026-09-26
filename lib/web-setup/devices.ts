@@ -1,4 +1,4 @@
-// Pure Devices card rules: USB id, HUESTA percent-decoding, and which buttons are on.
+// Pure Setup card rules: USB id, HUESTA percent-decoding, and which buttons are on.
 // No browser, serial, or network.
 
 export type UsbKind = "c6" | "s3" | "s3-plus" | "c5" | "bootloader" | "other";
