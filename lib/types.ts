@@ -47,12 +47,12 @@ export type Recipe = {
 
 export type SimpleEvent = "on" | "off" | "double_click" | "short" | "hold";
 
-/** What a push-button double-click or hold does. `dim` is hold only (docs/specs/simple-hold-dim.md). */
+/** What a push-button double-click or hold does. `dim` is hold only (docs/specs/finished/simple-hold-dim.md). */
 export type SimpleGesture =
   | { action: "on" | "off" | "toggle" | "dim"; target: RecipeTarget }
   | { action: "recall_scene"; targets: SceneListItem[] };
 
-/** What the user configures per Simple channel (docs/specs/simple-channel-types.md). */
+/** What the user configures per Simple channel (docs/specs/finished/simple-channel-types.md). */
 export type SimpleChannelConfig = {
   id: string;
   kind: ChannelKind;

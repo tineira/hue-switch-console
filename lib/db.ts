@@ -503,7 +503,7 @@ export async function replaceSimpleChannels(
 /**
  * Simple recipes from before channel types (on/off/double_click/short per slot)
  * cannot be expressed as channel settings; the user approved deleting them
- * (docs/specs/simple-channel-types.md §3). Idempotent: only switches that still
+ * (docs/specs/finished/simple-channel-types.md §3). Idempotent: only switches that still
  * had rows get a rev bump, so their next poll replaces the old set with nothing.
  */
 export async function dropLegacySimpleRecipes() {

@@ -1,8 +1,8 @@
 # Simple hold to dim
 
-Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/simple-channel-types.md`.
+Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/simple-channel-types.md`.
 
-**Status:** in progress (console done on branch `simple-hold-dim`)
+**Status:** done
 
 ## 1. What and why
 
@@ -66,7 +66,7 @@ Rules:
 - [x] Hold selector: **Dim** option, disabled below firmware 0.4.0. Confirmation reads *"hold → dim all of Living"*.
 - [x] `docs/device-api.md` and `docs/definitions.md` updated in the same commit.
 - [x] `docs/changelog.md` entry.
-- [ ] Deployed; checked on production.
+- [x] Deployed; checked on production.
 
 ### Round (`hue-round-switch`)
 
@@ -80,7 +80,7 @@ No change.
 - [x] `FIRMWARE_VERSION` → `0.4.0`.
 - [x] `CHANGELOG.md` entry (user-facing wording).
 - [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.4.0.
-- [ ] Tested on a board by the user: hold up, release, hold down; hold from off; release at a mid level stops there; whole room and one light.
+- [x] Tested on a board by the user: hold up, release, hold down; hold from off; release at a mid level stops there; whole room and one light.
 
 ### Cleanup
 

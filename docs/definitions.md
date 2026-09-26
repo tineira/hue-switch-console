@@ -25,7 +25,7 @@ HTTP wire format: `docs/device-api.md`. Round pages: `docs/round-pages.md` (that
 
 The **display name** is edited by the user in the console (`switches.label`); it is not sent to the device. If empty, the UI shows the MAC.
 
-**Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/specs/simple-channel-types.md`); both use the same wiring:
+**Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/specs/finished/simple-channel-types.md`); both use the same wiring:
 
 - `maintained` — UI *Toggle switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states).
 - `momentary` — UI *Push button*: press and release.
@@ -218,7 +218,7 @@ Channels come from `channels[]` in the config; a pin not listed is ignored. For 
 | `off` | same with `false` |
 | `recall_scene` | `PUT …/scene/{rid}` `{ "recall": { "action": "active" } }`, next `rid` of `targets[]` (Round §8.1; an `off` on the channel restarts the cycle) |
 | `toggle` | GET `on` + inverse PUT (mostly `momentary` / `short`) |
-| `dim` (`hold` only) | GET `on` + `dimming`; if off, turn on at 1 %. Then `{ "dimming_delta": { "action": "up" \| "down", "brightness_delta": 100 }, "dynamics": { "duration": 5000 } }`; on release `{ "dimming_delta": { "action": "stop" } }`. Direction alternates per channel (≥ 95 % → down, ≤ 5 % → up). Never turns the light off. Spec: `docs/specs/simple-hold-dim.md` |
+| `dim` (`hold` only) | GET `on` + `dimming`; if off, turn on at 1 %. Then `{ "dimming_delta": { "action": "up" \| "down", "brightness_delta": 100 }, "dynamics": { "duration": 5000 } }`; on release `{ "dimming_delta": { "action": "stop" } }`. Direction alternates per channel (≥ 95 % → down, ≤ 5 % → up). Never turns the light off. Spec: `docs/specs/finished/simple-hold-dim.md` |
 
 5. The contact path does **not** use the console URL. If the PUT fails, log and move on; do not block other channels.
 

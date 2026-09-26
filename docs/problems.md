@@ -189,7 +189,7 @@ Spec: ASCII, `Niños` → `Ninos`. The folding only runs when creating from the 
 | P17 | `ensure-schema.ts` creates `switches` **without** the product/axis/timeout CHECKs that `schema.sql` has (C11) | Two different Postgres depending on `migrate` vs cold start |
 | P18 | Dead columns `pages.dim_target_*` (C10). Spec: there is no `dimTarget` | Confuses migrations |
 | P19 | Console README and home: "recipes per channel". Simple README: "one lamp", recipes "not yet", `CONSOLE_*` "when keys exist". `hue-lights.md` asks for `HUE_LIGHT_ID` (C9, S7, R4) | Onboarding to the old slice |
-| P20 | web-setup: requirements in `docs/specs/web-setup.md`. No UI, no Improv, no `.bin`. Real onboarding = `config.h` (C14, S6) | v1 closed without this, or a blocking slice? |
+| P20 | web-setup: requirements in `docs/specs/finished/web-setup.md`. No UI, no Improv, no `.bin`. Real onboarding = `config.h` (C14, S6) | v1 closed without this, or a blocking slice? |
 | P21 | Simple JSON parser does not tolerate a space after `:` (S9). Compact `Response.json()` usually works | A pretty-print in the console leaves stale NVS |
 | P22 | Dead Round code: synchronous `recipeFire` / `uiRefreshState` (R10) | Re-wiring freezes Ready again |
 
@@ -222,7 +222,7 @@ Do not reopen in a slice. If someone disputes them, go back to the captain.
 | 8 | Snapshot / register **leave the loop** of GPIO and touch, on **both** products. | The 400 ms lever and the finger do not wait for a Hue GET or Vercel. |
 | 9 | Scene cycle = **local cache** (last PUT / NVS), not GET `status.active`. | **Spec amendment**, not a bugfix. Change §8.1. See note. |
 | 10 | The poll's `dim` is **sacred**. Delete `pagesFillDimFromRecipes`. | `dim: null` = no ring. A single §8.2 algorithm, in the console. |
-| 11 | web-setup is **not** in this v1. Onboarding = Arduino + `config.h`. | `docs/specs/web-setup.md` stays requirements. Not this slice. (Later superseded: web setup shipped.) |
+| 11 | web-setup is **not** in this v1. Onboarding = Arduino + `config.h`. | `docs/specs/finished/web-setup.md` stays requirements. Not this slice. (Later superseded: web setup shipped.) |
 | 12 | `supabase/` is **deleted or archived with DO NOT APPLY**. | Do not rewrite it for Neon. Runtime = `db/schema.sql` + `ensure-schema.ts`. |
 
 ### Note — question 9 / finding P9 (R7)

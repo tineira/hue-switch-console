@@ -97,7 +97,7 @@ create unique index if not exists recipes_round_uniq
 
 create index if not exists recipes_switch_id_idx on recipes (switch_id);
 
--- Simple channel settings (docs/specs/simple-channel-types.md). The config
+-- Simple channel settings (docs/specs/finished/simple-channel-types.md). The config
 -- poll derives the Simple recipes from these rows; `recipes` holds Round only.
 create table if not exists simple_channels (
   switch_id uuid not null references switches (id) on delete cascade,

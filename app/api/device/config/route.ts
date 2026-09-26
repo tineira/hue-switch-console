@@ -93,7 +93,7 @@ export async function GET(req: Request) {
     }
 
     // Firmware < 0.3.0 cannot run channel settings: it gets nothing to do
-    // until it is reflashed (docs/specs/simple-channel-types.md §3).
+    // until it is reflashed (docs/specs/finished/simple-channel-types.md §3).
     if (!supportsChannelTypes(sw.firmware)) {
       return jsonOk({ rev: sw.rev, recipes: [] });
     }

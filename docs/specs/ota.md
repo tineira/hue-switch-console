@@ -6,7 +6,7 @@ Not an implementation guide. The console **never** calls the Bridge. The Bridge 
 
 **Status:** requirements, not implemented.
 
-Related: `docs/specs/web-setup.md` (USB + Chrome = **blank** device). This spec is the device **already on the wall**: see which firmware runs, offer a new binary, confirm the rollout **arrived**.
+Related: `docs/specs/finished/web-setup.md` (USB + Chrome = **blank** device). This spec is the device **already on the wall**: see which firmware runs, offer a new binary, confirm the rollout **arrived**.
 
 ---
 

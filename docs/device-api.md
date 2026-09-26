@@ -9,7 +9,7 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/web-setup.md` is closed and deprecated. Devices (detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA + firmware in the switch list: `docs/specs/ota.md` (not implemented).
+Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Devices (detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA + firmware in the switch list: `docs/specs/ota.md` (not implemented).
 
 Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
@@ -242,7 +242,7 @@ Simple switch (firmware ≥ 0.3.0):
 Simple firmware older than 0.3.0 gets `{ "rev": 12, "recipes": [] }`: it
 cannot run channel settings, so it does nothing until it is reflashed. Its
 old per-slot recipes were deleted when the console moved to channel types
-(`docs/specs/simple-channel-types.md`).
+(`docs/specs/finished/simple-channel-types.md`).
 
 If the board is a Round Display (`product: "round"`), the payload is instead:
 
@@ -302,7 +302,7 @@ A toggle switch's and a push button's `double_click` are always a scene list.
 A push button's `hold` is `off` on the group's `grouped_light` (only when the
 click target is one light) or `dim`: ramp the target with Clip v2
 `dimming_delta` while held, `stop` on release, alternating up and down
-(`docs/specs/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
+(`docs/specs/finished/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
 keeps the rest, so its hold does nothing (BOOT still re-pairs).
 
 Poll cadence (firmware): no recipes in NVS → about 1 minute; after recipes

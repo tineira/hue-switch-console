@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress (console on branch `simple-channel-types`, not deployed)
+**Status:** done
 
 ## 1. What and why
 
@@ -158,7 +158,7 @@ Click always toggles the target, so double-click and hold only offer what a clic
 | Gesture | Choices | Why the others are gone |
 | --- | --- | --- |
 | Double-click | nothing, **Cycle scenes** | Toggle / Turn on repeat the click. A double-click also delays every single click (~400 ms), so it should earn that. Same meaning as a toggle switch's double-click. |
-| Hold | nothing (BOOT: re-pair), **Dim** (`docs/specs/simple-hold-dim.md`), **Turn off** the whole room or zone | Cycling scenes by holding is awkward. Turn off only helps when the click controls less than the group, so it is offered only when the channel's target is one light, and always targets the group's `grouped_light`. Changing the click target to the whole group clears it. |
+| Hold | nothing (BOOT: re-pair), **Dim** (`docs/specs/finished/simple-hold-dim.md`), **Turn off** the whole room or zone | Cycling scenes by holding is awkward. Turn off only helps when the click controls less than the group, so it is offered only when the channel's target is one light, and always targets the group's `grouped_light`. Changing the click target to the whole group clears it. |
 
 Console only: the console offers and accepts fewer combinations; the firmware contract is unchanged. No saved channel used a removed choice when this shipped.
 
@@ -186,7 +186,7 @@ The user approved an exception to "never ship a console that breaks boards alrea
 - [x] `docs/device-api.md` and `docs/definitions.md` (channel, events, assign flow, firmware rules) updated in the same commit.
 - [x] `docs/changelog.md` entry.
 - [x] §2.6: double-click and hold on every push button (`double` in the PUT body, `simple_channels.double_click`).
-- [ ] Deployed; checked on production.
+- [x] Deployed; checked on production.
 
 ### Round (`hue-round-switch`)
 
@@ -202,7 +202,7 @@ No change.
 - [x] `FIRMWARE_VERSION` → `0.3.0`.
 - [x] `CHANGELOG.md` entry (user-facing wording).
 - [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.3.0.
-- [ ] Tested on a board by the user: toggle switch (on, off, double-click cycle), push button (instant click without a double; double-click and hold on D0–D2), BOOT hold both ways.
+- [x] Tested on a board by the user: toggle switch (on, off, double-click cycle), push button (instant click without a double; double-click and hold on D0–D2), BOOT hold both ways.
 
 ### Cleanup
 
