@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,html[data-theme="paper"]{color-scheme:light;--background:#f3eee4;--foreground:#1c1814;--cream:#fffaf2;--muted:#6e675c;--line:#e0d4c4;--filament:#c45c26;--filament-ink:#fffaf2;--filament-soft:#f6e4d6;--ok:#2f5d38;--ok-soft:#e4f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="ember"]{color-scheme:dark;--background:#14110f;--foreground:#f4eee6;--cream:#1e1a17;--muted:#a89a8c;--line:#3a322c;--filament:#e07a3d;--filament-ink:#1c140e;--filament-soft:#3a2618;--ok:#9dce9a;--ok-soft:#1d2b1e;--warn:#e0c078;--warn-soft:#2f2718;--danger:#e08a7a;--danger-soft:#2f1c18}
+html[data-theme="graphite"]{color-scheme:dark;--background:#121314;--foreground:#ececec;--cream:#1c1d1f;--muted:#9a9ca3;--line:#2e3035;--filament:#d4b483;--filament-ink:#1a1610;--filament-soft:#2f2a22;--ok:#8fbf9a;--ok-soft:#1a2620;--warn:#d4b483;--warn-soft:#2a261c;--danger:#d9897c;--danger-soft:#2f1c18}
+html[data-theme="night"]{color-scheme:dark;--background:#070708;--foreground:#f2f2f0;--cream:#111114;--muted:#8e8e96;--line:#24242b;--filament:#ffb020;--filament-ink:#16110a;--filament-soft:#2a220e;--ok:#6ee7b7;--ok-soft:#10231c;--warn:#ffb020;--warn-soft:#2a220e;--danger:#fb7185;--danger-soft:#2f1c18}
+html[data-theme="ink"]{color-scheme:dark;--background:#0b1016;--foreground:#e8eef6;--cream:#121a24;--muted:#8fa0b5;--line:#243040;--filament:#3dd6c6;--filament-ink:#06201c;--filament-soft:#143330;--ok:#7dcea0;--ok-soft:#15261c;--warn:#e0c078;--warn-soft:#2f2718;--danger:#f07a72;--danger-soft:#2f1c18}
+html[data-theme="plum"]{color-scheme:dark;--background:#140f14;--foreground:#f3e8ee;--cream:#1d161d;--muted:#b39aa8;--line:#3a2c36;--filament:#e8a0b4;--filament-ink:#2a1218;--filament-soft:#3a222a;--ok:#a8d5b5;--ok-soft:#1c2a20;--warn:#e8c090;--warn-soft:#2f2718;--danger:#e07a7a;--danger-soft:#2f1c18}
+html[data-theme="matrix"]{color-scheme:dark;--background:#020402;--foreground:#d0ffd4;--cream:#071208;--muted:#5f9e68;--line:#1a3d1e;--filament:#00ff41;--filament-ink:#021006;--filament-soft:#0a2a12;--ok:#00ff41;--ok-soft:#062410;--warn:#b8ff4d;--warn-soft:#1a2a08;--danger:#ff4d4d;--danger-soft:#2a1010}
+html[data-theme="nord"]{color-scheme:dark;--background:#2e3440;--foreground:#eceff4;--cream:#3b4252;--muted:#a0a8b8;--line:#4c566a;--filament:#88c0d0;--filament-ink:#2e3440;--filament-soft:#434c5e;--ok:#a3be8c;--ok-soft:#3b4252;--warn:#ebcb8b;--warn-soft:#3b4252;--danger:#bf616a;--danger-soft:#3b4252}
+html[data-theme="dracula"]{color-scheme:dark;--background:#1e1f29;--foreground:#f8f8f2;--cream:#282a36;--muted:#b0b3c8;--line:#44475a;--filament:#bd93f9;--filament-ink:#1e1f29;--filament-soft:#3b3354;--ok:#50fa7b;--ok-soft:#1e3328;--warn:#f1fa8c;--warn-soft:#2a2e1c;--danger:#ff5555;--danger-soft:#3a1c22}
+html[data-theme="ocean"]{color-scheme:dark;--background:#071018;--foreground:#dceef8;--cream:#0d1b28;--muted:#7fa3bb;--line:#1c3348;--filament:#38bdf8;--filament-ink:#062033;--filament-soft:#123044;--ok:#5eead4;--ok-soft:#0f2a28;--warn:#fbbf24;--warn-soft:#2a220e;--danger:#fb7185;--danger-soft:#2f1c18}
+html[data-theme="snow"]{color-scheme:light;--background:#f4f6f8;--foreground:#1a2330;--cream:#ffffff;--muted:#5c6b7a;--line:#d5dde4;--filament:#2563eb;--filament-ink:#ffffff;--filament-soft:#dbe7ff;--ok:#157a3a;--ok-soft:#ddf5e4;--warn:#b45309;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="mist"]{color-scheme:light;--background:#eef0f2;--foreground:#1f2328;--cream:#ffffff;--muted:#5e656e;--line:#d4d8de;--filament:#4b5563;--filament-ink:#ffffff;--filament-soft:#e5e7eb;--ok:#2f6b48;--ok-soft:#dcefe4;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="meadow"]{color-scheme:light;--background:#eef3e8;--foreground:#1c2418;--cream:#f7fbf3;--muted:#5d6b55;--line:#d4e0cc;--filament:#3f7a4a;--filament-ink:#f7fbf3;--filament-soft:#dcead8;--ok:#2f6b48;--ok-soft:#d8f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="porcelain"]{color-scheme:light;--background:#f6f1f3;--foreground:#2a1c22;--cream:#fffafb;--muted:#7a6570;--line:#eadde2;--filament:#c45c78;--filament-ink:#fffafb;--filament-soft:#f6e0e8;--ok:#2f6b48;--ok-soft:#e0f0e4;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="sky"]{color-scheme:light;--background:#eaf3f8;--foreground:#152030;--cream:#f7fcff;--muted:#4e6a80;--line:#c9dde8;--filament:#0284c7;--filament-ink:#f7fcff;--filament-soft:#d4eef8;--ok:#157a3a;--ok-soft:#ddf5e4;--warn:#b45309;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="linen"]{color-scheme:light;--background:#f3efe4;--foreground:#242018;--cream:#fbf8f0;--muted:#6a6558;--line:#ddd6c4;--filament:#6b7a3a;--filament-ink:#fbf8f0;--filament-soft:#e6ead4;--ok:#3d6b3a;--ok-soft:#e0f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="phosphor"]{color-scheme:light;--background:#e8f5e9;--foreground:#0b2e14;--cream:#f4fbf4;--muted:#3d6b45;--line:#c5e0c8;--filament:#15803d;--filament-ink:#f4fbf4;--filament-soft:#d1f0d6;--ok:#166534;--ok-soft:#d8f5dc;--warn:#a16207;--warn-soft:#f8ecd0;--danger:#b91c1c;--danger-soft:#f8e2dc}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:"Geist",ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html[data-theme="matrix"] body,html[data-theme="phosphor"] body{font-family:"Geist Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+select,option{background-color:var(--cream);color:var(--foreground)}
+input::placeholder{color:var(--muted)}
+::selection{background:var(--filament-soft);color:var(--foreground)}
+a{color:var(--filament);text-underline-offset:2px}
+a:hover{color:var(--foreground)}
+</style>
+</helmet>
+<div style="min-height:100vh; background:var(--background); color:var(--foreground); display:flex; justify-content:center; padding:40px 16px;">
+  <div data-screen-label="Lights mobile" style="position:relative; width:390px; height:844px; flex-shrink:0; border-radius:48px; border:1px solid var(--line); background:var(--background); box-shadow:0 30px 80px rgb(0 0 0 / 28%), 0 0 0 8px var(--cream); overflow:hidden;">
+    <div style="position:absolute; left:0; right:0; top:0; height:44px; z-index:5; display:flex; align-items:center; justify-content:space-between; padding:0 28px; background:var(--background); font-size:14px; font-weight:600;">
+      <span>9:41</span>
+      <span style="display:flex; align-items:center; gap:6px;"><i style="display:block; width:17px; height:10px; border-radius:2px; border:1px solid var(--foreground);"></i></span>
+    </div>
+    <div style="position:absolute; left:0; right:0; top:44px; bottom:0; overflow-y:auto; overflow-x:hidden;">
+      <div style="display:flex; flex-direction:column; gap:4px; padding:8px 16px 12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; min-height:44px;">
+          <span style="font-size:13px; font-weight:600; color:var(--muted);">Hue switch console</span>
+          <button type="button" aria-label="Menu" style="width:44px; height:44px; margin-right:-10px; display:flex; align-items:center; justify-content:center; border:0; background:transparent; cursor:pointer;">
+            <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14"></path></svg>
+          </button>
+        </div>
+        <h1 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.02em;">Lights</h1>
+        <p style="margin:0; display:flex; flex-wrap:wrap; column-gap:10px; row-gap:2px; font-size:13px; color:var(--muted);">
+          <span style="font-family:'Geist Mono',ui-monospace,monospace; color:var(--foreground);">{{ bridgeId }}</span>
+          <span>{{ countsText }}</span>
+        </p>
+      </div>
+
+      <sc-if value="{{ hasStale }}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="margin:0 16px 12px; border-radius:12px; border:1px solid var(--warn); background:var(--warn-soft); padding:12px 14px; display:flex; flex-direction:column; gap:4px;">
+          <p style="margin:0; font-size:14px; font-weight:500; color:var(--warn);">{{ staleTitle }}</p>
+          <sc-for list="{{ staleItems }}" as="s"><p style="margin:0; font-size:13px; line-height:1.45;"><span style="font-weight:500;">{{ s.who }}</span> {{ s.text }}</p></sc-for>
+          <a href="Bridge v2.dc.html" style="font-size:13px; padding:6px 0;">Fix in Switches</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:24px 16px; border-radius:14px; border:1px dashed var(--line); background:var(--cream); padding:40px 20px; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;">
+          <p style="margin:0; font-size:16px; font-weight:500;">No lights yet</p>
+          <p style="margin:0; font-size:14px; color:var(--muted); text-wrap:pretty;">A switch sends them when it checks in. Rooms, zones and scenes appear here too.</p>
+          <a href="#" style="margin-top:8px; font-size:14px; padding:10px;">Set up a switch</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasLights }}" hint-placeholder-val="{{ true }}">
+        <div style="position:sticky; top:0; z-index:3; background:var(--background); display:flex; flex-direction:column; gap:10px; padding:4px 16px 12px; border-bottom:1px solid var(--line);">
+          <label style="display:flex; align-items:center; gap:8px; min-height:44px; border-radius:10px; border:1px solid var(--line); background:var(--cream); padding:0 12px;">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="color:var(--muted); flex-shrink:0;"><circle cx="9" cy="9" r="5.5"></circle><path d="m13.2 13.2 3.6 3.6" stroke-linecap="round"></path></svg>
+            <input type="search" value="{{ q }}" onChange="{{ onQ }}" placeholder="Find a light, room or zone" aria-label="Search" style="flex:1; min-width:0; border:0; outline:none; background:transparent; font-size:16px; padding:0;">
+          </label>
+          <sc-if value="{{ hasSwitches }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; gap:8px; overflow-x:auto; margin:0 -16px; padding:0 16px; scrollbar-width:none;">
+              <sc-for list="{{ swChips }}" as="s" hint-placeholder-count="4">
+                <button type="button" aria-pressed="{{ s.pinned }}" onClick="{{ s.onClick }}" style="flex-shrink:0; display:flex; align-items:center; gap:7px; min-height:40px; border-radius:999px; border:1px solid {{ s.bc }}; background:{{ s.bg }}; box-shadow:{{ s.shadow }}; padding:0 14px 0 12px; font-size:14px; white-space:nowrap; cursor:pointer;">
+                  <i style="{{ s.dot }}"></i>
+                  <span>{{ s.name }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasFilter }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:center; gap:8px; font-size:13px;">
+              <span style="flex:1; min-width:0; color:var(--muted); text-wrap:pretty;">{{ filterText }}</span>
+              <button type="button" onClick="{{ clearFilter }}" style="min-height:36px; border:0; background:transparent; padding:0 4px; font-size:13px; font-weight:500; color:var(--filament); cursor:pointer;">Show all</button>
+            </div>
+          </sc-if>
+          <div role="tablist" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; border-radius:10px; background:var(--cream); border:1px solid var(--line); padding:3px;">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+              <button type="button" role="tab" aria-selected="{{ t.on }}" onClick="{{ t.onClick }}" style="min-height:38px; border:0; border-radius:8px; background:{{ t.bg }}; box-shadow:{{ t.shadow }}; font-size:14px; font-weight:500; color:{{ t.color }}; cursor:pointer;">{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; padding:12px 16px 24px;">
+          <sc-if value="{{ isRooms }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ rooms }}" as="r" hint-placeholder-count="3">
+              <div style="border-radius:14px; border:1px solid {{ r.bc }}; background:var(--cream); overflow:hidden;">
+                <button type="button" onClick="{{ r.onClick }}" style="width:100%; display:flex; align-items:flex-start; gap:10px; border:0; background:{{ r.bg }}; padding:12px 14px; text-align:left; cursor:pointer;">
+                  <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+                    <span style="font-size:15px; font-weight:500;">{{ r.name }}</span>
+                    <span style="font-size:12px; color:var(--muted);">{{ r.meta }}</span>
+                    <sc-if value="{{ r.hasCtrl }}"><span style="display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding-top:2px;"><sc-for list="{{ r.ctrl }}" as="c"><sc-if value="{{ c.chip }}"><span style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+                    <sc-if value="{{ r.notControlled }}"><span style="font-size:12px; color:var(--muted);">No switch of its own</span></sc-if>
+                  </span>
+                  <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="color:var(--muted); margin-top:2px; flex-shrink:0;"><path d="m8 5 5 5-5 5"></path></svg>
+                </button>
+                <div style="border-top:1px solid var(--line); display:flex; flex-direction:column; padding:4px;">
+                  <sc-for list="{{ r.lights }}" as="l">
+                    <button type="button" onClick="{{ l.onClick }}" style="display:flex; align-items:center; gap:8px; min-height:44px; border:0; border-radius:9px; background:{{ l.bg }}; opacity:{{ l.op }}; padding:0 10px; text-align:left; cursor:pointer;">
+                      <span style="flex:1; min-width:0; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ l.name }}</span>
+                      <sc-if value="{{ l.hasMarks }}"><span style="display:inline-flex; align-items:center; gap:4px;"><sc-for list="{{ l.marks }}" as="c"><sc-if value="{{ c.chip }}"><span style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+                      <sc-if value="{{ l.sceneOnly }}"><i style="width:9px; height:9px; border-radius:50%; border:1.5px solid var(--muted); display:block;"></i></sc-if>
+                      <sc-if value="{{ l.isNone }}"><span style="border-radius:999px; background:var(--warn-soft); color:var(--warn); padding:0 8px; font-size:11px; font-weight:500; line-height:18px;">No switch</span></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </sc-if>
+
+          <sc-if value="{{ isZones }}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{ zones }}" as="z" hint-placeholder-count="4">
+              <button type="button" onClick="{{ z.onClick }}" style="display:flex; align-items:flex-start; gap:10px; border-radius:14px; border:1px solid {{ z.bc }}; background:{{ z.bg }}; padding:12px 14px; text-align:left; cursor:pointer;">
+                <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+                  <span style="display:flex; align-items:baseline; gap:8px;">
+                    <span style="flex:1; min-width:0; font-size:15px; font-weight:500;">{{ z.name }}</span>
+                    <span style="font-family:'Geist Mono',ui-monospace,monospace; font-size:12px; color:var(--muted);">{{ z.count }}</span>
+                  </span>
+                  <sc-if value="{{ z.hasCtrl }}"><span style="display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding-top:2px;"><sc-for list="{{ z.ctrl }}" as="c"><sc-if value="{{ c.chip }}"><span style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+                  <sc-if value="{{ z.notControlled }}"><span style="font-size:12px; color:var(--muted);">No switch of its own</span></sc-if>
+                  <sc-if value="{{ z.hasReach }}"><span style="font-size:12px; color:var(--foreground);">{{ z.reachText }}</span></sc-if>
+                </span>
+                <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="color:var(--muted); margin-top:2px; flex-shrink:0;"><path d="m8 5 5 5-5 5"></path></svg>
+              </button>
+            </sc-for>
+          </sc-if>
+
+          <sc-if value="{{ nothing }}"><p style="margin:12px 0; font-size:14px; color:var(--muted); text-align:center;">Nothing matches.</p></sc-if>
+
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px; padding:12px 14px; border-radius:12px; border:1px solid var(--line); font-size:12px; color:var(--muted);">
+            <span style="display:flex; align-items:center; gap:8px;"><span style="display:inline-flex; gap:3px;"><sc-for list="{{ legendDots }}" as="c"><i style="{{ c.style }}"></i></sc-for></span>switch controls it directly, or the whole room or zone</span>
+            <span style="display:flex; align-items:center; gap:8px;"><span style="display:inline-flex; gap:3px;"><sc-for list="{{ legendRings }}" as="c"><i style="{{ c.style }}"></i></sc-for></span>reaches the light through its room or a zone</span>
+            <sc-if value="{{ hasChipLegend }}"><span style="display:flex; align-items:center; gap:8px;"><span style="{{ legendChip }}">Page</span>a page on a Round</span></sc-if>
+            <span style="display:flex; align-items:center; gap:8px;"><i style="width:9px; height:9px; border-radius:50%; border:1.5px solid var(--muted); display:block;"></i>only scenes, through its room or a zone</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeSheet }}" style="position:absolute; inset:0; z-index:10; background:rgb(0 0 0 / 40%);"></div>
+      <div role="dialog" aria-label="{{ sh.title }}" style="position:absolute; left:0; right:0; bottom:0; z-index:11; max-height:82%; display:flex; flex-direction:column; border-radius:22px 22px 0 0; background:var(--background); border-top:1px solid var(--line); box-shadow:0 -10px 40px rgb(0 0 0 / 25%);">
+        <div style="display:flex; justify-content:center; padding:8px 0 2px;"><i style="display:block; width:36px; height:5px; border-radius:3px; background:var(--line);"></i></div>
+        <div style="display:flex; align-items:flex-start; gap:4px; padding:4px 8px 10px;">
+          <sc-if value="{{ canBack }}">
+            <button type="button" onClick="{{ back }}" aria-label="Back" style="width:44px; height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:0; background:transparent; cursor:pointer;"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m12 5-5 5 5 5"></path></svg></button>
+          </sc-if>
+          <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; padding:6px 8px 0;">
+            <p style="margin:0; font-size:18px; font-weight:600; letter-spacing:-0.01em;">{{ sh.title }}</p>
+            <p style="margin:0; font-size:13px; color:var(--muted);">{{ sh.kind }}</p>
+            <sc-if value="{{ sh.hasMarks }}"><span style="display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding-top:2px;"><sc-for list="{{ sh.marks }}" as="c"><sc-if value="{{ c.chip }}"><span style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+          </div>
+          <button type="button" onClick="{{ closeSheet }}" aria-label="Close" style="width:44px; height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:0; background:transparent; cursor:pointer;"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"></path></svg></button>
+        </div>
+        <div style="overflow-y:auto; display:flex; flex-direction:column; gap:16px; padding:4px 16px 28px;">
+          <sc-for list="{{ sh.links }}" as="lk">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">{{ lk.label }}</p>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <sc-for list="{{ lk.items }}" as="it">
+                  <button type="button" onClick="{{ it.onClick }}" style="display:flex; align-items:center; gap:6px; min-height:36px; border-radius:999px; border:1px solid var(--line); background:var(--cream); padding:0 12px; font-size:14px; cursor:pointer;">{{ it.name }}<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="color:var(--muted);"><path d="m8 5 5 5-5 5"></path></svg></button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-for list="{{ sh.blocks }}" as="b">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">{{ b.label }}</p>
+              <sc-for list="{{ b.lines }}" as="x">
+                <p style="margin:0; font-size:14px; line-height:1.5; text-wrap:pretty;"><i style="{{ x.dot }}"></i><span style="font-weight:500;">{{ x.who }}</span> · {{ x.what }}</p>
+              </sc-for>
+              <sc-for list="{{ b.groups }}" as="v">
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <p style="margin:0; font-size:14px; font-weight:500;">{{ v.name }} <span style="font-weight:400; color:var(--muted);">{{ v.kind }}</span></p>
+                  <sc-for list="{{ v.lines }}" as="x">
+                    <p style="margin:0; font-size:14px; line-height:1.5; color:var(--muted); text-wrap:pretty;"><i style="{{ x.dot }}"></i><span style="font-weight:500; color:var(--foreground);">{{ x.who }}</span> · {{ x.what }}</p>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+          <sc-if value="{{ sh.hasNote }}"><p style="margin:0; font-size:14px; line-height:1.5; text-wrap:pretty;">{{ sh.note }}</p></sc-if>
+          <sc-if value="{{ sh.hasScenes }}">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Scenes · {{ sh.sceneCount }}</p>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <sc-for list="{{ sh.scenes }}" as="x"><span style="display:inline-flex; align-items:center; gap:5px; border-radius:999px; border:1px solid {{ x.bc }}; padding:3px 10px; font-size:13px;">{{ x.name }}<sc-for list="{{ x.dots }}" as="c"><i style="{{ c.style }}"></i></sc-for></span></sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-for list="{{ sh.lightGroups }}" as="lg">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <p style="margin:0 0 4px; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">{{ lg.label }}</p>
+              <div style="display:flex; flex-direction:column; border-radius:12px; border:1px solid var(--line); background:var(--cream); padding:4px;">
+                <sc-for list="{{ lg.rows }}" as="l">
+                  <button type="button" onClick="{{ l.onClick }}" style="display:flex; align-items:center; gap:8px; min-height:44px; border:0; border-radius:9px; background:{{ l.bg }}; opacity:{{ l.op }}; padding:0 10px; text-align:left; cursor:pointer;">
+                    <span style="flex:1; min-width:0; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ l.name }}</span>
+                    <sc-if value="{{ l.hasMarks }}"><span style="display:inline-flex; align-items:center; gap:4px;"><sc-for list="{{ l.marks }}" as="c"><sc-if value="{{ c.chip }}"><span style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+                    <sc-if value="{{ l.sceneOnly }}"><i style="width:9px; height:9px; border-radius:50%; border:1.5px solid var(--muted); display:block;"></i></sc-if>
+                    <sc-if value="{{ l.isNone }}"><span style="border-radius:999px; background:var(--warn-soft); color:var(--warn); padding:0 8px; font-size:11px; font-weight:500; line-height:18px;">No switch</span></sc-if>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ sh.hasFacts }}"><p style="margin:0; font-size:13px; color:var(--muted);">{{ sh.facts }}</p></sc-if>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;house&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;This house&quot;,&quot;Small house&quot;,&quot;No switches&quot;,&quot;Empty bridge&quot;],&quot;default&quot;:&quot;This house&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;stale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+const APP_THEMES = [
+  ['ember','Ember','Charcoal, copper','dark',['#14110f','#1e1a17','#e07a3d','#f4eee6']],
+  ['graphite','Graphite','Zinc, champagne','dark',['#121314','#1c1d1f','#d4b483','#ececec']],
+  ['night','Night','OLED, electric amber','dark',['#070708','#111114','#ffb020','#f2f2f0']],
+  ['ink','Ink','Blue-black, teal','dark',['#0b1016','#121a24','#3dd6c6','#e8eef6']],
+  ['plum','Plum','Espresso, rose','dark',['#140f14','#1d161d','#e8a0b4','#f3e8ee']],
+  ['matrix','Matrix','Black, phosphor green','dark',['#020402','#071208','#00ff41','#d0ffd4']],
+  ['nord','Nord','Polar night, frost','dark',['#2e3440','#3b4252','#88c0d0','#eceff4']],
+  ['dracula','Dracula','Purple, pink','dark',['#1e1f29','#282a36','#bd93f9','#f8f8f2']],
+  ['ocean','Ocean','Navy, sky cyan','dark',['#071018','#0d1b28','#38bdf8','#dceef8']],
+  ['paper','Paper','Cream, filament','light',['#f3eee4','#fffaf2','#c45c26','#1c1814']],
+  ['snow','Snow','Cool white, blue','light',['#f4f6f8','#ffffff','#2563eb','#1a2330']],
+  ['mist','Mist','Gray, slate','light',['#eef0f2','#ffffff','#4b5563','#1f2328']],
+  ['meadow','Meadow','Sage, leaf','light',['#eef3e8','#f7fbf3','#3f7a4a','#1c2418']],
+  ['porcelain','Porcelain','Blush, rose','light',['#f6f1f3','#fffafb','#c45c78','#2a1c22']],
+  ['sky','Sky','Pale blue, azure','light',['#eaf3f8','#f7fcff','#0284c7','#152030']],
+  ['linen','Linen','Ivory, olive','light',['#f3efe4','#fbf8f0','#6b7a3a','#242018']],
+  ['phosphor','Phosphor','Mint paper, matrix green','light',['#e8f5e9','#f4fbf4','#15803d','#0b2e14']],
+];
+
+const g_ = id => ({ k:'g', id });
+const l_ = (...ids) => ({ k:'l', ids });
+const unused = ctx => ({ ctx, unused:true });
+
+const REAL = {
+  bridge:'C42996FFFECA6703', snapshot:'Snapshot 4 h ago · 11:21, from ESP32C6-2',
+  white: n => /\.w$/i.test(n), on:['Velador Tomás 1.A'],
+  rooms:[
+    ['Baño principal',['Baño Espejo 1.A','Baño Espejo 2.A','Baño Espejo 3.A','Baño 1.W','Baño Tina 1.W'],['Tina','Nightlight','Concentrate','Read','Relax']],
+    ['Clarita',['Clarita Cielo 2.w','Clarita Cielo 1.W'],['Cancún','Relax']],
+    ['Cocina',['Cocina Mesa 1.C','Cocina Mesa 2.C','Cocina Mesa 3.C'],['Velas','Storybook','Read','Unwind','Shine','Concentrate','Arise','Relax','Chile','Nightlight','Nighttime','Among the pines','Ibiza 2','Amber robin','Ibiza','Honolulu','Sleepy','Coastal nights','Lovebirds','Energize']],
+    ['Dormitorio Principal',['Dorm. Pasillo 1.W','Dorm. Riel Closet 1.A','Dorm. Riel Closet 2.A','Dorm. Riel Closet 3.A','Dorm. Riel Tele 1.W','Dorm. Riel Tele 2.A','Dorm. Riel Tele 3.A','Velador Camby 1.A','Velador Tomás 1.A'],['Read','Relax','Prueba scene 1','Dimmed','Concentrate','Ibiza','Sunflare','Nightlight','Energize','Colinas onduladas']],
+    ['Hall Acceso',['Acceso 1.W','Acceso 2.C','Acceso Cuadro 1.C','Acceso Pasillo Cocina 1.W'],['Energize','Nightlight','Relax','Concentrate','Descanso','Among the pines','Read']],
+    ['Jose',['Jose cielo 2.W','Jose Velador 1.C','Jose cielo 1.W'],['Rome','Savanna sunset','Relax']],
+    ['Living Comedor',['Living Mesa 1.W','Living cuadro 1.C','Living Riel Mesa 1.W','Living Riel Mesa 2.C','Living Riel Mesa 3.W','Living Riel Mural 1.C','Living Riel Mural 2.W','Living Riel Mural 3.C','Living Riel Mural 4.W','Living Lámpara de pie 1.C'],['Among the pines','Rolling hills','Energize','Nightlight','Relax','Concentrate','Read']],
+    ['Pasillo',['Pasillo 2.W','Pasillo 1.W'],['Nightlight','Energize','Read','Concentrate','Relax']],
+    ['Sin asignar',['Hue color lamp 3'],['Read']],
+    ['Terraza',['Terraza Muro 1.C','Terraza Parrilla 2.W','Terraza Sillones 1.W','Terraza Parrilla 1.W','Terraza Sillones 2.W'],['Energize','Among the pines','Relax','Nightlight','Read','Concentrate','Parrillando']],
+  ],
+  zones:[
+    ['Áreas comunes',{rooms:['Living Comedor','Hall Acceso','Cocina','Terraza']},['Concentrate','Rest','Nightlight','Honolulu','Sailing away','Ibiza','Pumpkin spice','Read','Relax','Singapore','Energize']],
+    ['Brasilia 243','ALL',['Sleepy','Storybook','Read','Nightlight','Shine','Energize','Concentrate','Nighttime','Arise','Unwind','Relax']],
+    ['Cuadros',['Living cuadro 1.C','Living Riel Mesa 3.W','Acceso Cuadro 1.C'],['Relax','Read']],
+    ['Dormitorio principal cielos',['Dorm. Pasillo 1.W','Dorm. Riel Closet 1.A','Dorm. Riel Closet 2.A','Dorm. Riel Closet 3.A','Dorm. Riel Tele 1.W','Dorm. Riel Tele 2.A','Dorm. Riel Tele 3.A'],['solo closet','Escritorio y resto','Concentrate','Default','elegir ropa 1','TV','relajar','Rolling hills','Trabajo escritorio','elegir ropa 2','Relax']],
+    ['Iluminación nocturna cocina',['Cocina Mesa 1.C','Cocina Mesa 2.C','Cocina Mesa 3.C','Acceso Pasillo Cocina 1.W'],['Read','Relax','Nightlight','Concentrate']],
+    ['Iluminación nocturna pasillos',['Pasillo 1.W','Pasillo 2.W','Acceso 1.W','Acceso 2.C'],['Relax','Read','Nightlight','Concentrate']],
+    ['MA: Pasillo a cocina',['Acceso Pasillo Cocina 1.W','Acceso Cuadro 1.C','Cocina Mesa 1.C','Cocina Mesa 2.C','Cocina Mesa 3.C'],['Relax']],
+    ['MA: Pasillo dormitorios y hall',['Acceso 1.W','Acceso 2.C','Pasillo 1.W','Pasillo 2.W','Dorm. Pasillo 1.W'],['Relax']],
+    ['Veladores dormitorio principal',['Velador Camby 1.A','Velador Tomás 1.A'],['Read','Relax','Concentrate','Bright','Read C','Nightlight','Energize','Relax C','Read T','Relax T','Dimmed']],
+  ],
+  switches:[
+    { id:'c6-1', name:'ESP32C6-1', product:'Simple', meta:'Firmware 0.4.0 · seen 11 h ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'z:Veladores dormitorio principal', gs:[['Click','toggle',l_('Velador Tomás 1.A')],['Double-click','none'],['Hold','repair']] },
+      unused('D0'), unused('D1'), unused('D2') ] },
+    { id:'round-1', name:'Round Display 1', product:'Round', meta:'Firmware 0.5.28 · seen 2 d ago', units:[
+      { ctx:'page Veladores', title:'Veladores', sub:'Page 1', group:'z:Veladores dormitorio principal', gs:[['Tap','toggle',l_('Velador Tomás 1.A')],['Double tap','toggle',l_('Velador Camby 1.A')],['Ring','dim',l_('Velador Tomás 1.A','Velador Camby 1.A')]] },
+      { ctx:'page Dormitorio', title:'Dormitorio', sub:'Page 2', group:'z:Dormitorio principal cielos', gs:[['Tap','toggle',g_('z:Dormitorio principal cielos')],['Double tap','scenes',g_('z:Dormitorio principal cielos'),['solo closet','Trabajo escritorio','Escritorio y resto','TV','Relax']],['Ring','dim',g_('z:Dormitorio principal cielos')]] },
+      { ctx:'page Bano', title:'Bano', sub:'Page 3', group:'r:Baño principal', gs:[['Tap','toggle',g_('r:Baño principal')],['Double tap','scenes',g_('r:Baño principal'),['Relax','Tina','Read']],['Ring','dim',g_('r:Baño principal')]] },
+      { ctx:'page A.Comunes', title:'A.Comunes', sub:'Page 4', group:'z:Áreas comunes', gs:[['Tap','toggle',g_('z:Áreas comunes')],['Double tap','scenes',g_('z:Áreas comunes'),['Read','Honolulu','Nightlight','Ibiza']],['Ring','dim',g_('z:Áreas comunes')]] },
+      { ctx:'page Brasilia 243', title:'Brasilia 243', sub:'Page 5', group:'z:Brasilia 243', gs:[['Tap','toggle',g_('z:Brasilia 243')],['Double tap','scenes',g_('z:Brasilia 243'),['Sleepy','Storybook','Read','Nightlight','Shine','Energize']],['Ring','dim',g_('z:Brasilia 243')]] },
+      { ctx:'page Cocina', title:'Cocina', sub:'Page 6', group:'r:Cocina', gs:[['Tap','toggle',g_('r:Cocina')],['Double tap','scenes',g_('r:Cocina'),['Relax','Velas','Unwind','Amber robin','Ibiza','Coastal nights','Among the pines']],['Ring','dim',g_('r:Cocina')]] } ] },
+    { id:'c6-2', name:'ESP32C6-2', product:'Simple', meta:'Firmware 0.4.0 · seen 4 h ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'z:Veladores dormitorio principal', gs:[['Click','toggle',l_('Velador Tomás 1.A')],['Double-click','none'],['Hold','dim',l_('Velador Tomás 1.A')]] },
+      unused('D0'), unused('D1'), unused('D2') ] },
+    { id:'c6-3', name:'ESP32C6-3', product:'Simple', meta:'Firmware 0.4.0 · seen 11 h ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'z:Veladores dormitorio principal', gs:[['Click','toggle',l_('Velador Tomás 1.A')],['Double-click','none'],['Hold','repair']] },
+      unused('D0'), unused('D1'), unused('D2') ] },
+  ],
+  stale:{ sw:'c6-2', unit:{ ctx:'D0', sub:'GPIO 0 · Push button', group:'x:7c1e2a90', gs:[['Click','toggle',{k:'x', id:'7c1e2a90', type:'room'}],['Double-click','none'],['Hold','none']] } },
+};
+
+const SMALL = {
+  bridge:'ECB5FAFFFE1A2B3C', snapshot:'Snapshot 12 min ago, from Kitchen wall',
+  white: n => ['Ceiling','Pendants','Counter','Bedroom ceiling'].includes(n), on:['Pendants'],
+  rooms:[
+    ['Living',['Floor lamp','Ceiling','Shelf strip'],['Relax','Read','Bright']],
+    ['Kitchen',['Pendants','Counter'],['Cooking','Bright']],
+    ['Bedroom',['Bedside lamp','Bedroom ceiling'],['Nightlight','Relax']],
+  ],
+  zones:[ ['Downstairs',{rooms:['Living','Kitchen']},['Evening']] ],
+  switches:[
+    { id:'kw', name:'Kitchen wall', product:'Simple', meta:'Firmware 0.4.0 · seen 12 min ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'r:Kitchen', gs:[['Click','toggle',g_('r:Kitchen')],['Double-click','scenes',g_('r:Kitchen'),['Cooking','Bright']],['Hold','repair']] },
+      { ctx:'D0', sub:'GPIO 0 · Toggle switch', group:'r:Living', gs:[['On / Off','onoff',l_('Floor lamp')],['Double-click','none']] },
+      unused('D1'), unused('D2') ] },
+  ],
+  stale:{ sw:'kw', unit:{ ctx:'D1', sub:'GPIO 1 · Push button', group:'x:3fa07b12', gs:[['Click','toggle',{k:'x', id:'3fa07b12', type:'light'}],['Double-click','none'],['Hold','none']] } },
+};
+
+const HOUSES = {
+  'This house': REAL,
+  'Small house': SMALL,
+  'No switches': { ...REAL, snapshot:'Snapshot 3 d ago · 23 Sep, 18:02', switches:[], stale:null },
+  'Empty bridge': { bridge:'ECB5FAFFFE1A2B3C', snapshot:'No snapshot yet', white:() => false, rooms:[], zones:[], switches:[], stale:null },
+};
+
+const SW_HUES = [250, 145, 330, 75, 195, 20, 285, 110];
+const LIGHTING = { toggle:1, dim:1, scenes:1, onoff:1, on:1, off:1 };
+const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
+const slug = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
+const scenesTxt = sc => sc.length === 1 ? `recalls ${sc[0]}` : `cycles ${sc.join(' → ')}`;
+const verbObj = (g, obj) => {
+  if (g.act === 'dim') return g.name === 'Hold' ? `dims ${obj} while held` : `dims ${obj}`;
+  return ({ toggle:'toggles', onoff:'turns on and off', on:'turns on', off:'turns off' })[g.act] + ' ' + obj;
+};
+
+function build(H, withStale) {
+  const lights = {}, groups = [], gmap = {};
+  H.rooms.forEach(([name, ls, sc]) => {
+    const g = { key:'r:' + name, name, type:'room', lights:ls, scenes:sc };
+    groups.push(g); gmap[g.key] = g;
+    ls.forEach(n => lights[n] = { name:n, room:name, color:!H.white(n), on:(H.on || []).includes(n), zones:[] });
+  });
+  const all = Object.keys(lights);
+  H.zones.forEach(([name, spec, sc]) => {
+    const ls = spec === 'ALL' ? all : Array.isArray(spec) ? spec : all.filter(n => spec.rooms.includes(lights[n].room));
+    const g = { key:'z:' + name, name, type:'zone', lights:ls, scenes:sc, all: spec === 'ALL' };
+    groups.push(g); gmap[g.key] = g;
+    ls.forEach(n => lights[n].zones.push(name));
+  });
+  const switches = H.switches.map(s => ({ ...s, units: s.units.slice() }));
+  if (withStale && H.stale) {
+    const s = switches.find(x => x.id === H.stale.sw);
+    if (s) s.units = s.units.map(u => u.ctx === H.stale.unit.ctx ? H.stale.unit : u);
+  }
+  const gestures = [];
+  switches.forEach(sw => sw.units.forEach(u => (u.gs || []).forEach(([name, act, t, sc]) =>
+    gestures.push({ sw, u, name, act, t, sc: sc || [], who: `${sw.name} · ${u.ctx}` }))));
+  const direct = {}, via = {}, groupCtl = {}, sceneUse = {}, stale = [];
+  gestures.forEach(g => {
+    if (!LIGHTING[g.act] || !g.t) return;
+    if (g.t.k === 'x') { stale.push(g); return; }
+    if (g.t.k === 'l') g.t.ids.forEach(id => (direct[id] = direct[id] || []).push(g));
+    if (g.t.k === 'g') {
+      (groupCtl[g.t.id] = groupCtl[g.t.id] || []).push(g);
+      gmap[g.t.id].lights.forEach(id => { via[id] = via[id] || {}; (via[id][g.t.id] = via[id][g.t.id] || []).push(g); });
+      if (g.act === 'scenes') g.sc.forEach(s => (sceneUse[g.t.id + '|' + s] = sceneUse[g.t.id + '|' + s] || []).push(g));
+    }
+  });
+  Object.values(lights).forEach(L => {
+    L.direct = direct[L.name] || [];
+    L.viaGroups = Object.keys(via[L.name] || {}).sort((a, b) => gmap[a].lights.length - gmap[b].lights.length);
+    L.via = via[L.name] || {};
+    L.status = L.direct.length ? 'direct' : L.viaGroups.length ? 'via' : 'none';
+  });
+  return { H, lights, groups, gmap, switches, gestures, groupCtl, sceneUse, stale };
+}
+
+function lines(gs, fmt) {
+  const out = [], by = {};
+  gs.forEach(g => { if (!by[g.who]) { by[g.who] = { who:g.who, parts:[] }; out.push(by[g.who]); } by[g.who].parts.push(fmt(g)); });
+  return out.map(o => ({ who:o.who, what:o.parts.join(' · ') }));
+}
+const phraseGroup = g => `${g.name} ${g.act === 'scenes' ? scenesTxt(g.sc) : verbObj(g, '').trim()}`.replace(/\s+while held$/, ' while held');
+const phraseSelf = self => g => {
+  const others = g.t.ids.filter(x => x !== self);
+  return `${g.name} ${verbObj(g, 'it')}${others.length ? ' with ' + others.join(', ') : ''}`;
+};
+
+
+const THEME_VALS = (self, st) => {
+  const themeCur = APP_THEMES.find(t => t[0] === st.appTheme) || APP_THEMES[0];
+  return {
+    appThemeName: themeCur[1], themeOpen: st.themeOpen,
+    toggleThemePicker: () => self.setState({ themeOpen: !st.themeOpen }),
+    closeThemePicker: () => self.setState({ themeOpen:false }),
+    themeGroups: [['Dark','dark'],['Light','light']].map(([title, grp]) => ({ title, items: APP_THEMES.filter(t => t[3] === grp).map(t => ({
+      name:t[1], blurb:t[2], bc: t[0] === st.appTheme ? 'var(--filament)' : 'var(--line)', shadow: t[0] === st.appTheme ? '0 0 0 1px var(--filament)' : 'none',
+      colors: t[4].map(c => ({ style:{ display:'inline-block', width:14, height:14, borderRadius:'50%', background:c, border:'1px solid color-mix(in srgb, var(--foreground) 15%, transparent)' } })),
+      onClick: () => { self.applyTheme(t[0]); self.setState({ themeOpen:false }); },
+    })) })),
+  };
+};
+const shortWho = gs => [...new Set(gs.map(g => g.who))];
+
+class Component extends DCLogic {
+  state = { q:'', tab:'rooms', swSel:null, sheet:[], appTheme:'ember' };
+  componentDidMount() {
+    let t = null; try { t = localStorage.getItem('hsw-theme'); } catch (e) {}
+    const id = APP_THEMES.some(x => x[0] === t) ? t : 'ember';
+    document.documentElement.setAttribute('data-theme', id);
+    this.setState({ appTheme:id });
+  }
+  renderVals() {
+    const st = this.state, p = this.props;
+    const D = build(HOUSES[p.house ?? 'This house'] || REAL, p.stale ?? false);
+    const rooms = D.groups.filter(g => g.type === 'room'), zones = D.groups.filter(g => g.type === 'zone');
+    const nLights = Object.keys(D.lights).length;
+    const dark = (APP_THEMES.find(t => t[0] === st.appTheme) || [])[3] !== 'light';
+    const col = {};
+    D.switches.forEach((s, i) => { col[s.id] = `oklch(${dark ? 0.76 : 0.56} ${dark ? 0.13 : 0.15} ${SW_HUES[i % SW_HUES.length]})`; });
+    const dotSt = (c, n) => ({ display:'block', width:n, height:n, borderRadius:'50%', background:c, flexShrink:0 });
+    const ringSt = c => ({ display:'block', width:9, height:9, borderRadius:'50%', border:'1.5px solid ' + c, boxSizing:'border-box', flexShrink:0 });
+    const named = sw => sw.units.some(u => u.title);
+    const chipSt = c => ({ display:'inline-flex', alignItems:'center', borderRadius:999, border:'1px solid ' + c, background:`color-mix(in oklch, ${c} 22%, transparent)`, color:'var(--foreground)', padding:'0 7px', fontSize:11, fontWeight:500, lineHeight:'17px', whiteSpace:'nowrap', flexShrink:0 });
+    const marks = (gs, n) => {
+      const out = [], seen = new Set();
+      gs.forEach(g => {
+        const nm = named(g.sw), key = nm ? g.sw.id + '|' + g.u.ctx : g.sw.id;
+        if (seen.has(key)) return; seen.add(key);
+        out.push(nm ? { chip:true, dot:false, label:g.u.title, style: chipSt(col[g.sw.id]) } : { chip:false, dot:true, style: dotSt(col[g.sw.id], n) });
+      });
+      return out;
+    };
+    const ctrlOf = k => { const ctrl = marks(D.groupCtl[k] || [], 9); return { ctrl, hasCtrl: ctrl.length > 0, notControlled: !ctrl.length }; };
+    const reach = gs => {
+      const r = { l:new Set(), lit:new Set() };
+      gs.filter(g => LIGHTING[g.act] && g.t && g.t.k !== 'x').forEach(g => {
+        if (g.t.k === 'l') g.t.ids.forEach(n => r.l.add(n));
+        else { const G = D.gmap[g.t.id]; r.lit.add(G.key); G.lights.forEach(n => r.l.add(n)); }
+      });
+      return r;
+    };
+    const swObj = st.swSel && D.switches.find(s => s.id === st.swSel);
+    const R = swObj ? reach(D.gestures.filter(g => g.sw === swObj)) : null;
+    const q = st.q.trim().toLowerCase(), has = s => s.toLowerCase().includes(q);
+    const open = k => () => this.setState(s => ({ sheet: [...s.sheet, k] }));
+
+    const lightMarks = L => {
+      const dIds = new Set(L.direct.map(g => g.sw.id));
+      const viaG = L.viaGroups.flatMap(gk => L.via[gk].filter(g => g.act !== 'scenes'));
+      const vIds = [...new Set(viaG.map(g => g.sw.id))].filter(id => !dIds.has(id));
+      return [...marks(L.direct, 9), ...vIds.map(id => ({ chip:false, dot:true, style: ringSt(col[id]) }))];
+    };
+    const lightRow = n => {
+      const L = D.lights[n], m = lightMarks(L), on = R && R.l.has(n);
+      return { name:n, marks:m, hasMarks: m.length > 0, sceneOnly: !m.length && L.status === 'via', isNone: L.status === 'none',
+        op: R && !on ? 0.4 : 1, bg: on ? 'var(--filament-soft)' : 'transparent', onClick: open('l:' + n) };
+    };
+    const roomVMs = rooms.filter(r => (!R || r.lights.some(n => R.l.has(n))) && (!q || has(r.name) || r.lights.some(has))).map(r => {
+      const lit = R && R.lit.has(r.key);
+      return { name:r.name, meta: `${plural(r.lights.length, 'light')} · ${plural(r.scenes.length, 'scene')}`, ...ctrlOf(r.key),
+        bc: lit ? 'var(--filament)' : 'var(--line)', bg: lit ? 'var(--filament-soft)' : 'transparent', onClick: open(r.key),
+        lights: r.lights.filter(n => !q || has(r.name) || has(n)).map(lightRow) };
+    });
+    const zoneVMs = zones.filter(z => (!R || z.lights.some(n => R.l.has(n))) && (!q || has(z.name) || z.lights.some(has))).map(z => {
+      const lit = R && R.lit.has(z.key), got = R ? z.lights.filter(n => R.l.has(n)).length : 0;
+      return { name:z.name, count: z.all ? 'all ' + z.lights.length : z.lights.length, ...ctrlOf(z.key),
+        hasReach: !!(R && !lit), reachText: `${got} of ${z.lights.length} lights reached`,
+        bc: lit ? 'var(--filament)' : 'var(--line)', bg: lit ? 'var(--filament-soft)' : 'var(--cream)', onClick: open(z.key) };
+    });
+
+    const lineVM = (gs, fmt) => lines(gs, fmt).map(x => {
+      const id = gs.find(g => g.who === x.who).sw.id;
+      return { ...x, dot: { display:'inline-block', width:9, height:9, borderRadius:'50%', background:col[id], marginRight:7, verticalAlign:'0.5px' } };
+    });
+    const top = st.sheet[st.sheet.length - 1];
+    let sh = null;
+    if (top && top.startsWith('l:')) {
+      const L = D.lights[top.slice(2)], blocks = [];
+      if (L.direct.length) blocks.push({ label:'Direct', lines: lineVM(L.direct, phraseSelf(L.name)), groups:[] });
+      if (L.viaGroups.length) blocks.push({ label:'Through a room or zone', lines:[], groups: L.viaGroups.map(k => ({ name:D.gmap[k].name, kind:D.gmap[k].type, lines: lineVM(L.via[k], phraseGroup) })) });
+      const m = lightMarks(L);
+      sh = { title:L.name, kind: `Light · ${L.color ? 'Colour' : 'White'} · ${L.on ? 'On' : 'Off'} at snapshot`, marks:m, hasMarks: m.length > 0,
+        links: [{ label:'Room', items:[{ name:L.room, onClick: open('r:' + L.room) }] }].concat(L.zones.length ? [{ label: 'Zones · ' + L.zones.length, items: L.zones.map(z => ({ name:z, onClick: open('z:' + z) })) }] : []),
+        blocks, hasNote: L.status === 'none', note:'No switch reaches this light, directly or through its room or a zone.',
+        hasScenes:false, scenes:[], sceneCount:0, lightGroups:[], hasFacts: !L.zones.length, facts:'In no zone' };
+    } else if (top) {
+      const G = D.gmap[top], ctl = D.groupCtl[G.key] || [], blocks = [];
+      if (ctl.length) blocks.push({ label:'Whole ' + G.type, lines: lineVM(ctl, phraseGroup), groups:[] });
+      if (G.type === 'room') {
+        const viaZ = zones.filter(z => D.groupCtl[z.key] && G.lights.some(n => z.lights.includes(n))).sort((a, b) => a.lights.length - b.lights.length);
+        if (viaZ.length) blocks.push({ label:'Also through zones', lines:[], groups: viaZ.map(z => { const c = G.lights.filter(n => z.lights.includes(n)).length; return { name:z.name, kind: c < G.lights.length ? `${c} of ${G.lights.length} lights` : 'all lights', lines: lineVM(D.groupCtl[z.key], phraseGroup) }; }) });
+      }
+      const own = G.lights.filter(n => D.lights[n].direct.length);
+      const scenes = G.scenes.map(s => { const u = D.sceneUse[G.key + '|' + s]; return { name:s, used:!!u, bc: u ? 'var(--muted)' : 'var(--line)', dots: u ? [...new Set(u.map(g => g.sw.id))].map(id => ({ style: dotSt(col[id], 7) })) : [] }; }).sort((a, b) => b.used - a.used);
+      const lightGroups = G.type === 'room'
+        ? [{ label: 'Lights · ' + G.lights.length, rows: G.lights.map(lightRow) }]
+        : rooms.map(r => { const ls = r.lights.filter(n => G.lights.includes(n)); return ls.length ? { label: ls.length === r.lights.length ? `All of ${r.name}` : `${ls.length} of ${r.lights.length} in ${r.name}`, rows: ls.map(lightRow) } : null; }).filter(Boolean);
+      const m = ctrlOf(G.key).ctrl;
+      sh = { title:G.name, kind: `${G.type === 'room' ? 'Room' : 'Zone'} · ${plural(G.lights.length, 'light')}${G.all ? ', every light on the Bridge' : ''}`, marks:m, hasMarks: m.length > 0, links:[],
+        blocks, hasNote: !ctl.length, note: `No switch controls this ${G.type} as a whole.` + (own.length ? ` ${own.join(', ')} ${own.length === 1 ? 'has a switch of its' : 'have switches of their'} own.` : ''),
+        hasScenes: scenes.length > 0, sceneCount: scenes.length, scenes, lightGroups, hasFacts:false, facts:'' };
+    }
+
+    const swChips = D.switches.map(sw => {
+      const pinned = st.swSel === sw.id;
+      return { name:sw.name, pinned, dot: dotSt(col[sw.id], 10),
+        bc: pinned ? 'var(--filament)' : 'var(--line)', bg: pinned ? 'var(--filament-soft)' : 'var(--cream)', shadow: pinned ? '0 0 0 1px var(--filament)' : 'none',
+        onClick: () => this.setState({ swSel: pinned ? null : sw.id }) };
+    });
+    const tabs = [['rooms', `Rooms · ${roomVMs.length}`], ['zones', `Zones · ${zoneVMs.length}`]].map(([k, label]) => ({
+      label, on: st.tab === k, bg: st.tab === k ? 'var(--background)' : 'transparent', shadow: st.tab === k ? '0 1px 2px rgb(0 0 0 / 15%)' : 'none',
+      color: st.tab === k ? 'var(--foreground)' : 'var(--muted)', onClick: () => this.setState({ tab:k }) }));
+    const staleItems = D.stale.map(g => ({ who: `${g.who} · ${g.name}`, text: `${verbObj(g, 'a ' + g.t.type)} that isn't in this snapshot.` }));
+    const firstNamed = D.switches.find(named);
+
+    return {
+      bridgeId: D.H.bridge,
+      countsText: nLights ? `${plural(nLights, 'light')} · ${plural(rooms.length, 'room')} · ${plural(zones.length, 'zone')}` : 'No lights',
+      hasStale: staleItems.length > 0, staleItems, staleTitle: `${plural(staleItems.length, 'gesture points', 'gestures point')} at something missing`,
+      isEmpty: nLights === 0, hasLights: nLights > 0,
+      q: st.q, onQ: e => this.setState({ q: e.target.value }),
+      hasSwitches: D.switches.length > 0, swChips,
+      hasFilter: !!swObj, filterText: swObj ? `${swObj.name} reaches ${plural(R.l.size, 'light')} in ${plural(roomVMs.length, 'room')}` : '',
+      clearFilter: () => this.setState({ swSel:null }),
+      tabs, isRooms: st.tab === 'rooms', isZones: st.tab === 'zones', rooms: roomVMs, zones: zoneVMs,
+      nothing: (st.tab === 'rooms' ? roomVMs : zoneVMs).length === 0,
+      legendDots: D.switches.slice(0, 4).map(s => ({ style: dotSt(col[s.id], 8) })),
+      legendRings: D.switches.slice(0, 4).map(s => ({ style: ringSt(col[s.id]) })),
+      hasChipLegend: !!firstNamed, legendChip: firstNamed ? chipSt(col[firstNamed.id]) : {},
+      sheetOpen: !!sh, sh: sh || {}, canBack: st.sheet.length > 1,
+      back: () => this.setState(s => ({ sheet: s.sheet.slice(0, -1) })), closeSheet: () => this.setState({ sheet:[] }),
+    };
+  }
+}
+</script>
+</body>
+</html>

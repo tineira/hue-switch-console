@@ -307,6 +307,27 @@ html[data-theme="phosphor"] {
   --danger-soft: #f8e2dc;
 }
 
+/* Switch colours on Lights: oklch(var(--switch-l) var(--switch-c) <hue by switch index>)
+   (docs/specs/design_handoff_lights_map/README.md). Lighter on dark themes; keep this
+   list in step with the dark group in app/themes.ts. */
+:root {
+  --switch-l: 0.56;
+  --switch-c: 0.15;
+}
+
+html[data-theme="ember"],
+html[data-theme="graphite"],
+html[data-theme="night"],
+html[data-theme="ink"],
+html[data-theme="plum"],
+html[data-theme="matrix"],
+html[data-theme="nord"],
+html[data-theme="dracula"],
+html[data-theme="ocean"] {
+  --switch-l: 0.76;
+  --switch-c: 0.13;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

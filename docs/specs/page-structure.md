@@ -14,7 +14,7 @@ The nav was named after the Bridge and after "Devices", but that's not what the 
 Afterwards the user has three places, each named after what they work with:
 
 - **Switches**: the editor for every switch in the account. Tabs are grouped in one section per Bridge, each with its health (last seen, update available, stale targets). Each switch has its own URL.
-- **Lights**: read-only topology and which switch gestures act on each room, zone and light, in one section per Bridge. **The layout is pending a Claude Design handoff (§8).** This spec only reserves its place.
+- **Lights**: read-only topology and which switch gestures act on each room, zone and light, in one section per Bridge. A map: rooms and their lights on one side, zones on the other, connectors between them (§8).
 - **Setup**: the old Devices USB flow, renamed. It is reachable from the nav and from wherever a switch needs it (add a switch, update firmware).
 
 The Bridge stays the configuration context (`docs/definitions.md`, "Per Bridge"): a switch uses only its own Bridge's topology. The Bridge is a section on a page, not a page of its own.
@@ -46,7 +46,7 @@ A MAC identifies a switch within an account, so the URL does not need the Bridge
 
 ## 4. Nav
 
-**Top nav** (`app/nav-links.tsx`): **Switches · Lights · Setup · How-to**. Lights appears in phase 2. API keys, Changelog, and later Account and Admin (`docs/specs/multi-user-accounts.md`) stay in the account menu.
+**Top nav** (`app/nav-links.tsx`): **Switches · Lights · Setup · How-to**. API keys, Changelog, and later Account and Admin (`docs/specs/multi-user-accounts.md`) stay in the account menu.
 
 - Active state: Switches is active on `/`, `/switches` and `/switches/*`, Lights on `/lights`, and Setup on `/setup`.
 - The "Hue switch console" wordmark links to `/`, which redirects to `/switches`.
@@ -113,38 +113,51 @@ The old `app/devices/` moves to `app/setup/` (`SetupPanel`). Its behavior is unc
 
 The first deploy had a per-Bridge overview at `/bridges/<id>/switches`: cards with a summary of what each switch does. It was dropped the same day (§12, decision 5). The summary helpers it introduced stay in `lib/gestures.ts` (`simpleChannelGestures`, `gesturesLine`), and the Simple editor uses them.
 
-## 8. Lights (`/lights`) — pending design
+## 8. Lights (`/lights`)
 
-> **Open.** This section is filled in once the Claude Design handoff arrives. It goes in `docs/specs/design-lights/` while in progress and moves to `finished/` with this spec. Until then, phase 1 ships **without** the Lights route and nav item, so there's no empty page.
+**Design:** `docs/specs/design_handoff_lights_map/`. Its `README.md` is the spec; the two prototypes are the reference for layout and behaviour.
+- The `build`, `reach`, `marks`, `lightMarks`, `groupDetail`, `lightDetail`, `lines` and phrase helpers are ported to `lib/lights-map.ts`. It is pure and client-side: the snapshot plus each switch's saved pages or channels, with no new API.
+- The page is `app/lights/`:
+  - `desktop-map.tsx`: three columns with SVG connectors.
+  - `mobile-map.tsx`: tabs and bottom sheets.
+  - `parts.tsx`: marks, details and the stale banner.
+- Both layouts render and CSS switches them at 1024px (`lg`).
 
-What is already decided (from the design brief):
+**Mapping the saved configuration to the design's gestures:**
+- **Round:** each page is an input with a title, shown as a chip.
+  - Tap and Double tap come from its recipes.
+  - Ring (dim) comes from the stored `pages.dim`, or `computeDim`.
+- **Simple:** each configured channel is an input, shown as a dot.
+  - A toggle switch has On / Off, plus Double-click when it has scenes.
+  - A push button has Click, Double-click and Hold.
+  - BOOT's re-pair and "nothing" are not lighting acts and are left out.
+- **Targets:**
+  - A `grouped_light` target is its room or zone.
+  - A scene list acts on the input's own group.
+  - Anything missing from the snapshot is **stale**: a light, the group, or one scene in a list.
 
-- **Read-only.** No assigning. At most, links to a switch (`/switches/<mac>`).
-- One section per Bridge, with the same context line as Switches (§5).
-- It answers, in order:
-  1. what controls this room, zone or light (switch · page or channel · gesture · action);
-  2. what's in the house (rooms, zones, lights, scenes, and how zones overlap rooms);
-  3. what no switch covers;
-  4. how fresh the snapshot is, and which targets are stale.
-- **Direct and indirect control are different.** A gesture on a light is direct. A gesture on a room or zone acts on its lights **through** that group. Scene gestures act on the scenes' group, and the Ring acts on its group or light list.
-- Light on/off comes from the snapshot and is never presented as live.
+**Switch colours:** `oklch(var(--switch-l) var(--switch-c) H)`. The hue comes from the switch's index on its Bridge. `--switch-l` / `--switch-c` are 0.76 / 0.13 on dark themes and 0.56 / 0.15 on light themes (`app/globals.css`, kept in step with `app/themes.ts`).
 
-**Design-independent groundwork** (can be built in phase 2 before the layout is final): a pure function in `lib/`, e.g. `lib/control-index.ts`:
+**Departures from the design, on purpose:**
+- **Route and Bridges.** The route is `/lights`, not `/bridges/[bridgeid]/lights` (§3). With one Bridge the page is the design. With several, each Bridge gets a section with its own meta line, banners, toolbar and map.
+- **Order.** Rooms and zones are sorted by name; lights keep the Bridge's order. The prototype's real data is in name order too; its Small house was typed in another order.
+- **Snapshot line.** "Snapshot 5 h ago · 08:21", without "from ESP32C6-2": the snapshot doesn't record which switch uploaded it. With no snapshot time, it reads "No snapshot yet".
+- **Mobile header.** The mobile header is the production Shell (nav, theme picker, account menu), not the prototype's app name and menu button.
+- **Stale wording.**
+  - "a room" or "a zone" names the missing group after the input's own room or zone; "a room or zone" is used when that's unknown.
+  - A missing scene in a list reads "cycles a scene that isn't in this snapshot" (the prototype has no such case).
+  - "Fix in Switches" opens that switch (`/switches/<mac>`).
+- **Roomless lights.** A light that isn't in any room is shown under "Not in a room". The design assumes this never happens.
 
-```text
-controlIndex(snapshot, switches) → Map<rid, Control[]>
-Control = { mac, switchName, product,
-            where: { pageId, pageName } | { channelId, channelLabel },
-            gesture: "short" | "double_click" | "on_off" | "hold" | "ring",
-            action, direct: boolean, via?: groupRid }
-```
-
-- It is keyed by room/zone id and light id.
-- Scenes resolve to their group.
-- Targets not in the snapshot go into a separate `stale[]` list.
-- It is a candidate to replace the stale counting in the editor too, if that turns out simpler.
-
-**Placeholder: layout, components, copy and states.** From the handoff.
+**Checked against the prototypes** (2026-09-26, local preview with the production export as "This house"):
+- **This house and No switches (desktop):** every room, zone and light (63 nodes) has the same marks and the same opened detail text.
+- **Small house (desktop):** the same, apart from room order.
+- **Empty bridge and banners:** the same, including the stale banners with stale on.
+- **Mobile:** the light and zone sheets, the sheet stack with Back, the switch filter line and counts, and search results are the same.
+- **Connectors:**
+  - Opening a light draws one connector per zone.
+  - Hovering a zone draws one per light: opacity 0.8, or 0.45 above 20 lights.
+  - Reverse chip highlighting matches.
 
 ## 9. Docs and copy to update (same commit as the code)
 
@@ -195,15 +208,16 @@ Control = { mac, switchName, product,
 
 ### Phase 2: Lights (console)
 
-- [ ] Claude Design handoff in `docs/specs/design-lights/`; §8 filled in and approved
-- [ ] `lib/control-index.ts`
-- [ ] `/lights`; Lights nav item
-- [ ] Changelog entry
-- [ ] Deployed; checked on production
+- [x] Claude Design handoff in `docs/specs/design_handoff_lights_map/`; §8 filled in
+- [x] `lib/lights-map.ts` (replaces the planned `lib/control-index.ts`)
+- [x] `/lights`; Lights nav item
+- [x] Compared with both prototypes on the four houses, stale on and off (§8)
+- [x] Changelog entry
+- [ ] Deployed; checked on production (desktop and phone; a light, a room and a zone opened; a switch chip pinned; search)
 
 ### Cleanup
 
-- [ ] Move this spec and `design-lights/` to `docs/specs/finished/`
+- [ ] Move this spec and `design_handoff_lights_map/` to `docs/specs/finished/`
 
 ## 12. Decisions (grilled 2026-09-26)
 
@@ -217,4 +231,4 @@ Control = { mac, switchName, product,
 
 ## 13. Open questions
 
-- Lights (§8): open until the Claude Design handoff arrives.
+None.

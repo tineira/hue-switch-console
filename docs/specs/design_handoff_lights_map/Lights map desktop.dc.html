@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,html[data-theme="paper"]{color-scheme:light;--background:#f3eee4;--foreground:#1c1814;--cream:#fffaf2;--muted:#6e675c;--line:#e0d4c4;--filament:#c45c26;--filament-ink:#fffaf2;--filament-soft:#f6e4d6;--ok:#2f5d38;--ok-soft:#e4f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="ember"]{color-scheme:dark;--background:#14110f;--foreground:#f4eee6;--cream:#1e1a17;--muted:#a89a8c;--line:#3a322c;--filament:#e07a3d;--filament-ink:#1c140e;--filament-soft:#3a2618;--ok:#9dce9a;--ok-soft:#1d2b1e;--warn:#e0c078;--warn-soft:#2f2718;--danger:#e08a7a;--danger-soft:#2f1c18}
+html[data-theme="graphite"]{color-scheme:dark;--background:#121314;--foreground:#ececec;--cream:#1c1d1f;--muted:#9a9ca3;--line:#2e3035;--filament:#d4b483;--filament-ink:#1a1610;--filament-soft:#2f2a22;--ok:#8fbf9a;--ok-soft:#1a2620;--warn:#d4b483;--warn-soft:#2a261c;--danger:#d9897c;--danger-soft:#2f1c18}
+html[data-theme="night"]{color-scheme:dark;--background:#070708;--foreground:#f2f2f0;--cream:#111114;--muted:#8e8e96;--line:#24242b;--filament:#ffb020;--filament-ink:#16110a;--filament-soft:#2a220e;--ok:#6ee7b7;--ok-soft:#10231c;--warn:#ffb020;--warn-soft:#2a220e;--danger:#fb7185;--danger-soft:#2f1c18}
+html[data-theme="ink"]{color-scheme:dark;--background:#0b1016;--foreground:#e8eef6;--cream:#121a24;--muted:#8fa0b5;--line:#243040;--filament:#3dd6c6;--filament-ink:#06201c;--filament-soft:#143330;--ok:#7dcea0;--ok-soft:#15261c;--warn:#e0c078;--warn-soft:#2f2718;--danger:#f07a72;--danger-soft:#2f1c18}
+html[data-theme="plum"]{color-scheme:dark;--background:#140f14;--foreground:#f3e8ee;--cream:#1d161d;--muted:#b39aa8;--line:#3a2c36;--filament:#e8a0b4;--filament-ink:#2a1218;--filament-soft:#3a222a;--ok:#a8d5b5;--ok-soft:#1c2a20;--warn:#e8c090;--warn-soft:#2f2718;--danger:#e07a7a;--danger-soft:#2f1c18}
+html[data-theme="matrix"]{color-scheme:dark;--background:#020402;--foreground:#d0ffd4;--cream:#071208;--muted:#5f9e68;--line:#1a3d1e;--filament:#00ff41;--filament-ink:#021006;--filament-soft:#0a2a12;--ok:#00ff41;--ok-soft:#062410;--warn:#b8ff4d;--warn-soft:#1a2a08;--danger:#ff4d4d;--danger-soft:#2a1010}
+html[data-theme="nord"]{color-scheme:dark;--background:#2e3440;--foreground:#eceff4;--cream:#3b4252;--muted:#a0a8b8;--line:#4c566a;--filament:#88c0d0;--filament-ink:#2e3440;--filament-soft:#434c5e;--ok:#a3be8c;--ok-soft:#3b4252;--warn:#ebcb8b;--warn-soft:#3b4252;--danger:#bf616a;--danger-soft:#3b4252}
+html[data-theme="dracula"]{color-scheme:dark;--background:#1e1f29;--foreground:#f8f8f2;--cream:#282a36;--muted:#b0b3c8;--line:#44475a;--filament:#bd93f9;--filament-ink:#1e1f29;--filament-soft:#3b3354;--ok:#50fa7b;--ok-soft:#1e3328;--warn:#f1fa8c;--warn-soft:#2a2e1c;--danger:#ff5555;--danger-soft:#3a1c22}
+html[data-theme="ocean"]{color-scheme:dark;--background:#071018;--foreground:#dceef8;--cream:#0d1b28;--muted:#7fa3bb;--line:#1c3348;--filament:#38bdf8;--filament-ink:#062033;--filament-soft:#123044;--ok:#5eead4;--ok-soft:#0f2a28;--warn:#fbbf24;--warn-soft:#2a220e;--danger:#fb7185;--danger-soft:#2f1c18}
+html[data-theme="snow"]{color-scheme:light;--background:#f4f6f8;--foreground:#1a2330;--cream:#ffffff;--muted:#5c6b7a;--line:#d5dde4;--filament:#2563eb;--filament-ink:#ffffff;--filament-soft:#dbe7ff;--ok:#157a3a;--ok-soft:#ddf5e4;--warn:#b45309;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="mist"]{color-scheme:light;--background:#eef0f2;--foreground:#1f2328;--cream:#ffffff;--muted:#5e656e;--line:#d4d8de;--filament:#4b5563;--filament-ink:#ffffff;--filament-soft:#e5e7eb;--ok:#2f6b48;--ok-soft:#dcefe4;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="meadow"]{color-scheme:light;--background:#eef3e8;--foreground:#1c2418;--cream:#f7fbf3;--muted:#5d6b55;--line:#d4e0cc;--filament:#3f7a4a;--filament-ink:#f7fbf3;--filament-soft:#dcead8;--ok:#2f6b48;--ok-soft:#d8f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="porcelain"]{color-scheme:light;--background:#f6f1f3;--foreground:#2a1c22;--cream:#fffafb;--muted:#7a6570;--line:#eadde2;--filament:#c45c78;--filament-ink:#fffafb;--filament-soft:#f6e0e8;--ok:#2f6b48;--ok-soft:#e0f0e4;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="sky"]{color-scheme:light;--background:#eaf3f8;--foreground:#152030;--cream:#f7fcff;--muted:#4e6a80;--line:#c9dde8;--filament:#0284c7;--filament-ink:#f7fcff;--filament-soft:#d4eef8;--ok:#157a3a;--ok-soft:#ddf5e4;--warn:#b45309;--warn-soft:#f8ecd0;--danger:#b42318;--danger-soft:#f8e2dc}
+html[data-theme="linen"]{color-scheme:light;--background:#f3efe4;--foreground:#242018;--cream:#fbf8f0;--muted:#6a6558;--line:#ddd6c4;--filament:#6b7a3a;--filament-ink:#fbf8f0;--filament-soft:#e6ead4;--ok:#3d6b3a;--ok-soft:#e0f0dc;--warn:#8a6314;--warn-soft:#f8ecd0;--danger:#a33b2a;--danger-soft:#f8e2dc}
+html[data-theme="phosphor"]{color-scheme:light;--background:#e8f5e9;--foreground:#0b2e14;--cream:#f4fbf4;--muted:#3d6b45;--line:#c5e0c8;--filament:#15803d;--filament-ink:#f4fbf4;--filament-soft:#d1f0d6;--ok:#166534;--ok-soft:#d8f5dc;--warn:#a16207;--warn-soft:#f8ecd0;--danger:#b91c1c;--danger-soft:#f8e2dc}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:"Geist",ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html[data-theme="matrix"] body,html[data-theme="phosphor"] body{font-family:"Geist Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+select,option{background-color:var(--cream);color:var(--foreground)}
+input::placeholder{color:var(--muted)}
+::selection{background:var(--filament-soft);color:var(--foreground)}
+a{color:var(--filament);text-underline-offset:2px}
+a:hover{color:var(--foreground)}
+</style>
+</helmet>
+<div style="min-height:100vh; background:var(--background); color:var(--foreground);">
+<div style="max-width:1280px; margin:0 auto; padding:32px 20px 64px; display:flex; flex-direction:column; gap:24px;">
+
+  <header style="display:flex; flex-wrap:wrap; align-items:center; column-gap:24px; row-gap:8px;">
+    <a href="#" style="font-size:14px; font-weight:600; letter-spacing:-0.01em; color:var(--foreground); text-decoration:none;">Hue switch console</a>
+    <nav style="display:flex; flex-wrap:wrap; gap:4px; font-size:14px; font-weight:500;">
+      <a href="Bridge v2.dc.html" style="border-radius:6px; padding:4px 10px; color:var(--muted); text-decoration:none;">Switches</a>
+      <a href="#" aria-current="page" style="border-radius:6px; padding:4px 10px; background:var(--filament-soft); color:var(--foreground); text-decoration:none;">Lights</a>
+      <a href="#" style="border-radius:6px; padding:4px 10px; color:var(--muted); text-decoration:none;">Setup</a>
+      <a href="#" style="border-radius:6px; padding:4px 10px; color:var(--muted); text-decoration:none;">How-to</a>
+    </nav>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+      <div style="position:relative;">
+        <button type="button" onClick="{{ toggleThemePicker }}" style="border-radius:6px; border:1px solid var(--line); background:var(--cream); padding:4px 10px; font-size:14px; cursor:pointer;">Theme · {{ appThemeName }}</button>
+        <sc-if value="{{ themeOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeThemePicker }}" style="position:fixed; inset:0; z-index:40;"></div>
+          <div role="dialog" aria-label="Choose theme" style="position:absolute; right:0; top:100%; margin-top:8px; z-index:50; width:min(36rem, calc(100vw - 2.5rem)); max-height:min(70vh, 36rem); overflow-y:auto; border-radius:12px; border:1px solid var(--line); background:var(--background); padding:12px; box-shadow:0 10px 30px rgb(0 0 0 / 25%); display:flex; flex-direction:column; gap:16px;">
+            <sc-for list="{{ themeGroups }}" as="grp">
+              <div>
+                <p style="margin:0 0 8px; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.14em; color:var(--muted);">{{ grp.title }}</p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px;">
+                  <sc-for list="{{ grp.items }}" as="t">
+                    <button type="button" onClick="{{ t.onClick }}" style="border-radius:12px; border:1px solid {{ t.bc }}; box-shadow:{{ t.shadow }}; background:var(--cream); padding:10px; text-align:left; cursor:pointer;">
+                      <span style="display:block; font-size:14px; font-weight:500;">{{ t.name }}</span>
+                      <span style="display:block; margin-top:2px; font-size:11px; color:var(--muted);">{{ t.blurb }}</span>
+                      <span style="display:flex; gap:4px; margin-top:8px;">
+                        <sc-for list="{{ t.colors }}" as="c"><i style="{{ c.style }}"></i></sc-for>
+                      </span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <button type="button" style="display:flex; align-items:center; gap:6px; border:0; background:transparent; border-radius:6px; padding:4px 10px; font-size:14px; color:var(--muted); cursor:pointer;">
+        <span>you@tineira.com</span>
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <section data-screen-label="Lights header" style="display:flex; flex-direction:column; gap:4px;">
+    <h1 style="margin:0; font-size:24px; font-weight:600; letter-spacing:-0.02em;">Lights</h1>
+    <p style="margin:0; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:12px; row-gap:4px; font-size:14px; color:var(--muted);">
+      <span style="font-family:'Geist Mono',ui-monospace,monospace; color:var(--foreground);">{{ bridgeId }}</span>
+      <span>{{ countsText }}</span>
+      <span>{{ snapshotText }}</span>
+    </p>
+  </section>
+
+  <sc-if value="{{ hasStale }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="border-radius:10px; border:1px solid var(--warn); background:var(--warn-soft); padding:12px 16px; display:flex; flex-direction:column; gap:6px;">
+      <p style="margin:0; font-size:14px; font-weight:500; color:var(--warn);">{{ staleTitle }}</p>
+      <sc-for list="{{ staleItems }}" as="s">
+        <p style="margin:0; display:flex; flex-wrap:wrap; gap:2px 8px; font-size:13px; line-height:1.45;">
+          <span style="font-weight:500;">{{ s.who }}</span>
+          <span>{{ s.text }}</span>
+          <a href="Bridge v2.dc.html">Fix in Switches</a>
+        </p>
+      </sc-for>
+      <p style="margin:0; font-size:12px; color:var(--muted);">It was probably deleted or re-created in the Hue app. If it is new, it shows up after the next check-in.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ noSwitchesNotice }}" hint-placeholder-val="{{ false }}">
+    <div style="border-radius:10px; border:1px solid var(--line); background:var(--cream); padding:12px 16px; display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; font-size:14px;">
+      <span style="font-weight:500;">No switches on this Bridge yet.</span>
+      <span style="color:var(--muted);">Nothing below is controlled. The lights came from an earlier check-in.</span>
+      <a href="#" style="font-size:13px;">Set up a switch</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+    <div style="border-radius:12px; border:1px dashed var(--line); background:var(--cream); padding:48px 24px; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;">
+      <p style="margin:0; font-size:16px; font-weight:500;">No lights yet</p>
+      <p style="margin:0; font-size:14px; color:var(--muted); max-width:36ch; text-wrap:pretty;">A switch sends them when it checks in. Rooms, zones and scenes appear here too.</p>
+      <a href="#" style="margin-top:8px; font-size:14px;">Set up a switch</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasLights }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px 12px;">
+      <label style="flex:0 1 320px; display:flex; align-items:center; gap:8px; border-radius:6px; border:1px solid var(--line); background:var(--cream); padding:5px 10px;">
+        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="color:var(--muted); flex-shrink:0;"><circle cx="9" cy="9" r="5.5"></circle><path d="m13.2 13.2 3.6 3.6" stroke-linecap="round"></path></svg>
+        <input type="search" value="{{ q }}" onChange="{{ onQ }}" placeholder="Find a light, room or zone" aria-label="Search" style="flex:1; min-width:0; border:0; outline:none; background:transparent; font-size:14px; padding:0;">
+      </label>
+      <sc-if value="{{ hasSwitches }}"><span style="margin-left:4px; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Switches</span></sc-if>
+      <sc-for list="{{ swCards }}" as="s" hint-placeholder-count="4">
+        <button type="button" aria-pressed="{{ s.pinned }}" title="{{ s.title }}" onClick="{{ s.onClick }}" onMouseEnter="{{ s.enter }}" onMouseLeave="{{ s.leave }}" style="display:flex; align-items:center; gap:7px; border-radius:999px; border:1px solid {{ s.bc }}; background:{{ s.bg }}; box-shadow:{{ s.shadow }}; opacity:{{ s.op }}; padding:4px 12px 4px 10px; font-size:13px; cursor:pointer; transition:opacity .12s, border-color .12s;">
+          <i style="{{ s.dot }}"></i>
+          <span>{{ s.name }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <section data-screen-label="Map" style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:grid; grid-template-columns:minmax(0,1fr) 120px 320px;">
+        <div style="display:grid; grid-template-columns:250px minmax(0,1fr);">
+          <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Rooms · {{ roomsCount }}</p><p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); padding-left:16px;">Lights · {{ lightsCount }}</p>
+        </div>
+        <span></span>
+        <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Zones · {{ zonesCount }}</p>
+      </div>
+      <div ref="{{ mapRef }}" onMouseLeave="{{ clearHover }}" onClick="{{ onMapClick }}" style="position:relative; display:grid; grid-template-columns:minmax(0,1fr) 120px 320px; align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <sc-for list="{{ rooms }}" as="r" hint-placeholder-count="4">
+            <div style="display:grid; grid-template-columns:250px minmax(0,1fr); border-radius:10px; border:1px solid {{ r.bc }}; background:var(--cream); box-shadow:{{ r.shadow }}; opacity:{{ r.op }};">
+              <div style="align-self:stretch; display:flex; flex-direction:column; border-radius:9px 0 0 9px; border-right:1px solid var(--line); background:{{ r.bg }};">
+                <button type="button" data-node="{{ r.key }}" onClick="{{ r.onClick }}" onMouseEnter="{{ r.onEnter }}" aria-expanded="{{ r.open }}" style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; border:0; border-radius:10px; background:transparent; padding:10px 12px; text-align:left; cursor:pointer;">
+                  <span style="font-size:14px; font-weight:500;">{{ r.name }}</span>
+                  <span style="font-size:12px; color:var(--muted);">{{ r.meta }}</span>
+                  <sc-if value="{{ r.hasCtrl }}"><span style="display:flex; flex-wrap:wrap; gap:5px; padding-top:2px;"><sc-for list="{{ r.ctrl }}" as="c"><sc-if value="{{ c.chip }}"><span title="{{ c.title }}" style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i title="{{ c.title }}" style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+                  <sc-if value="{{ r.notControlled }}"><span style="font-size:12px; color:var(--muted);">No switch of its own</span></sc-if>
+                </button>
+                <sc-if value="{{ r.open }}">
+                  <div data-detail="1" style="display:flex; flex-direction:column; gap:10px; border-top:1px solid var(--line); padding:10px 12px 12px;">
+                      <sc-for list="{{ r.d.blocks }}" as="b">
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                          <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">{{ b.label }}</p>
+                          <sc-for list="{{ b.lines }}" as="x">
+                            <p style="margin:0; font-size:13px; line-height:1.45; text-wrap:pretty;"><i style="{{ x.dot }}"></i><span onMouseEnter="{{ x.enter }}" onMouseLeave="{{ x.leave }}" style="font-weight:500; text-decoration:underline dotted; text-decoration-color:var(--muted); text-underline-offset:3px; cursor:default;">{{ x.who }}</span> · {{ x.what }}</p>
+                          </sc-for>
+                          <sc-for list="{{ b.groups }}" as="v">
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                              <p style="margin:0; font-size:13px; font-weight:500;">{{ v.name }} <span style="font-weight:400; color:var(--muted);">{{ v.kind }}</span></p>
+                              <sc-for list="{{ v.lines }}" as="x">
+                                <p style="margin:0; font-size:13px; line-height:1.45; color:var(--muted); text-wrap:pretty;"><i style="{{ x.dot }}"></i><span onMouseEnter="{{ x.enter }}" onMouseLeave="{{ x.leave }}" style="font-weight:500; text-decoration:underline dotted; text-decoration-color:var(--muted); text-underline-offset:3px; cursor:default; color:var(--foreground);">{{ x.who }}</span> · {{ x.what }}</p>
+                              </sc-for>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ r.d.hasNote }}"><p style="margin:0; font-size:13px; text-wrap:pretty;">{{ r.d.note }}</p></sc-if>
+                      <sc-if value="{{ r.d.hasScenes }}">
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                          <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Scenes · {{ r.d.sceneCount }}</p>
+                          <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                            <sc-for list="{{ r.d.scenes }}" as="x"><span title="{{ x.title }}" style="display:inline-flex; align-items:center; gap:5px; border-radius:999px; border:1px solid {{ x.bc }}; padding:1px 8px; font-size:12px;">{{ x.name }}<sc-for list="{{ x.dots }}" as="c"><i style="{{ c.style }}"></i></sc-for></span></sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ r.d.hasFacts }}"><p style="margin:0; font-size:12px; line-height:1.5; color:var(--muted); text-wrap:pretty;">{{ r.d.facts }}</p></sc-if>
+                    </div>
+                </sc-if>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:2px; padding:4px;">
+                <sc-for list="{{ r.lights }}" as="l">
+                  <div style="display:flex; flex-direction:column; border-radius:6px; border:1px solid {{ l.bc }}; background:{{ l.bg }}; opacity:{{ l.op }};">
+                    <button type="button" data-node="{{ l.key }}" onClick="{{ l.onClick }}" onMouseEnter="{{ l.onEnter }}" aria-expanded="{{ l.open }}" style="display:flex; align-items:center; gap:8px; min-height:30px; border:0; border-radius:6px; background:transparent; padding:3px 6px 3px 10px; text-align:left; cursor:pointer;">
+                      <span style="flex:1; min-width:0; font-size:13px; font-weight:{{ l.fw }}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ l.name }}</span>
+                      <sc-if value="{{ l.hasDots }}"><span style="display:inline-flex; align-items:center; gap:3px; padding:0 3px;"><sc-for list="{{ l.sdots }}" as="c"><sc-if value="{{ c.chip }}"><span title="{{ c.title }}" style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i title="{{ c.title }}" style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+                      <sc-if value="{{ l.sceneOnly }}"><i title="{{ l.title }}" style="width:8px; height:8px; margin:0 5px; border-radius:50%; border:1.5px solid var(--muted); display:block;"></i></sc-if>
+                      <sc-if value="{{ l.isNone }}"><span title="No switch" style="border-radius:999px; background:var(--warn-soft); color:var(--warn); padding:0 7px; font-size:11px; font-weight:500;">No switch</span></sc-if>
+                    </button>
+                    <sc-if value="{{ l.open }}">
+                      <div data-detail="1" style="display:flex; flex-direction:column; gap:10px; padding:4px 10px 10px;">
+                      <sc-for list="{{ l.d.blocks }}" as="b">
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                          <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">{{ b.label }}</p>
+                          <sc-for list="{{ b.lines }}" as="x">
+                            <p style="margin:0; font-size:13px; line-height:1.45; text-wrap:pretty;"><i style="{{ x.dot }}"></i><span onMouseEnter="{{ x.enter }}" onMouseLeave="{{ x.leave }}" style="font-weight:500; text-decoration:underline dotted; text-decoration-color:var(--muted); text-underline-offset:3px; cursor:default;">{{ x.who }}</span> · {{ x.what }}</p>
+                          </sc-for>
+                          <sc-for list="{{ b.groups }}" as="v">
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                              <p style="margin:0; font-size:13px; font-weight:500;">{{ v.name }} <span style="font-weight:400; color:var(--muted);">{{ v.kind }}</span></p>
+                              <sc-for list="{{ v.lines }}" as="x">
+                                <p style="margin:0; font-size:13px; line-height:1.45; color:var(--muted); text-wrap:pretty;"><i style="{{ x.dot }}"></i><span onMouseEnter="{{ x.enter }}" onMouseLeave="{{ x.leave }}" style="font-weight:500; text-decoration:underline dotted; text-decoration-color:var(--muted); text-underline-offset:3px; cursor:default; color:var(--foreground);">{{ x.who }}</span> · {{ x.what }}</p>
+                              </sc-for>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ l.d.hasNote }}"><p style="margin:0; font-size:13px; text-wrap:pretty;">{{ l.d.note }}</p></sc-if>
+                      <sc-if value="{{ l.d.hasScenes }}">
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                          <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Scenes · {{ l.d.sceneCount }}</p>
+                          <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                            <sc-for list="{{ l.d.scenes }}" as="x"><span title="{{ x.title }}" style="display:inline-flex; align-items:center; gap:5px; border-radius:999px; border:1px solid {{ x.bc }}; padding:1px 8px; font-size:12px;">{{ x.name }}<sc-for list="{{ x.dots }}" as="c"><i style="{{ c.style }}"></i></sc-for></span></sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ l.d.hasFacts }}"><p style="margin:0; font-size:12px; line-height:1.5; color:var(--muted); text-wrap:pretty;">{{ l.d.facts }}</p></sc-if>
+                    </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <span></span>
+        <div onScroll="{{ onColScroll }}" style="position:sticky; top:16px; max-height:calc(100vh - 32px); overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                    <sc-for list="{{ zones }}" as="z" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; border-radius:10px; border:1px solid {{ z.bc }}; background:{{ z.bg }}; box-shadow:{{ z.shadow }}; opacity:{{ z.op }}; flex-shrink:0;">
+              <button type="button" data-node="{{ z.key }}" onClick="{{ z.onClick }}" onMouseEnter="{{ z.onEnter }}" aria-expanded="{{ z.open }}" style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; border:0; border-radius:10px; background:transparent; padding:7px 12px; text-align:left; cursor:pointer;">
+                <span style="display:flex; width:100%; align-items:baseline; gap:8px;">
+                  <span style="flex:1; min-width:0; font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ z.name }}</span>
+                  <span style="font-family:'Geist Mono',ui-monospace,monospace; font-size:12px; color:var(--muted);">{{ z.count }}</span>
+                </span>
+                <sc-if value="{{ z.hasCtrl }}"><span style="display:flex; flex-wrap:wrap; gap:5px; padding-top:2px;"><sc-for list="{{ z.ctrl }}" as="c"><sc-if value="{{ c.chip }}"><span title="{{ c.title }}" style="{{ c.style }}">{{ c.label }}</span></sc-if><sc-if value="{{ c.dot }}"><i title="{{ c.title }}" style="{{ c.style }}"></i></sc-if></sc-for></span></sc-if>
+                <sc-if value="{{ z.notControlled }}"><span style="font-size:12px; color:var(--muted);">No switch of its own</span></sc-if>
+              </button>
+              <sc-if value="{{ z.open }}">
+                <div data-detail="1" style="display:flex; flex-direction:column; gap:10px; border-top:1px solid var(--line); padding:10px 12px 12px;">
+                      <sc-for list="{{ z.d.blocks }}" as="b">
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                          <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">{{ b.label }}</p>
+                          <sc-for list="{{ b.lines }}" as="x">
+                            <p style="margin:0; font-size:13px; line-height:1.45; text-wrap:pretty;"><i style="{{ x.dot }}"></i><span onMouseEnter="{{ x.enter }}" onMouseLeave="{{ x.leave }}" style="font-weight:500; text-decoration:underline dotted; text-decoration-color:var(--muted); text-underline-offset:3px; cursor:default;">{{ x.who }}</span> · {{ x.what }}</p>
+                          </sc-for>
+                          <sc-for list="{{ b.groups }}" as="v">
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                              <p style="margin:0; font-size:13px; font-weight:500;">{{ v.name }} <span style="font-weight:400; color:var(--muted);">{{ v.kind }}</span></p>
+                              <sc-for list="{{ v.lines }}" as="x">
+                                <p style="margin:0; font-size:13px; line-height:1.45; color:var(--muted); text-wrap:pretty;"><i style="{{ x.dot }}"></i><span onMouseEnter="{{ x.enter }}" onMouseLeave="{{ x.leave }}" style="font-weight:500; text-decoration:underline dotted; text-decoration-color:var(--muted); text-underline-offset:3px; cursor:default; color:var(--foreground);">{{ x.who }}</span> · {{ x.what }}</p>
+                              </sc-for>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ z.d.hasNote }}"><p style="margin:0; font-size:13px; text-wrap:pretty;">{{ z.d.note }}</p></sc-if>
+                      <sc-if value="{{ z.d.hasScenes }}">
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                          <p style="margin:0; font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);">Scenes · {{ z.d.sceneCount }}</p>
+                          <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                            <sc-for list="{{ z.d.scenes }}" as="x"><span title="{{ x.title }}" style="display:inline-flex; align-items:center; gap:5px; border-radius:999px; border:1px solid {{ x.bc }}; padding:1px 8px; font-size:12px;">{{ x.name }}<sc-for list="{{ x.dots }}" as="c"><i style="{{ c.style }}"></i></sc-for></span></sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ z.d.hasFacts }}"><p style="margin:0; font-size:12px; line-height:1.5; color:var(--muted); text-wrap:pretty;">{{ z.d.facts }}</p></sc-if>
+                    </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noZones }}"><p style="margin:0; font-size:13px; color:var(--muted);">No zones on this Bridge.</p></sc-if>
+        </div>
+        <svg aria-hidden="true" style="position:absolute; left:0; top:0; width:100%; height:100%; overflow:visible; pointer-events:none;">
+          <sc-for list="{{ paths }}" as="p">
+            <path d="{{ p.d }}" fill="none" style="stroke:var(--filament); stroke-width:1.5px; stroke-opacity:{{ p.o }};"></path>
+          </sc-for>
+          <sc-for list="{{ dots }}" as="p">
+            <circle cx="{{ p.x }}" cy="{{ p.y }}" r="3" style="fill:var(--filament);"></circle>
+          </sc-for>
+        </svg>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px; padding-top:8px; font-size:12px; color:var(--muted);">
+        <span style="display:inline-flex; align-items:center; gap:6px;"><span style="display:inline-flex; gap:3px;"><sc-for list="{{ legendDots }}" as="c"><i style="{{ c.style }}"></i></sc-for></span>switches that control the light directly</span>
+        <span style="display:inline-flex; align-items:center; gap:6px;"><span style="display:inline-flex; gap:3px;"><sc-for list="{{ legendRings }}" as="c"><i style="{{ c.style }}"></i></sc-for></span>switches that reach it through its room or a zone</span>
+        <sc-if value="{{ hasChipLegend }}"><span style="display:inline-flex; align-items:center; gap:6px;"><span style="{{ legendChip }}">Page</span>a page on a Round, same rules as the dots</span></sc-if>
+        <span style="display:inline-flex; align-items:center; gap:6px;"><i style="width:8px; height:8px; border-radius:50%; border:1.5px solid var(--muted); display:block;"></i>only scenes, through its room or a zone</span>
+        <span style="display:inline-flex; align-items:center; gap:6px;"><span style="border-radius:999px; background:var(--warn-soft); color:var(--warn); padding:0 7px; font-size:11px; font-weight:500;">No switch</span>nothing reaches it</span>
+        <span style="display:inline-flex; align-items:center; gap:6px;"><span style="display:inline-flex; gap:3px;"><sc-for list="{{ legendDots }}" as="c"><i style="{{ c.style }}"></i></sc-for></span>switches that control the room or zone as a whole, or cycle its scenes</span>
+        <span style="margin-left:auto;">Hover to preview · click to open · Esc to close · hover or click a switch to see its reach</span>
+      </div>
+    </section>
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;house&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;This house&quot;,&quot;Small house&quot;,&quot;No switches&quot;,&quot;Empty bridge&quot;],&quot;default&quot;:&quot;This house&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;stale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+const APP_THEMES = [
+  ['ember','Ember','Charcoal, copper','dark',['#14110f','#1e1a17','#e07a3d','#f4eee6']],
+  ['graphite','Graphite','Zinc, champagne','dark',['#121314','#1c1d1f','#d4b483','#ececec']],
+  ['night','Night','OLED, electric amber','dark',['#070708','#111114','#ffb020','#f2f2f0']],
+  ['ink','Ink','Blue-black, teal','dark',['#0b1016','#121a24','#3dd6c6','#e8eef6']],
+  ['plum','Plum','Espresso, rose','dark',['#140f14','#1d161d','#e8a0b4','#f3e8ee']],
+  ['matrix','Matrix','Black, phosphor green','dark',['#020402','#071208','#00ff41','#d0ffd4']],
+  ['nord','Nord','Polar night, frost','dark',['#2e3440','#3b4252','#88c0d0','#eceff4']],
+  ['dracula','Dracula','Purple, pink','dark',['#1e1f29','#282a36','#bd93f9','#f8f8f2']],
+  ['ocean','Ocean','Navy, sky cyan','dark',['#071018','#0d1b28','#38bdf8','#dceef8']],
+  ['paper','Paper','Cream, filament','light',['#f3eee4','#fffaf2','#c45c26','#1c1814']],
+  ['snow','Snow','Cool white, blue','light',['#f4f6f8','#ffffff','#2563eb','#1a2330']],
+  ['mist','Mist','Gray, slate','light',['#eef0f2','#ffffff','#4b5563','#1f2328']],
+  ['meadow','Meadow','Sage, leaf','light',['#eef3e8','#f7fbf3','#3f7a4a','#1c2418']],
+  ['porcelain','Porcelain','Blush, rose','light',['#f6f1f3','#fffafb','#c45c78','#2a1c22']],
+  ['sky','Sky','Pale blue, azure','light',['#eaf3f8','#f7fcff','#0284c7','#152030']],
+  ['linen','Linen','Ivory, olive','light',['#f3efe4','#fbf8f0','#6b7a3a','#242018']],
+  ['phosphor','Phosphor','Mint paper, matrix green','light',['#e8f5e9','#f4fbf4','#15803d','#0b2e14']],
+];
+
+const g_ = id => ({ k:'g', id });
+const l_ = (...ids) => ({ k:'l', ids });
+const unused = ctx => ({ ctx, unused:true });
+
+const REAL = {
+  bridge:'C42996FFFECA6703', snapshot:'Snapshot 4 h ago · 11:21, from ESP32C6-2',
+  white: n => /\.w$/i.test(n), on:['Velador Tomás 1.A'],
+  rooms:[
+    ['Baño principal',['Baño Espejo 1.A','Baño Espejo 2.A','Baño Espejo 3.A','Baño 1.W','Baño Tina 1.W'],['Tina','Nightlight','Concentrate','Read','Relax']],
+    ['Clarita',['Clarita Cielo 2.w','Clarita Cielo 1.W'],['Cancún','Relax']],
+    ['Cocina',['Cocina Mesa 1.C','Cocina Mesa 2.C','Cocina Mesa 3.C'],['Velas','Storybook','Read','Unwind','Shine','Concentrate','Arise','Relax','Chile','Nightlight','Nighttime','Among the pines','Ibiza 2','Amber robin','Ibiza','Honolulu','Sleepy','Coastal nights','Lovebirds','Energize']],
+    ['Dormitorio Principal',['Dorm. Pasillo 1.W','Dorm. Riel Closet 1.A','Dorm. Riel Closet 2.A','Dorm. Riel Closet 3.A','Dorm. Riel Tele 1.W','Dorm. Riel Tele 2.A','Dorm. Riel Tele 3.A','Velador Camby 1.A','Velador Tomás 1.A'],['Read','Relax','Prueba scene 1','Dimmed','Concentrate','Ibiza','Sunflare','Nightlight','Energize','Colinas onduladas']],
+    ['Hall Acceso',['Acceso 1.W','Acceso 2.C','Acceso Cuadro 1.C','Acceso Pasillo Cocina 1.W'],['Energize','Nightlight','Relax','Concentrate','Descanso','Among the pines','Read']],
+    ['Jose',['Jose cielo 2.W','Jose Velador 1.C','Jose cielo 1.W'],['Rome','Savanna sunset','Relax']],
+    ['Living Comedor',['Living Mesa 1.W','Living cuadro 1.C','Living Riel Mesa 1.W','Living Riel Mesa 2.C','Living Riel Mesa 3.W','Living Riel Mural 1.C','Living Riel Mural 2.W','Living Riel Mural 3.C','Living Riel Mural 4.W','Living Lámpara de pie 1.C'],['Among the pines','Rolling hills','Energize','Nightlight','Relax','Concentrate','Read']],
+    ['Pasillo',['Pasillo 2.W','Pasillo 1.W'],['Nightlight','Energize','Read','Concentrate','Relax']],
+    ['Sin asignar',['Hue color lamp 3'],['Read']],
+    ['Terraza',['Terraza Muro 1.C','Terraza Parrilla 2.W','Terraza Sillones 1.W','Terraza Parrilla 1.W','Terraza Sillones 2.W'],['Energize','Among the pines','Relax','Nightlight','Read','Concentrate','Parrillando']],
+  ],
+  zones:[
+    ['Áreas comunes',{rooms:['Living Comedor','Hall Acceso','Cocina','Terraza']},['Concentrate','Rest','Nightlight','Honolulu','Sailing away','Ibiza','Pumpkin spice','Read','Relax','Singapore','Energize']],
+    ['Brasilia 243','ALL',['Sleepy','Storybook','Read','Nightlight','Shine','Energize','Concentrate','Nighttime','Arise','Unwind','Relax']],
+    ['Cuadros',['Living cuadro 1.C','Living Riel Mesa 3.W','Acceso Cuadro 1.C'],['Relax','Read']],
+    ['Dormitorio principal cielos',['Dorm. Pasillo 1.W','Dorm. Riel Closet 1.A','Dorm. Riel Closet 2.A','Dorm. Riel Closet 3.A','Dorm. Riel Tele 1.W','Dorm. Riel Tele 2.A','Dorm. Riel Tele 3.A'],['solo closet','Escritorio y resto','Concentrate','Default','elegir ropa 1','TV','relajar','Rolling hills','Trabajo escritorio','elegir ropa 2','Relax']],
+    ['Iluminación nocturna cocina',['Cocina Mesa 1.C','Cocina Mesa 2.C','Cocina Mesa 3.C','Acceso Pasillo Cocina 1.W'],['Read','Relax','Nightlight','Concentrate']],
+    ['Iluminación nocturna pasillos',['Pasillo 1.W','Pasillo 2.W','Acceso 1.W','Acceso 2.C'],['Relax','Read','Nightlight','Concentrate']],
+    ['MA: Pasillo a cocina',['Acceso Pasillo Cocina 1.W','Acceso Cuadro 1.C','Cocina Mesa 1.C','Cocina Mesa 2.C','Cocina Mesa 3.C'],['Relax']],
+    ['MA: Pasillo dormitorios y hall',['Acceso 1.W','Acceso 2.C','Pasillo 1.W','Pasillo 2.W','Dorm. Pasillo 1.W'],['Relax']],
+    ['Veladores dormitorio principal',['Velador Camby 1.A','Velador Tomás 1.A'],['Read','Relax','Concentrate','Bright','Read C','Nightlight','Energize','Relax C','Read T','Relax T','Dimmed']],
+  ],
+  switches:[
+    { id:'c6-1', name:'ESP32C6-1', product:'Simple', meta:'Firmware 0.4.0 · seen 11 h ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'z:Veladores dormitorio principal', gs:[['Click','toggle',l_('Velador Tomás 1.A')],['Double-click','none'],['Hold','repair']] },
+      unused('D0'), unused('D1'), unused('D2') ] },
+    { id:'round-1', name:'Round Display 1', product:'Round', meta:'Firmware 0.5.28 · seen 2 d ago', units:[
+      { ctx:'page Veladores', title:'Veladores', sub:'Page 1', group:'z:Veladores dormitorio principal', gs:[['Tap','toggle',l_('Velador Tomás 1.A')],['Double tap','toggle',l_('Velador Camby 1.A')],['Ring','dim',l_('Velador Tomás 1.A','Velador Camby 1.A')]] },
+      { ctx:'page Dormitorio', title:'Dormitorio', sub:'Page 2', group:'z:Dormitorio principal cielos', gs:[['Tap','toggle',g_('z:Dormitorio principal cielos')],['Double tap','scenes',g_('z:Dormitorio principal cielos'),['solo closet','Trabajo escritorio','Escritorio y resto','TV','Relax']],['Ring','dim',g_('z:Dormitorio principal cielos')]] },
+      { ctx:'page Bano', title:'Bano', sub:'Page 3', group:'r:Baño principal', gs:[['Tap','toggle',g_('r:Baño principal')],['Double tap','scenes',g_('r:Baño principal'),['Relax','Tina','Read']],['Ring','dim',g_('r:Baño principal')]] },
+      { ctx:'page A.Comunes', title:'A.Comunes', sub:'Page 4', group:'z:Áreas comunes', gs:[['Tap','toggle',g_('z:Áreas comunes')],['Double tap','scenes',g_('z:Áreas comunes'),['Read','Honolulu','Nightlight','Ibiza']],['Ring','dim',g_('z:Áreas comunes')]] },
+      { ctx:'page Brasilia 243', title:'Brasilia 243', sub:'Page 5', group:'z:Brasilia 243', gs:[['Tap','toggle',g_('z:Brasilia 243')],['Double tap','scenes',g_('z:Brasilia 243'),['Sleepy','Storybook','Read','Nightlight','Shine','Energize']],['Ring','dim',g_('z:Brasilia 243')]] },
+      { ctx:'page Cocina', title:'Cocina', sub:'Page 6', group:'r:Cocina', gs:[['Tap','toggle',g_('r:Cocina')],['Double tap','scenes',g_('r:Cocina'),['Relax','Velas','Unwind','Amber robin','Ibiza','Coastal nights','Among the pines']],['Ring','dim',g_('r:Cocina')]] } ] },
+    { id:'c6-2', name:'ESP32C6-2', product:'Simple', meta:'Firmware 0.4.0 · seen 4 h ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'z:Veladores dormitorio principal', gs:[['Click','toggle',l_('Velador Tomás 1.A')],['Double-click','none'],['Hold','dim',l_('Velador Tomás 1.A')]] },
+      unused('D0'), unused('D1'), unused('D2') ] },
+    { id:'c6-3', name:'ESP32C6-3', product:'Simple', meta:'Firmware 0.4.0 · seen 11 h ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'z:Veladores dormitorio principal', gs:[['Click','toggle',l_('Velador Tomás 1.A')],['Double-click','none'],['Hold','repair']] },
+      unused('D0'), unused('D1'), unused('D2') ] },
+  ],
+  stale:{ sw:'c6-2', unit:{ ctx:'D0', sub:'GPIO 0 · Push button', group:'x:7c1e2a90', gs:[['Click','toggle',{k:'x', id:'7c1e2a90', type:'room'}],['Double-click','none'],['Hold','none']] } },
+};
+
+const SMALL = {
+  bridge:'ECB5FAFFFE1A2B3C', snapshot:'Snapshot 12 min ago, from Kitchen wall',
+  white: n => ['Ceiling','Pendants','Counter','Bedroom ceiling'].includes(n), on:['Pendants'],
+  rooms:[
+    ['Living',['Floor lamp','Ceiling','Shelf strip'],['Relax','Read','Bright']],
+    ['Kitchen',['Pendants','Counter'],['Cooking','Bright']],
+    ['Bedroom',['Bedside lamp','Bedroom ceiling'],['Nightlight','Relax']],
+  ],
+  zones:[ ['Downstairs',{rooms:['Living','Kitchen']},['Evening']] ],
+  switches:[
+    { id:'kw', name:'Kitchen wall', product:'Simple', meta:'Firmware 0.4.0 · seen 12 min ago', units:[
+      { ctx:'BOOT', sub:'GPIO 9 · Push button', group:'r:Kitchen', gs:[['Click','toggle',g_('r:Kitchen')],['Double-click','scenes',g_('r:Kitchen'),['Cooking','Bright']],['Hold','repair']] },
+      { ctx:'D0', sub:'GPIO 0 · Toggle switch', group:'r:Living', gs:[['On / Off','onoff',l_('Floor lamp')],['Double-click','none']] },
+      unused('D1'), unused('D2') ] },
+  ],
+  stale:{ sw:'kw', unit:{ ctx:'D1', sub:'GPIO 1 · Push button', group:'x:3fa07b12', gs:[['Click','toggle',{k:'x', id:'3fa07b12', type:'light'}],['Double-click','none'],['Hold','none']] } },
+};
+
+const HOUSES = {
+  'This house': REAL,
+  'Small house': SMALL,
+  'No switches': { ...REAL, snapshot:'Snapshot 3 d ago · 23 Sep, 18:02', switches:[], stale:null },
+  'Empty bridge': { bridge:'ECB5FAFFFE1A2B3C', snapshot:'No snapshot yet', white:() => false, rooms:[], zones:[], switches:[], stale:null },
+};
+
+const SW_HUES = [250, 145, 330, 75, 195, 20, 285, 110];
+const LIGHTING = { toggle:1, dim:1, scenes:1, onoff:1, on:1, off:1 };
+const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
+const slug = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-');
+const scenesTxt = sc => sc.length === 1 ? `recalls ${sc[0]}` : `cycles ${sc.join(' → ')}`;
+const verbObj = (g, obj) => {
+  if (g.act === 'dim') return g.name === 'Hold' ? `dims ${obj} while held` : `dims ${obj}`;
+  return ({ toggle:'toggles', onoff:'turns on and off', on:'turns on', off:'turns off' })[g.act] + ' ' + obj;
+};
+
+function build(H, withStale) {
+  const lights = {}, groups = [], gmap = {};
+  H.rooms.forEach(([name, ls, sc]) => {
+    const g = { key:'r:' + name, name, type:'room', lights:ls, scenes:sc };
+    groups.push(g); gmap[g.key] = g;
+    ls.forEach(n => lights[n] = { name:n, room:name, color:!H.white(n), on:(H.on || []).includes(n), zones:[] });
+  });
+  const all = Object.keys(lights);
+  H.zones.forEach(([name, spec, sc]) => {
+    const ls = spec === 'ALL' ? all : Array.isArray(spec) ? spec : all.filter(n => spec.rooms.includes(lights[n].room));
+    const g = { key:'z:' + name, name, type:'zone', lights:ls, scenes:sc, all: spec === 'ALL' };
+    groups.push(g); gmap[g.key] = g;
+    ls.forEach(n => lights[n].zones.push(name));
+  });
+  const switches = H.switches.map(s => ({ ...s, units: s.units.slice() }));
+  if (withStale && H.stale) {
+    const s = switches.find(x => x.id === H.stale.sw);
+    if (s) s.units = s.units.map(u => u.ctx === H.stale.unit.ctx ? H.stale.unit : u);
+  }
+  const gestures = [];
+  switches.forEach(sw => sw.units.forEach(u => (u.gs || []).forEach(([name, act, t, sc]) =>
+    gestures.push({ sw, u, name, act, t, sc: sc || [], who: `${sw.name} · ${u.ctx}` }))));
+  const direct = {}, via = {}, groupCtl = {}, sceneUse = {}, stale = [];
+  gestures.forEach(g => {
+    if (!LIGHTING[g.act] || !g.t) return;
+    if (g.t.k === 'x') { stale.push(g); return; }
+    if (g.t.k === 'l') g.t.ids.forEach(id => (direct[id] = direct[id] || []).push(g));
+    if (g.t.k === 'g') {
+      (groupCtl[g.t.id] = groupCtl[g.t.id] || []).push(g);
+      gmap[g.t.id].lights.forEach(id => { via[id] = via[id] || {}; (via[id][g.t.id] = via[id][g.t.id] || []).push(g); });
+      if (g.act === 'scenes') g.sc.forEach(s => (sceneUse[g.t.id + '|' + s] = sceneUse[g.t.id + '|' + s] || []).push(g));
+    }
+  });
+  Object.values(lights).forEach(L => {
+    L.direct = direct[L.name] || [];
+    L.viaGroups = Object.keys(via[L.name] || {}).sort((a, b) => gmap[a].lights.length - gmap[b].lights.length);
+    L.via = via[L.name] || {};
+    L.status = L.direct.length ? 'direct' : L.viaGroups.length ? 'via' : 'none';
+  });
+  return { H, lights, groups, gmap, switches, gestures, groupCtl, sceneUse, stale };
+}
+
+function lines(gs, fmt) {
+  const out = [], by = {};
+  gs.forEach(g => { if (!by[g.who]) { by[g.who] = { who:g.who, parts:[] }; out.push(by[g.who]); } by[g.who].parts.push(fmt(g)); });
+  return out.map(o => ({ who:o.who, what:o.parts.join(' · ') }));
+}
+const phraseGroup = g => `${g.name} ${g.act === 'scenes' ? scenesTxt(g.sc) : verbObj(g, '').trim()}`.replace(/\s+while held$/, ' while held');
+const phraseSelf = self => g => {
+  const others = g.t.ids.filter(x => x !== self);
+  return `${g.name} ${verbObj(g, 'it')}${others.length ? ' with ' + others.join(', ') : ''}`;
+};
+
+
+const THEME_VALS = (self, st) => {
+  const themeCur = APP_THEMES.find(t => t[0] === st.appTheme) || APP_THEMES[0];
+  return {
+    appThemeName: themeCur[1], themeOpen: st.themeOpen,
+    toggleThemePicker: () => self.setState({ themeOpen: !st.themeOpen }),
+    closeThemePicker: () => self.setState({ themeOpen:false }),
+    themeGroups: [['Dark','dark'],['Light','light']].map(([title, grp]) => ({ title, items: APP_THEMES.filter(t => t[3] === grp).map(t => ({
+      name:t[1], blurb:t[2], bc: t[0] === st.appTheme ? 'var(--filament)' : 'var(--line)', shadow: t[0] === st.appTheme ? '0 0 0 1px var(--filament)' : 'none',
+      colors: t[4].map(c => ({ style:{ display:'inline-block', width:14, height:14, borderRadius:'50%', background:c, border:'1px solid color-mix(in srgb, var(--foreground) 15%, transparent)' } })),
+      onClick: () => { self.applyTheme(t[0]); self.setState({ themeOpen:false }); },
+    })) })),
+  };
+};
+const shortWho = gs => [...new Set(gs.map(g => g.who))];
+
+class Component extends DCLogic {
+  state = { appTheme:'ember', themeOpen:false, q:'', filter:'all', sel:null, hover:null, swHover:null, swSel:null, unitHover:null, paths:[], dots:[] };
+  mapRef = React.createRef();
+  links = [];
+
+  componentDidMount() {
+    let t = null; try { t = localStorage.getItem('hsw-theme'); } catch (e) {}
+    this.applyTheme(APP_THEMES.some(x => x[0] === t) ? t : 'ember', false);
+    this.onWin = () => { cancelAnimationFrame(this.raf); this.raf = requestAnimationFrame(() => this.measure()); };
+    this.onKey = e => { if (e.key === 'Escape') this.setState({ sel:null, swHover:null, swSel:null, unitHover:null }); };
+    window.addEventListener('scroll', this.onWin, { passive:true });
+    window.addEventListener('resize', this.onWin);
+    window.addEventListener('keydown', this.onKey);
+    this.onWin();
+  }
+  componentWillUnmount() { window.removeEventListener('scroll', this.onWin); window.removeEventListener('resize', this.onWin); window.removeEventListener('keydown', this.onKey); }
+  componentDidUpdate() { this.onWin && this.onWin(); }
+  applyTheme(id, persist = true) {
+    document.documentElement.setAttribute('data-theme', id);
+    if (persist) try { localStorage.setItem('hsw-theme', id); } catch (e) {}
+    this.setState({ appTheme:id });
+  }
+  measure() {
+    const root = this.mapRef.current; if (!root) return;
+    const R = root.getBoundingClientRect();
+    const find = k => root.querySelector('[data-node="' + CSS.escape(k) + '"]');
+    const paths = [], dots = [];
+    this.links.forEach(([from, to, o]) => {
+      const A = find(from), B = find(to); if (!A || !B) return;
+      const a = A.getBoundingClientRect(), b = B.getBoundingClientRect();
+      const left = b.left + b.width / 2 < a.left;
+      const x1 = (left ? a.left : a.right) - R.left, y1 = a.top + a.height / 2 - R.top;
+      const x2 = (left ? b.right : b.left) - R.left, y2 = b.top + b.height / 2 - R.top;
+      const dx = Math.max(40, Math.abs(x2 - x1) * 0.5) * (left ? -1 : 1);
+      paths.push({ d: `M${x1.toFixed(1)} ${y1.toFixed(1)} C${(x1 + dx).toFixed(1)} ${y1.toFixed(1)}, ${(x2 - dx).toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`, o });
+      dots.push({ x: x1.toFixed(1), y: y1.toFixed(1) }, { x: x2.toFixed(1), y: y2.toFixed(1) });
+    });
+    const key = JSON.stringify(paths);
+    if (key !== this.lastKey) { this.lastKey = key; this.setState({ paths, dots }); }
+  }
+
+  renderVals() {
+    const st = this.state, p = this.props;
+    const D = build(HOUSES[p.house ?? 'This house'] || REAL, p.stale ?? false);
+    const dark = (APP_THEMES.find(t => t[0] === st.appTheme) || [])[3] !== 'light';
+    const col = {};
+    D.switches.forEach((s, i) => { col[s.id] = `oklch(${dark ? 0.76 : 0.56} ${dark ? 0.13 : 0.15} ${SW_HUES[i % SW_HUES.length]})`; });
+    const dotSt = (c, n) => ({ display:'block', width:n, height:n, borderRadius:'50%', background:c, flexShrink:0 });
+    const ringSt = c => ({ display:'block', width:8, height:8, borderRadius:'50%', border:'1.5px solid ' + c, boxSizing:'border-box', flexShrink:0 });
+    const named = sw => sw.units.some(u => u.title);
+    const chipSt = c => ({ display:'inline-flex', alignItems:'center', borderRadius:999, border:'1px solid ' + c, background:`color-mix(in oklch, ${c} 22%, transparent)`, color:'var(--foreground)', padding:'0 7px', fontSize:11, fontWeight:500, lineHeight:'16px', whiteSpace:'nowrap', flexShrink:0 });
+    const marks = (gs, dotSize) => {
+      const out = [], seen = new Set();
+      gs.forEach(g => {
+        const nm = named(g.sw), key = nm ? g.sw.id + '|' + g.u.ctx : g.sw.id;
+        if (seen.has(key)) return; seen.add(key);
+        if (nm) out.push({ chip:true, dot:false, label:g.u.title, title: g.sw.name + ' · ' + g.u.sub + ' · ' + [...new Set(gs.filter(x => x.sw === g.sw && x.u === g.u).map(x => x.name))].join(', '), style: chipSt(col[g.sw.id]) });
+        else out.push({ chip:false, dot:true, title: g.sw.name + ' · ' + [...new Set(gs.filter(x => x.sw === g.sw).map(x => (x.u.title || x.u.ctx) + ' ' + x.name))].join(', '), style: dotSt(col[g.sw.id], dotSize) });
+      });
+      return out;
+    };
+    const ctrlOf = k => { const ctrl = marks(D.groupCtl[k] || [], 9); return { ctrl, hasCtrl: ctrl.length > 0 }; };
+    const rooms = D.groups.filter(g => g.type === 'room'), zones = D.groups.filter(g => g.type === 'zone');
+    const nLights = Object.keys(D.lights).length;
+    const nScenes = D.groups.reduce((a, g) => a + g.scenes.length, 0);
+    const q = st.q.trim().toLowerCase(), has = s => s.toLowerCase().includes(q);
+
+    // what drives the links: a hovered switch name > the pinned node > the hovered node
+    let rel = { l:new Set(), g:new Set(), lit:new Set() };
+    const links = [];
+    const reach = (gs, lk) => {
+      const r = { l:new Set(), g:new Set(), lit:new Set() };
+      gs.filter(g => LIGHTING[g.act] && g.t && g.t.k !== 'x').forEach(g => {
+        if (g.t.k === 'l') g.t.ids.forEach(n => { r.l.add(n); r.lit.add(n); });
+        else {
+          const G = D.gmap[g.t.id]; r.g.add(G.key); r.lit.add(G.key);
+          G.lights.forEach(n => { r.l.add(n); if (lk && G.type === 'zone' && G.lights.length <= 20) lk.push(['l:' + n, G.key, 0.7]); });
+        }
+      });
+      r.l.forEach(n => r.g.add('r:' + D.lights[n].room));
+      return r;
+    };
+    const uh = st.unitHover;
+    const swId = (uh && uh.sw) || st.swHover || st.swSel;
+    const swObj = swId && D.switches.find(s => s.id === swId);
+    const unitCtx = uh && uh.sw === swId ? uh.ctx : null;
+    const act = swObj ? null : (st.sel || st.hover);
+    if (swObj) {
+      rel = reach(D.gestures.filter(g => g.sw === swObj && (!unitCtx || g.u.ctx === unitCtx)));
+    }
+    const lk = swObj ? (st.hover || st.sel) : act;
+    if (lk) {
+      const keep = swObj ? rel : null, act = lk;
+      if (keep) rel = { l:new Set(), g:new Set(), lit:new Set() };
+      if (act.startsWith('l:')) {
+        const L = D.lights[act.slice(2)];
+        rel.l.add(L.name); rel.g.add('r:' + L.room);
+        L.zones.forEach(z => { rel.g.add('z:' + z); links.push([act, 'z:' + z, 0.9]); });
+      } else {
+        const G = D.gmap[act]; rel.g.add(act);
+        G.lights.forEach(n => rel.l.add(n));
+        if (G.type === 'zone') G.lights.forEach(n => { rel.g.add('r:' + D.lights[n].room); links.push(['l:' + n, act, G.lights.length > 20 ? 0.45 : 0.8]); });
+        else zones.forEach(z => { const shared = G.lights.filter(n => z.lights.includes(n)); if (shared.length) { rel.g.add(z.key); shared.forEach(n => links.push(['l:' + n, z.key, z.lights.length > 20 ? 0.35 : 0.8])); } });
+      }
+      if (keep) rel = keep;
+    }
+    const focus = swObj || act;
+    this.links = links;
+
+    const swLines = (gs, fmt) => lines(gs, fmt).map(x => {
+      const id = gs.find(g => g.who === x.who).sw.id;
+      return { ...x, dot: { display:'inline-block', width:8, height:8, borderRadius:'50%', background:col[id], marginRight:6, verticalAlign:'0.5px' }, enter: () => this.setState({ swHover:id }), leave: () => this.setState({ swHover:null }) };
+    });
+    const sceneList = g => g.scenes.map(s => { const u = D.sceneUse[g.key + '|' + s]; return { name:s, used:!!u, title: u ? 'In the cycle on ' + [...new Set(u.map(g => g.who))].join(', ') : '', bc: u ? 'var(--muted)' : 'var(--line)', dots: u ? [...new Set(u.map(g => g.sw.id))].map(id => ({ style: dotSt(col[id], 7) })) : [] }; }).sort((a, b) => b.used - a.used);
+    const lightDetail = L => {
+      const blocks = [];
+      if (L.direct.length) blocks.push({ label:'Direct', lines: swLines(L.direct, phraseSelf(L.name)), groups:[] });
+      if (L.viaGroups.length) blocks.push({ label:'Through a room or zone', lines:[], groups: L.viaGroups.map(k => ({ name:D.gmap[k].name, kind: D.gmap[k].type === 'room' ? 'room' : 'zone', lines: swLines(L.via[k], phraseGroup) })) });
+      return { blocks, hasNote: L.status === 'none', note:'No switch reaches this light, directly or through its room or a zone.',
+        hasFacts:true, facts: [L.zones.length ? `Zones: ${L.zones.join(', ')}` : 'In no zone', L.color ? 'Colour' : 'White', (L.on ? 'On' : 'Off') + ' at snapshot time'].join(' · ') };
+    };
+    const groupDetail = G => {
+      const ctl = D.groupCtl[G.key] || [], blocks = [];
+      if (ctl.length) blocks.push({ label: 'Whole ' + G.type, lines: swLines(ctl, phraseGroup), groups:[] });
+      if (G.type === 'room') {
+        const viaZ = zones.filter(z => D.groupCtl[z.key] && G.lights.some(n => z.lights.includes(n))).sort((a, b) => a.lights.length - b.lights.length);
+        if (viaZ.length) blocks.push({ label:'Also through zones', lines:[], groups: viaZ.map(z => { const c = G.lights.filter(n => z.lights.includes(n)).length; return { name:z.name, kind: c < G.lights.length ? `${c} of ${G.lights.length} lights` : 'all lights', lines: swLines(D.groupCtl[z.key], phraseGroup) }; }) });
+      }
+      const own = G.lights.filter(n => D.lights[n].direct.length);
+      const byRoom = rooms.map(r => [r.name, r.lights.filter(n => G.lights.includes(n)).length]).filter(x => x[1] > 0);
+      return { blocks, hasNote: ctl.length === 0, note: `No switch controls this ${G.type} as a whole.` + (own.length ? ` ${own.join(', ')} ${own.length === 1 ? 'has a switch of its' : 'have switches of their'} own.` : ''),
+        hasScenes: G.scenes.length > 0, sceneCount: G.scenes.length, scenes: sceneList(G),
+        hasFacts: G.type === 'zone', facts: G.all ? 'Every light on the Bridge' : byRoom.map(([n, c]) => { const tot = D.gmap['r:' + n].lights.length; return c === tot ? `all of ${n}` : `${c} of ${tot} in ${n}`; }).join(' · ') };
+    };
+
+    const passes = L => (st.filter === 'all' || L.status === st.filter) && (!q || has(L.name) || has(L.room) || L.zones.some(has));
+    const nodeStyle = (on, strong) => ({ bc: strong || on ? 'var(--filament)' : 'var(--line)', bg: strong ? 'var(--filament-soft)' : 'var(--cream)', shadow: strong ? '0 0 0 1px var(--filament)' : 'none' });
+    const hoverOf = k => () => { if (!this.state.sel && this.state.hover !== k) this.setState({ hover:k }); };
+    const pick = k => e => { e.stopPropagation(); this.setState({ sel: st.sel === k ? null : k, hover:null, swHover:null }); };
+
+    const roomVMs = rooms.map(r => {
+      const on = focus && rel.g.has(r.key), open = st.sel === r.key;
+      const strong = open || (!st.sel && st.hover === r.key) || rel.lit.has(r.key);
+      return {
+        key:r.key, name:r.name, open, ...nodeStyle(on, strong),
+        op: (focus && !on) || !r.lights.some(n => passes(D.lights[n])) ? 0.4 : 1,
+        bracket: on ? 'var(--filament)' : 'var(--line)',
+        meta: `${plural(r.lights.length, 'light')} · ${plural(r.scenes.length, 'scene')}`,
+        ...ctrlOf(r.key), notControlled: !(D.groupCtl[r.key] || []).length,
+        onClick: pick(r.key), onEnter: hoverOf(r.key), d: open ? groupDetail(r) : {},
+        lights: r.lights.map(n => {
+          const L = D.lights[n], k = 'l:' + n, lopen = st.sel === k;
+          const strongL = lopen || (!st.sel && st.hover === k) || rel.lit.has(n);
+          const nSw = new Set(L.direct.map(g => g.sw.id)).size;
+          const dIds = [...new Set(L.direct.map(g => g.sw.id))];
+          const viaG = L.viaGroups.flatMap(gk => L.via[gk].filter(g => g.act !== 'scenes'));
+          const vIds = [...new Set(viaG.map(g => g.sw.id))].filter(id => !dIds.includes(id));
+          const swN = id => D.switches.find(s => s.id === id).name;
+          const sdots = [
+            ...marks(L.direct, 8),
+            ...vIds.map(id => ({ chip:false, dot:true, title: swN(id) + ' · through ' + [...new Set(viaG.filter(g => g.sw.id === id).map(g => D.gmap[g.t.id].name))].join(', '), style: ringSt(col[id]) })),
+          ];
+          return {
+            key:k, name:n, open:lopen, isDirect: L.status === 'direct', isVia: L.status === 'via', isNone: L.status === 'none', badge:nSw,
+            title: L.status === 'direct' ? `Direct · ${plural(nSw, 'switch', 'switches')}` : 'Through ' + L.viaGroups.map(g => D.gmap[g].name).join(', '),
+            bc: strongL ? 'var(--filament)' : 'transparent', bg: lopen ? 'var(--background)' : strongL ? 'var(--filament-soft)' : focus && rel.l.has(n) ? 'var(--cream)' : 'transparent',
+            fw: lopen ? 500 : 400, op: (focus && !rel.l.has(n)) || !passes(L) ? 0.35 : 1,
+            sdots, hasDots: sdots.length > 0, sceneOnly: !sdots.length && L.status === 'via',
+            onClick: pick(k), onEnter: hoverOf(k), d: lopen ? lightDetail(L) : {},
+          };
+        }),
+      };
+    });
+    const zoneVMs = zones.map(z => {
+      const on = focus && rel.g.has(z.key), open = st.sel === z.key;
+      const strong = open || (!st.sel && st.hover === z.key) || rel.lit.has(z.key);
+      return {
+        key:z.key, name:z.name, open, count: z.all ? 'all ' + z.lights.length : z.lights.length, ...nodeStyle(on, strong),
+        op: (focus && !on) || (q && !has(z.name) && !z.lights.some(has)) ? 0.4 : 1,
+        ...ctrlOf(z.key), notControlled: !(D.groupCtl[z.key] || []).length,
+        onClick: pick(z.key), onEnter: hoverOf(z.key), d: open ? groupDetail(z) : {},
+      };
+    });
+
+    const counts = { all:nLights, direct:0, via:0, none:0 };
+    Object.values(D.lights).forEach(L => counts[L.status]++);
+    const dots = { direct:{ width:7, height:7, borderRadius:'50%', background:'var(--filament)', display:'block' },
+      via:{ width:7, height:7, borderRadius:'50%', border:'1.5px solid var(--muted)', display:'block' },
+      none:{ width:7, height:7, borderRadius:'50%', background:'var(--warn)', display:'block' } };
+    const filters = [['all','All lights'],['direct','Direct'],['via','Only through a room or zone'],['none','No switch']].map(([k, label]) => ({
+      label, n: counts[k], on: st.filter === k, bc: st.filter === k ? 'var(--filament)' : 'var(--line)', bg: st.filter === k ? 'var(--filament-soft)' : 'var(--cream)',
+      dot: dots[k] || { display:'none' }, onClick: () => this.setState({ filter: st.filter === k && k !== 'all' ? 'all' : k }) }));
+    const swCards = D.switches.map(sw => {
+      const mine = D.gestures.filter(g => g.sw === sw);
+      const R = reach(mine), pinned = st.swSel === sw.id, shown = swObj === sw;
+      const hits = act ? (act.startsWith('l:') ? R.l.has(act.slice(2)) : R.lit.has(act)) : false;
+      const used = sw.units.filter(u => !u.unused), nUnused = sw.units.length - used.length;
+      return {
+        name: sw.name, product: sw.product, meta: sw.meta, pinned, title: `${sw.product} · reaches ${plural(R.l.size, 'light')} · ${sw.meta}`, dot: dotSt(col[sw.id], 10),
+        bc: pinned || shown || hits ? 'var(--filament)' : 'var(--line)',
+        bg: pinned || hits ? 'var(--filament-soft)' : 'var(--cream)',
+        shadow: pinned ? '0 0 0 1px var(--filament)' : 'none',
+        op: (act && !hits) || (swObj && !shown) ? 0.45 : 1,
+        reachText: plural(R.l.size, 'light'), hasUnused: nUnused > 0, unusedText: `${plural(nUnused, 'input')} unused`,
+        onClick: () => this.setState({ swSel: pinned ? null : sw.id, sel:null, hover:null }),
+        enter: () => this.setState({ swHover: sw.id }), leave: () => this.setState({ swHover:null, unitHover:null }),
+        units: used.map(u => {
+          const gs = mine.filter(g => g.u === u && LIGHTING[g.act] && g.t);
+          const missing = gs.some(g => g.t.k === 'x');
+          const names = [...new Set(gs.flatMap(g => g.t.k === 'l' ? g.t.ids : g.t.k === 'g' ? [D.gmap[g.t.id].name] : ['missing ' + g.t.type]))];
+          return {
+            label: u.title || u.ctx, targets: names.length ? names.join(', ') : 'No lighting gestures',
+            tc: missing ? 'var(--warn)' : 'var(--muted)', bg: shown && unitCtx === u.ctx ? 'var(--filament-soft)' : 'transparent',
+            enter: () => this.setState({ unitHover:{ sw:sw.id, ctx:u.ctx } }), leave: () => this.setState({ unitHover:null }),
+          };
+        }),
+      };
+    });
+    const unitLabel = swObj && unitCtx ? (swObj.units.find(u => u.ctx === unitCtx) || {}) : null;
+    const staleItems = D.stale.map(g => ({ who: `${g.who} · ${g.name}`, text: `${verbObj(g, 'a ' + g.t.type)} that isn't in this snapshot (${g.t.id}…)` }));
+
+    return {
+      ...THEME_VALS(this, st),
+      bridgeId: D.H.bridge,
+      countsText: nLights ? `${plural(nLights, 'light')} · ${plural(rooms.length, 'room')} · ${plural(zones.length, 'zone')} · ${plural(nScenes, 'scene')}` : 'No lights',
+      snapshotText: D.H.snapshot,
+      hasStale: staleItems.length > 0, staleItems,
+      staleTitle: `${plural(staleItems.length, 'gesture points', 'gestures point')} at something that isn't in this snapshot`,
+      noSwitchesNotice: nLights > 0 && D.switches.length === 0,
+      isEmpty: nLights === 0, hasLights: nLights > 0,
+      q: st.q, onQ: e => this.setState({ q: e.target.value }), filters,
+      roomsCount: rooms.length, lightsCount: nLights, zonesCount: zones.length, noZones: zones.length === 0,
+      rooms: roomVMs, zones: zoneVMs,
+      swShowing: !!swObj, swName: swObj ? swObj.name + (unitLabel ? ' · ' + (unitLabel.title || unitLabel.ctx) : '') : '',
+      swPinned: !!st.swSel, clearSw: () => this.setState({ swSel:null, swHover:null, unitHover:null }),
+      hasChipLegend: D.switches.some(named), legendChip: D.switches.some(named) ? chipSt(col[D.switches.find(named).id]) : {}, legendRings: D.switches.slice(0, 4).map(s => ({ style: ringSt(col[s.id]) })), legendDots: D.switches.slice(0, 4).map(s => ({ style: dotSt(col[s.id], 7) })), hasSwitches: D.switches.length > 0 && nLights > 0, switchCount: D.switches.length, swCards,
+      mapRef: this.mapRef, onColScroll: () => this.onWin && this.onWin(),
+      clearHover: () => this.setState({ hover:null }),
+      onMapClick: e => { if (!e.target.closest('[data-node]') && !e.target.closest('[data-detail]')) this.setState({ sel:null }); },
+      paths: st.paths, dots: st.dots,
+    };
+  }
+}
+</script>
+</body>
+</html>

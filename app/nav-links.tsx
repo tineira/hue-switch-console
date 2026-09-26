@@ -13,6 +13,11 @@ export function NavLinks() {
       active: path === "/" || path === "/switches" || path.startsWith("/switches/"),
     },
     {
+      href: "/lights",
+      label: "Lights",
+      active: path.startsWith("/lights"),
+    },
+    {
       href: "/setup",
       label: "Setup",
       active: path.startsWith("/setup"),
