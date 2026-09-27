@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` ("accounts spec") and `docs/specs/waitlist.md`.
 
-**Status:** draft. Waiting for the user's approval before code. §5 lists the decisions still open; the text uses the recommended answer for each.
+**Status:** draft. §5 decided by the user (2026-09-27). Waiting for approval before code.
 
 ## 1. What and why
 
@@ -52,7 +52,7 @@ A "Firmware" section, one table per product:
 
 Each row with bins has "Make current", which calls `setCurrentRelease` behind `requireAdmin()` and records an audit event. Rows without bins (pruned, or imported from the old changelog) show "notes only" and cannot be made current.
 
-Uploads still become current at once (§5, question 1).
+Uploads still become current at once (§5, decision 1).
 
 ### 2.5 Audit log
 
@@ -125,9 +125,9 @@ Nothing to do.
 
 - [ ] Drop `users.role` (user OK, once nothing reads it)
 
-## 5. Open questions
+## 5. Decisions (2026-09-27)
 
-1. **Upload staging.** Should a CI upload stop becoming current at once, so every release needs "Make current" in `/admin`? That closes the leaked-CI-token risk, but adds a manual step to every release. Recommended: not yet. Keep auto-current, and revisit when more than one person can push to a firmware repo.
-2. **Audit retention.** 1 year (recommended) or forever? It is small either way.
-3. **Show the suspension reason to the person?** Recommended: no, admin only.
-4. **Page size.** 50 accounts and 50 invites a page (recommended).
+1. **Upload staging:** no. A CI upload still becomes current at once; `/admin` adds "Make current" for rollback and forward. Revisit when more than one person can push to a firmware repo.
+2. **Audit retention:** 1 year. The daily cron deletes older `admin_events` rows.
+3. **Suspension reason:** admin only. The person sees "This account is suspended." as today.
+4. **Page size:** 50 accounts and 50 invites a page.
