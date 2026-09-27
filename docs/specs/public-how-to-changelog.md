@@ -73,7 +73,7 @@ Both pages become public before the repos do, so their text is published earlier
 - [x] Sitemap and `llms.txt` updated
 - [x] `docs/changelog.md` entry: How-to and Changelog open without an account
 - [x] Typecheck, lint and build pass; checked signed out on a local production build
-- [ ] Deployed; checked on production signed out (with `curl`): `/how-to`, `/how-to?product=simple` and `/changelog` return 200 with their content and canonical tags; sitemap lists them
+- [x] Deployed 2026-09-27 (`93eccf7`); checked on production signed out (with `curl`): `/how-to`, `/how-to?product=simple` and `/changelog` return 200 with their content and canonical tags; sitemap lists them
 - [ ] Checked on production signed in by the user: both pages look as before, with the normal menu
 
 ### Round and Simple
