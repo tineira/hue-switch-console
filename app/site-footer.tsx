@@ -57,6 +57,16 @@ export function SiteFooter() {
         <Link href="/privacy" className={TEXT_LINK}>
           Privacy
         </Link>
+        <span aria-hidden="true">·</span>
+        {/* AGPL-3.0 §13: a hosted copy must offer its users the source. */}
+        <a
+          href="https://github.com/tineira/hue-switch-console"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={TEXT_LINK}
+        >
+          Source (AGPL-3.0)
+        </a>
       </div>
     </footer>
   );

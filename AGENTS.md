@@ -33,6 +33,8 @@ The product is three repos. This one is the hub.
 
 More switch firmwares may join; each gets a row here and the same `## Contract` section in its own AGENTS.md.
 
+Licensing: community open source. The console is `AGPL-3.0-only`. Every firmware is MIT, and a new switch repo starts with an MIT `LICENSE` and a README "License" section. Do not add dependencies that are incompatible with those licenses.
+
 Source of truth for anything a switch and the console both depend on:
 
 - `docs/device-api.md`: endpoints, auth, payloads, error codes.

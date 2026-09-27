@@ -187,3 +187,17 @@ a `CHANGELOG.md`, the `FIRMWARE_UPLOAD_TOKEN` secret, its product id in
 the `firmware_releases` / `firmware_current` checks in `db/schema.sql` and
 `lib/ensure-schema.ts`, a `## <Product>` intro in `docs/changelog.md`, and a
 row in `AGENTS.md` ("Multi-repo").
+
+## License
+
+Copyright (C) 2026 Tomas Neira and contributors.
+
+The console is free software under the [GNU Affero General Public License v3.0](LICENSE)
+(`AGPL-3.0-only`). If you run a modified copy as a network service, you must
+offer its users the source of your version; the site footer's "Source" link does
+that for this deployment. Contributions are accepted under the same license.
+
+The switch firmwares, [`hue-round-switch`](https://github.com/tineira/hue-round-switch)
+and [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch), are MIT.
+
+Not affiliated with or endorsed by Signify. Philips Hue is a trademark of Signify.
