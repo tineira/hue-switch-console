@@ -103,7 +103,7 @@ function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
   );
 }
 
-// Public: signed-out visitors get the same page (docs/specs/public-how-to-changelog.md §4.3).
+// Public: signed-out visitors get the same page (docs/specs/finished/public-how-to-changelog.md §4.3).
 export default async function ChangelogPage() {
   const user = await getSessionUser().catch(() => null);
   const doc = await loadChangelog();

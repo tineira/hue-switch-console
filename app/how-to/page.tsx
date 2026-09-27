@@ -14,7 +14,7 @@ const DESCRIPTION = {
 };
 
 // The server renders one product, so each ?product= URL is its own page for search
-// (docs/specs/public-how-to-changelog.md D3). Bare /how-to renders Round.
+// (docs/specs/finished/public-how-to-changelog.md D3). Bare /how-to renders Round.
 export async function generateMetadata({ searchParams }: PageProps<"/how-to">): Promise<Metadata> {
   const { product } = await searchParams;
   const id = product === "simple" ? "simple" : "round";
@@ -25,7 +25,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/how-to">): 
   };
 }
 
-// Public: signed-out visitors get the same guide (docs/specs/public-how-to-changelog.md §4.2).
+// Public: signed-out visitors get the same guide (docs/specs/finished/public-how-to-changelog.md §4.2).
 export default async function HowToPage({ searchParams }: PageProps<"/how-to">) {
   const user = await getSessionUser().catch(() => null);
   const { product } = await searchParams;

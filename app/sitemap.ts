@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { PRODUCT_CONSOLE_URL } from "@/lib/web-setup/products";
 
-// Pages a signed-out visitor can read. How-to has one URL per product (docs/specs/public-how-to-changelog.md D3).
+// Pages a signed-out visitor can read. How-to has one URL per product (docs/specs/finished/public-how-to-changelog.md D3).
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: PRODUCT_CONSOLE_URL, priority: 1 },

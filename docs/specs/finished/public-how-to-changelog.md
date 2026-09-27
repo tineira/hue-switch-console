@@ -2,7 +2,7 @@
 
 Console-only spec. No device endpoint, payload or NVS change, so no firmware work.
 
-**Status:** approved 2026-09-27 (D1–D5 as recommended; no redirect from bare `/how-to`); in progress
+**Status:** done (2026-09-27). Approved with D1–D5 as recommended and no redirect from bare `/how-to`; live since `93eccf7`. The two follow-ups in §5 are not done and need their own change.
 
 ## 1. What and why
 
@@ -74,7 +74,7 @@ Both pages become public before the repos do, so their text is published earlier
 - [x] `docs/changelog.md` entry: How-to and Changelog open without an account
 - [x] Typecheck, lint and build pass; checked signed out on a local production build
 - [x] Deployed 2026-09-27 (`93eccf7`); checked on production signed out (with `curl`): `/how-to`, `/how-to?product=simple` and `/changelog` return 200 with their content and canonical tags; sitemap lists them
-- [ ] Checked on production signed in by the user: both pages look as before, with the normal menu
+- [x] Checked on production signed in by the user (2026-09-27): both pages look as before, with the normal menu
 
 ### Round and Simple
 
