@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   decideRequestAction,
   deleteAccountAction,
+  emailInviteAction,
   limitsAction,
   revokeInviteAction,
   suspendAction,
@@ -136,10 +137,18 @@ export default async function AdminPage({
                     {state}, created {day(i.created_at)}
                   </span>
                   {state === "open" ? (
-                    <form action={revokeInviteAction} className="ml-auto">
-                      <input type="hidden" name="id" value={i.id} />
-                      <button className={SMALL_BUTTON}>Revoke</button>
-                    </form>
+                    <div className="ml-auto flex gap-2">
+                      {i.email ? (
+                        <form action={emailInviteAction}>
+                          <input type="hidden" name="id" value={i.id} />
+                          <button className={SMALL_BUTTON}>Email invite</button>
+                        </form>
+                      ) : null}
+                      <form action={revokeInviteAction}>
+                        <input type="hidden" name="id" value={i.id} />
+                        <button className={SMALL_BUTTON}>Revoke</button>
+                      </form>
+                    </div>
                   ) : null}
                 </li>
               );

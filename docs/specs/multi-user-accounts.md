@@ -327,6 +327,7 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 - [x] Deployed (2026-09-26); `CRON_SECRET` set; `/privacy` page live (§2.12)
 - [x] Checked on production by the user: Google and GitHub sign-in link to the existing account (2026-09-27)
 - [ ] **TODO** Checked on production by the user: sign-in by code, invite request → approve → sign-up from the invite email, account deletion on a test account
+- [ ] **TODO** Revisit the `/login` Turnstile and invite-request changes of 2026-09-27 (explicit render, the invite form mounting only when opened, `/login?request=invite` from the landing page). The user wants them reworked later.
 
 ### Round (`hue-round-switch`)
 

@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import {
   createInvite,
   decideInviteRequest,
+  getInvite,
   getInviteRequest,
   isValidEmail,
   normalizeEmail,
@@ -39,6 +40,26 @@ export async function createInviteAction(_prev: InviteState, formData: FormData)
 export async function revokeInviteAction(formData: FormData) {
   await requireAdmin();
   await revokeInvite(String(formData.get("id")));
+  revalidatePath("/admin");
+}
+
+/**
+ * Emails an open invite that is tied to an address. Only a hash of the old link is stored, so
+ * a new invite is created and sent, and the old one revoked once the email is out.
+ */
+export async function emailInviteAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const old = await getInvite(String(formData.get("id")));
+  if (!old?.email || old.used_at || old.revoked_at) return;
+  if (new Date(old.expires_at).getTime() < Date.now()) return;
+  const { id, code } = await createInvite({ email: old.email, createdBy: admin.id });
+  try {
+    await sendInvite(old.email, `${await origin()}/login?invite=${code}`, false);
+  } catch (err) {
+    await revokeInvite(id);
+    throw err;
+  }
+  await revokeInvite(old.id);
   revalidatePath("/admin");
 }
 

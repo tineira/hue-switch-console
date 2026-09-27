@@ -86,6 +86,14 @@ export async function listInvites(): Promise<InviteRow[]> {
   return rows as InviteRow[];
 }
 
+export async function getInvite(id: string): Promise<InviteRow | null> {
+  const rows = await sql()`
+    select id, code_prefix, email, expires_at, used_at, used_by, revoked_at, created_at
+    from invites where id = ${id}
+  `;
+  return (rows[0] as InviteRow | undefined) ?? null;
+}
+
 export async function revokeInvite(id: string) {
   await sql()`update invites set revoked_at = now() where id = ${id} and used_at is null`;
 }

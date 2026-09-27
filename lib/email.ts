@@ -65,10 +65,14 @@ export async function sendEmailChangedNotice(to: string, newEmail: string) {
   );
 }
 
-export async function sendInvite(to: string, link: string) {
+/** `requested`: the person asked for it on /login; otherwise the admin invited them directly. */
+export async function sendInvite(to: string, link: string, requested = true) {
+  const opening = requested
+    ? "You asked for an invite, and a spot is open."
+    : "You're invited to Hue Switch Console, where you set up Wi-Fi wall switches for Philips Hue.";
   await send(
     to,
     "Your invite to Hue Switch Console",
-    `You asked for an invite, and a spot is open.\n\nCreate your account here (the link works once and expires in 14 days):\n${link}\n\nHue Switch Console`,
+    `${opening}\n\nCreate your account here (the link works once and expires in 14 days):\n${link}\n\nSign in with Google, GitHub, or a code sent to this address.\n\nHue Switch Console`,
   );
 }
