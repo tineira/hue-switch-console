@@ -133,6 +133,8 @@ Round moved recipe/ring/refresh to `hue_job` (meets input-during-hue for gesture
 
 **Analyze together:** these are not two separate bugs. It's the same decision: does the periodic snapshot leave the input path, or do we accept a freeze of N seconds every hour?
 
+**Status, Simple (2026-09-27, firmware 0.4.1):** the console half is closed: register, snapshot and config poll run in a FreeRTOS task, not the `loop`. Open: Hue actions still run in the `loop` (`channelFire` → `hueHttp`, 8 s timeout, a new TLS connection per call; toggle = GET + PUT). A double-click on one channel is **not** split, because the first event waits for the 400 ms window before any HTTP. The cost is across channels: while one call is in flight, other pins are not sampled, so a second switch waits, and with a slow or down Bridge a quick open/close on another toggle nets out and is lost. Fix: a Hue job queue like Round's `hue_job`, sized for the single-core C6.
+
 ### P9 — Scene cycle without a GET to the Bridge (Round)
 
 **Severity:** Runtime · R7, R12
@@ -160,6 +162,8 @@ Also, if `dim` comes as `null`, the firmware **re-infers** the ring from recipes
 **Status (2026-09-27):** closed. The config GET bumps `rev` whenever `persistPageGroupAndDim` changes a page.
 
 ### P12 — Wi-Fi failure on Simple does not retry
+
+**Status (2026-09-27):** closed. The Simple `loop` retries the stored network (`wifiRetryStored`).
 
 **Severity:** Runtime · S5
 
@@ -194,7 +198,7 @@ Spec: ASCII, `Niños` → `Ninos`. The folding only runs when creating from the 
 | P18 | Dead columns `pages.dim_target_*` (C10). Spec: there is no `dimTarget` | Confuses migrations |
 | P19 | Console README and home: "recipes per channel". Simple README: "one lamp", recipes "not yet", `CONSOLE_*` "when keys exist". `hue-lights.md` asks for `HUE_LIGHT_ID` (C9, S7, R4) | Onboarding to the old slice |
 | P20 | web-setup: requirements in `docs/specs/finished/web-setup.md`. No UI, no Improv, no `.bin`. Real onboarding = `config.h` (C14, S6) | v1 closed without this, or a blocking slice? |
-| P21 | Simple JSON parser does not tolerate a space after `:` (S9). Compact `Response.json()` usually works | A pretty-print in the console leaves stale NVS |
+| P21 | ~~Simple JSON parser does not tolerate a space after `:` (S9)~~ Closed 2026-09-27: `json_util.h` skips whitespace after `:` | A pretty-print in the console leaves stale NVS |
 | P22 | Dead Round code: synchronous `recipeFire` / `uiRefreshState` (R10) | Re-wiring freezes Ready again |
 
 ---
@@ -266,6 +270,7 @@ Verified against `main` @ `34aaefdc`. Fixed in the same pass: 500s no longer ret
 | New MAC with no `product` is inferred Round | `upsertSwitch` / `inferProduct` | See P5. Require `product` on a first register once both firmwares send it. |
 | `setLimits` accepts any keys | `lib/admin.ts` | Only `limitsAction` filters them. |
 | 500 `database_error` and 410 `message` not in `docs/device-api.md` | C21 | Contract table is incomplete. |
+| Simple saves `rev` before the recipes | `hue-simple-switch` `recipes.h` `recipesSave` | If the `jsonb` write fails (NVS full) or power drops between the writes, NVS holds the new `rev` with the old recipes. After a reboot the switch reports the new `rev`, the console answers 204, and it runs the old config until the next change. Fix: write `jsonb` and `bid` first, `rev` last and only if `jsonb` saved. Firmware-only; needs a `FIRMWARE_VERSION` bump. |
 
 ---
 
