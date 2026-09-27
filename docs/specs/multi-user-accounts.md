@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress. Live on production with Google, GitHub and emailed-code sign-in (email since 2026-09-27); password sign-in is off, sign-up is invite-only. **TODO:** the email checks on production (see the checklist).
+**Status:** live on production (2026-09-27): Google, GitHub and emailed-code sign-in, invite-only sign-up, all checks passed. Follow-ups still open in the checklist: rework the `/login` Turnstile and invite-form changes, and drop `users.password_hash` later.
 
 ## 1. What and why
 
@@ -326,7 +326,7 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 - [x] `docs/changelog.md` console entry (including "sign in again once" and the 15-minute idle poll)
 - [x] Deployed (2026-09-26); `CRON_SECRET` set; `/privacy` page live (§2.12)
 - [x] Checked on production by the user: Google and GitHub sign-in link to the existing account (2026-09-27)
-- [ ] **TODO** Checked on production by the user: sign-in by code, invite request → approve → sign-up from the invite email, account deletion on a test account
+- [x] Checked on production by the user (2026-09-27): sign-in by code, invite request → approve → sign-up from the invite email, account deletion on a test account
 - [ ] **TODO** Revisit the `/login` Turnstile and invite-request changes of 2026-09-27 (explicit render, the invite form mounting only when opened, `/login?request=invite` from the landing page). The user wants them reworked later.
 
 ### Round (`hue-round-switch`)
