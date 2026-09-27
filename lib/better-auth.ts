@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { emailOTP } from "better-auth/plugins";
 import { Pool } from "pg";
 import {
+  envValue,
   githubConfigured,
   googleConfigured,
   isAdminEmail,
@@ -35,14 +36,14 @@ function createAuth() {
   const socialProviders: Parameters<typeof betterAuth>[0]["socialProviders"] = {};
   if (googleConfigured()) {
     socialProviders.google = {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: envValue("GOOGLE_CLIENT_ID")!,
+      clientSecret: envValue("GOOGLE_CLIENT_SECRET")!,
     };
   }
   if (githubConfigured()) {
     socialProviders.github = {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      clientId: envValue("GITHUB_CLIENT_ID")!,
+      clientSecret: envValue("GITHUB_CLIENT_SECRET")!,
     };
   }
 

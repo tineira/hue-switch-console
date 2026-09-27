@@ -1,38 +1,48 @@
 // Env-driven settings for accounts (docs/specs/multi-user-accounts.md §2.10).
 
+/**
+ * An env var with surrounding whitespace removed, or undefined when empty. Values pasted or
+ * piped into a dashboard often end with a newline, which breaks keys sent to other services
+ * (a Turnstile site key with "
+" never renders).
+ */
+export function envValue(name: string): string | undefined {
+  return process.env[name]?.trim() || undefined;
+}
+
 export type SignupMode = "closed" | "invite" | "open";
 
 export function isEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  return Boolean(envValue("RESEND_API_KEY") && envValue("EMAIL_FROM"));
 }
 
 export function signupMode(): SignupMode {
   // Without email there is no way to verify a new address.
   if (!isEmailConfigured()) return "closed";
-  const raw = process.env.SIGNUP_MODE?.trim().toLowerCase();
+  const raw = envValue("SIGNUP_MODE")?.toLowerCase();
   if (raw === "invite" || raw === "open") return raw;
   return "closed";
 }
 
 export function googleConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  return Boolean(envValue("GOOGLE_CLIENT_ID") && envValue("GOOGLE_CLIENT_SECRET"));
 }
 
 export function githubConfigured(): boolean {
-  return Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
+  return Boolean(envValue("GITHUB_CLIENT_ID") && envValue("GITHUB_CLIENT_SECRET"));
 }
 
 export function turnstileSiteKey(): string | null {
-  const site = process.env.TURNSTILE_SITE_KEY;
-  return site && process.env.TURNSTILE_SECRET_KEY ? site : null;
+  const site = envValue("TURNSTILE_SITE_KEY");
+  return site && envValue("TURNSTILE_SECRET_KEY") ? site : null;
 }
 
 export function seedEmail(): string | null {
-  return process.env.USER_EMAIL?.trim().toLowerCase() || null;
+  return envValue("USER_EMAIL")?.toLowerCase() || null;
 }
 
 export function adminEmails(): string[] {
-  const list = (process.env.ADMIN_EMAILS ?? "")
+  const list = (envValue("ADMIN_EMAILS") ?? "")
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
@@ -82,5 +92,5 @@ export function emailDailyCap(): number {
 }
 
 export function publicUrl(): string | null {
-  return process.env.BETTER_AUTH_URL?.replace(/\/$/, "") || null;
+  return envValue("BETTER_AUTH_URL")?.replace(/\/$/, "") || null;
 }

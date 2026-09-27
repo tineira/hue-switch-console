@@ -1,8 +1,10 @@
+import { envValue } from "@/lib/account-config";
+
 // Cloudflare Turnstile server check. Passes when Turnstile is not configured.
 
 export async function verifyTurnstile(token: string | null, ip: string | null): Promise<boolean> {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret || !process.env.TURNSTILE_SITE_KEY) return true;
+  const secret = envValue("TURNSTILE_SECRET_KEY");
+  if (!secret || !envValue("TURNSTILE_SITE_KEY")) return true;
   if (!token) return false;
   const body = new URLSearchParams({ secret, response: token });
   if (ip) body.set("remoteip", ip);

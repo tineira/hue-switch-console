@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { emailDailyCap, isEmailConfigured } from "@/lib/account-config";
+import { emailDailyCap, envValue, isEmailConfigured } from "@/lib/account-config";
 import { sql } from "@/lib/sql";
 
 // Every message counts toward EMAIL_DAILY_CAP (Resend's free tier is 100 a day).
@@ -24,9 +24,9 @@ async function send(to: string, subject: string, text: string, ip?: string | nul
     await sql()`insert into auth_events (kind, email, ip) values ('email_sent', ${to}, ${ip ?? null})`;
     return;
   }
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = new Resend(envValue("RESEND_API_KEY"));
   const { error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM!,
+    from: envValue("EMAIL_FROM")!,
     to,
     subject,
     text,
