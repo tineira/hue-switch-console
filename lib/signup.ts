@@ -3,7 +3,7 @@ import disposableDomains from "disposable-email-domains/index.json";
 import { signupMode } from "@/lib/account-config";
 import { sql } from "@/lib/sql";
 
-// Sign-up gate, invites and invite requests (docs/specs/multi-user-accounts.md §2.3).
+// Sign-up gate, invites and invite requests (docs/specs/finished/multi-user-accounts.md §2.3).
 
 export const INVITE_COOKIE = "hsw_invite";
 const INVITE_DAYS = 14;

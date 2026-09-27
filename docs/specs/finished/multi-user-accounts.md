@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** live on production (2026-09-27): Google, GitHub and emailed-code sign-in, invite-only sign-up, all checks passed. Follow-ups still open in the checklist: rework the `/login` Turnstile and invite-form changes, and drop `users.password_hash` later.
+**Status:** done (2026-09-27). Live on production: Google, GitHub and emailed-code sign-in, invite-only sign-up, all production checks passed. `users.password_hash` dropped.
 
 ## 1. What and why
 
@@ -152,7 +152,8 @@ Better Auth's four tables are mapped onto snake_case names; `users` is the exist
 
 ```sql
 -- users: existing table becomes Better Auth's user table
-alter table users alter column password_hash drop not null;   -- no longer read; dropped in a later cleanup
+-- users.password_hash (pre-Better Auth) was moved to a credential row and dropped on 2026-09-27;
+-- the migration keeps doing that for any console that upgrades later.
 alter table users add column if not exists name text;
 alter table users add column if not exists email_verified boolean not null default false;
 alter table users add column if not exists image text;
@@ -297,7 +298,7 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 - **The existing account** keeps its data and `id`. On the hosted console it signs in with Google (same email) or an emailed code; the password stays usable only on consoles without email.
 - **Existing browser sessions end at deploy.** The `hsw_session` cookie is not read by Better Auth, so everyone signs in once after the deploy. Boards are not affected: device keys do not change.
 - **Hosted domain:** stays `hue.tineira.com`, which is also `CONSOLE_URL` in both firmwares. Moving it is out of scope and would be its own cross-repo change.
-- **When the old path can be removed:** `users.password_hash` can be dropped once the `credential` rows exist on every console that upgraded. Nothing else is retired.
+- **Old path removed (2026-09-27):** `users.password_hash` is dropped. A console upgrading from before Better Auth first gets a `credential` row with its old hash (a `DO` block in `db/schema.sql` and `lib/ensure-schema.ts`), then the column is dropped. `scripts/migrate.mjs` now splits statements outside `$$` blocks and ignores `;` in comments.
 
 ## 4. Checklist
 
@@ -327,19 +328,20 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 - [x] Deployed (2026-09-26); `CRON_SECRET` set; `/privacy` page live (§2.12)
 - [x] Checked on production by the user: Google and GitHub sign-in link to the existing account (2026-09-27)
 - [x] Checked on production by the user (2026-09-27): sign-in by code, invite request → approve → sign-up from the invite email, account deletion on a test account
-- [ ] **TODO** Revisit the `/login` Turnstile and invite-request changes of 2026-09-27 (explicit render, the invite form mounting only when opened, `/login?request=invite` from the landing page). The user wants them reworked later.
+- [x] Closed without changes (user, 2026-09-27): the `/login` Turnstile and invite-request changes (explicit render, the invite form mounting only when opened, `/login?request=invite` from the landing page) stay as they are.
 
 ### Round (`hue-round-switch`)
 
-- [ ] No change required. Optional later: show "account limit reached" on the display for `403 limit_reached`.
+- [x] No change required. The optional "account limit reached" screen for `403 limit_reached` was closed without doing it (user, 2026-09-27).
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] No change required.
+- [x] No change required.
 
 ### Cleanup
 
-- [ ] Drop `users.password_hash` once every upgraded console has its `credential` row
+- [x] Postgres SSL warning silenced: pg connections ask for `sslmode=verify-full` (what `require` already meant), so the logs no longer get a SECURITY WARNING per connection (`pgConnectionString` in `lib/sql.ts`, 2026-09-27)
+- [x] `users.password_hash` dropped (2026-09-27), after moving any remaining hash to a `credential` row
 
 ## 5. Open questions
 

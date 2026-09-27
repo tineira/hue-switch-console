@@ -1,4 +1,4 @@
-// Env-driven settings for accounts (docs/specs/multi-user-accounts.md §2.10).
+// Env-driven settings for accounts (docs/specs/finished/multi-user-accounts.md §2.10).
 
 /**
  * An env var with surrounding whitespace removed, or undefined when empty. Values pasted or

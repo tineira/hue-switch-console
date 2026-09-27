@@ -170,7 +170,7 @@ function PrivacyContent() {
   );
 }
 
-// Public: no sign-in needed. Linked from /login and the footer (docs/specs/multi-user-accounts.md §2.12).
+// Public: no sign-in needed. Linked from /login and the footer (docs/specs/finished/multi-user-accounts.md §2.12).
 export default async function PrivacyPage() {
   const user = await getSessionUser().catch(() => null);
 

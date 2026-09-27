@@ -20,10 +20,18 @@ function toQuery(strings: TemplateStringsArray, values: unknown[]): Query {
   return { text, values };
 }
 
+/**
+ * node-postgres treats sslmode=prefer/require/verify-ca as verify-full and logs a SECURITY
+ * WARNING on every connection saying so. Ask for verify-full outright: same behavior, no warning.
+ */
+export function pgConnectionString(url: string): string {
+  return url.replace(/([?&]sslmode=)(prefer|require|verify-ca)(?=&|$)/, "$1verify-full");
+}
+
 let pool: Pool | null = null;
 
 function pgClient(url: string): SqlClient {
-  if (!pool) pool = new Pool({ connectionString: url, max: 5 });
+  if (!pool) pool = new Pool({ connectionString: pgConnectionString(url), max: 5 });
   const db = pool;
   const run = async (text: string, values: unknown[] = []) => (await db.query(text, values)).rows;
   const client = ((strings: TemplateStringsArray, ...values: unknown[]) => {

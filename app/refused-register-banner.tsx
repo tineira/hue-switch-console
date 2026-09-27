@@ -5,7 +5,7 @@ function count(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-// Shown when a board's last register was refused (docs/specs/multi-user-accounts.md §2.4).
+// Shown when a board's last register was refused (docs/specs/finished/multi-user-accounts.md §2.4).
 export async function RefusedRegisterBanner({ userId }: { userId: string }) {
   const refusal = await lastRegisterRefusal(userId);
   if (!refusal) return null;

@@ -57,7 +57,7 @@ npm run push-from-bridge
 
 Sign-in is [Better Auth](https://www.better-auth.com) running inside the console on the
 same Postgres; there is no auth service to sign up for. Spec:
-[`docs/specs/multi-user-accounts.md`](docs/specs/multi-user-accounts.md).
+[`docs/specs/finished/multi-user-accounts.md`](docs/specs/finished/multi-user-accounts.md).
 
 **Self-hosting** needs only `DATABASE_URL`, `AUTH_SECRET`, `USER_EMAIL` and `USER_PASSWORD`.
 That gives one account with a password; sign-up stays closed. Neon is the default

@@ -15,9 +15,9 @@ import { clientIp } from "@/lib/auth-limits";
 import { sendChangeEmailCode, sendSignInCode } from "@/lib/email";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { consumeInvite, INVITE_COOKIE, readCookie, signupDecision } from "@/lib/signup";
-import { sql } from "@/lib/sql";
+import { pgConnectionString, sql } from "@/lib/sql";
 
-// Better Auth on the console's own Postgres (docs/specs/multi-user-accounts.md §2.2).
+// Better Auth on the console's own Postgres (docs/specs/finished/multi-user-accounts.md §2.2).
 // Tables and columns are snake_case; `users` is the table the rest of the app already uses.
 
 type HookContext = { headers?: Headers; request?: Request } | null | undefined;
@@ -51,7 +51,10 @@ function createAuth() {
     appName: "Hue Switch Console",
     secret: process.env.AUTH_SECRET,
     baseURL: publicUrl() ?? undefined,
-    database: new Pool({ connectionString: process.env.DATABASE_URL, max: 3 }),
+    database: new Pool({
+      connectionString: pgConnectionString(process.env.DATABASE_URL ?? ""),
+      max: 3,
+    }),
     advanced: {
       cookiePrefix: "hsw",
       database: { generateId: "uuid" },

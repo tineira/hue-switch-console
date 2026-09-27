@@ -1,7 +1,7 @@
 import { effectiveLimits, type AccountLimits } from "@/lib/account-config";
 import { sql } from "@/lib/sql";
 
-// Per-account limits (docs/specs/multi-user-accounts.md §2.4).
+// Per-account limits (docs/specs/finished/multi-user-accounts.md §2.4).
 
 export async function accountLimits(userId: string): Promise<AccountLimits> {
   const rows = await sql()`select limits from users where id = ${userId}`;

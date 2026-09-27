@@ -46,7 +46,7 @@ A MAC identifies a switch within an account, so the URL does not need the Bridge
 
 ## 4. Nav
 
-**Top nav** (`app/nav-links.tsx`): **Switches · Lights · Setup · How-to**. API keys, Changelog, and later Account and Admin (`docs/specs/multi-user-accounts.md`) stay in the account menu.
+**Top nav** (`app/nav-links.tsx`): **Switches · Lights · Setup · How-to**. API keys, Changelog, and later Account and Admin (`docs/specs/finished/multi-user-accounts.md`) stay in the account menu.
 
 - Active state: Switches is active on `/`, `/switches` and `/switches/*`, Lights on `/lights`, and Setup on `/setup`.
 - The "Hue switch console" wordmark links to `/`, which redirects to `/switches`.

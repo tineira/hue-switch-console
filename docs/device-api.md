@@ -34,7 +34,7 @@ the LAN.
 Human UI uses a Better Auth session cookie (`hsw.session_token`), obtained by
 Google, GitHub or an emailed code on the hosted console, or by a password on a
 self-hosted console without email. Sign-up and accounts:
-`docs/specs/multi-user-accounts.md`. That cookie is **not** valid as a device
+`docs/specs/finished/multi-user-accounts.md`. That cookie is **not** valid as a device
 Bearer token.
 
 Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.

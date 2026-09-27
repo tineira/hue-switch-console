@@ -1,6 +1,6 @@
 import { sql } from "@/lib/sql";
 
-// /admin queries (docs/specs/multi-user-accounts.md §2.7). Counts only: no recipes or topology.
+// /admin queries (docs/specs/finished/multi-user-accounts.md §2.7). Counts only: no recipes or topology.
 
 export type AdminAccountRow = {
   id: string;

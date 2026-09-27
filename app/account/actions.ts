@@ -10,7 +10,7 @@ import { emailCapReached, sendEmailChangedNotice } from "@/lib/email";
 import { isValidEmail, normalizeEmail } from "@/lib/signup";
 import { sql } from "@/lib/sql";
 
-// /account (docs/specs/multi-user-accounts.md §2.6).
+// /account (docs/specs/finished/multi-user-accounts.md §2.6).
 
 export type ChangeEmailState =
   | { step: "email"; error?: string }

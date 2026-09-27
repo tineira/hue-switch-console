@@ -5,7 +5,6 @@ const STATEMENTS = [
   `create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,
-  password_hash text not null,
   created_at timestamptz not null default now()
 )`,
   `create table if not exists device_api_keys (
@@ -147,9 +146,8 @@ const STATEMENTS = [
   release_id uuid not null references firmware_releases (id)
 )`,
   `alter table firmware_releases add column if not exists credits jsonb`,
-  // Multi-user accounts (docs/specs/multi-user-accounts.md §2.9).
+  // Multi-user accounts (docs/specs/finished/multi-user-accounts.md §2.9).
   // users doubles as Better Auth's user table; the rest are its tables.
-  `alter table users alter column password_hash drop not null`,
   `alter table users add column if not exists name text not null default ''`,
   `alter table users add column if not exists email_verified boolean not null default false`,
   `alter table users add column if not exists image text`,
@@ -239,6 +237,20 @@ const STATEMENTS = [
   `alter table auth_events add constraint auth_events_kind_check check (kind in ('email_sent', 'code_sent', 'code_failed', 'invite_requested'))`,
   `create index if not exists auth_events_email_idx on auth_events (kind, email, created_at)`,
   `create index if not exists auth_events_time_idx on auth_events (kind, created_at)`,
+  // Pre-Better Auth consoles kept the password on users.password_hash. Move any hash that
+  // has no credential row yet, then drop the column (docs/specs/finished/multi-user-accounts.md §3).
+  `do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = current_schema() and table_name = 'users' and column_name = 'password_hash') then
+    insert into accounts (user_id, account_id, provider_id, password)
+    select u.id, u.id::text, 'credential', u.password_hash
+    from users u
+    where u.password_hash is not null
+      and not exists (select 1 from accounts a where a.user_id = u.id and a.provider_id = 'credential');
+    alter table users drop column password_hash;
+  end if;
+end $$`,
 ];
 
 let running: Promise<void> | null = null;

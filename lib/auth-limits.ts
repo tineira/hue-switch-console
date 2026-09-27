@@ -1,6 +1,6 @@
 import { sql } from "@/lib/sql";
 
-// Sign-in rate limits kept in auth_events (docs/specs/multi-user-accounts.md §2.5).
+// Sign-in rate limits kept in auth_events (docs/specs/finished/multi-user-accounts.md §2.5).
 
 type Kind = "code_sent" | "code_failed" | "invite_requested";
 

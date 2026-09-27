@@ -5,7 +5,7 @@ import { sql } from "@/lib/sql";
 
 export const dynamic = "force-dynamic";
 
-// Daily housekeeping (docs/specs/multi-user-accounts.md §2.8). Never deletes accounts.
+// Daily housekeeping (docs/specs/finished/multi-user-accounts.md §2.8). Never deletes accounts.
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return jsonError(503, "cron_not_configured");
