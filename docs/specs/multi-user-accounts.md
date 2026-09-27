@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress. Console code done and checked locally (2026-09-26); waiting on the production deploy and the service setup the user does (Resend domain, Google, GitHub, Turnstile, env vars).
+**Status:** in progress. Live on production since 2026-09-26 with Google, GitHub and password sign-in. **TODO:** email (emailed codes, invites, invite requests) waits on Resend verifying `hue.tineira.com`; see the checklist.
 
 ## 1. What and why
 
@@ -304,9 +304,10 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 ### Console (`hue-switch-console`)
 
 - [x] Confirm the current Better Auth release works with Next.js 16.3 (better-auth 1.7.6 lists `next ^16` as a peer)
-- [ ] `hue.tineira.com` verified as a sending domain in Resend (SPF, DKIM); `RESEND_API_KEY` and `EMAIL_FROM` set in Vercel (user)
-- [ ] Google and GitHub OAuth clients created with callback `https://hue.tineira.com/api/auth/callback/{google,github}`; keys set in Vercel (user)
-- [ ] Turnstile widget created; keys set in Vercel (user)
+- [ ] **TODO** `hue.tineira.com` verified as a sending domain in Resend; `RESEND_API_KEY` set in Vercel, then redeploy (user). DNS records are in Cloudflare and resolve publicly; Resend verified SPF (MX, TXT) and the return-path CNAME, DKIM still pending on their side (asked Resend by email, 2026-09-27). `EMAIL_FROM` is set. Until the key is set, production keeps password sign-in, sign-up stays closed and invites are off.
+- [x] Google and GitHub OAuth clients created with callback `https://hue.tineira.com/api/auth/callback/{google,github}`; keys set in Vercel (2026-09-27)
+- [ ] Google consent screen shows "Hue Switch Console": the client lives in a Cloud project whose consent screen is named "rclone". Move it to its own project, with `https://hue.tineira.com/privacy` as the privacy policy, before opening sign-up (user)
+- [x] Turnstile widget "Hue Switch Console sign-in" created; site and secret keys set in Vercel (2026-09-27)
 - [x] Schema (§2.9) in `db/schema.sql` and `lib/ensure-schema.ts`, checked against Better Auth's generated schema; existing account migrated (email verified, `credential` row)
 - [x] Better Auth setup (`lib/auth.ts`, `/api/auth/[...all]`): email OTP, Google, GitHub, account linking, password only without email, rate limiter, hooks (sign-up gate, disposable domains, suspended check, admin role, `last_login_at`); Turnstile and suspension in the console (§2.2 "As built"); `getSessionUser` wraps it
 - [x] Email sending (`lib/email.ts`, Resend) with the sign-in code, change-email code, old-address notice and invite templates, in English; `EMAIL_DAILY_CAP`
@@ -318,12 +319,14 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 - [x] `/account`: sign-in methods, change email, sign out everywhere, delete account
 - [x] `/admin`: accounts table with Dormant filter, suspend, delete, limits, invites, invite requests
 - [x] Cleanup cron (`/api/cron/cleanup`, `vercel.json` cron entry)
-- [ ] Vercel Firewall rate-limit rule on `/api/device/*`
+- [x] Vercel Firewall rate-limit rule on `/api/device/*` ("Device API rate limit": 60 requests / 60 s per IP, 429) (2026-09-27)
 - [x] `docs/device-api.md` updated in the same commit as the register limit and the idle poll (§2.1)
 - [x] `docs/definitions.md`: "User account", "No public signup", the auth row, and the poll interval (line on "5 min otherwise") updated
 - [x] `README.md`: env vars (§2.10), services (§2.11) and self-hosting without email or OAuth
 - [x] `docs/changelog.md` console entry (including "sign in again once" and the 15-minute idle poll)
-- [ ] Deployed; checked on production by the user (Google sign-in, sign-in by code, invite request → approve → sign-up, account deletion on a test account)
+- [x] Deployed (2026-09-26); `CRON_SECRET` set; `/privacy` page live (§2.12)
+- [x] Checked on production by the user: Google and GitHub sign-in link to the existing account (2026-09-27)
+- [ ] **TODO** Checked on production by the user, after Resend: sign-in by code, invite request → approve → sign-up, account deletion on a test account
 
 ### Round (`hue-round-switch`)
 
