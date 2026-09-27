@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-27
 
+- **hue.tineira.com** now opens on a short page that says what the console is, shows the two switches and how setup works, and links to sign-in and Privacy. Once you are signed in it still takes you straight to your switches.
 - The footer has a **Sponsor** link. The console stays free; sponsoring on GitHub helps pay for its development.
 
 ### 2026-09-26
