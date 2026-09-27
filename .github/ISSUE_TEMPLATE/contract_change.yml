@@ -1,0 +1,38 @@
+name: Contract change
+description: Propose a change to the device API, the product model, USB provisioning or the installer, or a new switch product.
+labels: [contract]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Contract changes touch the console and every switch firmware. If this is accepted it becomes a spec in `docs/specs/` (from `docs/specs/TEMPLATE.md`), approved before any code. See CONTRIBUTING.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What and why
+      description: What someone using a switch or the console can do afterwards.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Contract change
+      description: Endpoints, request/response fields, error codes or NVS keys affected. Mark each one additive or breaking.
+    validations:
+      required: true
+  - type: textarea
+    id: compat
+    attributes:
+      label: Compatibility
+      description: How the console behaves with boards that have not updated, and when the old path could be removed.
+    validations:
+      required: true
+  - type: checkboxes
+    id: repos
+    attributes:
+      label: Repos affected
+      options:
+        - label: hue-switch-console
+        - label: hue-round-switch
+        - label: hue-simple-switch
+        - label: A new switch product

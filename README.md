@@ -25,14 +25,15 @@ Production host: `https://hue.tineira.com`.
 
 ```bash
 cp .env.example .env.local
-# DATABASE_URL from Vercel/Neon, AUTH_SECRET, USER_EMAIL, USER_PASSWORD
+# DATABASE_URL (your own Postgres; DATABASE_DRIVER=pg unless it is Neon),
+# AUTH_SECRET, USER_EMAIL, USER_PASSWORD, EMAIL_DEV_CONSOLE=1
 npm install
-npx vercel env run -e production -- node scripts/migrate.mjs
-npx vercel env run -e production -- node scripts/seed-user.mjs
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in.
+Use a development database, never production. The console creates its tables and
+the first user on the first request. Open [http://localhost:3000/login](http://localhost:3000/login)
+and sign in with `USER_EMAIL` / `USER_PASSWORD`. Full walkthrough: [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Boards are flashed and provisioned from **Setup** (`/setup`; `/devices` and
 `/install` redirect there) in Chrome or Edge over USB. That screen writes Wi-Fi (Improv)
@@ -187,6 +188,10 @@ a `CHANGELOG.md`, the `FIRMWARE_UPLOAD_TOKEN` secret, its product id in
 the `firmware_releases` / `firmware_current` checks in `db/schema.sql` and
 `lib/ensure-schema.ts`, a `## <Product>` intro in `docs/changelog.md`, and a
 row in `AGENTS.md` ("Multi-repo").
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). Bugs and ideas go in GitHub issues.
 
 ## License
 

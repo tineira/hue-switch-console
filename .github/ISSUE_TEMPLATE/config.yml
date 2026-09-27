@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/tineira/hue-switch-console/security/advisories/new
+    about: Report privately. Please do not open a public issue.
+  - name: Round switch firmware bug
+    url: https://github.com/tineira/hue-round-switch/issues/new/choose
+    about: The XIAO ESP32-S3 + Round Display switch.
+  - name: Simple switch firmware bug
+    url: https://github.com/tineira/hue-simple-switch/issues/new/choose
+    about: The XIAO ESP32-C6 wall-contact switch.

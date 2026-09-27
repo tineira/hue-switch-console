@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Exported design handoffs (vendored bundles), not app code.
+    "docs/**",
   ]),
 ]);
 

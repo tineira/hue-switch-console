@@ -9,8 +9,8 @@ Herdr map (this session, do not recreate): `hue-captain` w4 · `hue-console` w5 
 Raw audits from the implementers (appendix, not contract):
 
 - console: `docs/_audit-console.md` (C1–C24)
-- round: `C:\Users\tinei\Arduino\hue-round-switch\docs\_audit-round.md` (R1–R14)
-- simple: `C:\Users\tinei\Arduino\hue-simple-switch\docs\_audit-simple.md` (S1–S9)
+- round: `hue-round-switch/docs/_audit-round.md` (R1–R14)
+- simple: `hue-simple-switch/docs/_audit-simple.md` (S1–S9)
 
 ---
 

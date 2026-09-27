@@ -1,0 +1,51 @@
+name: Console bug
+description: Something in the web console or the device API is wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a switch misbehaving on its own (display, buttons, Wi-Fi, Bridge pairing), open the issue in that firmware's repo instead.
+        **Security problems:** do not open a public issue. Use "Report a vulnerability" on the Security tab.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - hue.tineira.com
+        - Self-hosted console
+        - Local development
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Chrome 140 on Windows 11
+  - type: textarea
+    id: switch
+    attributes:
+      label: Switch involved (if any)
+      description: Product (Round or Simple) and firmware version, as shown in the console.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors or logs
+      description: Browser console errors or server logs. Remove tokens (`hsw_…`), keys and passwords.
+      render: text

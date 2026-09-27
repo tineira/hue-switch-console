@@ -1,0 +1,22 @@
+name: Feature idea
+description: Suggest something the console should do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you want to do
+      description: The situation and what gets in your way today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed change
+      description: How it could work. Rough is fine.
+  - type: checkboxes
+    id: contract
+    attributes:
+      label: Scope
+      options:
+        - label: This needs switches to send or receive something new (use "Contract change" instead if you already know it does).

@@ -306,6 +306,6 @@ Production host: `https://hue.tineira.com`. In Cloudflare, CNAME `hue` to the ta
 
 ## Repos
 
-- Simple: `C:\Users\tinei\Arduino\hue-simple-switch` — [github.com/tineira/hue-simple-switch](https://github.com/tineira/hue-simple-switch)
-- Round: `C:\Users\tinei\Arduino\hue-round-switch` — [github.com/tineira/hue-round-switch](https://github.com/tineira/hue-round-switch)
-- Console: `C:\Users\tinei\hue-switch-console` — [github.com/tineira/hue-switch-console](https://github.com/tineira/hue-switch-console)
+- Simple: [github.com/tineira/hue-simple-switch](https://github.com/tineira/hue-simple-switch)
+- Round: [github.com/tineira/hue-round-switch](https://github.com/tineira/hue-round-switch)
+- Console: [github.com/tineira/hue-switch-console](https://github.com/tineira/hue-switch-console)

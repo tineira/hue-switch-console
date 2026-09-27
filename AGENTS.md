@@ -15,7 +15,7 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - **English everywhere**, in all three repos: product UI (labels, errors, auth emails), docs, specs, READMEs, code comments, commit messages. Do not write new Spanish; translate Spanish you touch.
 - Topology arrives from the LAN (switch or `push-from-bridge`); this app never calls the Hue Bridge.
 - Secrets stay in `.env.local` — never commit it.
-- Do not mix this tree with `C:\Users\tinei\Arduino`.
+- Do not mix this tree with the Arduino sketchbook that holds the firmware repos.
 - Read `docs/definitions.md` before implementing.
 - Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
 - Firmware images are not in this tree. Firmware CI uploads each release to `POST /api/firmware/<product>`, and `/firmware/<product>/manifest.json` serves the current one from the database. The wizard version is that release, not a label you invent. Pipeline: `README.md`, "Firmware release pipeline".
@@ -25,11 +25,13 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 
 The product is three repos. This one is the hub.
 
-| Repo | Path | Role |
-| --- | --- | --- |
-| `hue-switch-console` | `C:\Users\tinei\hue-switch-console` | Console, device API, contract docs, installer bins |
-| `hue-round-switch` | `C:\Users\tinei\Arduino\hue-round-switch` | XIAO ESP32-S3 + Round Display firmware (`product: "round"`) |
-| `hue-simple-switch` | `C:\Users\tinei\Arduino\hue-simple-switch` | XIAO ESP32-C6 wall-contact firmware (`product: "simple"`) |
+| Repo | Role |
+| --- | --- |
+| [`hue-switch-console`](https://github.com/tineira/hue-switch-console) | Console, device API, contract docs, installer bins |
+| [`hue-round-switch`](https://github.com/tineira/hue-round-switch) | XIAO ESP32-S3 + Round Display firmware (`product: "round"`) |
+| [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch) | XIAO ESP32-C6 wall-contact firmware (`product: "simple"`) |
+
+The firmware repos live in the Arduino sketchbook (`arduino-cli config get directories.user`); the console can be anywhere. Local checkout paths on the maintainer's machine are in `AGENTS.local.md` (gitignored) when it exists; read it to find the sibling repos.
 
 More switch firmwares may join; each gets a row here and the same `## Contract` section in its own AGENTS.md.
 
