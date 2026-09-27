@@ -67,8 +67,8 @@ function PrivacyContent() {
         </p>
         <p>
           <strong>No passwords.</strong> You never set a password here: you sign in with Google,
-          GitHub or a 6-digit code emailed to you. Codes are stored only as a one-way hash, work
-          once, and expire after 10 minutes.
+          GitHub or a 6-digit code emailed to you. Codes are stored only as a one-way hash. Each
+          works once, and an unused code expires after 10 minutes.
         </p>
         <p>
           <strong>Your sessions.</strong> For each device you are signed in on: the IP address and
