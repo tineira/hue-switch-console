@@ -1,4 +1,4 @@
-import { isVersion, parsePartName, parseProductId, readPart } from "@/lib/firmware";
+import { isVersion, parsePartName, parseProductId, readPart, readPartMeta } from "@/lib/firmware";
 import { databaseError, jsonError } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +12,15 @@ async function serve(context: Params, withBody: boolean) {
   const name = parsePartName(raw.name);
   if (!product || !name || !isVersion(raw.version)) return jsonError(404, "not_found");
   try {
-    const part = await readPart(product, raw.version, name);
+    const part = withBody
+      ? await readPart(product, raw.version, name)
+      : await readPartMeta(product, raw.version, name);
     if (!part) return jsonError(404, "not_found");
-    return new Response(withBody ? part.data : null, {
+    const size = "data" in part ? part.data.length : part.size;
+    return new Response("data" in part ? part.data : null, {
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Length": String(part.data.length),
+        "Content-Length": String(size),
         "Cache-Control": "public, max-age=31536000, immutable",
         ETag: `"${part.sha256}"`,
       },

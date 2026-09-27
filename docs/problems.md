@@ -260,18 +260,24 @@ Paper first, then runtime. The captain splits it among implementers; this is not
 
 ## 6a. Open from the 2026-09-27 code review
 
-Verified against `main` @ `34aaefdc`. Fixed in the same pass: 500s no longer return `err.message` (logged server-side instead), GitHub is no longer a trusted provider for account linking, and `CRON_SECRET` is compared in constant time.
+Verified against `main` @ `34aaefdc`. Fixed in the same pass: 500s no longer return `err.message` (logged server-side instead), GitHub is no longer a trusted provider for account linking, and `CRON_SECRET` is compared in constant time. Fixed later the same day: `push-from-bridge.mjs` skips certificate checks only for the Bridge (it had set `NODE_TLS_REJECT_UNAUTHORIZED=0` for the whole process, console upload included), and firmware `HEAD` no longer reads the binary. Checked and not a problem: sign-in and change-email messages only appear after a valid code (Better Auth verifies the OTP first).
 
 | Item | Where | Why it matters |
 | --- | --- | --- |
 | `ensureSchema()` in the request path | Almost every route, device poll included | Each cold isolate runs ~70 statements sequentially over HTTP before answering. Migrate at deploy; make the request path a no-op. |
-| Firmware upload is also publish | `uploadRelease` writes `firmware_current`; `POST …/current` takes the same CI token | A leaked CI token changes what `/setup` flashes. Promotion should need an admin session. |
+| Firmware upload is also publish | `uploadRelease` writes `firmware_current`; `POST …/current` takes the same CI token | A leaked CI token changes what `/setup` flashes. `docs/specs/admin-tools.md` adds "Make current" in `/admin`; whether uploads stop auto-promoting is its open question 1. |
 | Limit checks are count-then-insert | `registerLimitHit`, key creation | Parallel requests can pass a cap. Low impact. |
 | New MAC with no `product` is inferred Round | `upsertSwitch` / `inferProduct` | See P5. Require `product` on a first register once both firmwares send it. |
 | `setLimits` accepts any keys | `lib/admin.ts` | Only `limitsAction` filters them. |
 | 500 `database_error` and 410 `message` not in `docs/device-api.md` | C21 | Contract table is incomplete. |
 | Both firmwares save `rev` before the config | Simple `recipes.h` `recipesSave`; Round `recipes.h` `recipesSave` then `pages.h` `pagesSave` (`console.h` `consoleApplyConfig`) | If a write fails (NVS full) or power drops between writes, NVS holds the new `rev` with old recipes (Round: or old pages, a separate namespace). After a reboot the switch reports the new `rev`, the console answers 204, and it runs the old config until the next change. Round does not check any write and always arms the confirm poll. Fix: write recipes/pages first, `rev` last and only if everything saved. Firmware-only; each needs a `FIRMWARE_VERSION` bump. |
 | Round caps are not in the contract | Round `kMaxPages = 6`, `kMaxDimLights = 2` (`pages.h`) | The console already stays inside both (`MAX_ROUND_PAGES = 6`; `computeDim` yields at most the tap and double-tap lights), but `docs/device-api.md` states neither. Document them so a future console change does not get silently truncated. |
+| Invite race | `user.create` hooks in `lib/better-auth.ts`; `consumeInvite` | The invite is marked used after the account exists, so two sign-ups racing with one code both get accounts. Needs someone holding the code. Low. |
+| Seed password never rotates | `ensureSeedUser` (`lib/auth.ts`) | It inserts the credential only when missing; a new `USER_PASSWORD` is ignored. Self-host only (password sign-in is off with email). |
+| Better Auth opens its own pool | `lib/better-auth.ts` (`max: 3`) next to `lib/sql.ts` (`max: 5`) | Self-host with `DATABASE_DRIVER=pg`: up to 8 connections per instance. |
+| `.env.example` is incomplete | `.env.example` | Missing `FIRMWARE_UPLOAD_TOKEN`, `LIMIT_*`, `EMAIL_DAILY_CAP`, `CONTACT_EMAIL`, `PRIVACY_URL`, `TERMS_URL` (all in README). |
+| Admin gaps | `/admin` | Search, paging, firmware current, audit log, suspension reason/expiry, full invite list, single admin source: `docs/specs/admin-tools.md`. |
+| Firmware minor items | `hue-simple-switch`, `hue-round-switch` | Round's Improv scan skips hidden networks (Simple includes them). Round CI deletes and re-creates the `usb-installer` GitHub release (two quick pushes can race; Simple uploads with `--clobber`). A stuck touch report on Round postpones config polls until reset. Simple accepts any string in `HUESET token` (checked only on use). No host tests for either firmware's parsers. |
 
 ---
 

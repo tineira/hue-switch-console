@@ -243,6 +243,19 @@ export async function readPart(product: ProductId, version: string, name: PartNa
   return { sha256: row.sha256, data: Buffer.from(row.data, "base64") };
 }
 
+// For HEAD: the stored size and hash, without reading the bytes.
+export async function readPartMeta(product: ProductId, version: string, name: PartName) {
+  const rows = await sql()`
+    select p.sha256, p.size
+    from firmware_parts p
+    join firmware_releases r on r.id = p.release_id
+    where r.product = ${product} and r.version = ${version} and p.name = ${name}
+  `;
+  const row = rows[0] as { sha256: string; size: number } | undefined;
+  if (!row) return null;
+  return { sha256: row.sha256, size: Number(row.size) };
+}
+
 export type FirmwareNotes = { version: string; date: string; notes: string };
 
 export async function listReleaseNotes(product: ProductId): Promise<FirmwareNotes[]> {

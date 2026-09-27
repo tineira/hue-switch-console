@@ -4,7 +4,7 @@
  *
  *   HUE_BRIDGE_IP=192.168.100.12 HUE_APP_KEY=... CONSOLE_TOKEN=... npm run push-from-bridge
  */
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+import https from "node:https";
 
 const bridgeIp = process.env.HUE_BRIDGE_IP;
 const appKey = process.env.HUE_APP_KEY;
@@ -21,14 +21,35 @@ if (!bridgeIp || !appKey || !token) {
   process.exit(1);
 }
 
-async function hueGet(resource) {
-  const res = await fetch(`https://${bridgeIp}/clip/v2/resource/${resource}`, {
-    headers: { "hue-application-key": appKey },
+// Only the Bridge skips certificate checks; the console request below keeps them.
+function bridgeGet(path, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      `https://${bridgeIp}${path}`,
+      { headers, rejectUnauthorized: false },
+      (res) => {
+        let text = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => (text += chunk));
+        res.on("end", () => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`Hue GET ${path} ${res.statusCode} ${text}`));
+            return;
+          }
+          try {
+            resolve(JSON.parse(text));
+          } catch (err) {
+            reject(err);
+          }
+        });
+      },
+    );
+    req.on("error", reject);
   });
-  if (!res.ok) {
-    throw new Error(`Hue GET ${resource} ${res.status} ${await res.text()}`);
-  }
-  return res.json();
+}
+
+function hueGet(resource) {
+  return bridgeGet(`/clip/v2/resource/${resource}`, { "hue-application-key": appKey });
 }
 
 function capsFor(light) {
@@ -73,7 +94,7 @@ const [lightsJson, roomsJson, zonesJson, scenesJson, configJson] =
     hueGet("room"),
     hueGet("zone"),
     hueGet("scene"),
-    fetch(`https://${bridgeIp}/api/config`).then((r) => r.json()),
+    bridgeGet("/api/config"),
   ]);
 
 const lightsRaw = lightsJson.data || [];
