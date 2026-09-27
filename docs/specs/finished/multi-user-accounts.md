@@ -341,6 +341,7 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 ### Cleanup
 
 - [x] Postgres SSL warning silenced: pg connections ask for `sslmode=verify-full` (what `require` already meant), so the logs no longer get a SECURITY WARNING per connection (`pgConnectionString` in `lib/sql.ts`, 2026-09-27)
+- [x] Emailed codes stored hashed (`storeOTP: "hashed"`; Better Auth's default is plain text), 2026-09-27
 - [x] `users.password_hash` dropped (2026-09-27), after moving any remaining hash to a `credential` row
 
 ## 5. Open questions

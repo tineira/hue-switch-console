@@ -24,6 +24,21 @@ export function signupMode(): SignupMode {
   return "closed";
 }
 
+/**
+ * How an account can sign in today, for display. A stored password (`credential`) only counts
+ * while password sign-in is on, which is when email is off; every account can use an emailed
+ * code while email is on.
+ */
+export function signInMethodLabels(providerIds: string[]): string[] {
+  const email = isEmailConfigured();
+  const labels: string[] = [];
+  if (providerIds.includes("google")) labels.push("Google");
+  if (providerIds.includes("github")) labels.push("GitHub");
+  if (email) labels.push("Emailed code");
+  else if (providerIds.includes("credential")) labels.push("Password");
+  return labels;
+}
+
 export function googleConfigured(): boolean {
   return Boolean(envValue("GOOGLE_CLIENT_ID") && envValue("GOOGLE_CLIENT_SECRET"));
 }

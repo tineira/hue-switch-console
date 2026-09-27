@@ -158,6 +158,8 @@ function createAuth() {
         otpLength: 6,
         expiresIn: 600,
         allowedAttempts: 5,
+        // Keep only a hash of each code (Better Auth's default is plain text).
+        storeOTP: "hashed",
         changeEmail: { enabled: true },
         async sendVerificationOTP({ email, otp, type }, ctx) {
           const headers = hookHeaders(ctx);

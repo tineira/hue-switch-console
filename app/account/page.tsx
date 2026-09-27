@@ -1,7 +1,7 @@
 import { ChangeEmailForm, DeleteAccountForm } from "@/app/account/account-forms";
 import { signOutEverywhere } from "@/app/account/actions";
 import { Shell } from "@/app/shell";
-import { isEmailConfigured } from "@/lib/account-config";
+import { isEmailConfigured, signInMethodLabels } from "@/lib/account-config";
 import { requireSessionUser } from "@/lib/auth";
 import { accountLimits } from "@/lib/limits";
 import { sql } from "@/lib/sql";
@@ -10,12 +10,6 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Account",
-};
-
-const METHOD_LABEL: Record<string, string> = {
-  google: "Google",
-  github: "GitHub",
-  credential: "Password",
 };
 
 export default async function AccountPage() {
@@ -28,8 +22,7 @@ export default async function AccountPage() {
       (select count(*)::int from bridges where user_id = ${user.id}) as bridges,
       (select count(*)::int from device_api_keys where user_id = ${user.id} and revoked_at is null) as keys`,
   ]);
-  const methods = (rows as { provider_id: string }[]).map((r) => METHOD_LABEL[r.provider_id] ?? r.provider_id);
-  if (isEmailConfigured()) methods.push("Emailed code");
+  const methods = signInMethodLabels((rows as { provider_id: string }[]).map((r) => r.provider_id));
   const used = counts[0] as { switches: number; bridges: number; keys: number };
 
   return (

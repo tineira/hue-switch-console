@@ -62,9 +62,13 @@ function PrivacyContent() {
         <p>
           <strong>Your account.</strong> Your email address. If you sign in with Google or GitHub,
           also the name and profile picture they share, and the sign-in tokens they return. The
-          console doesn&apos;t use those tokens for anything and stores them encrypted. If the
-          console was set up with a password, a salted hash of it (never the password itself).
-          When you created the account and when you last signed in.
+          console doesn&apos;t use those tokens for anything and stores them encrypted. When you
+          created the account and when you last signed in.
+        </p>
+        <p>
+          <strong>No passwords.</strong> You never set a password here: you sign in with Google,
+          GitHub or a 6-digit code emailed to you. Codes are stored only as a one-way hash, work
+          once, and expire after 10 minutes.
         </p>
         <p>
           <strong>Your sessions.</strong> For each device you are signed in on: the IP address and

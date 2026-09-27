@@ -9,7 +9,7 @@ import {
 } from "@/app/admin/actions";
 import { CreateInviteForm } from "@/app/admin/create-invite-form";
 import { Shell } from "@/app/shell";
-import { defaultLimits, signupMode } from "@/lib/account-config";
+import { defaultLimits, signInMethodLabels, signupMode } from "@/lib/account-config";
 import { listAccounts, SORTS, type AdminAccountRow, type SortKey } from "@/lib/admin";
 import { requireAdmin } from "@/lib/auth";
 import { listInvites, listPendingInviteRequests, type InviteRow } from "@/lib/signup";
@@ -186,7 +186,7 @@ export default async function AdminPage({
               {shown.map((a) => (
                 <tr key={a.id} className="align-top">
                   <td className="px-2 py-2">{a.email}</td>
-                  <td className="px-2 py-2 text-muted">{a.methods.join(", ") || "code"}</td>
+                  <td className="px-2 py-2 text-muted">{signInMethodLabels(a.methods).join(", ") || "none"}</td>
                   <td className="px-2 py-2">{day(a.created_at)}</td>
                   <td className="px-2 py-2">{day(a.last_login_at)}</td>
                   <td className="px-2 py-2">{a.switches}</td>
