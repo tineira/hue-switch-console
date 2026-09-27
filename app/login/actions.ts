@@ -21,13 +21,13 @@ import { emailCapReached } from "@/lib/email";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import {
+  accountStatus,
   INVITE_COOKIE,
   isDisposableEmail,
   isValidEmail,
   normalizeEmail,
   signupDecision,
   storeInviteRequest,
-  userExists,
 } from "@/lib/signup";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -79,8 +79,11 @@ export async function sendCode(_prev: CodeState, formData: FormData): Promise<Co
     return { step: "email", email, error: "Too many codes requested. Wait a few minutes and try again." };
   }
 
-  let send = await userExists(email);
-  if (!send) {
+  // A suspended account can't sign in, so no code is sent. The reply stays the same, so the
+  // form never tells a stranger which addresses have (suspended) accounts.
+  const status = await accountStatus(email);
+  let send = status === "active";
+  if (status === "none") {
     const invite = (await cookies()).get(INVITE_COOKIE)?.value;
     send = (await signupDecision(email, invite)).allowed;
   }

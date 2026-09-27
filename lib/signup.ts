@@ -103,6 +103,14 @@ export async function userExists(email: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+/** "none" when no account uses this email, else whether it may sign in. */
+export async function accountStatus(email: string): Promise<"none" | "active" | "suspended"> {
+  const rows = await sql()`select banned from users where email = ${normalizeEmail(email)} limit 1`;
+  const row = rows[0] as { banned: boolean } | undefined;
+  if (!row) return "none";
+  return row.banned ? "suspended" : "active";
+}
+
 /**
  * Whether a new account may be created for `email`. Returns the invite to consume
  * (invite mode) or null (open mode). Throws nothing; `allowed: false` means refuse.

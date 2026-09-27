@@ -60,7 +60,7 @@ Before building, check that the current Better Auth release supports this projec
 
 1. Send code (email + Turnstile token).
    - Checks, in order: Turnstile passes; the email is well-formed; send limits (§2.5) are not exceeded.
-   - A code is sent only if the email has an account **or** sign-up is allowed for it. For a new account the domain must also not be on the disposable list.
+   - A code is sent only if the email has an account that is not suspended, **or** sign-up is allowed for it. A suspended account gets no code (and no email is spent), with the same reply as any other address. For a new account the domain must also not be on the disposable list.
    - The response is **the same** either way ("If this address can sign in, we sent a code"), so the form cannot be used to find out who has an account.
 2. Verify code. On success the account is created if needed (consuming the invite, §2.3), `last_login_at` is set, and the session cookie is set.
 
