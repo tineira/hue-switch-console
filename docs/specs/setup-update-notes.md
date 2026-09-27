@@ -2,7 +2,7 @@
 
 Mostly console work. The only firmware-side change is a wording convention in each firmware repo's `CHANGELOG.md`. No device endpoint, payload field or NVS key changes.
 
-**Status:** in progress. Approved 2026-09-27 with D1–D7 as recommended. Console part built, not yet deployed.
+**Status:** in progress. Approved 2026-09-27 with D1–D7 as recommended. Console part live since `f2875d6`; waiting on a check with a real board, the firmware changelog headers, and the D7 pick.
 
 ## 1. What and why
 
@@ -71,7 +71,8 @@ All seven approved as recommended (2026-09-27).
 - [x] `README.md` pipeline section documents `Important:`
 - [x] `docs/changelog.md` entry: Setup lists what changed before an update
 - [x] Typecheck, lint and build pass
-- [ ] Deployed; checked on production by the user with a board on an older firmware (Web Serial needs a person)
+- [x] Deployed 2026-09-27 (`f2875d6`); `/changelog` on production shows the new entry
+- [ ] Checked on production by the user with a board on an older firmware (Web Serial needs a person)
 
 ### Round (`hue-round-switch`)
 
