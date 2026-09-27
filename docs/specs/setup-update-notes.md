@@ -2,7 +2,7 @@
 
 Mostly console work. The only firmware-side change is a wording convention in each firmware repo's `CHANGELOG.md`. No device endpoint, payload field or NVS key changes.
 
-**Status:** in progress. Approved 2026-09-27 with D1–D7 as recommended. Console part live since `f2875d6`; waiting on a check with a real board, the firmware changelog headers, and the D7 pick.
+**Status:** in progress. Approved 2026-09-27 with D1–D7 as recommended. Console part live since `f2875d6`; firmware repos and D7 done; waiting on a check with a real board.
 
 ## 1. What and why
 
@@ -76,13 +76,13 @@ All seven approved as recommended (2026-09-27).
 
 ### Round (`hue-round-switch`)
 
-- [ ] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker
-- [ ] Past entries marked, if any are picked in D7
+- [x] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker (`6df47f5`)
+- [x] Past entries marked: none picked for Round
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker
-- [ ] Past entries marked, if any are picked in D7 (candidate: 0.2.11)
+- [x] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker (`c70a540`)
+- [x] Past entries marked (2026-09-27): 0.2.11 (also "Devices" → "Setup") and 0.3.0 (adds "After updating, set up each wired input in Switches."), in `CHANGELOG.md` and in the stored notes on production
 
 No `FIRMWARE_VERSION` bump: the marker is text in notes the console already stores.
 
