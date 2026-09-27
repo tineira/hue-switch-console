@@ -32,7 +32,8 @@ npm run dev
 ```
 
 Use a development database, never production. The console creates its tables and
-the first user on the first request. Open [http://localhost:3000/login](http://localhost:3000/login)
+the first user on the first request. The schema lives in `db/schema.sql`; after editing it,
+run `npm run schema` and commit `lib/generated/schema.ts` too (CI checks they match). Open [http://localhost:3000/login](http://localhost:3000/login)
 and sign in with `USER_EMAIL` / `USER_PASSWORD`. Full walkthrough: [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Boards are flashed and provisioned from **Setup** (`/setup`; `/devices` and
@@ -188,8 +189,8 @@ Upload a local build (a folder with the four bins) with
 A new firmware repo needs: a `firmware.yml` upload step like the existing two,
 a `CHANGELOG.md`, the `FIRMWARE_UPLOAD_TOKEN` secret, its product id in
 `lib/firmware.ts` (chip id, family) and `lib/web-setup/products.ts`, the id in
-the `firmware_releases` / `firmware_current` checks in `db/schema.sql` and
-`lib/ensure-schema.ts`, a `## <Product>` intro in `docs/changelog.md`, and a
+the `firmware_releases` / `firmware_current` checks in `db/schema.sql` (then
+`npm run schema`), a `## <Product>` intro in `docs/changelog.md`, and a
 row in `AGENTS.md` ("Multi-repo").
 
 ## Contributing

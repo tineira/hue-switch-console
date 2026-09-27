@@ -27,6 +27,10 @@ jobs:
 
       - run: npm ci
 
+      # db/schema.sql is the only source; its generated copy must be committed with it.
+      - name: Generated schema is current
+        run: node scripts/gen-schema.mjs --check
+
       - name: Lint
         run: npm run lint
 

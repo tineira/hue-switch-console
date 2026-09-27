@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Tracked in `docs/problems.md` §6a ("`ensureSchema()` in the request path").
 
-**Status:** draft. §5 decided by the user (2026-09-27). Waiting for approval before code.
+**Status:** approved (2026-09-27), in progress.
 
 ## 1. What and why
 
@@ -52,7 +52,9 @@ Two instances starting at once may both run step 2. That is already true today a
 
 ### 2.4 `npm run migrate`
 
-Runs the same generated statements and data migrations and writes `schema_meta` too, so a self-hoster who migrates by hand also skips the runtime run. It reads `db/schema.sql` through the same splitter, so it needs no build. It also honors `DATABASE_DRIVER=pg`; today it always uses Neon's HTTP driver, so it cannot migrate a plain Postgres.
+Runs the same statements, read from `db/schema.sql` through the same splitter (no build needed), and honors `DATABASE_DRIVER=pg` (it used to always use Neon's HTTP driver). It does **not** write `schema_meta`: `migrateLegacyRoundSwitches` has per-switch logic in TypeScript that a plain Node script cannot run, so the first request after a `migrate` still runs the data migrations and records the version, once.
+
+The old splitter also cut a statement in two when an inline `--` comment held a `;` (the `console_settings` table), so `migrate` could not apply the schema as it stood. The shared splitter skips comments and quotes.
 
 ### 2.5 Storage (`db/schema.sql`), additive
 
@@ -70,14 +72,14 @@ The `schema_meta` table (§2.3). Nothing is dropped.
 
 ### Console (`hue-switch-console`)
 
-- [ ] Runtime array reconciled into `db/schema.sql` (same statements, same order) (§2.2)
-- [ ] `prebuild` generator writes `lib/generated/schema.ts` (`SCHEMA_STATEMENTS`, `SCHEMA_VERSION`); file committed (§2.2)
-- [ ] CI fails when the generated file is stale (§2.2)
-- [ ] `ensureSchema()` checks `schema_meta` first; applies and records only on a new version (§2.3)
-- [ ] `npm run migrate` runs the data migrations and records the version (§2.4)
-- [ ] Tested on a local Postgres: fresh database, today's production schema, a matching version (one query), a changed statement (re-applies), a failed statement (version not written)
-- [ ] `README.md` "Firmware release pipeline" and the new-product notes point to `db/schema.sql` only
-- [ ] `docs/device-api.md`: no change
+- [x] Runtime array reconciled into `db/schema.sql` (same statements, same order) (§2.2)
+- [x] `prebuild` generator writes `lib/generated/schema.ts` (`SCHEMA_STATEMENTS`, `SCHEMA_VERSION`); file committed (§2.2)
+- [x] CI fails when the generated file is stale (§2.2)
+- [x] `ensureSchema()` checks `schema_meta` first; applies and records only on a new version (§2.3)
+- [x] `npm run migrate` uses the shared splitter and `DATABASE_DRIVER=pg`; leaves the version to the first request (§2.4)
+- [x] Tested on a local Postgres: fresh database, today's production schema, a matching version (one query), a changed statement (re-applies), a failed statement (version not written)
+- [x] `README.md` "Firmware release pipeline" and the new-product notes point to `db/schema.sql` only
+- [x] `docs/device-api.md`: no change
 - [ ] Deployed; checked on production (Neon: `schema_meta` has the version; a device request answers normally)
 
 ### Round (`hue-round-switch`)

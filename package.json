@@ -10,8 +10,9 @@
     "lint": "eslint",
     "push-from-bridge": "node scripts/push-from-bridge.mjs",
     "migrate": "node scripts/migrate.mjs",
+    "schema": "node scripts/gen-schema.mjs",
     "seed-user": "node scripts/seed-user.mjs",
-    "prebuild": "node scripts/credits.mjs"
+    "prebuild": "node scripts/credits.mjs && node scripts/gen-schema.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

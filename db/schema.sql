@@ -1,5 +1,4 @@
 -- Neon Postgres. Users live here; sign-in is Better Auth on the same tables.
-
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,
@@ -55,6 +54,24 @@ create table if not exists switches (
 create index if not exists switches_user_bridge_idx
   on switches (user_id, bridgeid);
 
+-- Forward-compatible ALTERs for databases created before pages.
+alter table switches add column if not exists product text not null default 'simple';
+alter table switches add column if not exists page_swipe_axis text not null default 'horizontal';
+alter table switches add column if not exists page_seq integer not null default 1;
+alter table switches add column if not exists screen_timeout_sec integer not null default 30;
+alter table switches add column if not exists applied_rev integer;
+alter table switches add column if not exists served_rev integer;
+alter table switches add column if not exists apply_failed boolean not null default false;
+alter table switches add column if not exists rev_changed_at timestamptz;
+alter table switches add column if not exists editing_until timestamptz;
+alter table switches add column if not exists next_poll_at timestamptz;
+alter table switches drop constraint if exists switches_product_check;
+alter table switches add constraint switches_product_check check (product in ('simple', 'round'));
+alter table switches drop constraint if exists switches_page_swipe_axis_check;
+alter table switches add constraint switches_page_swipe_axis_check check (page_swipe_axis in ('horizontal', 'vertical'));
+alter table switches drop constraint if exists switches_screen_timeout_sec_check;
+alter table switches add constraint switches_screen_timeout_sec_check check (screen_timeout_sec = 0 or (screen_timeout_sec >= 10 and screen_timeout_sec <= 600));
+
 create table if not exists pages (
   switch_id uuid not null references switches (id) on delete cascade,
   id text not null,
@@ -71,6 +88,11 @@ create table if not exists pages (
   primary key (switch_id, id)
 );
 
+alter table pages add column if not exists group_rtype text;
+alter table pages add column if not exists group_rid text;
+alter table pages add column if not exists grouped_light_rid text;
+alter table pages add column if not exists dim jsonb;
+
 create index if not exists pages_switch_sort_idx
   on pages (switch_id, sort_order);
 
@@ -85,6 +107,11 @@ create table if not exists recipes (
   target_rid text not null,
   targets jsonb not null default '[]'::jsonb
 );
+
+alter table recipes add column if not exists page_id text;
+alter table recipes add column if not exists targets jsonb not null default '[]'::jsonb;
+alter table recipes alter column channel_id drop not null;
+alter table recipes drop constraint if exists recipes_switch_id_channel_id_event_key;
 
 create unique index if not exists recipes_simple_uniq
   on recipes (switch_id, channel_id, event)
@@ -140,34 +167,9 @@ create table if not exists firmware_current (
   release_id uuid not null references firmware_releases (id)
 );
 
--- Forward-compatible ALTERs for databases created before pages.
-alter table switches add column if not exists product text not null default 'simple';
-alter table switches add column if not exists page_swipe_axis text not null default 'horizontal';
-alter table switches add column if not exists page_seq integer not null default 1;
-alter table switches add column if not exists screen_timeout_sec integer not null default 30;
 -- Config sync (docs/specs/finished/config-sync.md).
 -- Firmware credits (docs/specs/finished/credits.md).
 alter table firmware_releases add column if not exists credits jsonb;
-alter table switches add column if not exists applied_rev integer;
-alter table switches add column if not exists served_rev integer;
-alter table switches add column if not exists apply_failed boolean not null default false;
-alter table switches add column if not exists rev_changed_at timestamptz;
-alter table switches add column if not exists editing_until timestamptz;
-alter table switches add column if not exists next_poll_at timestamptz;
-alter table pages add column if not exists group_rtype text;
-alter table pages add column if not exists group_rid text;
-alter table pages add column if not exists grouped_light_rid text;
-alter table pages add column if not exists dim jsonb;
-alter table recipes add column if not exists page_id text;
-alter table recipes add column if not exists targets jsonb not null default '[]'::jsonb;
-alter table recipes alter column channel_id drop not null;
-alter table recipes drop constraint if exists recipes_switch_id_channel_id_event_key;
-alter table switches drop constraint if exists switches_product_check;
-alter table switches add constraint switches_product_check check (product in ('simple', 'round'));
-alter table switches drop constraint if exists switches_page_swipe_axis_check;
-alter table switches add constraint switches_page_swipe_axis_check check (page_swipe_axis in ('horizontal', 'vertical'));
-alter table switches drop constraint if exists switches_screen_timeout_sec_check;
-alter table switches add constraint switches_screen_timeout_sec_check check (screen_timeout_sec = 0 or (screen_timeout_sec >= 10 and screen_timeout_sec <= 600));
 
 -- Multi-user accounts (docs/specs/finished/multi-user-accounts.md §2.9).
 -- users doubles as Better Auth's user table; the rest are its tables.
@@ -175,6 +177,7 @@ alter table users add column if not exists name text not null default '';
 alter table users add column if not exists email_verified boolean not null default false;
 alter table users add column if not exists image text;
 alter table users add column if not exists updated_at timestamptz not null default now();
+
 -- ADMIN_EMAILS is the only admin source; the old role copy goes (admin-tools §2.2).
 alter table users drop column if exists role;
 alter table users add column if not exists banned boolean not null default false;
@@ -195,6 +198,7 @@ create table if not exists sessions (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
 create index if not exists sessions_user_id_idx on sessions (user_id);
 
 -- one row per sign-in method: 'google', 'github', or 'credential' (self-hosted password)
@@ -214,6 +218,7 @@ create table if not exists accounts (
   updated_at timestamptz not null default now(),
   unique (provider_id, account_id)
 );
+
 create index if not exists accounts_user_id_idx on accounts (user_id);
 
 -- emailed codes (hashed by Better Auth), OAuth state
@@ -225,6 +230,7 @@ create table if not exists verifications (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
 create index if not exists verifications_identifier_idx on verifications (identifier);
 
 create table if not exists rate_limits (
@@ -255,6 +261,7 @@ create table if not exists invite_requests (
   decided_at timestamptz,
   created_at timestamptz not null default now()
 );
+
 create unique index if not exists invite_requests_pending_email_idx
   on invite_requests (lower(email)) where status = 'pending';
 
@@ -265,10 +272,13 @@ create table if not exists auth_events (
   ip text,
   created_at timestamptz not null default now()
 );
+
 alter table auth_events drop constraint if exists auth_events_kind_check;
 alter table auth_events add constraint auth_events_kind_check check (kind in ('email_sent', 'code_sent', 'code_failed', 'invite_requested', 'waitlist_email_sent', 'email_bounced', 'email_complained'));
 alter table auth_events add column if not exists detail text;  -- email kind for bounces and complaints
+
 create index if not exists auth_events_email_idx on auth_events (kind, email, created_at);
+
 create index if not exists auth_events_time_idx on auth_events (kind, created_at);
 
 -- Waitlist with a user cap (docs/specs/waitlist.md §2.8). invite_requests is the waitlist.
@@ -280,12 +290,16 @@ create table if not exists console_settings (
   joins_total bigint not null default 0,
   updated_at timestamptz not null default now()
 );
+
 alter table invite_requests drop constraint if exists invite_requests_status_check;
+
 alter table invite_requests add constraint invite_requests_status_check
   check (status in ('pending', 'approved', 'dismissed', 'expired', 'left', 'bounced', 'complained'));
+
 alter table invite_requests add column if not exists confirmation_sent_at timestamptz;
 alter table invite_requests add column if not exists leave_token_hash text;
 alter table invite_requests drop column if exists note;
+
 create index if not exists invite_requests_email_idx on invite_requests (lower(email), status);
 
 -- Admin tools (docs/specs/finished/admin-tools.md §2.9). target keeps the email or version as text, so an
@@ -299,7 +313,9 @@ create table if not exists admin_events (
   details jsonb,
   created_at timestamptz not null default now()
 );
+
 create index if not exists admin_events_created on admin_events (created_at desc);
+
 create index if not exists switches_user_seen_idx on switches (user_id, last_seen_at);
 
 -- Pre-Better Auth consoles kept the password on users.password_hash: move it to a credential
@@ -313,6 +329,17 @@ begin
     from users u
     where u.password_hash is not null
       and not exists (select 1 from accounts a where a.user_id = u.id and a.provider_id = 'credential');
+
     alter table users drop column password_hash;
+
   end if;
+
 end $$;
+
+-- The schema version this database last applied (docs/specs/schema-version.md §2.3). ensureSchema()
+-- reads it once per process and runs this file only when the code's version differs.
+create table if not exists schema_meta (
+  id boolean primary key default true check (id),
+  version text not null,
+  applied_at timestamptz not null default now()
+);
