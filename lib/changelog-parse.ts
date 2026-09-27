@@ -2,7 +2,7 @@ export type ChangelogEntry = {
   id: string;
   heading: string;
   date: string | null;
-  items: string[];
+  items: ChangelogItem[];
 };
 
 export type ChangelogSection = {
@@ -96,7 +96,7 @@ export function parseChangelog(markdown: string): ChangelogDoc {
       if (!entry) fail("bullet before an entry");
       const item = line.slice(2).trim();
       if (!item) fail(`empty bullet in ${entry.id}`);
-      entry.items.push(item);
+      entry.items.push(toItem(item));
       continue;
     }
 
@@ -123,8 +123,19 @@ export function parseChangelog(markdown: string): ChangelogDoc {
   return { intro, sections };
 }
 
+export type ChangelogItem = { text: string; important: boolean };
+
+// A firmware note the person must know before or right after updating starts with "Important: ".
+const IMPORTANT = "Important: ";
+
+function toItem(text: string): ChangelogItem {
+  return text.startsWith(IMPORTANT)
+    ? { text: text.slice(IMPORTANT.length).trim(), important: true }
+    : { text, important: false };
+}
+
 // Firmware notes arrive with each upload as markdown bullets; wrapped lines join their bullet.
-export function notesToItems(notes: string): string[] {
+export function notesToItems(notes: string): ChangelogItem[] {
   const items: string[] = [];
   for (const raw of notes.split(/\r?\n/)) {
     const line = raw.trim();
@@ -133,5 +144,5 @@ export function notesToItems(notes: string): string[] {
     else if (items.length > 0) items[items.length - 1] += ` ${line}`;
     else items.push(line);
   }
-  return items;
+  return items.map(toItem);
 }

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { ChangelogItemText } from "@/app/changelog-item";
 import { PublicFrame } from "@/app/public-frame";
 import { Shell } from "@/app/shell";
 import { getSessionUser } from "@/lib/auth";
@@ -91,7 +92,9 @@ function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
                 <EntryHeading entry={entry} />
                 <ul className="mt-1 flex list-disc flex-col gap-1 pl-5 text-sm text-muted">
                   {entry.items.map((item) => (
-                    <li key={item}>{item}</li>
+                    <li key={item.text}>
+                      <ChangelogItemText item={item} />
+                    </li>
                   ))}
                 </ul>
               </article>

@@ -127,6 +127,13 @@ non-empty notes, and the chip id inside `bootloader.bin` / `firmware.bin`
 releases per product plus the current one. Release rows and their notes are
 kept for the changelog.
 
+When Setup offers **Update**, it lists the notes of every version after the
+board's one up to the release it installs. A bullet that starts with
+`Important: ` is shown first, with an "Important" label, on Setup and on
+`/changelog`. Use it for something the person must know or do before or right
+after updating (a button to press, a setting that resets), not for new
+features. Spec: [`docs/specs/setup-update-notes.md`](docs/specs/setup-update-notes.md).
+
 Each upload also sends `credits`: the firmware repo's `THIRD_PARTY.json`, the
 third-party software linked into the image (core, ESP-IDF, every library
 pinned in `sketch.yaml`). Firmware CI fails when that file and `sketch.yaml`

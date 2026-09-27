@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-27
 
+- When a board plugged into **Setup** has older firmware, Setup lists what changed in every version between the board's and the one **Update** installs. Notes marked **Important** (something to know or do around the update) are shown first, and the checklist counts them.
 - **For people who run a console: admin tools.** `/admin` can search accounts by email and page through all of them, make any stored firmware release the one Setup installs (to roll back or forward), and shows a log of what admins did in the last year. A suspension can have a reason, seen only by admins, and an end date, after which it lifts on its own. The invite list shows every invite, filtered by state, and each account shows why its last register was refused. Admin accounts can't be suspended or deleted from the console; remove the address from `ADMIN_EMAILS` first.
 - Signing in with **GitHub** joins an existing account only when GitHub says that email address is verified.
 - **Waitlist.** "Request an invite" is now **Join the waitlist**, and it only asks for your email. While there is room, your invite arrives right away; when the console is full, you get one email saying you're on the list, and your invite comes as soon as a spot opens. The console runs on free servers, so people are let in in batches. That email has a link to leave the waitlist, and the console is open source if you'd rather run your own.

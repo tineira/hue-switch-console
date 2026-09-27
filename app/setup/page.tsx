@@ -2,6 +2,7 @@ import { SetupPanel } from "@/app/setup/setup-panel";
 import { Shell } from "@/app/shell";
 import { requireSessionUser } from "@/lib/auth";
 import { getSwitchByMac } from "@/lib/db";
+import { listReleaseNotes } from "@/lib/firmware";
 import { formatMac, normalizeMac } from "@/lib/mac";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,12 @@ export default async function SetupPage({
   const user = await requireSessionUser();
   const { mac: rawMac } = await searchParams;
   const mac = typeof rawMac === "string" ? normalizeMac(rawMac) : null;
-  const expected = mac ? await getSwitchByMac(user.id, mac).catch(() => null) : null;
+  const [expected, roundNotes, simpleNotes] = await Promise.all([
+    mac ? getSwitchByMac(user.id, mac).catch(() => null) : null,
+    // What an update changes (docs/specs/setup-update-notes.md); without them the list is not shown.
+    listReleaseNotes("round").catch(() => []),
+    listReleaseNotes("simple").catch(() => []),
+  ]);
 
   return (
     <Shell email={user.email} userId={user.id}>
@@ -35,6 +41,7 @@ export default async function SetupPage({
             ? { mac: expected.mac, name: expected.label?.trim() || formatMac(expected.mac) }
             : null
         }
+        releaseNotes={{ round: roundNotes, simple: simpleNotes }}
       />
     </Shell>
   );

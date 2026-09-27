@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { ChangelogItemText } from "@/app/changelog-item";
 import { firmwareChangelogHref } from "@/lib/changelog-href";
 import { agoText, CONSOLE_QUIET_MIN, minutesSince } from "@/lib/ago";
+import type { FirmwareNotes } from "@/lib/firmware";
+import { notesBetween, type VersionNotes } from "@/lib/firmware-notes";
 import { formatMac } from "@/lib/mac";
 import { webSerialBlockedReason } from "@/lib/web-setup/browser";
 import {
@@ -193,6 +196,77 @@ function Field({
 }
 
 
+// Versions listed in full before they fold into "All changes" (docs/specs/setup-update-notes.md §4.3).
+const OPEN_VERSIONS = 3;
+
+function VersionList({ notes }: { notes: VersionNotes[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {notes.map((release) => (
+        <div key={release.version}>
+          <h4 className="text-sm font-medium">
+            <span className="font-mono">{release.version}</span>
+            <span className="ml-2 font-normal text-muted">{release.date}</span>
+          </h4>
+          <ul className="mt-1 flex list-disc flex-col gap-1 pl-5 text-sm text-muted">
+            {release.items.map((item) => (
+              <li key={item.text}>
+                <ChangelogItemText item={item} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function UpdateNotes({
+  installed,
+  latest,
+  notes,
+}: {
+  installed: string;
+  latest: string;
+  notes: VersionNotes[];
+}) {
+  const important = notes.flatMap((release) =>
+    release.items
+      .filter((item) => item.important)
+      .map((item) => ({ version: release.version, item })),
+  );
+  return (
+    <div id="update-notes" className="flex scroll-mt-8 flex-col gap-3 px-2 py-2">
+      <h3 className="text-sm font-medium">
+        What changes from <span className="font-mono">{installed}</span> to{" "}
+        <span className="font-mono">{latest}</span>
+      </h3>
+      {important.length > 0 ? (
+        <ul className="flex flex-col gap-2 rounded-lg border border-warn/40 bg-warn-soft p-3 text-sm">
+          {important.map(({ version, item }) => (
+            <li key={`${version}-${item.text}`}>
+              <ChangelogItemText item={item} />{" "}
+              <span className="font-mono text-xs text-muted">({version})</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {notes.length <= OPEN_VERSIONS ? (
+        <VersionList notes={notes} />
+      ) : (
+        <details>
+          <summary className="cursor-pointer text-sm text-filament">
+            All changes in {notes.length} versions
+          </summary>
+          <div className="mt-2">
+            <VersionList notes={notes} />
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
 function ActionRow({
   label,
   hint,
@@ -293,6 +367,7 @@ function SetupChecklist({
   manifestVersion,
   manifestLoading,
   versionCmp,
+  importantCount,
   lastSeenAt,
   consoleLookup,
   switchHref,
@@ -303,6 +378,7 @@ function SetupChecklist({
   manifestVersion: string | null;
   manifestLoading: boolean;
   versionCmp: -1 | 0 | 1 | null;
+  importantCount: number;
   lastSeenAt: string | null;
   consoleLookup: ConsoleLookup;
   switchHref: string | null;
@@ -326,7 +402,11 @@ function SetupChecklist({
       text: manifestLoading
         ? `${ver} · checking for updates…`
         : versionCmp === -1
-          ? `${ver} · ${manifestVersion} is available`
+          ? `${ver} · ${manifestVersion} is available${
+              importantCount > 0
+                ? ` · ${importantCount} important ${importantCount === 1 ? "note" : "notes"}`
+                : ""
+            }`
           : versionCmp === 0
             ? `${ver} (latest)`
             : versionCmp === 1
@@ -390,7 +470,17 @@ function SetupChecklist({
                   ? "The board checks in with the console shortly after it joins Wi-Fi. The console checks again on its own."
                   : "If the console still hasn't heard from it after a few minutes on Wi-Fi, its key may have been revoked. Use Replace console key below."
                 : firmwareOld
-                  ? `Update to ${manifestVersion} with Update below when convenient. Settings stay.`
+                  ? importantCount > 0
+                    ? (
+                        <>
+                          Read the{" "}
+                          <a href="#update-notes" className="text-filament underline underline-offset-2">
+                            important {importantCount === 1 ? "note" : "notes"}
+                          </a>
+                          , then update to {manifestVersion} with Update below. Settings stay.
+                        </>
+                      )
+                    : `Update to ${manifestVersion} with Update below when convenient. Settings stay.`
                   : null;
   const guide = `/how-to?product=${productId === "round" ? "round" : "simple"}#status`;
   const guideText = productId === "round" ? "What the screen shows" : "What the LED shows";
@@ -485,9 +575,11 @@ function SetupChecklist({
 
 export function SetupPanel({
   expected,
+  releaseNotes,
 }: {
   // The switch a "Update to x" link came from (`/setup?mac=`), when this account has it.
   expected: { mac: string; name: string } | null;
+  releaseNotes: Record<ProductId, FirmwareNotes[]>;
 }) {
   const blocked = useSyncExternalStore(
     subscribeNoop,
@@ -1087,6 +1179,15 @@ export function SetupPanel({
   const showChecklist = Boolean(
     actions?.showSaved && detected?.huesta && !actions.cross,
   );
+  const installedVersion = detected ? reportedVersion(detected) : "";
+  const updateNotes =
+    actions?.flash === "update" && productId && detected?.manifest
+      ? notesBetween(releaseNotes[productId], installedVersion, detected.manifest.version)
+      : [];
+  const importantCount = updateNotes.reduce(
+    (count, release) => count + release.items.filter((item) => item.important).length,
+    0,
+  );
   const consoleLookup: ConsoleLookup = detected?.consoleRecord
     ? detected.consoleRecord.keyRevoked
       ? replacedKeyMac === detected.huesta?.mac
@@ -1235,6 +1336,7 @@ export function SetupPanel({
               manifestVersion={detected.manifest?.version ?? null}
               manifestLoading={detected.manifestLoading}
               versionCmp={versionCmp}
+              importantCount={importantCount}
               lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
               consoleLookup={consoleLookup}
               switchHref={
@@ -1404,6 +1506,13 @@ export function SetupPanel({
           {actions.flash !== "none" || actions.wifi || actions.token || actions.pair ? (
             <section className="flex flex-col gap-1 rounded-xl border border-line bg-cream p-2">
               <h2 className="px-2 pt-1 text-sm font-medium">Actions</h2>
+              {updateNotes.length > 0 && detected.manifest ? (
+                <UpdateNotes
+                  installed={installedVersion}
+                  latest={detected.manifest.version}
+                  notes={updateNotes}
+                />
+              ) : null}
               {actions.flash === "install" || actions.flash === "update" ? (
                 <ActionRow
                   primary
