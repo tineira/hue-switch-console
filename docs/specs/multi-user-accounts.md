@@ -111,7 +111,7 @@ A user who hits a limit sees why in the console (Setup and Switches show a banne
 
 ### 2.5 Rate limits
 
-- **Code sends:** 3 per email per 15 minutes; 10 per IP per hour; **90 per day in total** across the instance, to stay under Resend's free 100 a day (`EMAIL_DAILY_CAP`, default 90). Invite and change-email messages count toward the daily total. Per-email and instance counts are kept in `auth_events`; per-IP limits use Better Auth's rate limiter.
+- **Code sends:** 3 per email per 15 minutes; 10 per IP per hour; **90 per day in total** across the instance, to stay under Resend's free 100 a day (`EMAIL_DAILY_CAP`, default 90). Invite and change-email messages count toward the daily total. Kept in `auth_events`: codes are logged as `code_sent` and only they count toward the per-email and per-IP limits, so an invite or notice to an address doesn't use up its code requests; every email counts toward the daily total.
 - **Code checks:** 5 wrong attempts per code (§2.2); 30 per IP per hour.
 - **Invite requests:** 3 per IP per hour; 50 in total per day across the instance.
 - **Device endpoints:** the Vercel Firewall rate-limit rule on `/api/device/*` per IP (config, not code; Hobby allows one such rule), returning `429`. Boards call register at boot and config on a schedule, so a generous limit (e.g. 60/min per IP) never hits a real board.
@@ -239,7 +239,7 @@ create unique index if not exists invite_requests_pending_email_idx
 
 create table if not exists auth_events (
   id bigserial primary key,
-  kind text not null check (kind in ('email_sent', 'code_failed', 'invite_requested')),
+  kind text not null check (kind in ('email_sent', 'code_sent', 'code_failed', 'invite_requested')),
   email text,
   ip text,
   created_at timestamptz not null default now()

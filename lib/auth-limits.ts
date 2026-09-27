@@ -2,7 +2,7 @@ import { sql } from "@/lib/sql";
 
 // Sign-in rate limits kept in auth_events (docs/specs/multi-user-accounts.md §2.5).
 
-type Kind = "email_sent" | "code_failed" | "invite_requested";
+type Kind = "code_sent" | "code_failed" | "invite_requested";
 
 async function count(kind: Kind, where: { email?: string; ip?: string }, minutes: number) {
   const since = new Date(Date.now() - minutes * 60_000).toISOString();
@@ -18,8 +18,9 @@ async function count(kind: Kind, where: { email?: string; ip?: string }, minutes
 }
 
 export async function codeSendAllowed(email: string, ip: string | null): Promise<boolean> {
-  if ((await count("email_sent", { email }, 15)) >= 3) return false;
-  if (ip && (await count("email_sent", { ip }, 60)) >= 10) return false;
+  // Codes only: invites and notices to the same address don't use up its code requests.
+  if ((await count("code_sent", { email }, 15)) >= 3) return false;
+  if (ip && (await count("code_sent", { ip }, 60)) >= 10) return false;
   return true;
 }
 

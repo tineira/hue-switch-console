@@ -2,12 +2,16 @@ import { Resend } from "resend";
 import { emailDailyCap, envValue, isEmailConfigured } from "@/lib/account-config";
 import { sql } from "@/lib/sql";
 
-// Every message counts toward EMAIL_DAILY_CAP (Resend's free tier is 100 a day).
+// Every message counts toward EMAIL_DAILY_CAP (Resend's free tier is 100 a day). Codes are
+// logged as code_sent, which the per-address and per-IP limits count (lib/auth-limits.ts);
+// invites and notices as email_sent, so they don't use up an address's code requests.
+
+type SentKind = "code_sent" | "email_sent";
 
 export async function emailsSentToday(): Promise<number> {
   const rows = await sql()`
     select count(*)::int as n from auth_events
-    where kind = 'email_sent' and created_at > now() - interval '24 hours'
+    where kind in ('email_sent', 'code_sent') and created_at > now() - interval '24 hours'
   `;
   return (rows[0] as { n: number }).n;
 }
@@ -16,12 +20,18 @@ export async function emailCapReached(): Promise<boolean> {
   return (await emailsSentToday()) >= emailDailyCap();
 }
 
-async function send(to: string, subject: string, text: string, ip?: string | null) {
+async function send(
+  to: string,
+  subject: string,
+  text: string,
+  ip?: string | null,
+  kind: SentKind = "email_sent",
+) {
   if (!isEmailConfigured()) throw new Error("Email is not configured");
   if (process.env.EMAIL_DEV_CONSOLE === "1" && process.env.NODE_ENV !== "production") {
     // Local development: print instead of sending.
     console.log(`[email] to=${to} subject=${subject}\n${text}`);
-    await sql()`insert into auth_events (kind, email, ip) values ('email_sent', ${to}, ${ip ?? null})`;
+    await sql()`insert into auth_events (kind, email, ip) values (${kind}, ${to}, ${ip ?? null})`;
     return;
   }
   const resend = new Resend(envValue("RESEND_API_KEY"));
@@ -33,7 +43,7 @@ async function send(to: string, subject: string, text: string, ip?: string | nul
   });
   if (error) throw new Error(`Email not sent: ${error.message}`);
   await sql()`
-    insert into auth_events (kind, email, ip) values ('email_sent', ${to}, ${ip ?? null})
+    insert into auth_events (kind, email, ip) values (${kind}, ${to}, ${ip ?? null})
   `;
 }
 
@@ -45,6 +55,7 @@ export async function sendSignInCode(to: string, code: string, ip?: string | nul
     `${code} is your Hue Switch Console code`,
     `Your sign-in code is ${code}\n\nIt expires in 10 minutes.${SIGN_OFF}`,
     ip,
+    "code_sent",
   );
 }
 
@@ -54,6 +65,7 @@ export async function sendChangeEmailCode(to: string, code: string, ip?: string 
     `${code} confirms your new email`,
     `Enter ${code} in the console to use this address for your Hue Switch Console account.\n\nIt expires in 10 minutes.${SIGN_OFF}`,
     ip,
+    "code_sent",
   );
 }
 

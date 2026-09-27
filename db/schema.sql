@@ -262,10 +262,12 @@ create unique index if not exists invite_requests_pending_email_idx
 
 create table if not exists auth_events (
   id bigserial primary key,
-  kind text not null check (kind in ('email_sent', 'code_failed', 'invite_requested')),
+  kind text not null check (kind in ('email_sent', 'code_sent', 'code_failed', 'invite_requested')),
   email text,
   ip text,
   created_at timestamptz not null default now()
 );
+alter table auth_events drop constraint if exists auth_events_kind_check;
+alter table auth_events add constraint auth_events_kind_check check (kind in ('email_sent', 'code_sent', 'code_failed', 'invite_requested'));
 create index if not exists auth_events_email_idx on auth_events (kind, email, created_at);
 create index if not exists auth_events_time_idx on auth_events (kind, created_at);
