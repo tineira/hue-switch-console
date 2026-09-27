@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress. Live on production since 2026-09-26 with Google, GitHub and password sign-in. **TODO:** email (emailed codes, invites, invite requests) waits on Resend verifying `hue.tineira.com`; see the checklist.
+**Status:** in progress. Live on production with Google, GitHub and emailed-code sign-in (email since 2026-09-27); password sign-in is off, sign-up is invite-only. **TODO:** the email checks on production (see the checklist).
 
 ## 1. What and why
 
@@ -304,9 +304,9 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 ### Console (`hue-switch-console`)
 
 - [x] Confirm the current Better Auth release works with Next.js 16.3 (better-auth 1.7.6 lists `next ^16` as a peer)
-- [ ] **TODO** `hue.tineira.com` verified as a sending domain in Resend; `RESEND_API_KEY` set in Vercel, then redeploy (user). DNS records are in Cloudflare and resolve publicly; Resend verified SPF (MX, TXT) and the return-path CNAME, DKIM still pending on their side (asked Resend by email, 2026-09-27). `EMAIL_FROM` is set. Until the key is set, production keeps password sign-in, sign-up stays closed and invites are off.
+- [x] `hue.tineira.com` verified in Resend (all records, 2026-09-27); `RESEND_API_KEY` (sending access, limited to `hue.tineira.com`) set in Vercel Production and deployed; `EMAIL_FROM` set
 - [x] Google and GitHub OAuth clients created with callback `https://hue.tineira.com/api/auth/callback/{google,github}`; keys set in Vercel (2026-09-27)
-- [ ] Google consent screen shows "Hue Switch Console": the client lives in a Cloud project whose consent screen is named "rclone". Move it to its own project, with `https://hue.tineira.com/privacy` as the privacy policy, before opening sign-up (user)
+- [x] Google consent screen shows "Hue Switch Console": own Cloud project `hue-switch-console`, branding verified and published, `tineira.com` verified in Search Console (2026-09-27). Public landing page at `/` for the review
 - [x] Turnstile widget "Hue Switch Console sign-in" created; site and secret keys set in Vercel (2026-09-27)
 - [x] Schema (§2.9) in `db/schema.sql` and `lib/ensure-schema.ts`, checked against Better Auth's generated schema; existing account migrated (email verified, `credential` row)
 - [x] Better Auth setup (`lib/auth.ts`, `/api/auth/[...all]`): email OTP, Google, GitHub, account linking, password only without email, rate limiter, hooks (sign-up gate, disposable domains, suspended check, admin role, `last_login_at`); Turnstile and suspension in the console (§2.2 "As built"); `getSessionUser` wraps it
@@ -326,7 +326,7 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 - [x] `docs/changelog.md` console entry (including "sign in again once" and the 15-minute idle poll)
 - [x] Deployed (2026-09-26); `CRON_SECRET` set; `/privacy` page live (§2.12)
 - [x] Checked on production by the user: Google and GitHub sign-in link to the existing account (2026-09-27)
-- [ ] **TODO** Checked on production by the user, after Resend: sign-in by code, invite request → approve → sign-up, account deletion on a test account
+- [ ] **TODO** Checked on production by the user: sign-in by code, invite request → approve → sign-up from the invite email, account deletion on a test account
 
 ### Round (`hue-round-switch`)
 
