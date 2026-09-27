@@ -127,7 +127,7 @@ When the daily email cap is reached, the code form says "Email sign-in is busy, 
 
 ### 2.7 Admin — new `/admin`
 
-Admins are the emails in `ADMIN_EMAILS` (comma-separated). The operator controls it by env, and self-hosters are admin of their own seeded account. A session hook stores `role` = `admin` for those emails at sign-in and `user` for everyone else, so the table shows who is admin; `/admin` itself checks `ADMIN_EMAILS`.
+Admins are the emails in `ADMIN_EMAILS` (comma-separated). The operator controls it by env, and self-hosters are admin of their own seeded account. `/admin` checks `ADMIN_EMAILS`; nothing is stored per user (the `users.role` copy was dropped by `docs/specs/finished/admin-tools.md`).
 
 - Accounts table: email, sign-in methods, created, last sign-in, switches, bridges, last board seen, status. Sort by any column. A **Dormant** filter (§2.8).
 - Suspend / unsuspend (`users.banned`: deletes the account's sessions, refuses sign-in; device calls get `403 account_suspended`).

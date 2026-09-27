@@ -175,7 +175,8 @@ alter table users add column if not exists name text not null default '';
 alter table users add column if not exists email_verified boolean not null default false;
 alter table users add column if not exists image text;
 alter table users add column if not exists updated_at timestamptz not null default now();
-alter table users add column if not exists role text not null default 'user';
+-- ADMIN_EMAILS is the only admin source; the old role copy goes (admin-tools §2.2).
+alter table users drop column if exists role;
 alter table users add column if not exists banned boolean not null default false;
 alter table users add column if not exists ban_reason text;
 alter table users add column if not exists ban_expires timestamptz;

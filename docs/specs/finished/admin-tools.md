@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` ("accounts spec") and `docs/specs/waitlist.md`.
 
-**Status:** done (2026-09-27). Deployed and checked on production. The `users.role` drop in §4 Cleanup waits for the user's OK.
+**Status:** done (2026-09-27). Deployed and checked on production; `users.role` dropped.
 
 ## 1. What and why
 
@@ -123,7 +123,7 @@ Nothing to do.
 
 ### Cleanup
 
-- [ ] Drop `users.role` (user OK, once nothing reads it)
+- [x] Drop `users.role` (user OK, once nothing reads it)
 
 ## 5. Decisions (2026-09-27)
 

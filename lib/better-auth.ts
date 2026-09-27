@@ -143,7 +143,7 @@ function createAuth() {
             }
           },
           after: async (session) => {
-            // ADMIN_EMAILS decides who is an admin; users.role is no longer written (admin-tools §2.2).
+            // ADMIN_EMAILS decides who is an admin (admin-tools §2.2).
             await sql()`update users set last_login_at = now() where id = ${session.userId}`;
           },
         },
