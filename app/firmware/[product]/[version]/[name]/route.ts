@@ -1,5 +1,5 @@
 import { isVersion, parsePartName, parseProductId, readPart } from "@/lib/firmware";
-import { jsonError } from "@/lib/http";
+import { databaseError, jsonError } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +23,7 @@ async function serve(context: Params, withBody: boolean) {
       },
     });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }
 

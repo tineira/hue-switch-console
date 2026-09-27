@@ -12,7 +12,7 @@ import {
 } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 import {
   parsePageSwipeAxis,
   parseRoundPages,
@@ -41,8 +41,7 @@ export async function GET(
   try {
     await ensureSchema();
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
   const { mac: rawMac } = await context.params;
   const mac = normalizeMac(rawMac);
@@ -64,8 +63,7 @@ export async function GET(
       recipes: snapshot ? withSceneNames(recipes, snapshot) : recipes,
     });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }
 
@@ -81,8 +79,7 @@ export async function PUT(
   try {
     await ensureSchema();
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
   const { mac: rawMac } = await context.params;
   const mac = normalizeMac(rawMac);
@@ -143,7 +140,6 @@ export async function PUT(
       recipes: saved.recipes,
     });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

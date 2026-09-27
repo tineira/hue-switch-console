@@ -89,6 +89,8 @@ Last snapshot wins. That is correct **if the POST is a real tree**.
 
 **Decide:** is a register without `rooms`/`scenes` a 400? Is a POST with Hue streams ≠ 200 skipped (no overwrite)? Can the scene parser skip copying `actions`?
 
+**Status (2026-09-27):** mostly closed. Omitted `rooms`/`scenes` is a 400. Both firmwares skip the register when any Clip v2 stream is not 200 (`hue-simple-switch/console.h`, `hue-round-switch/hue_job.h`). An empty tree that still lands keeps stored page groups (`withGroupAndDim` falls back to `page.group`); only the UI pickers and scene names go empty. Open: a scene object over the stream cap is still dropped silently (S3), and a Bridge that answers 200 with empty `data` still overwrites.
+
 ### P5 — `product` inference is fragile
 
 **Severity:** Contract · C6, C23, S1
@@ -155,6 +157,8 @@ Also, if `dim` comes as `null`, the firmware **re-infers** the ring from recipes
 
 **Decide:** read-only poll + `rev` only on PUT, **or** bump `rev` when persisted group/dim change. Is the local fill deleted?
 
+**Status (2026-09-27):** closed. The config GET bumps `rev` whenever `persistPageGroupAndDim` changes a page.
+
 ### P12 — Wi-Fi failure on Simple does not retry
 
 **Severity:** Runtime · S5
@@ -186,7 +190,7 @@ Spec: ASCII, `Niños` → `Ninos`. The folding only runs when creating from the 
 | Id | What | Risk |
 | --- | --- | --- |
 | P16 | `supabase/migrations/…_init.sql` is Auth+RLS+`channel_id NOT NULL`, without `pages`. Runtime = Neon `db/schema.sql` + `ensure-schema.ts` (C2) | Applying the fossil migration leaves a Postgres that **cannot** store Round or this auth |
-| P17 | `ensure-schema.ts` creates `switches` **without** the product/axis/timeout CHECKs that `schema.sql` has (C11) | Two different Postgres depending on `migrate` vs cold start |
+| P17 | ~~`ensure-schema.ts` creates `switches` **without** the product/axis/timeout CHECKs that `schema.sql` has (C11)~~ Closed 2026-09-27: both carry them | Two different Postgres depending on `migrate` vs cold start |
 | P18 | Dead columns `pages.dim_target_*` (C10). Spec: there is no `dimTarget` | Confuses migrations |
 | P19 | Console README and home: "recipes per channel". Simple README: "one lamp", recipes "not yet", `CONSOLE_*` "when keys exist". `hue-lights.md` asks for `HUE_LIGHT_ID` (C9, S7, R4) | Onboarding to the old slice |
 | P20 | web-setup: requirements in `docs/specs/finished/web-setup.md`. No UI, no Improv, no `.bin`. Real onboarding = `config.h` (C14, S6) | v1 closed without this, or a blocking slice? |
@@ -247,6 +251,21 @@ Paper first, then runtime. The captain splits it among implementers; this is not
 4. **Product wire:** `rev` (3), `product` (5), group on Save (6), delete dim fill (10), poll does not overwrite NVS without `rev` (P11).
 5. **Minor circle:** R8 post-swipe toggle, P13 timeout 1–9, P14 caps, P15 ASCII.
 6. **Out of this v1:** web-setup (decision 11).
+
+---
+
+## 6a. Open from the 2026-09-27 code review
+
+Verified against `main` @ `34aaefdc`. Fixed in the same pass: 500s no longer return `err.message` (logged server-side instead), GitHub is no longer a trusted provider for account linking, and `CRON_SECRET` is compared in constant time.
+
+| Item | Where | Why it matters |
+| --- | --- | --- |
+| `ensureSchema()` in the request path | Almost every route, device poll included | Each cold isolate runs ~70 statements sequentially over HTTP before answering. Migrate at deploy; make the request path a no-op. |
+| Firmware upload is also publish | `uploadRelease` writes `firmware_current`; `POST …/current` takes the same CI token | A leaked CI token changes what `/setup` flashes. Promotion should need an admin session. |
+| Limit checks are count-then-insert | `registerLimitHit`, key creation | Parallel requests can pass a cap. Low impact. |
+| New MAC with no `product` is inferred Round | `upsertSwitch` / `inferProduct` | See P5. Require `product` on a first register once both firmwares send it. |
+| `setLimits` accepts any keys | `lib/admin.ts` | Only `limitsAction` filters them. |
+| 500 `database_error` and 410 `message` not in `docs/device-api.md` | C21 | Contract table is incomplete. |
 
 ---
 

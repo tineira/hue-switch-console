@@ -1,5 +1,6 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import { sql } from "@/lib/sql";
+import { secretMatches } from "@/lib/tokens";
 import type { ProductId } from "@/lib/web-setup/products";
 
 // Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
@@ -44,10 +45,7 @@ export function isVersion(value: string): boolean {
 export function uploadTokenMatches(token: string | null): boolean | null {
   const expected = process.env.FIRMWARE_UPLOAD_TOKEN;
   if (!expected) return null;
-  if (!token) return false;
-  const a = createHash("sha256").update(token).digest();
-  const b = createHash("sha256").update(expected).digest();
-  return timingSafeEqual(a, b);
+  return secretMatches(token, expected);
 }
 
 // Returns why the image is wrong for this product, or null when it looks right.

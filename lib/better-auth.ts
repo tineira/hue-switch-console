@@ -91,7 +91,9 @@ function createAuth() {
         refreshTokenExpiresAt: "refresh_token_expires_at",
         ...stamps,
       },
-      accountLinking: { enabled: true, trustedProviders: ["google", "github"] },
+      // Google only signs in verified addresses. GitHub links to an existing account only
+      // when GitHub says the email is verified; an unverified address could take one over.
+      accountLinking: { enabled: true, trustedProviders: ["google"] },
       // Tokens from Google and GitHub are never used; if kept, keep them encrypted.
       encryptOAuthTokens: true,
     },

@@ -1,5 +1,5 @@
 import { currentManifest, parseProductId } from "@/lib/firmware";
-import { jsonError } from "@/lib/http";
+import { databaseError, jsonError } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,6 @@ export async function GET(_req: Request, context: { params: Promise<{ product: s
     if (!manifest) return jsonError(404, "no_release");
     return Response.json(manifest, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

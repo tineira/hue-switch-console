@@ -1,7 +1,7 @@
 import { getSessionUser } from "@/lib/auth";
 import { insertApiKey, listApiKeys, toApiKeyPublic } from "@/lib/db";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 import { accountLimits, activeKeyCount } from "@/lib/limits";
 import { asString } from "@/lib/parse";
 import { generateDeviceToken } from "@/lib/tokens";
@@ -18,8 +18,7 @@ export async function GET() {
     const keys = await listApiKeys(user.id);
     return jsonOk({ keys: keys.map(toApiKeyPublic) });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }
 
@@ -48,8 +47,7 @@ export async function POST(req: Request) {
       });
     }
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 
   const generated = generateDeviceToken();
@@ -68,7 +66,6 @@ export async function POST(req: Request) {
       201,
     );
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

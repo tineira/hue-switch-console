@@ -1,7 +1,7 @@
 import { getSessionUser } from "@/lib/auth";
 import { getBridge } from "@/lib/db";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,6 @@ export async function GET(
       snapshot: row.snapshot,
     });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

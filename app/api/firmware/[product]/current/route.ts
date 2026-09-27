@@ -1,6 +1,6 @@
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isVersion, parseProductId, setCurrentRelease, uploadTokenMatches } from "@/lib/firmware";
-import { bearerToken, jsonError, jsonOk } from "@/lib/http";
+import { bearerToken, databaseError, jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,6 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
     }
     return jsonOk({ product, version });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

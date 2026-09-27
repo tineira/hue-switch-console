@@ -1,7 +1,8 @@
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { bearerToken, jsonError, jsonOk } from "@/lib/http";
 import { sql } from "@/lib/sql";
+import { secretMatches } from "@/lib/tokens";
 import { admitFromWaitlist } from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return jsonError(503, "cron_not_configured");
-  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secretMatches(bearerToken(req), secret)) {
     return jsonError(401, "unauthorized");
   }
   if (!isDbConfigured()) return jsonError(503, "database_not_configured");

@@ -11,7 +11,7 @@ import {
 } from "@/lib/db";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 import { resolvePageGroup } from "@/lib/pages";
 import { parseSimpleChannels } from "@/lib/parse";
 import { snapshotFromJson } from "@/lib/recipes";
@@ -34,8 +34,7 @@ async function prepare(context: { params: Promise<{ mac: string }> }) {
   try {
     await ensureSchema();
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return { response: jsonError(500, "database_error", { details }) };
+    return { response: databaseError(err) };
   }
   const { mac: rawMac } = await context.params;
   const mac = normalizeMac(rawMac);
@@ -66,8 +65,7 @@ export async function GET(
     );
     return jsonOk({ ...toSwitchPublic(sw), channelSettings: channels });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }
 
@@ -118,7 +116,6 @@ export async function PUT(
     const rev = await replaceSimpleChannels(sw.id, channels);
     return jsonOk({ ok: true, mac, rev, channels });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

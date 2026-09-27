@@ -6,7 +6,7 @@ import {
 import { authenticateDevice } from "@/lib/device-auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 import { accountLimits, recordRegisterRefused, registerLimitHit } from "@/lib/limits";
 import {
   asString,
@@ -29,16 +29,14 @@ export async function POST(req: Request) {
   try {
     await ensureSchema();
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 
   let device;
   try {
     device = await authenticateDevice(req);
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
   if (!device) return jsonError(401, "unauthorized");
   if (device.suspended) return jsonError(403, "account_suspended");
@@ -49,8 +47,7 @@ export async function POST(req: Request) {
     limits = await accountLimits(device.userId);
     text = await req.text();
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
   if (Buffer.byteLength(text) > limits.snapshotKb * 1024) {
     await recordRegisterRefused(device.userId, "payload_too_large").catch(() => {});
@@ -139,7 +136,6 @@ export async function POST(req: Request) {
       scenes: scenes.length,
     });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

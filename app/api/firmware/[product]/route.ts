@@ -10,7 +10,7 @@ import {
   uploadTokenMatches,
   type UploadPart,
 } from "@/lib/firmware";
-import { bearerToken, jsonError, jsonOk } from "@/lib/http";
+import { bearerToken, databaseError, jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +68,6 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
     }
     return jsonOk({ product, version, status: result.status }, result.status === "created" ? 201 : 200);
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

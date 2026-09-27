@@ -7,7 +7,7 @@ import {
   toSwitchPublic,
 } from "@/lib/db";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 import { normalizeMac } from "@/lib/tokens";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,6 @@ export async function POST(
     const updated = await getSwitchByMac(user.id, mac);
     return jsonOk({ ok: true, ...toSwitchPublic(updated ?? sw) });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

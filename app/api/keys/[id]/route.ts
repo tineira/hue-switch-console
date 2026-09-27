@@ -1,7 +1,7 @@
 import { getSessionUser } from "@/lib/auth";
 import { revokeApiKey } from "@/lib/db";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,6 @@ export async function DELETE(
     if (!ok) return jsonError(404, "not_found");
     return jsonOk({ ok: true });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

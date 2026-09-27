@@ -7,7 +7,7 @@ import {
   updateSwitchLabel,
 } from "@/lib/db";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError, jsonOk } from "@/lib/http";
+import { databaseError, jsonError, jsonOk } from "@/lib/http";
 import { normalizeMac } from "@/lib/tokens";
 
 export const dynamic = "force-dynamic";
@@ -40,8 +40,7 @@ export async function GET(
       next_poll_at: sw.next_poll_at,
     });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }
 
@@ -87,7 +86,6 @@ export async function PATCH(
     if (!sw) return jsonError(404, "not_found");
     return jsonOk({ ok: true, ...toSwitchPublic(sw) });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }

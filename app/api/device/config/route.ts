@@ -15,7 +15,7 @@ import {
 import { authenticateDevice } from "@/lib/device-auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
-import { jsonError } from "@/lib/http";
+import { databaseError, jsonError } from "@/lib/http";
 import {
   computeDim,
   deviceRoundPage,
@@ -44,16 +44,14 @@ export async function GET(req: Request) {
   try {
     await ensureSchema();
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 
   let device;
   try {
     device = await authenticateDevice(req);
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
   if (!device) return jsonError(401, "unauthorized");
   if (device.suspended) return jsonError(403, "account_suspended");
@@ -151,7 +149,6 @@ export async function GET(req: Request) {
     }
     return NextResponse.json({ ...body, pollSec }, { headers });
   } catch (err) {
-    const details = err instanceof Error ? err.message : "unknown";
-    return jsonError(500, "database_error", { details });
+    return databaseError(err);
   }
 }
