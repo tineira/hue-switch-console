@@ -132,7 +132,7 @@ board's one up to the release it installs. A bullet that starts with
 `Important: ` is shown first, with an "Important" label, on Setup and on
 `/changelog`. Use it for something the person must know or do before or right
 after updating (a button to press, a setting that resets), not for new
-features. Spec: [`docs/specs/setup-update-notes.md`](docs/specs/setup-update-notes.md).
+features. Spec: [`docs/specs/finished/setup-update-notes.md`](docs/specs/finished/setup-update-notes.md).
 
 Each upload also sends `credits`: the firmware repo's `THIRD_PARTY.json`, the
 third-party software linked into the image (core, ESP-IDF, every library

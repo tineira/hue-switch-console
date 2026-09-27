@@ -2,7 +2,7 @@ import { notesToItems, type ChangelogItem } from "@/lib/changelog-parse";
 import type { FirmwareNotes } from "@/lib/firmware";
 import { compareVersions } from "@/lib/web-setup/devices";
 
-// What an update changes, for /setup (docs/specs/setup-update-notes.md).
+// What an update changes, for /setup (docs/specs/finished/setup-update-notes.md).
 
 export type VersionNotes = { version: string; date: string; items: ChangelogItem[] };
 

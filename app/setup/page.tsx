@@ -21,7 +21,7 @@ export default async function SetupPage({
   const mac = typeof rawMac === "string" ? normalizeMac(rawMac) : null;
   const [expected, roundNotes, simpleNotes] = await Promise.all([
     mac ? getSwitchByMac(user.id, mac).catch(() => null) : null,
-    // What an update changes (docs/specs/setup-update-notes.md); without them the list is not shown.
+    // What an update changes (docs/specs/finished/setup-update-notes.md); without them the list is not shown.
     listReleaseNotes("round").catch(() => []),
     listReleaseNotes("simple").catch(() => []),
   ]);

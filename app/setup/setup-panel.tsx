@@ -196,7 +196,7 @@ function Field({
 }
 
 
-// Versions listed in full before they fold into "All changes" (docs/specs/setup-update-notes.md §4.3).
+// Versions listed in full before they fold into "All changes" (docs/specs/finished/setup-update-notes.md §4.3).
 const OPEN_VERSIONS = 3;
 
 function VersionList({ notes }: { notes: VersionNotes[] }) {
