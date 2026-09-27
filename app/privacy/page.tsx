@@ -92,6 +92,22 @@ function PrivacyContent() {
         </p>
       </Section>
 
+      <Section title="Your Wi-Fi name and password">
+        <p>
+          On <strong>Setup</strong> you type your Wi-Fi network name and password so the switch
+          can join your network. They go from your browser straight to the switch over the USB
+          cable and are saved on the switch. They are <strong>never sent to the console</strong>:
+          not stored in its database, not in its logs, and not in the USB debug panel on Setup.
+          When Setup reads a connected switch, it shows the network name the switch reports over
+          USB; that also stays in your browser.
+        </p>
+        <p>
+          The switch keeps them in its own memory, like any Wi-Fi device. Before giving a switch
+          away, set it to another network with <strong>Change Wi-Fi</strong> on Setup, or change
+          your Wi-Fi password.
+        </p>
+      </Section>
+
       <Section title="Why">
         <p>
           Only to run the service: to sign you in, keep your account secure, send your switches
