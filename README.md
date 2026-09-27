@@ -193,6 +193,12 @@ row in `AGENTS.md` ("Multi-repo").
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md). Bugs and ideas go in GitHub issues.
 
+## Sponsor
+
+The console and the switch firmwares are free and stay that way. If they are useful
+to you, you can [sponsor the project on GitHub](https://github.com/sponsors/tineira).
+Sponsorship helps pay for development and does not unlock anything.
+
 ## License
 
 Copyright (C) 2026 Tomas Neira and contributors.
