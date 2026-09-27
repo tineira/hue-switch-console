@@ -10,6 +10,8 @@ Thanks for helping. The Hue switch project is three repos, and this one is the h
 
 Console bugs and ideas go here. A bug in how a switch behaves goes to that firmware's repo. If you are not sure which one, open it here.
 
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report problems to [conduct@tineira.com](mailto:conduct@tineira.com).
+
 ## Ground rules
 
 - **English everywhere:** UI text, docs, code comments, commit messages, issues.
@@ -64,4 +66,4 @@ Flashing and provisioning (`/setup`) use Web Serial. They need Chrome or Edge an
 
 ## License
 
-By contributing, you agree that your contribution is licensed under this repo's license, [AGPL-3.0-only](LICENSE). Firmware contributions are MIT, under their repo's license.
+There is no CLA and no sign-off. By contributing, you agree that your contribution is licensed under this repo's license, [AGPL-3.0-only](LICENSE). Firmware contributions are MIT, under their repo's license.
