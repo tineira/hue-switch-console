@@ -326,6 +326,12 @@ If the board is a Round Display (`product: "round"`), the payload is instead:
 `{ "mode": "lights", "rids": ["…"] }` (child lights from tap/double). There is
 no `dimTarget`.
 
+Limits the Round firmware relies on, and the console never exceeds: at most
+**6 pages**, at most **2** `dim.rids` (the tap and double-tap lights), and so
+at most 12 recipes (the firmware keeps 16). Anything past a limit is dropped
+on the board without an error, so a console change that raises one needs a
+spec and a firmware release first.
+
 Unknown MAC for this key’s account: `404`.
 
 | Recipe field | Values |

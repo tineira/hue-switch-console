@@ -4,7 +4,7 @@ import { isAdminEmail } from "@/lib/account-config";
 import { auth } from "@/lib/better-auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
-import { hashPassword } from "@/lib/password";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { sql } from "@/lib/sql";
 import { isSuspended } from "@/lib/suspension";
 
@@ -67,12 +67,19 @@ export async function ensureSeedUser(): Promise<{ created: boolean; error?: stri
     await db`update users set email_verified = true where id = ${row.id} and not email_verified`;
   }
   const credential = await db`
-    select 1 from accounts where user_id = ${row.id} and provider_id = 'credential' limit 1
+    select password from accounts where user_id = ${row.id} and provider_id = 'credential' limit 1
   `;
+  const stored = (credential[0] as { password?: string | null } | undefined)?.password;
   if (credential.length === 0) {
     await db`
       insert into accounts (user_id, account_id, provider_id, password)
       values (${row.id}, ${row.id}, 'credential', ${hashPassword(password)})
+    `;
+  } else if (!stored || !verifyPassword(password, stored)) {
+    // USER_PASSWORD changed in env: the seeded account follows it.
+    await db`
+      update accounts set password = ${hashPassword(password)}
+      where user_id = ${row.id} and provider_id = 'credential'
     `;
   }
   seeded = true;
