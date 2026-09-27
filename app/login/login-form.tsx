@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   passwordLogin,
   requestInvite,
@@ -15,10 +15,55 @@ const INPUT =
 const BUTTON =
   "rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60";
 
-function Turnstile({ siteKey }: { siteKey: string | null }) {
+type TurnstileApi = {
+  render: (el: HTMLElement, options: { sitekey: string; size?: string }) => string;
+  reset: (id: string) => void;
+  remove: (id: string) => void;
+};
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi;
+  }
+}
+
+/**
+ * Cloudflare Turnstile, rendered explicitly once this form is on screen (a widget drawn inside
+ * a closed <details> never produces a token). It adds cf-turnstile-response to the form, and
+ * resets whenever `resetOn` changes, because a token works only once.
+ */
+function Turnstile({ siteKey, resetOn }: { siteKey: string | null; resetOn?: unknown }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const widget = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!siteKey) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const draw = () => {
+      if (cancelled || !ref.current) return;
+      // api.js loads after the page; wait for it.
+      if (!window.turnstile) {
+        timer = setTimeout(draw, 200);
+        return;
+      }
+      widget.current = window.turnstile.render(ref.current, { sitekey: siteKey, size: "flexible" });
+    };
+    draw();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      if (widget.current && window.turnstile) window.turnstile.remove(widget.current);
+      widget.current = null;
+    };
+  }, [siteKey]);
+
+  useEffect(() => {
+    if (widget.current && window.turnstile) window.turnstile.reset(widget.current);
+  }, [resetOn]);
+
   if (!siteKey) return null;
-  // api.js (loaded by the page) renders this and adds cf-turnstile-response to the form.
-  return <div className="cf-turnstile" data-sitekey={siteKey} data-size="flexible" />;
+  return <div ref={ref} />;
 }
 
 function ErrorText({ text }: { text?: string }) {
@@ -84,7 +129,7 @@ export function CodeForm({ turnstileSiteKey }: { turnstileSiteKey: string | null
           className={INPUT}
         />
       </label>
-      <Turnstile siteKey={turnstileSiteKey} />
+      <Turnstile siteKey={turnstileSiteKey} resetOn={state} />
       <ErrorText text={state.error} />
       <button type="submit" disabled={pending} className={BUTTON}>
         {pending ? "Sending…" : "Email me a code"}
@@ -140,11 +185,39 @@ export function RequestInviteForm({ turnstileSiteKey }: { turnstileSiteKey: stri
           className={INPUT}
         />
       </label>
-      <Turnstile siteKey={turnstileSiteKey} />
+      <Turnstile siteKey={turnstileSiteKey} resetOn={state} />
       <ErrorText text={state?.error} />
       <button type="submit" disabled={pending} className={BUTTON}>
         {pending ? "Sending…" : "Request an invite"}
       </button>
     </form>
+  );
+}
+
+/** "Request an invite": the form (and its bot check) mounts only once opened. */
+export function RequestInvitePanel({
+  turnstileSiteKey,
+  defaultOpen = false,
+}: {
+  turnstileSiteKey: string | null;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="rounded-xl border border-line p-5 text-sm">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="text-left font-medium"
+      >
+        Sign-up is by invitation for now. {open ? "" : "Request an invite"}
+      </button>
+      {open ? (
+        <div className="mt-4">
+          <RequestInviteForm turnstileSiteKey={turnstileSiteKey} />
+        </div>
+      ) : null}
+    </section>
   );
 }

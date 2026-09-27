@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import Script from "next/script";
 import { signInWithProvider } from "@/app/login/actions";
-import { CodeForm, PasswordForm, RequestInviteForm } from "@/app/login/login-form";
+import { CodeForm, PasswordForm, RequestInvitePanel } from "@/app/login/login-form";
 import { ThemePicker } from "@/app/theme-picker";
 import {
   githubConfigured,
@@ -71,7 +71,10 @@ export default async function LoginPage({
   return (
     <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-16">
       {siteKey ? (
-        <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          strategy="afterInteractive"
+        />
       ) : null}
       <div className="flex justify-end">
         <ThemePicker />
@@ -145,14 +148,7 @@ export default async function LoginPage({
       )}
 
       {isDbConfigured() && mode === "invite" && !hasInvite ? (
-        <details className="rounded-xl border border-line p-5 text-sm">
-          <summary className="cursor-pointer font-medium">
-            Sign-up is by invitation for now. Request an invite
-          </summary>
-          <div className="mt-4">
-            <RequestInviteForm turnstileSiteKey={siteKey} />
-          </div>
-        </details>
+        <RequestInvitePanel turnstileSiteKey={siteKey} defaultOpen={params.request === "invite"} />
       ) : null}
 
       {privacy || terms ? (

@@ -29,7 +29,7 @@ const COPY: Record<
 > = {
   invite: {
     primary: "Request an invite",
-    primaryHref: "/login",
+    primaryHref: "/login?request=invite",
     account: "Sign-up is by invitation for now. Already invited?",
     closingTitle: "Sign-up is by invitation for now.",
     closingText:
