@@ -10,17 +10,21 @@ export function envValue(name: string): string | undefined {
   return process.env[name]?.trim() || undefined;
 }
 
-export type SignupMode = "closed" | "invite" | "open";
+export type SignupMode = "closed" | "invite" | "waitlist" | "open";
 
 export function isEmailConfigured(): boolean {
   return Boolean(envValue("RESEND_API_KEY") && envValue("EMAIL_FROM"));
 }
 
+/**
+ * The mode set in env. The admin can switch between `invite` and `waitlist` in /admin, so pages
+ * and the sign-up gate read `currentSignupMode()` (lib/waitlist.ts), which applies that choice.
+ */
 export function signupMode(): SignupMode {
   // Without email there is no way to verify a new address.
   if (!isEmailConfigured()) return "closed";
   const raw = envValue("SIGNUP_MODE")?.toLowerCase();
-  if (raw === "invite" || raw === "open") return raw;
+  if (raw === "invite" || raw === "waitlist" || raw === "open") return raw;
   return "closed";
 }
 
@@ -104,6 +108,19 @@ export function effectiveLimits(overrides: unknown): AccountLimits {
 
 export function emailDailyCap(): number {
   return envInt("EMAIL_DAILY_CAP", 90);
+}
+
+/** USER_CAP: default seat cap until the admin saves one (docs/specs/waitlist.md §2.9). Null: no cap. */
+export function userCapFromEnv(): number | null {
+  const raw = envValue("USER_CAP");
+  if (raw === undefined) return null;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+/** Waitlist invites and "You're on the list" emails a day, within EMAIL_DAILY_CAP (§2.6). */
+export function waitlistEmailsPerDay(): number {
+  return envInt("WAITLIST_EMAILS_PER_DAY", 40);
 }
 
 export function publicUrl(): string | null {

@@ -9,6 +9,7 @@ import { auth } from "@/lib/better-auth";
 import { emailCapReached, sendEmailChangedNotice } from "@/lib/email";
 import { isValidEmail, normalizeEmail } from "@/lib/signup";
 import { sql } from "@/lib/sql";
+import { admitQuietly } from "@/lib/waitlist";
 
 // /account (docs/specs/finished/multi-user-accounts.md §2.6).
 
@@ -78,5 +79,7 @@ export async function deleteAccount(_prev: { error?: string } | undefined, formD
   await auth().api.signOut({ headers: await headers() }).catch(() => {});
   // Cascades to sessions, sign-in methods, keys, bridges, switches, pages and recipes.
   await sql()`delete from users where id = ${user.id}`;
+  // The seat is free: offer it to the next person waiting (docs/specs/waitlist.md §2.3).
+  await admitQuietly();
   redirect("/login");
 }

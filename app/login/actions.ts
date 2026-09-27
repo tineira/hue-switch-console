@@ -2,12 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  githubConfigured,
-  googleConfigured,
-  isEmailConfigured,
-  signupMode,
-} from "@/lib/account-config";
+import { githubConfigured, googleConfigured, isEmailConfigured } from "@/lib/account-config";
 import {
   clientIp,
   codeCheckAllowed,
@@ -17,6 +12,7 @@ import {
 } from "@/lib/auth-limits";
 import { ensureSeedUser } from "@/lib/auth";
 import { auth } from "@/lib/better-auth";
+import { currentSignupMode } from "@/lib/console-settings";
 import { emailCapReached } from "@/lib/email";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
@@ -27,9 +23,9 @@ import {
   isValidEmail,
   normalizeEmail,
   signupDecision,
-  storeInviteRequest,
 } from "@/lib/signup";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { joinWaitlist } from "@/lib/waitlist";
 
 export type CodeState =
   | { step: "email"; error?: string; email?: string }
@@ -151,12 +147,12 @@ export async function passwordLogin(_prev: SimpleState, formData: FormData): Pro
   redirect("/");
 }
 
-export async function requestInvite(_prev: SimpleState, formData: FormData): Promise<SimpleState> {
-  const thanks = { done: "Thanks. We'll email you if a spot opens." };
-  if (signupMode() !== "invite") return { error: "Invite requests are closed." };
+/** "Join the waitlist" (docs/specs/waitlist.md §2.4). */
+export async function joinWaitlistAction(_prev: SimpleState, formData: FormData): Promise<SimpleState> {
+  const mode = await currentSignupMode();
+  if (mode !== "invite" && mode !== "waitlist") return { error: "The waitlist is closed." };
   const email = normalizeEmail(String(formData.get("email") ?? ""));
   if (!isValidEmail(email)) return { error: "Enter a valid email address." };
-  const note = String(formData.get("note") ?? "").trim().slice(0, 500) || null;
 
   const { ip } = await prepare();
   const token = formData.get("cf-turnstile-response");
@@ -167,8 +163,12 @@ export async function requestInvite(_prev: SimpleState, formData: FormData): Pro
   if (!(await inviteRequestAllowed(ip))) {
     return { error: "Too many requests right now. Try again later." };
   }
-  await storeInviteRequest(email, note, ip);
-  return thanks;
+  if ((await joinWaitlist(email, ip)) === "undeliverable") {
+    return { error: "We couldn't deliver email to this address. Check it or use another one." };
+  }
+  // The same reply whether the address got an invite, was queued, was already waiting, or
+  // already has an account.
+  return { done: "Thanks. Watch your inbox: we'll email you there." };
 }
 
 export async function signOut() {

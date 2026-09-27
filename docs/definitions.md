@@ -49,7 +49,7 @@ Do not use GPIO 3/14 (RF), 15 (LED), or USB.
 
 **Console API key / `CONSOLE_TOKEN`.** Device token (`hsw_…`). The user **creates and manages** it in the console (name, copy once, revoke). The XIAO sends it as `Authorization: Bearer`. It cannot be used to sign in to the site.
 
-**User account.** A person, identified by email. Hosted console: signs in with Google, GitHub or a 6-digit code emailed to them, no password. Sign-up follows `SIGNUP_MODE` (`closed`, `invite`, `open`); at launch it is invite-only. Self-hosted console without email: the seeded `USER_EMAIL` / `USER_PASSWORD` account with a password (`.env.local`, never commit). Everything an account owns (keys, Bridges, switches, recipes) is deleted with it. Per-account limits: 25 switches, 5 Bridges, 25 active keys, 512 KB snapshot (`docs/specs/finished/multi-user-accounts.md`).
+**User account.** A person, identified by email. Hosted console: signs in with Google, GitHub or a 6-digit code emailed to them, no password. Sign-up follows `SIGNUP_MODE` (`closed`, `invite`, `waitlist`, `open`). The hosted console uses `waitlist`: people join a waitlist and are invited automatically while the console is below its seat cap, which the admin raises in `/admin` (`docs/specs/waitlist.md`). Self-hosted console without email: the seeded `USER_EMAIL` / `USER_PASSWORD` account with a password (`.env.local`, never commit). Everything an account owns (keys, Bridges, switches, recipes) is deleted with it. Per-account limits: 25 switches, 5 Bridges, 25 active keys, 512 KB snapshot (`docs/specs/finished/multi-user-accounts.md`).
 
 **Topology.** Snapshot of **one Bridge**. Any XIAO paired to that `bridgeid` (or `push-from-bridge`) uploads it with `POST /api/device/register`. It is not "the switch's topology". The JSON must be enough to draw rooms and assign `rid`:
 
@@ -236,7 +236,7 @@ If the user changes a recipe in the app, the switch learns about it on the poll.
 - Console chrome in English; **Hue names** (Living, Velador Tomás) are shown as they are.
 - Several topology POSTs for the same `bridgeid`: **last good snapshot wins**. A register without `rooms`/`scenes` (omitted) is a 400; it does not overwrite.
 - Revoked API key: the poll fails; recipes in NVS **keep** running on the LAN.
-- Sign-up follows `SIGNUP_MODE`: `closed` (only the seeded `USER_EMAIL`), `invite` or `open`. A suspended account gets `403 account_suspended` on device calls; its NVS recipes keep running.
+- Sign-up follows `SIGNUP_MODE`: `closed` (only the seeded `USER_EMAIL`), `invite` (the admin approves each waitlist entry), `waitlist` (admitted automatically up to the seat cap) or `open`. A suspended account gets `403 account_suspended` on device calls; its NVS recipes keep running.
 - Orphan recipe (the `rid` is no longer in the snapshot): kept; the Hue PUT fails; the UI marks it stale.
 
 ## Two doors

@@ -5,8 +5,9 @@ import { StateVisual } from "@/app/how-to/visuals";
 import { RoundDrawing, SimpleDrawing } from "@/app/landing/parts-drawings";
 import { SwitchBench } from "@/app/landing/switch-bench";
 import { ThemeToggle } from "@/app/landing/theme-toggle";
-import { signupMode, type SignupMode } from "@/lib/account-config";
+import type { SignupMode } from "@/lib/account-config";
 import { getSessionUser } from "@/lib/auth";
+import { currentSignupMode } from "@/lib/console-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +29,20 @@ const COPY: Record<
   { primary: string; primaryHref: string; account: string; closingTitle: string; closingText: string }
 > = {
   invite: {
-    primary: "Request an invite",
-    primaryHref: "/login?request=invite",
+    primary: "Join the waitlist",
+    primaryHref: "/login?request=waitlist",
     account: "Sign-up is by invitation for now. Already invited?",
     closingTitle: "Sign-up is by invitation for now.",
     closingText:
-      "Ask for an invite and you get an email when your account is ready. The setup guide is open to everyone.",
+      "Join the waitlist and you get an email when your account is ready. The setup guide is open to everyone.",
+  },
+  waitlist: {
+    primary: "Join the waitlist",
+    primaryHref: "/login?request=waitlist",
+    account: "We let people in in batches while the service runs on free servers. Already have an account?",
+    closingTitle: "Join the waitlist, or run your own.",
+    closingText:
+      "You get an email when there is room for you. The console is open source, so you can also host your own, and the setup guide is open to everyone.",
   },
   open: {
     primary: "Create an account",
@@ -205,7 +214,7 @@ export default async function Home() {
   const user = await getSessionUser().catch(() => null);
   if (user) redirect("/switches");
 
-  const mode = signupMode();
+  const mode = await currentSignupMode();
   const copy = COPY[mode];
 
   return (

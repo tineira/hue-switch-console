@@ -8,17 +8,53 @@ import {
   suspendAction,
 } from "@/app/admin/actions";
 import { CreateInviteForm } from "@/app/admin/create-invite-form";
+import { WaitlistSettingsForm } from "@/app/admin/waitlist-settings-form";
 import { Shell } from "@/app/shell";
-import { defaultLimits, signInMethodLabels, signupMode } from "@/lib/account-config";
+import {
+  defaultLimits,
+  emailDailyCap,
+  signInMethodLabels,
+  signupMode,
+  waitlistEmailsPerDay,
+} from "@/lib/account-config";
 import { listAccounts, SORTS, type AdminAccountRow, type SortKey } from "@/lib/admin";
 import { requireAdmin } from "@/lib/auth";
-import { listInvites, listPendingInviteRequests, type InviteRow } from "@/lib/signup";
+import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
+import { emailsSentToday, waitlistEmailsSentToday } from "@/lib/email";
+import { listInvites, type InviteRow } from "@/lib/signup";
+import {
+  deliveryProblems,
+  listPendingEntries,
+  loadStats,
+  seatsUsed,
+  waitlistStats,
+} from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Admin",
 };
+
+// Free-tier yardsticks (docs/specs/finished/multi-user-accounts.md §2.11): one board at the
+// 900 s idle poll makes about 2,900 calls a month; Vercel Hobby allows 1,000,000; Neon Free 0.5 GB.
+const CALLS_PER_SWITCH_MONTH = 2900;
+const VERCEL_CALLS_MONTH = 1_000_000;
+const NEON_BYTES = 512 * 1024 * 1024;
+
+function Stat({ label, value, note }: { label: string; value: string | number; note?: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-muted">{label}</span>
+      <span className="text-lg font-medium">{value}</span>
+      {note ? <span className="text-xs text-muted">{note}</span> : null}
+    </div>
+  );
+}
+
+function percent(part: number, whole: number): string {
+  return `${Math.round((part / whole) * 100)}%`;
+}
 
 const SMALL_BUTTON = "rounded-md border border-line px-2 py-1 text-xs hover:border-filament";
 const INPUT = "rounded-md border border-line bg-background px-2 py-1 text-xs";
@@ -56,11 +92,23 @@ export default async function AdminPage({
   const desc = params.dir !== "asc";
   const dormantOnly = params.filter === "dormant";
 
-  const [accounts, requests, invites] = await Promise.all([
-    listAccounts(),
-    listPendingInviteRequests(),
-    listInvites(),
-  ]);
+  const settings = await readSettings();
+  const [accounts, requests, invites, mode, cap, seats, stats, problems, load, sent, waitlistSent] =
+    await Promise.all([
+      listAccounts(),
+      listPendingEntries(),
+      listInvites(),
+      currentSignupMode(settings),
+      currentUserCap(settings),
+      seatsUsed(),
+      waitlistStats(),
+      deliveryProblems(),
+      loadStats(),
+      emailsSentToday(),
+      waitlistEmailsSentToday(),
+    ]);
+  const waitlistOn = mode === "invite" || mode === "waitlist";
+  const envMode = signupMode();
   const shown = sortRows(dormantOnly ? accounts.filter((a) => a.dormant) : accounts, sort, desc);
   const defaults = defaultLimits();
   const dormantCount = accounts.filter((a) => a.dormant).length;
@@ -86,42 +134,101 @@ export default async function AdminPage({
       <section className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
         <p className="text-sm text-muted">
-          Sign-up mode: <span className="font-medium text-foreground">{signupMode()}</span>.{" "}
+          Sign-up mode: <span className="font-medium text-foreground">{mode}</span>.{" "}
           {accounts.length} {accounts.length === 1 ? "account" : "accounts"}. This page shows counts only, never recipes or topology.
         </p>
       </section>
 
-      {requests.length > 0 ? (
-        <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
-          <h2 className="text-lg font-medium">Invite requests ({requests.length})</h2>
-          <ul className="flex flex-col divide-y divide-line text-sm">
-            {requests.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-start gap-3 py-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">{r.email}</p>
-                  {r.note ? <p className="text-muted">{r.note}</p> : null}
-                  <p className="text-xs text-muted">{day(r.created_at)}</p>
-                </div>
-                <form action={decideRequestAction} className="flex gap-2">
-                  <input type="hidden" name="id" value={r.id} />
-                  <button name="decision" value="approve" className={SMALL_BUTTON}>
-                    Approve and email invite
-                  </button>
-                  <button name="decision" value="dismiss" className={SMALL_BUTTON}>
-                    Dismiss
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <section className="flex flex-col gap-5 rounded-xl border border-line bg-cream p-5">
+        <h2 className="text-lg font-medium">Waitlist</h2>
+        {envMode === "invite" || envMode === "waitlist" ? (
+          <WaitlistSettingsForm mode={mode === "waitlist" ? "waitlist" : "invite"} cap={cap} />
+        ) : (
+          <p className="text-sm text-muted">
+            SIGNUP_MODE is <code>{envMode}</code>. Set it to <code>waitlist</code> or{" "}
+            <code>invite</code> to use the waitlist.
+          </p>
+        )}
+
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
+          <Stat
+            label="Seats used"
+            value={cap === null ? seats.total : `${seats.total} / ${cap}`}
+            note={`${seats.accounts} accounts, ${seats.invites} unused invites${
+              cap !== null && seats.total > cap ? " (over cap)" : ""
+            }`}
+          />
+          <Stat label="Waiting" value={stats.pending} />
+          <Stat label="Joined, last 7 days" value={stats.joined7} note={`${stats.joined30} in 30 days`} />
+          <Stat label="Joined, total" value={stats.joinsTotal} note="Since the waitlist started" />
+          <Stat
+            label="Last 90 days"
+            value={`${stats.admitted} admitted`}
+            note={`${stats.left} left, ${stats.expired} expired, ${stats.dismissed} removed`}
+          />
+        </div>
+
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
+          <Stat label="Emails, last 24 h" value={`${sent} / ${emailDailyCap()}`} />
+          <Stat label="Waitlist emails, last 24 h" value={`${waitlistSent} / ${waitlistEmailsPerDay()}`} />
+          <Stat
+            label="Bounces and complaints, 30 days"
+            value={problems.reduce((sum, p) => sum + p.n, 0)}
+            note={
+              problems.length > 0
+                ? problems
+                    .map((p) => `${p.n} ${p.kind === "email_bounced" ? "bounced" : "complaint"} (${p.tag})`)
+                    .join(", ")
+                : "None"
+            }
+          />
+          <Stat
+            label="Switches"
+            value={load.switches}
+            note={`About ${percent(load.switches * CALLS_PER_SWITCH_MONTH, VERCEL_CALLS_MONTH)} of Vercel's free calls`}
+          />
+          <Stat
+            label="Database"
+            value={`${(load.dbBytes / (1024 * 1024)).toFixed(0)} MB`}
+            note={`${percent(load.dbBytes, NEON_BYTES)} of Neon's free 0.5 GB`}
+          />
+        </div>
+
+        {waitlistOn && requests.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium">In line ({requests.length}, oldest first)</h3>
+            <ul className="flex flex-col divide-y divide-line text-sm">
+              {requests.map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center gap-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{r.email}</p>
+                    <p className="text-xs text-muted">
+                      Joined {day(r.created_at)}
+                      {r.confirmation_sent_at ? "" : ", no confirmation email"}
+                    </p>
+                  </div>
+                  <form action={decideRequestAction} className="flex gap-2">
+                    <input type="hidden" name="id" value={r.id} />
+                    <button name="decision" value="approve" className={SMALL_BUTTON}>
+                      Admit now
+                    </button>
+                    <button name="decision" value="dismiss" className={SMALL_BUTTON}>
+                      Remove
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </section>
 
       <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
         <h2 className="text-lg font-medium">Invites</h2>
-        {signupMode() !== "invite" ? (
+        {!waitlistOn ? (
           <p className="text-sm text-muted">
-            Invite links only create accounts while SIGNUP_MODE is <code>invite</code>.
+            Invite links only create accounts in the <code>invite</code> and <code>waitlist</code>{" "}
+            modes.
           </p>
         ) : null}
         <CreateInviteForm />

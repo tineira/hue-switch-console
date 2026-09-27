@@ -92,8 +92,11 @@ function PrivacyContent() {
           after 7 days.
         </p>
         <p>
-          <strong>Invite requests.</strong> If you ask for an invite: your email, your optional
-          note and the date. Requests that are not approved are deleted after 90 days.
+          <strong>Waitlist.</strong> If you join the waitlist: your email and the date. It is kept
+          while you wait, then for 90 days after you get your invite, leave the waitlist, or are
+          removed from it. The email saying you&apos;re on the list has a link to leave. If
+          Resend tells us an email to you bounced or was marked as spam, the address comes off
+          the waitlist; that notice is kept for 30 days.
         </p>
       </Section>
 
@@ -119,7 +122,7 @@ function PrivacyContent() {
         <p>
           Only to run the service: to sign you in, keep your account secure, send your switches
           their settings, show you your home&apos;s rooms and lights, and send the emails you ask
-          for (sign-in codes, invites, and a notice when your email changes). The admin page shows
+          for (sign-in codes, waitlist updates, invites, and a notice when your email changes). The admin page shows
           the operator counts per account (switches, Bridges, last sign-in), never your rooms,
           lights or button settings.
         </p>

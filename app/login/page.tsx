@@ -1,16 +1,16 @@
 import { cookies } from "next/headers";
 import Script from "next/script";
 import { signInWithProvider } from "@/app/login/actions";
-import { CodeForm, PasswordForm, RequestInvitePanel } from "@/app/login/login-form";
+import { CodeForm, PasswordForm, WaitlistPanel } from "@/app/login/login-form";
 import { ThemePicker } from "@/app/theme-picker";
 import {
   githubConfigured,
   googleConfigured,
   isEmailConfigured,
-  signupMode,
   turnstileSiteKey,
 } from "@/lib/account-config";
 import { ensureSeedUser } from "@/lib/auth";
+import { currentSignupMode } from "@/lib/console-settings";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { INVITE_COOKIE } from "@/lib/signup";
@@ -60,7 +60,7 @@ export default async function LoginPage({
   const email = isEmailConfigured();
   const google = googleConfigured();
   const github = githubConfigured();
-  const mode = signupMode();
+  const mode = await currentSignupMode();
   const siteKey = turnstileSiteKey();
   const hasInvite = Boolean((await cookies()).get(INVITE_COOKIE)?.value);
   const error = errorText(typeof params.error === "string" ? params.error : undefined);
@@ -147,8 +147,12 @@ export default async function LoginPage({
         </div>
       )}
 
-      {isDbConfigured() && mode === "invite" && !hasInvite ? (
-        <RequestInvitePanel turnstileSiteKey={siteKey} defaultOpen={params.request === "invite"} />
+      {isDbConfigured() && (mode === "invite" || mode === "waitlist") && !hasInvite ? (
+        <WaitlistPanel
+          turnstileSiteKey={siteKey}
+          mode={mode}
+          defaultOpen={params.request === "invite" || params.request === "waitlist"}
+        />
       ) : null}
 
       {privacy || terms ? (

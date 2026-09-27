@@ -1,29 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { publicUrl } from "@/lib/account-config";
+import { signupMode } from "@/lib/account-config";
 import { deleteAccountById, setBanned, setLimits } from "@/lib/admin";
 import { requireAdmin } from "@/lib/auth";
+import { saveSettings } from "@/lib/console-settings";
 import { sendInvite } from "@/lib/email";
-import { headers } from "next/headers";
+import { siteOrigin as origin } from "@/lib/origin";
 import {
   createInvite,
-  decideInviteRequest,
   getInvite,
-  getInviteRequest,
+  INVITE_DAYS,
   isValidEmail,
   normalizeEmail,
   revokeInvite,
 } from "@/lib/signup";
-
-async function origin(): Promise<string> {
-  const configured = publicUrl();
-  if (configured) return configured;
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
+import { admitEntry, admitQuietly, dismissEntry } from "@/lib/waitlist";
 
 export type InviteState = { link?: string; error?: string } | undefined;
 
@@ -54,7 +46,10 @@ export async function emailInviteAction(formData: FormData) {
   if (new Date(old.expires_at).getTime() < Date.now()) return;
   const { id, code } = await createInvite({ email: old.email, createdBy: admin.id });
   try {
-    await sendInvite(old.email, `${await origin()}/login?invite=${code}`, false);
+    await sendInvite(old.email, `${await origin()}/login?invite=${code}`, {
+      waitlist: false,
+      days: INVITE_DAYS,
+    });
   } catch (err) {
     await revokeInvite(id);
     throw err;
@@ -63,19 +58,40 @@ export async function emailInviteAction(formData: FormData) {
   revalidatePath("/admin");
 }
 
+/** Admit now (works even when the console is full) or remove a waitlist entry (§2.3, §2.7). */
 export async function decideRequestAction(formData: FormData) {
   const admin = await requireAdmin();
   const id = String(formData.get("id"));
-  const request = await getInviteRequest(id);
-  if (!request || request.status !== "pending") return;
   if (formData.get("decision") === "approve") {
-    const { id: inviteId, code } = await createInvite({ email: request.email, createdBy: admin.id });
-    await sendInvite(request.email, `${await origin()}/login?invite=${code}`);
-    await decideInviteRequest(id, "approved", inviteId);
+    await admitEntry(id, admin.id, await origin());
   } else {
-    await decideInviteRequest(id, "dismissed", null);
+    await dismissEntry(id);
   }
   revalidatePath("/admin");
+}
+
+export type WaitlistSettingsState = { error?: string; saved?: boolean } | undefined;
+
+/** Mode (invite or waitlist) and the seat cap. Saving runs admission for any new seats. */
+export async function waitlistSettingsAction(
+  _prev: WaitlistSettingsState,
+  formData: FormData,
+): Promise<WaitlistSettingsState> {
+  await requireAdmin();
+  const env = signupMode();
+  if (env !== "invite" && env !== "waitlist") {
+    return { error: `SIGNUP_MODE is ${env}; the waitlist settings apply only to invite or waitlist.` };
+  }
+  const mode = formData.get("mode") === "waitlist" ? "waitlist" : "invite";
+  const raw = String(formData.get("cap") ?? "").trim();
+  const cap = raw === "" ? null : Number(raw);
+  if (cap !== null && (!Number.isInteger(cap) || cap < 0)) {
+    return { error: "The cap is a whole number, 0 or more. Leave it empty for no cap." };
+  }
+  await saveSettings({ signupMode: mode, userCap: cap });
+  await admitQuietly(await origin());
+  revalidatePath("/admin");
+  return { saved: true };
 }
 
 export async function suspendAction(formData: FormData) {
@@ -93,6 +109,8 @@ export async function deleteAccountAction(formData: FormData) {
   const typed = normalizeEmail(String(formData.get("confirm") ?? ""));
   if (id === admin.id || !email || typed !== email) return;
   await deleteAccountById(id);
+  // The seat is free: offer it to the next person waiting.
+  await admitQuietly(await origin());
   revalidatePath("/admin");
 }
 

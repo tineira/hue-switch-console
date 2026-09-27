@@ -2,8 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
+  joinWaitlistAction,
   passwordLogin,
-  requestInvite,
   sendCode,
   verifyCode,
   type CodeState,
@@ -164,8 +164,8 @@ export function PasswordForm() {
   );
 }
 
-export function RequestInviteForm({ turnstileSiteKey }: { turnstileSiteKey: string | null }) {
-  const [state, action, pending] = useActionState<SimpleState, FormData>(requestInvite, undefined);
+export function WaitlistForm({ turnstileSiteKey }: { turnstileSiteKey: string | null }) {
+  const [state, action, pending] = useActionState<SimpleState, FormData>(joinWaitlistAction, undefined);
   if (state?.done) {
     return <p className="text-sm text-muted">{state.done}</p>;
   }
@@ -175,49 +175,54 @@ export function RequestInviteForm({ turnstileSiteKey }: { turnstileSiteKey: stri
         <span className="font-medium">Email</span>
         <input name="email" type="email" autoComplete="email" required className={INPUT} />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Note (optional)</span>
-        <textarea
-          name="note"
-          maxLength={500}
-          rows={3}
-          placeholder="What will you use it for?"
-          className={INPUT}
-        />
-      </label>
       <Turnstile siteKey={turnstileSiteKey} resetOn={state} />
       <ErrorText text={state?.error} />
       <button type="submit" disabled={pending} className={BUTTON}>
-        {pending ? "Sending…" : "Request an invite"}
+        {pending ? "Sending…" : "Join the waitlist"}
       </button>
     </form>
   );
 }
 
-/** "Request an invite": the form (and its bot check) mounts only once opened. */
-export function RequestInvitePanel({
+const SELF_HOST = "https://github.com/tineira/hue-switch-console#accounts-and-sign-in";
+
+/** "Join the waitlist": the form (and its bot check) mounts only once opened. */
+export function WaitlistPanel({
   turnstileSiteKey,
+  mode,
   defaultOpen = false,
 }: {
   turnstileSiteKey: string | null;
+  mode: "invite" | "waitlist";
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const lead =
+    mode === "waitlist"
+      ? "New accounts open in batches while the service runs on free servers."
+      : "Sign-up is by invitation for now.";
   return (
-    <section className="rounded-xl border border-line p-5 text-sm">
+    <section className="flex flex-col gap-3 rounded-xl border border-line p-5 text-sm">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
         className="text-left font-medium"
       >
-        Sign-up is by invitation for now. {open ? "" : "Request an invite"}
+        {lead} {open ? "" : "Join the waitlist"}
       </button>
       {open ? (
-        <div className="mt-4">
-          <RequestInviteForm turnstileSiteKey={turnstileSiteKey} />
+        <div className="mt-1">
+          <WaitlistForm turnstileSiteKey={turnstileSiteKey} />
         </div>
       ) : null}
+      <p className="text-xs text-muted">
+        It&apos;s open source, so you can also{" "}
+        <a href={SELF_HOST} className="underline underline-offset-4">
+          run your own console
+        </a>
+        .
+      </p>
     </section>
   );
 }

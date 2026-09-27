@@ -218,8 +218,7 @@ const STATEMENTS = [
   `create table if not exists invite_requests (
   id uuid primary key default gen_random_uuid(),
   email text not null,
-  note text,
-  status text not null default 'pending' check (status in ('pending', 'approved', 'dismissed')),
+  status text not null default 'pending',
   invite_id uuid references invites (id) on delete set null,
   decided_at timestamptz,
   created_at timestamptz not null default now()
@@ -234,9 +233,25 @@ const STATEMENTS = [
   created_at timestamptz not null default now()
 )`,
   `alter table auth_events drop constraint if exists auth_events_kind_check`,
-  `alter table auth_events add constraint auth_events_kind_check check (kind in ('email_sent', 'code_sent', 'code_failed', 'invite_requested'))`,
+  `alter table auth_events add constraint auth_events_kind_check check (kind in ('email_sent', 'code_sent', 'code_failed', 'invite_requested', 'waitlist_email_sent', 'email_bounced', 'email_complained'))`,
+  `alter table auth_events add column if not exists detail text`,
   `create index if not exists auth_events_email_idx on auth_events (kind, email, created_at)`,
   `create index if not exists auth_events_time_idx on auth_events (kind, created_at)`,
+  // Waitlist with a user cap (docs/specs/waitlist.md §2.8).
+  `create table if not exists console_settings (
+  id boolean primary key default true check (id),
+  signup_mode text check (signup_mode in ('invite', 'waitlist')),
+  user_cap integer check (user_cap >= 0),
+  cap_alert_sent integer,
+  joins_total bigint not null default 0,
+  updated_at timestamptz not null default now()
+)`,
+  `alter table invite_requests drop constraint if exists invite_requests_status_check`,
+  `alter table invite_requests add constraint invite_requests_status_check check (status in ('pending', 'approved', 'dismissed', 'expired', 'left', 'bounced', 'complained'))`,
+  `alter table invite_requests add column if not exists confirmation_sent_at timestamptz`,
+  `alter table invite_requests add column if not exists leave_token_hash text`,
+  `alter table invite_requests drop column if exists note`,
+  `create index if not exists invite_requests_email_idx on invite_requests (lower(email), status)`,
   // Pre-Better Auth consoles kept the password on users.password_hash. Move any hash that
   // has no credential row yet, then drop the column (docs/specs/finished/multi-user-accounts.md §3).
   `do $$
