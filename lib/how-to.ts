@@ -213,7 +213,9 @@ export function tasks(product: Product): Task[] {
     {
       title: "Retire a lost or given-away board",
       steps: [
+        "If you still have the board, plug it in on **Setup** and click **Erase settings** under Reset board. It forgets your Wi-Fi name and password, the console link, the Hue link and its settings.",
         "Open **API keys** from the menu under your email and revoke the board's key.",
+        "If the board is lost, change your Wi-Fi password: the board still knows the old one.",
         "Keys under **Not in use** belong to no board and can go too.",
       ],
     },

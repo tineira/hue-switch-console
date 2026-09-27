@@ -103,8 +103,10 @@ function PrivacyContent() {
         </p>
         <p>
           The switch keeps them in its own memory, like any Wi-Fi device. Before giving a switch
-          away, set it to another network with <strong>Change Wi-Fi</strong> on Setup, or change
-          your Wi-Fi password.
+          away, plug it in on Setup and click <strong>Erase settings</strong> (under Reset
+          board): the switch forgets your Wi-Fi name and password, its link to the console and to
+          your Hue Bridge, and its button settings. If a switch is lost, change your Wi-Fi
+          password.
         </p>
       </Section>
 
