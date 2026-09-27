@@ -270,7 +270,8 @@ Verified against `main` @ `34aaefdc`. Fixed in the same pass: 500s no longer ret
 | New MAC with no `product` is inferred Round | `upsertSwitch` / `inferProduct` | See P5. Require `product` on a first register once both firmwares send it. |
 | `setLimits` accepts any keys | `lib/admin.ts` | Only `limitsAction` filters them. |
 | 500 `database_error` and 410 `message` not in `docs/device-api.md` | C21 | Contract table is incomplete. |
-| Simple saves `rev` before the recipes | `hue-simple-switch` `recipes.h` `recipesSave` | If the `jsonb` write fails (NVS full) or power drops between the writes, NVS holds the new `rev` with the old recipes. After a reboot the switch reports the new `rev`, the console answers 204, and it runs the old config until the next change. Fix: write `jsonb` and `bid` first, `rev` last and only if `jsonb` saved. Firmware-only; needs a `FIRMWARE_VERSION` bump. |
+| Both firmwares save `rev` before the config | Simple `recipes.h` `recipesSave`; Round `recipes.h` `recipesSave` then `pages.h` `pagesSave` (`console.h` `consoleApplyConfig`) | If a write fails (NVS full) or power drops between writes, NVS holds the new `rev` with old recipes (Round: or old pages, a separate namespace). After a reboot the switch reports the new `rev`, the console answers 204, and it runs the old config until the next change. Round does not check any write and always arms the confirm poll. Fix: write recipes/pages first, `rev` last and only if everything saved. Firmware-only; each needs a `FIRMWARE_VERSION` bump. |
+| Round caps are not in the contract | Round `kMaxPages = 6`, `kMaxDimLights = 2` (`pages.h`) | The console already stays inside both (`MAX_ROUND_PAGES = 6`; `computeDim` yields at most the tap and double-tap lights), but `docs/device-api.md` states neither. Document them so a future console change does not get silently truncated. |
 
 ---
 
