@@ -21,6 +21,15 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Firmware images are not in this tree. Firmware CI uploads each release to `POST /api/firmware/<product>`, and `/firmware/<product>/manifest.json` serves the current one from the database. The wizard version is that release, not a label you invent. Pipeline: `README.md`, "Firmware release pipeline".
 - Do **not** use local Playwright to verify login or `/setup`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
 
+## Parallel sessions
+
+Several Claude sessions can work in these repos at once. In the shared checkouts (this one and the firmware repos in the sketchbook), a branch switch moves every session's work onto that branch.
+
+- Before every commit, run `git branch --show-current` and confirm it is the branch you mean.
+- Do not switch branches, reset or stash in a shared checkout. Do other work in its own worktree (for firmware, name the last folder like the sketch: `git worktree add ../worktrees/<branch>/<repo> -b <branch> origin/main`). Remove it once merged.
+- A session that edits another repo (a coordinating session doing a firmware checklist) does it in a worktree of that repo, never in the checkout another session may be using.
+- If you find commits on your branch that are not yours, do not push it. Tell the user.
+
 ## Multi-repo: this repo owns the contract
 
 The product is three repos. This one is the hub.
