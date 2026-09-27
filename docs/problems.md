@@ -276,7 +276,6 @@ Verified against `main` @ `34aaefdc`. Fixed in the same pass: 500s no longer ret
 | Seed password never rotates | `ensureSeedUser` (`lib/auth.ts`) | It inserts the credential only when missing; a new `USER_PASSWORD` is ignored. Self-host only (password sign-in is off with email). |
 | Better Auth opens its own pool | `lib/better-auth.ts` (`max: 3`) next to `lib/sql.ts` (`max: 5`) | Self-host with `DATABASE_DRIVER=pg`: up to 8 connections per instance. |
 | `.env.example` is incomplete | `.env.example` | Missing `FIRMWARE_UPLOAD_TOKEN`, `LIMIT_*`, `EMAIL_DAILY_CAP`, `CONTACT_EMAIL`, `PRIVACY_URL`, `TERMS_URL` (all in README). |
-| Admin gaps | `/admin` | Search, paging, firmware current, audit log, suspension reason/expiry, full invite list, single admin source: `docs/specs/admin-tools.md`. |
 | Firmware minor items | `hue-simple-switch`, `hue-round-switch` | Round's Improv scan skips hidden networks (Simple includes them). Round CI deletes and re-creates the `usb-installer` GitHub release (two quick pushes can race; Simple uploads with `--clobber`). A stuck touch report on Round postpones config polls until reset. Simple accepts any string in `HUESET token` (checked only on use). No host tests for either firmware's parsers. |
 
 ---

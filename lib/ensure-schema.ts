@@ -252,6 +252,18 @@ const STATEMENTS = [
   `alter table invite_requests add column if not exists leave_token_hash text`,
   `alter table invite_requests drop column if exists note`,
   `create index if not exists invite_requests_email_idx on invite_requests (lower(email), status)`,
+  // Admin tools (docs/specs/admin-tools.md §2.9).
+  `create table if not exists admin_events (
+  id bigserial primary key,
+  admin_email text not null,
+  action text not null,
+  target_user_id uuid references users(id) on delete set null,
+  target text,
+  details jsonb,
+  created_at timestamptz not null default now()
+)`,
+  `create index if not exists admin_events_created on admin_events (created_at desc)`,
+  `create index if not exists switches_user_seen_idx on switches (user_id, last_seen_at)`,
   // Pre-Better Auth consoles kept the password on users.password_hash. Move any hash that
   // has no credential row yet, then drop the column (docs/specs/finished/multi-user-accounts.md §3).
   `do $$

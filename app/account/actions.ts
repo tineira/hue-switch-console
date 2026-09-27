@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { isEmailConfigured } from "@/lib/account-config";
+import { isAdminEmail, isEmailConfigured } from "@/lib/account-config";
 import { clientIp, codeSendAllowed } from "@/lib/auth-limits";
 import { requireSessionUser } from "@/lib/auth";
 import { auth } from "@/lib/better-auth";
@@ -75,6 +75,9 @@ export async function deleteAccount(_prev: { error?: string } | undefined, formD
   const typed = normalizeEmail(String(formData.get("confirm") ?? ""));
   if (!user.email || typed !== user.email) {
     return { error: "Type your email exactly to confirm." };
+  }
+  if (isAdminEmail(user.email)) {
+    return { error: "This is an admin account. Remove the address from ADMIN_EMAILS first." };
   }
   await auth().api.signOut({ headers: await headers() }).catch(() => {});
   // Cascades to sessions, sign-in methods, keys, bridges, switches, pages and recipes.

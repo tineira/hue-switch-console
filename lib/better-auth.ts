@@ -7,7 +7,6 @@ import {
   envValue,
   githubConfigured,
   googleConfigured,
-  isAdminEmail,
   isEmailConfigured,
   publicUrl,
 } from "@/lib/account-config";
@@ -16,6 +15,7 @@ import { sendChangeEmailCode, sendSignInCode } from "@/lib/email";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { consumeInvite, INVITE_COOKIE, readCookie, signupDecision } from "@/lib/signup";
 import { pgConnectionString, sql } from "@/lib/sql";
+import { isSuspended } from "@/lib/suspension";
 
 // Better Auth on the console's own Postgres (docs/specs/finished/multi-user-accounts.md §2.2).
 // Tables and columns are snake_case; `users` is the table the rest of the app already uses.
@@ -138,19 +138,13 @@ function createAuth() {
       session: {
         create: {
           before: async (session) => {
-            const rows = await sql()`select banned from users where id = ${session.userId}`;
-            if ((rows[0] as { banned?: boolean } | undefined)?.banned) {
+            if (await isSuspended(session.userId)) {
               throw new APIError("FORBIDDEN", { message: "This account is suspended." });
             }
           },
           after: async (session) => {
-            const rows = await sql()`select email from users where id = ${session.userId}`;
-            const email = (rows[0] as { email?: string } | undefined)?.email;
-            await sql()`
-              update users set last_login_at = now(),
-                role = ${isAdminEmail(email) ? "admin" : "user"}
-              where id = ${session.userId}
-            `;
+            // ADMIN_EMAILS decides who is an admin; users.role is no longer written (admin-tools §2.2).
+            await sql()`update users set last_login_at = now() where id = ${session.userId}`;
           },
         },
       },

@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` ("accounts spec") and `docs/specs/waitlist.md`.
 
-**Status:** draft. §5 decided by the user (2026-09-27). Waiting for approval before code.
+**Status:** approved (2026-09-27), in progress.
 
 ## 1. What and why
 
@@ -37,7 +37,7 @@ No promote-to-admin UI: changing who administers a hosted console is a deploy de
 - `/admin?q=<text>&page=<n>&sort=<key>`. `q` matches a substring of the email, case-insensitive. 50 rows a page. Sorting happens in SQL on the existing sort keys, not in Node.
 - `listAccounts` replaces its three correlated subqueries with grouped joins, and returns the total for the pager.
 - New index `switches (user_id, last_seen_at)` for the "last board seen" sort.
-- The row shows the last register refusal (`register_refused_at`, `register_refused_reason`) when it is newer than the last successful register.
+- The row shows the last register refusal (`register_refused_at`, `register_refused_reason`) when it is newer than the account's last board check-in (`switches.last_seen_at`).
 
 ### 2.4 Firmware
 
@@ -102,15 +102,15 @@ The `admin_events` table and its index (§2.5) and the `switches (user_id, last_
 
 ### Console (`hue-switch-console`)
 
-- [ ] Admin guards moved into `lib/admin.ts`; `users.role` no longer written; `/account` delete hidden for admins (§2.2)
-- [ ] Accounts search, paging, SQL sort, grouped joins, index, refusal column (§2.3)
-- [ ] Firmware section with "Make current" (§2.4)
-- [ ] `admin_events` table, a row per action, newest 50 listed, 1-year cron cleanup (§2.5)
-- [ ] Suspension reason and end date; expiry honored in device auth, sessions and the list; cron clears expired (§2.6)
-- [ ] Invite list paging and filter (§2.7)
-- [ ] Limits form hint (§2.8)
-- [ ] `db/schema.sql` and `lib/ensure-schema.ts` updated in the same commit (§2.9)
-- [ ] `docs/device-api.md`: no change
+- [x] Admin guards moved into `lib/admin.ts`; `users.role` no longer written; `/account` delete hidden for admins (§2.2)
+- [x] Accounts search, paging, SQL sort, grouped joins, index, refusal column (§2.3)
+- [x] Firmware section with "Make current" (§2.4)
+- [x] `admin_events` table, a row per action, newest 50 listed, 1-year cron cleanup (§2.5)
+- [x] Suspension reason and end date; expiry honored in device auth, sessions and the list; cron clears expired (§2.6)
+- [x] Invite list paging and filter (§2.7)
+- [x] Limits form hint (§2.8)
+- [x] `db/schema.sql` and `lib/ensure-schema.ts` updated in the same commit (§2.9)
+- [x] `docs/device-api.md`: no change
 - [ ] Deployed; checked on production
 
 ### Round (`hue-round-switch`)

@@ -6,6 +6,7 @@ import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { hashPassword } from "@/lib/password";
 import { sql } from "@/lib/sql";
+import { isSuspended } from "@/lib/suspension";
 
 // Human sessions are Better Auth sessions (docs/specs/finished/multi-user-accounts.md §2.2).
 // Pages and routes keep calling getSessionUser / requireSessionUser.
@@ -19,7 +20,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!isDbConfigured()) return null;
   await ensureSchema();
   const session = await auth().api.getSession({ headers: await headers() });
-  if (!session || session.user.banned) return null;
+  if (!session) return null;
+  // A suspension past its end date no longer counts (docs/specs/admin-tools.md §2.6).
+  if (session.user.banned && (await isSuspended(session.user.id))) return null;
   return { id: session.user.id, email: session.user.email };
 }
 

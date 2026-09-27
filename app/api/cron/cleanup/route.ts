@@ -42,6 +42,15 @@ export async function GET(req: Request) {
     delete from rate_limits where last_request < ${Date.now() - 24 * 60 * 60 * 1000}
     returning id
   `;
+  // Suspensions past their end date, and admin events older than a year (admin-tools §2.5, §2.6).
+  const unsuspended = await db`
+    update users set banned = false, ban_reason = null, ban_expires = null
+    where banned and ban_expires is not null and ban_expires <= now()
+    returning id
+  `;
+  const adminEvents = await db`
+    delete from admin_events where created_at < now() - interval '1 year' returning id
+  `;
   let admitted = 0;
   try {
     admitted = await admitFromWaitlist();
@@ -51,12 +60,14 @@ export async function GET(req: Request) {
   return jsonOk({
     ok: true,
     admitted,
+    unsuspended: unsuspended.length,
     deleted: {
       auth_events: events.length,
       verifications: verifications.length,
       sessions: sessions.length,
       invite_requests: requests.length,
       rate_limits: limits.length,
+      admin_events: adminEvents.length,
     },
   });
 }

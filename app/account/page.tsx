@@ -1,7 +1,7 @@
 import { ChangeEmailForm, DeleteAccountForm } from "@/app/account/account-forms";
 import { signOutEverywhere } from "@/app/account/actions";
 import { Shell } from "@/app/shell";
-import { isEmailConfigured, signInMethodLabels } from "@/lib/account-config";
+import { isAdminEmail, isEmailConfigured, signInMethodLabels } from "@/lib/account-config";
 import { requireSessionUser } from "@/lib/auth";
 import { accountLimits } from "@/lib/limits";
 import { sql } from "@/lib/sql";
@@ -66,7 +66,13 @@ export default async function AccountPage() {
           Deletes your API keys, Bridges, switches, pages and recipes. This can&apos;t be undone.
           Boards on the wall keep their saved recipes but can no longer reach the console.
         </p>
-        {user.email ? <DeleteAccountForm email={user.email} /> : null}
+        {isAdminEmail(user.email) ? (
+          <p className="text-sm text-muted">
+            This is an admin account. Remove the address from <code>ADMIN_EMAILS</code> first.
+          </p>
+        ) : user.email ? (
+          <DeleteAccountForm email={user.email} />
+        ) : null}
       </section>
     </Shell>
   );

@@ -4,24 +4,28 @@ import {
   deleteAccountAction,
   emailInviteAction,
   limitsAction,
+  makeCurrentAction,
   revokeInviteAction,
-  suspendAction,
 } from "@/app/admin/actions";
 import { CreateInviteForm } from "@/app/admin/create-invite-form";
+import { SuspendForm } from "@/app/admin/suspend-form";
 import { WaitlistSettingsForm } from "@/app/admin/waitlist-settings-form";
 import { Shell } from "@/app/shell";
 import {
   defaultLimits,
   emailDailyCap,
+  isAdminEmail,
   signInMethodLabels,
   signupMode,
   waitlistEmailsPerDay,
 } from "@/lib/account-config";
-import { listAccounts, SORTS, type AdminAccountRow, type SortKey } from "@/lib/admin";
+import { LIMIT_KEYS, listAccounts, PAGE_SIZE, SORTS, type SortKey } from "@/lib/admin";
+import { listAdminEvents, type AdminEvent } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth";
 import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
 import { emailsSentToday, waitlistEmailsSentToday } from "@/lib/email";
-import { listInvites, type InviteRow } from "@/lib/signup";
+import { listStoredReleases } from "@/lib/firmware";
+import { INVITE_STATES, listInvites, type InviteRow, type InviteState } from "@/lib/signup";
 import {
   deliveryProblems,
   listPendingEntries,
@@ -69,14 +73,59 @@ function inviteState(i: InviteRow): "used" | "revoked" | "expired" | "open" {
   return new Date(i.expires_at).getTime() < Date.now() ? "expired" : "open";
 }
 
-function sortRows(rows: AdminAccountRow[], key: SortKey, desc: boolean) {
-  const field = SORTS[key] as keyof AdminAccountRow;
-  return [...rows].sort((a, b) => {
-    const x = a[field] ?? "";
-    const y = b[field] ?? "";
-    const order = x < y ? -1 : x > y ? 1 : 0;
-    return desc ? -order : order;
-  });
+const EVENT_LABELS: Record<AdminEvent["action"], string> = {
+  suspend: "suspended",
+  unsuspend: "lifted the suspension of",
+  delete_account: "deleted",
+  limits: "set limits for",
+  invite_create: "created an invite for",
+  invite_email: "emailed an invite to",
+  invite_revoke: "revoked the invite for",
+  waitlist_admit: "admitted",
+  waitlist_remove: "removed from the waitlist",
+  settings: "changed the waitlist settings",
+  firmware_current: "made current",
+};
+
+function eventDetails(e: AdminEvent): string {
+  const d = e.details ?? {};
+  if (e.action === "suspend") {
+    const parts = [d.reason ? `“${d.reason}”` : null, d.until ? `until ${day(String(d.until))}` : null];
+    return parts.filter(Boolean).join(", ");
+  }
+  if (e.action === "limits") {
+    const entries = Object.entries(d);
+    return entries.length ? entries.map(([k, v]) => `${k} ${v}`).join(", ") : "defaults";
+  }
+  if (e.action === "settings") return `${d.mode}, cap ${d.cap ?? "none"}`;
+  return "";
+}
+
+function pageNumber(value: string | string[] | undefined): number {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : 1;
+}
+
+function Pager({ page, total, href }: { page: number; total: number; href: (page: number) => string }) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      {page > 1 ? (
+        <Link href={href(page - 1)} className={SMALL_BUTTON}>
+          Previous
+        </Link>
+      ) : null}
+      <span className="text-muted">
+        Page {page} of {pages}
+      </span>
+      {page < pages ? (
+        <Link href={href(page + 1)} className={SMALL_BUTTON}>
+          Next
+        </Link>
+      ) : null}
+    </div>
+  );
 }
 
 export default async function AdminPage({
@@ -91,13 +140,60 @@ export default async function AdminPage({
   ) as SortKey;
   const desc = params.dir !== "asc";
   const dormantOnly = params.filter === "dormant";
+  const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
+  const page = pageNumber(params.page);
+  const inviteFilter = (
+    typeof params.invites === "string" && (INVITE_STATES as readonly string[]).includes(params.invites)
+      ? params.invites
+      : "all"
+  ) as InviteState;
+  const invitePage = pageNumber(params.ipage);
+
+  // Every link keeps the rest of the page's state (search, sort, filters, pages).
+  function adminHref(changes: Record<string, string | null>) {
+    const next = new URLSearchParams();
+    const current: Record<string, string> = {
+      q,
+      sort,
+      dir: desc ? "desc" : "asc",
+      filter: dormantOnly ? "dormant" : "",
+      page: String(page),
+      invites: inviteFilter,
+      ipage: String(invitePage),
+    };
+    for (const [key, value] of Object.entries({ ...current, ...changes })) {
+      const isDefault =
+        !value ||
+        (key === "sort" && value === "created") ||
+        (key === "dir" && value === "desc") ||
+        (key === "invites" && value === "all") ||
+        ((key === "page" || key === "ipage") && value === "1");
+      if (!isDefault) next.set(key, value);
+    }
+    const text = next.toString();
+    return text ? `/admin?${text}` : "/admin";
+  }
 
   const settings = await readSettings();
-  const [accounts, requests, invites, mode, cap, seats, stats, problems, load, sent, waitlistSent] =
-    await Promise.all([
-      listAccounts(),
+  const [
+    accounts,
+    requests,
+    invites,
+    mode,
+    cap,
+    seats,
+    stats,
+    problems,
+    load,
+    sent,
+    waitlistSent,
+    roundReleases,
+    simpleReleases,
+    events,
+  ] = await Promise.all([
+      listAccounts({ q, sort, desc, dormantOnly, page }),
       listPendingEntries(),
-      listInvites(),
+      listInvites({ state: inviteFilter, page: invitePage, pageSize: PAGE_SIZE }),
       currentSignupMode(settings),
       currentUserCap(settings),
       seatsUsed(),
@@ -106,18 +202,17 @@ export default async function AdminPage({
       loadStats(),
       emailsSentToday(),
       waitlistEmailsSentToday(),
+      listStoredReleases("round"),
+      listStoredReleases("simple"),
+      listAdminEvents(50),
     ]);
   const waitlistOn = mode === "invite" || mode === "waitlist";
   const envMode = signupMode();
-  const shown = sortRows(dormantOnly ? accounts.filter((a) => a.dormant) : accounts, sort, desc);
   const defaults = defaultLimits();
-  const dormantCount = accounts.filter((a) => a.dormant).length;
 
   function sortHref(key: SortKey) {
     const dir = key === sort && desc ? "asc" : "desc";
-    const q = new URLSearchParams({ sort: key, dir });
-    if (dormantOnly) q.set("filter", "dormant");
-    return `/admin?${q}`;
+    return adminHref({ sort: key, dir, page: null });
   }
 
   const header = (key: SortKey, label: string) => (
@@ -135,7 +230,7 @@ export default async function AdminPage({
         <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
         <p className="text-sm text-muted">
           Sign-up mode: <span className="font-medium text-foreground">{mode}</span>.{" "}
-          {accounts.length} {accounts.length === 1 ? "account" : "accounts"}. This page shows counts only, never recipes or topology.
+          {accounts.total} {accounts.total === 1 ? "account" : "accounts"}. This page shows counts only, never recipes or topology.
         </p>
       </section>
 
@@ -209,6 +304,7 @@ export default async function AdminPage({
                   </div>
                   <form action={decideRequestAction} className="flex gap-2">
                     <input type="hidden" name="id" value={r.id} />
+                    <input type="hidden" name="email" value={r.email} />
                     <button name="decision" value="approve" className={SMALL_BUTTON}>
                       Admit now
                     </button>
@@ -232,9 +328,23 @@ export default async function AdminPage({
           </p>
         ) : null}
         <CreateInviteForm />
-        {invites.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {INVITE_STATES.map((state) => (
+            <Link
+              key={state}
+              href={adminHref({ invites: state, ipage: null })}
+              className={`${SMALL_BUTTON} ${state === inviteFilter ? "border-filament" : ""}`}
+            >
+              {state}
+            </Link>
+          ))}
+          <span className="text-muted">
+            {invites.total} {invites.total === 1 ? "invite" : "invites"}
+          </span>
+        </div>
+        {invites.rows.length > 0 ? (
           <ul className="flex flex-col divide-y divide-line text-sm">
-            {invites.slice(0, 30).map((i) => {
+            {invites.rows.map((i) => {
               const state = inviteState(i);
               return (
                 <li key={i.id} className="flex flex-wrap items-center gap-3 py-2">
@@ -262,18 +372,83 @@ export default async function AdminPage({
             })}
           </ul>
         ) : null}
+        <Pager page={invitePage} total={invites.total} href={(n) => adminHref({ ipage: String(n) })} />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
+        <h2 className="text-lg font-medium">Firmware</h2>
+        <p className="text-sm text-muted">
+          What <code>/setup</code> installs. A new upload becomes current on its own; make an
+          older release current to roll back. Releases without bins keep their notes only.
+        </p>
+        <div className="grid gap-5 md:grid-cols-2">
+          {(
+            [
+              ["round", "Round", roundReleases],
+              ["simple", "Simple", simpleReleases],
+            ] as const
+          ).map(([product, label, releases]) => (
+            <div key={product} className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium">{label}</h3>
+              <ul className="flex max-h-72 flex-col divide-y divide-line overflow-y-auto text-sm">
+                {releases.map((r) => (
+                  <li key={r.version} className="flex items-center gap-3 py-1.5">
+                    <span className="font-mono text-xs">{r.version}</span>
+                    <span className="text-xs text-muted">{day(r.createdAt)}</span>
+                    <span className="ml-auto text-xs">
+                      {r.current ? (
+                        <span className="font-medium">current</span>
+                      ) : r.hasBins ? (
+                        <form action={makeCurrentAction}>
+                          <input type="hidden" name="product" value={product} />
+                          <input type="hidden" name="version" value={r.version} />
+                          <button className={SMALL_BUTTON}>Make current</button>
+                        </form>
+                      ) : (
+                        <span className="text-muted">notes only</span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-medium">Accounts</h2>
-          <Link href={dormantOnly ? "/admin" : "/admin?filter=dormant"} className={SMALL_BUTTON}>
-            {dormantOnly ? "Show all" : `Dormant (${dormantCount})`}
+          <form action="/admin" className="flex gap-2">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search by email"
+              className={INPUT}
+            />
+            {sort !== "created" ? <input type="hidden" name="sort" value={sort} /> : null}
+            {!desc ? <input type="hidden" name="dir" value="asc" /> : null}
+            {dormantOnly ? <input type="hidden" name="filter" value="dormant" /> : null}
+            <button className={SMALL_BUTTON}>Search</button>
+          </form>
+          <Link
+            href={adminHref({ filter: dormantOnly ? null : "dormant", page: null })}
+            className={SMALL_BUTTON}
+          >
+            {dormantOnly ? "Show all" : `Dormant (${accounts.dormant})`}
           </Link>
           <span className="text-xs text-muted">
             Dormant: no switch and no sign-in for 60 days. Nothing is deleted automatically.
           </span>
         </div>
+        {q ? (
+          <p className="text-xs text-muted">
+            {accounts.matching} {accounts.matching === 1 ? "match" : "matches"} for “{q}”.{" "}
+            <Link href={adminHref({ q: null, page: null })} className="underline">
+              Clear
+            </Link>
+          </p>
+        ) : null}
         <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-cream">
@@ -290,7 +465,7 @@ export default async function AdminPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {shown.map((a) => (
+              {accounts.rows.map((a) => (
                 <tr key={a.id} className="align-top">
                   <td className="px-2 py-2">{a.email}</td>
                   <td className="px-2 py-2 text-muted">{signInMethodLabels(a.methods).join(", ") || "none"}</td>
@@ -300,29 +475,40 @@ export default async function AdminPage({
                   <td className="px-2 py-2">{a.bridges}</td>
                   <td className="px-2 py-2">{day(a.last_board_seen)}</td>
                   <td className="px-2 py-2">
-                    {a.banned ? (
+                    {a.suspended ? (
                       <span className="text-danger">suspended</span>
                     ) : a.dormant ? (
                       "dormant"
                     ) : (
                       "active"
                     )}
+                    {a.suspended && (a.ban_reason || a.ban_expires) ? (
+                      <p className="text-xs text-muted">
+                        {[a.ban_reason, a.ban_expires ? `until ${day(a.ban_expires)}` : null]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    ) : null}
+                    {a.refused ? (
+                      <p className="text-xs text-danger">
+                        Register refused {day(a.refused.at)}: {a.refused.reason}
+                      </p>
+                    ) : null}
                   </td>
                   <td className="px-2 py-2">
                     {a.id === admin.id ? (
                       <span className="text-xs text-muted">you</span>
+                    ) : isAdminEmail(a.email) ? (
+                      <span className="text-xs text-muted">admin</span>
                     ) : (
                       <details>
                         <summary className="cursor-pointer text-xs">Manage</summary>
                         <div className="mt-2 flex w-64 flex-col gap-3">
-                          <form action={suspendAction}>
-                            <input type="hidden" name="id" value={a.id} />
-                            <input type="hidden" name="banned" value={a.banned ? "false" : "true"} />
-                            <button className={SMALL_BUTTON}>{a.banned ? "Unsuspend" : "Suspend"}</button>
-                          </form>
+                          <SuspendForm id={a.id} suspended={a.suspended} />
                           <form action={limitsAction} className="grid grid-cols-2 gap-1 text-xs">
                             <input type="hidden" name="id" value={a.id} />
-                            {(["switches", "bridges", "keys", "snapshotKb"] as const).map((key) => (
+                            <input type="hidden" name="email" value={a.email} />
+                            {LIMIT_KEYS.map((key) => (
                               <label key={key} className="flex flex-col">
                                 {key === "snapshotKb" ? "Snapshot KB" : key}
                                 <input
@@ -335,6 +521,7 @@ export default async function AdminPage({
                                 />
                               </label>
                             ))}
+                            <span className="col-span-2 text-muted">Empty means the console default.</span>
                             <button className={`${SMALL_BUTTON} col-span-2`}>Save limits</button>
                           </form>
                           <form action={deleteAccountAction} className="flex flex-col gap-1 text-xs">
@@ -354,6 +541,31 @@ export default async function AdminPage({
             </tbody>
           </table>
         </div>
+        <Pager page={page} total={accounts.matching} href={(n) => adminHref({ page: String(n) })} />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
+        <h2 className="text-lg font-medium">Admin activity</h2>
+        {events.length === 0 ? (
+          <p className="text-sm text-muted">Nothing yet.</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-line text-sm">
+            {events.map((e) => {
+              const details = eventDetails(e);
+              return (
+                <li key={e.id} className="flex flex-wrap items-baseline gap-2 py-1.5">
+                  <span className="text-xs text-muted">{new Date(e.created_at).toISOString().slice(0, 16).replace("T", " ")}</span>
+                  <span>
+                    {e.admin_email} {EVENT_LABELS[e.action] ?? e.action}
+                    {e.target ? <> <span className="font-medium">{e.target}</span></> : null}
+                    {details ? <span className="text-muted"> ({details})</span> : null}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="text-xs text-muted">The newest 50. Kept for a year.</p>
       </section>
     </Shell>
   );

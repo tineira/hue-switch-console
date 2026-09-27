@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import disposableDomains from "disposable-email-domains/index.json";
 import { currentSignupMode } from "@/lib/console-settings";
 import { sql } from "@/lib/sql";
+import { isSuspendedRow } from "@/lib/suspension";
 
 // Sign-up gate and invites (docs/specs/finished/multi-user-accounts.md §2.3). The waitlist that
 // hands out invites is lib/waitlist.ts (docs/specs/waitlist.md).
@@ -81,12 +82,31 @@ export async function consumeInvite(inviteId: string, userId: string) {
   `;
 }
 
-export async function listInvites(): Promise<InviteRow[]> {
+export const INVITE_STATES = ["all", "open", "used", "revoked", "expired"] as const;
+export type InviteState = (typeof INVITE_STATES)[number];
+
+/** One page of invites, newest first, filtered by state (docs/specs/admin-tools.md §2.7). */
+export async function listInvites(input: {
+  state: InviteState;
+  page: number;
+  pageSize: number;
+}): Promise<{ rows: InviteRow[]; total: number }> {
+  const { state, pageSize } = input;
+  const offset = (input.page - 1) * pageSize;
   const rows = await sql()`
-    select id, code_prefix, email, expires_at, used_at, used_by, revoked_at, created_at
-    from invites order by created_at desc limit 200
+    select id, code_prefix, email, expires_at, used_at, used_by, revoked_at, created_at,
+      count(*) over ()::int as total
+    from invites
+    where ${state} = 'all'
+      or (${state} = 'used' and used_at is not null)
+      or (${state} = 'revoked' and used_at is null and revoked_at is not null)
+      or (${state} = 'open' and used_at is null and revoked_at is null and expires_at > now())
+      or (${state} = 'expired' and used_at is null and revoked_at is null and expires_at <= now())
+    order by created_at desc
+    limit ${pageSize} offset ${offset}
   `;
-  return rows as InviteRow[];
+  const total = rows[0] ? Number((rows[0] as { total: number }).total) : 0;
+  return { rows: rows as InviteRow[], total };
 }
 
 export async function getInvite(id: string): Promise<InviteRow | null> {
@@ -108,10 +128,12 @@ export async function userExists(email: string): Promise<boolean> {
 
 /** "none" when no account uses this email, else whether it may sign in. */
 export async function accountStatus(email: string): Promise<"none" | "active" | "suspended"> {
-  const rows = await sql()`select banned from users where email = ${normalizeEmail(email)} limit 1`;
-  const row = rows[0] as { banned: boolean } | undefined;
+  const rows = await sql()`
+    select banned, ban_expires from users where email = ${normalizeEmail(email)} limit 1
+  `;
+  const row = rows[0] as { banned: boolean; ban_expires: string | null } | undefined;
   if (!row) return "none";
-  return row.banned ? "suspended" : "active";
+  return isSuspendedRow(row) ? "suspended" : "active";
 }
 
 /**

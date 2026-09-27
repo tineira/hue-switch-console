@@ -205,6 +205,31 @@ export async function setCurrentRelease(product: ProductId, version: string): Pr
   return rows.length > 0;
 }
 
+export type StoredRelease = {
+  version: string;
+  createdAt: string;
+  hasBins: boolean;
+  current: boolean;
+};
+
+/** Every release of a product, newest first, for /admin (docs/specs/admin-tools.md §2.4). */
+export async function listStoredReleases(product: ProductId): Promise<StoredRelease[]> {
+  const rows = await sql()`
+    select r.version, r.created_at,
+      (select count(*)::int from firmware_parts p where p.release_id = r.id) as parts,
+      exists (select 1 from firmware_current c where c.product = r.product and c.release_id = r.id) as current
+    from firmware_releases r
+    where r.product = ${product}
+    order by string_to_array(r.version, '.')::int[] desc
+  `;
+  return (rows as { version: string; created_at: string; parts: number; current: boolean }[]).map((r) => ({
+    version: r.version,
+    createdAt: new Date(r.created_at).toISOString(),
+    hasBins: Number(r.parts) === PART_NAMES.length,
+    current: Boolean(r.current),
+  }));
+}
+
 export async function currentVersion(product: ProductId): Promise<string | null> {
   const rows = await sql()`
     select r.version from firmware_current c
