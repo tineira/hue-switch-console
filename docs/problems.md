@@ -264,7 +264,7 @@ Verified against `main` @ `34aaefdc`. Fixed in the same pass: 500s no longer ret
 
 | Item | Where | Why it matters |
 | --- | --- | --- |
-| `ensureSchema()` in the request path | Almost every route, device poll included | Each cold isolate runs ~70 statements sequentially over HTTP before answering. Migrate at deploy; make the request path a no-op. |
+| `ensureSchema()` in the request path | Almost every route, device poll included | Each cold isolate runs 81 statements sequentially over HTTP before answering. Spec: `docs/specs/schema-version.md` (draft). |
 | Firmware upload is also publish | `uploadRelease` writes `firmware_current`; `POST …/current` takes the same CI token | A leaked CI token changes what `/setup` flashes. `docs/specs/finished/admin-tools.md` adds "Make current" in `/admin`; whether uploads stop auto-promoting is its open question 1. |
 | Limit checks are count-then-insert | `registerLimitHit`, key creation | Parallel requests can pass a cap. Low impact. |
 | New MAC with no `product` is inferred Round | `upsertSwitch` / `inferProduct` | See P5. Require `product` on a first register once both firmwares send it. |
