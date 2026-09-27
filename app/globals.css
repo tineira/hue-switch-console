@@ -645,3 +645,26 @@ option {
   .round-face-pairing { --rf-ring: var(--rf-yellow); }
   .round-face-flash { box-shadow: 0 0 0 2px var(--rf-error), 0 6px 14px rgb(0 0 0 / 35%); }
 }
+
+/* Signed-out home page (app/landing). One LED flash per Simple event, like led.h. */
+.led-event {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #ff8a1f;
+  box-shadow: 0 0 calc(8px * var(--k)) calc(2px * var(--k)) rgb(255 138 31 / 70%);
+  opacity: 0;
+  animation: led-event 300ms step-end 1;
+}
+@keyframes led-event {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* Room lighting in the landing demos fades with each change, except while dimming. */
+.room-layer { transition: opacity 450ms ease, background 450ms ease; }
+.room-layer-still { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .led-event { animation: none; }
+  .room-layer { transition: none; }
+}

@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-27
 
+- The **home page** is redesigned. Try both switches right on the page: tap, double tap, drag the ring or swipe on the Round, click, double-click or hold the Simple, and watch a small room light up. It also shows what to buy for each switch, with drawings and links to Seeed Studio, and the three setup steps. A button in the header switches between a dark and a light look.
 - **hue.tineira.com** now opens on a short page that says what the console is, shows the two switches and how setup works, and links to sign-in and Privacy. Once you are signed in it still takes you straight to your switches.
 - The footer and the **Credits** page have a **Sponsor** link. The console stays free; sponsoring on GitHub helps pay for its development.
 - Links to the console shared on GitHub, X or in chat now show a preview card with its name and what it does.
