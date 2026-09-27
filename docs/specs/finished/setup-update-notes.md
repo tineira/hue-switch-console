@@ -76,13 +76,13 @@ All seven approved as recommended (2026-09-27).
 
 ### Round (`hue-round-switch`)
 
-- [x] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker (`6df47f5`)
+- [x] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker ([hue-round-switch#7](https://github.com/tineira/hue-round-switch/pull/7), awaiting merge)
 - [x] Past entries marked: none picked for Round
 
 ### Simple (`hue-simple-switch`)
 
-- [x] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker (`c70a540`)
-- [x] Past entries marked (2026-09-27): 0.2.11 (also "Devices" → "Setup") and 0.3.0 (adds "After updating, set up each wired input in Switches."), in `CHANGELOG.md` and in the stored notes on production
+- [x] `CHANGELOG.md` header and AGENTS.md "Contract" describe the `Important:` marker ([hue-simple-switch#6](https://github.com/tineira/hue-simple-switch/pull/6), awaiting merge)
+- [x] Past entries marked (2026-09-27): 0.2.11 (also "Devices" → "Setup") and 0.3.0 (adds "After updating, set up each wired input in Switches."), in the stored notes on production, and in `CHANGELOG.md` with hue-simple-switch#6
 
 No `FIRMWARE_VERSION` bump: the marker is text in notes the console already stores.
 
