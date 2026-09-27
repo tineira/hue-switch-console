@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Privacy",
+  description: "What Hue Switch Console stores, why, who helps run it, and how to delete it.",
+  alternates: { canonical: "/privacy" },
 };
 
 const UPDATED = "September 27, 2026";

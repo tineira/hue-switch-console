@@ -12,6 +12,9 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Credits",
+  description:
+    "The services, hardware and open-source software behind Hue Switch Console and its switch firmware.",
+  alternates: { canonical: "/credits" },
 };
 
 const FIRMWARE: { product: ProductId; title: string }[] = [

@@ -11,6 +11,7 @@ export const metadata = {
   title: "Hue Switch Console: Wi-Fi wall switches for Philips Hue",
   description:
     "Set up Wi-Fi wall switches for Philips Hue from your browser and choose what each button does. Free.",
+  alternates: { canonical: "/" },
 };
 
 const PRIMARY =

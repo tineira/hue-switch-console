@@ -1,0 +1,26 @@
+# Hue Switch Console
+
+> A free web console for Wi-Fi wall switches that control Philips Hue. You install the switch firmware over USB from Chrome or Edge, pair the switch with your Hue Bridge, and choose what each button or page does. Button presses go from the switch to the Hue Bridge directly on the home network; the console only stores settings, and the switches keep working if it is down.
+
+Two switches use it:
+
+- **Round**: Seeed Studio XIAO ESP32-S3 with the Round Display. Swipe between pages, one per room or zone, each with its own tap and double-tap actions, scene list and dimmer.
+- **Simple**: Seeed Studio XIAO ESP32-C6 wired to a wall toggle switch or push buttons. A toggle switch turns a room, zone or light on and off, with a scene list on double-click; a push button can toggle, cycle scenes on double-click, and dim on hold.
+
+The switches talk to the Hue Bridge over its local API (not Zigbee). Your Wi-Fi password goes from your browser to the switch over USB and never reaches the console. No ads and no analytics. The console is AGPL-3.0; the firmware is MIT. Sign-up is by invitation for now.
+
+## Pages
+
+- [Home](https://hue.tineira.com/): what the console is and how setup works
+- [Privacy](https://hue.tineira.com/privacy): what the console stores, why, and how to delete it
+- [Credits](https://hue.tineira.com/credits): services, hardware and open-source software it is built on
+
+## Source
+
+- [hue-switch-console](https://github.com/tineira/hue-switch-console): the console, the device API (`docs/device-api.md`) and the product model (`docs/definitions.md`)
+- [hue-round-switch](https://github.com/tineira/hue-round-switch): Round firmware
+- [hue-simple-switch](https://github.com/tineira/hue-simple-switch): Simple firmware
+
+## Optional
+
+- [Sponsor](https://github.com/sponsors/tineira): support development on GitHub Sponsors
