@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+[data-theme="ember"]{--background:#14110f;--foreground:#f4eee6;--cream:#1e1a17;--muted:#a89a8c;--line:#3a322c;--filament:#e07a3d;--filament-ink:#1c140e;--filament-soft:#3a2618}
+[data-theme="paper"]{--background:#f3eee4;--foreground:#1c1814;--cream:#fffaf2;--muted:#6e675c;--line:#e0d4c4;--filament:#c45c26;--filament-ink:#fffaf2;--filament-soft:#f6e4d6}
+@keyframes cur-led-heart{0%{opacity:1}2.667%{opacity:0}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="background:var(--background);color:var(--foreground);font-family:Geist, ui-sans-serif, system-ui, sans-serif;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100%;width:100%">
+  <main style="margin:0 auto;display:flex;width:100%;max-width:1024px;box-sizing:border-box;flex:1;flex-direction:column;gap:56px;padding:32px 20px">
+    <header style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:14px;line-height:20px;font-weight:600;letter-spacing:-0.025em">Hue switch console</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <button style="border-radius:6px;border:1px solid var(--line);background:var(--cream);padding:4px 10px;font:inherit;font-size:14px;line-height:20px;color:var(--foreground)">Theme · Ember</button>
+        <a href="#" style="border-radius:6px;border:1px solid var(--line);background:var(--background);padding:8px 16px;font-size:14px;line-height:20px;font-weight:500;color:var(--foreground);text-decoration:none">Sign in</a>
+      </div>
+    </header>
+    <section style="display:flex;flex-direction:column;align-items:flex-start;gap:20px">
+      <p style="margin:0;font-size:12px;line-height:16px;font-weight:500;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted)">For Philips Hue</p>
+      <h1 style="margin:0;max-width:768px;font-size:36px;line-height:40px;font-weight:600;letter-spacing:-0.025em">Wall switches for your Hue lights, set up from your browser.</h1>
+      <p style="margin:0;max-width:672px;font-size:16px;line-height:24px;color:var(--muted)">Build a Wi-Fi switch from a small Seeed XIAO board, install it over USB, and choose here what every button does. The switch talks to your Hue Bridge on your own network.</p>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+        <a href="#" style="border-radius:6px;background:var(--filament);padding:8px 16px;font-size:14px;line-height:20px;font-weight:500;color:var(--filament-ink);text-decoration:none">Sign in</a>
+        <a href="#" style="border-radius:6px;border:1px solid var(--line);background:var(--background);padding:8px 16px;font-size:14px;line-height:20px;font-weight:500;color:var(--foreground);text-decoration:none">Request an invite</a>
+        <a href="#" style="font-size:14px;line-height:20px;color:var(--muted);text-decoration:none">Privacy</a>
+      </div>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font-size:18px;line-height:28px;font-weight:500">Two switches</h2>
+      <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr))">
+        <article style="display:flex;gap:20px;border-radius:12px;border:1px solid var(--line);background:var(--cream);padding:20px">
+          <div style="display:flex;width:112px;flex-shrink:0;align-items:center;justify-content:center">{{ roundFace }}</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <h3 style="margin:0;font-size:16px;line-height:24px;font-weight:600">Round</h3>
+            <p style="margin:0;font-size:12px;line-height:16px;color:var(--muted)">Round touch screen · XIAO ESP32-S3</p>
+            <p style="margin:0;font-size:14px;line-height:20px;color:var(--muted)">Each page is a room or zone. Tap to switch it, double tap for scenes, drag the ring to dim, swipe to the next room.</p>
+          </div>
+        </article>
+        <article style="display:flex;gap:20px;border-radius:12px;border:1px solid var(--line);background:var(--cream);padding:20px">
+          <div style="display:flex;width:112px;flex-shrink:0;align-items:center;justify-content:center">{{ led }}</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <h3 style="margin:0;font-size:16px;line-height:24px;font-weight:600">Simple</h3>
+            <p style="margin:0;font-size:12px;line-height:16px;color:var(--muted)">Wall buttons, one LED · XIAO ESP32-C6</p>
+            <p style="margin:0;font-size:14px;line-height:20px;color:var(--muted)">Wired to the toggle switches or push buttons in your wall. Click to switch a room, double-click for scenes, hold to dim.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font-size:18px;line-height:28px;font-weight:500">How it works</h2>
+      <ol style="margin:0;padding:0;list-style:none;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))">
+        <sc-for list="{{ steps }}" as="step" hint-placeholder-count="3">
+          <li style="display:flex;flex-direction:column;gap:8px;border-radius:12px;border:1px solid var(--line);padding:20px">
+            <span style="display:flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:50%;background:var(--filament-soft);font-size:14px;font-weight:600">{{ step.n }}</span>
+            <h3 style="margin:0;font-size:16px;line-height:24px;font-weight:500">{{ step.title }}</h3>
+            <p style="margin:0;font-size:14px;line-height:20px;color:var(--muted)">{{ step.text }}</p>
+          </li>
+        </sc-for>
+      </ol>
+      <a href="#" style="font-size:14px;line-height:20px;font-weight:500;color:var(--filament);text-decoration:none">See the full setup guide</a>
+    </section>
+    <section style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))">
+      <sc-for list="{{ facts }}" as="f" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h3 style="margin:0;font-size:14px;line-height:20px;font-weight:600">{{ f.title }}</h3>
+          <p style="margin:0;font-size:14px;line-height:20px;color:var(--muted)">{{ f.text }}</p>
+        </div>
+      </sc-for>
+    </section>
+    <p style="margin:0;font-size:12px;line-height:16px;color:var(--muted)">Philips Hue is a trademark of Signify. This project is independent and is not affiliated with, endorsed by or sponsored by Signify. XIAO is a trademark of Seeed Studio.</p>
+  </main>
+  <footer style="margin-top:auto;width:100%;border-top:1px solid var(--line)">
+    <div style="margin:0 auto;display:flex;width:100%;max-width:1280px;box-sizing:border-box;flex-wrap:wrap;align-items:center;column-gap:12px;row-gap:4px;padding:16px 20px;font-size:12px;line-height:16px;color:var(--muted)">
+      <span>Built by Tomas Neira</span>
+      <span style="display:flex;align-items:center">
+        <a href="#" aria-label="Tomas Neira on GitHub" style="border-radius:4px;padding:4px;color:var(--muted);display:flex"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.580 0 0 3.580 0 8c0 3.540 2.290 6.530 5.470 7.590.4.070.550-.170.550-.380 0-.190-.010-.820-.010-1.490-2.010.370-2.530-.490-2.690-.940-.090-.230-.480-.940-.820-1.130-.280-.150-.680-.520-.010-.530.630-.010 1.080.580 1.230.820.720 1.210 1.870.870 2.330.660.070-.520.280-.870.510-1.070-1.780-.2-3.640-.890-3.640-3.950 0-.870.310-1.590.820-2.150-.080-.2-.360-1.020.080-2.120 0 0 .670-.210 2.200.820.640-.180 1.320-.270 2-.270.680 0 1.360.090 2 .270 1.530-1.040 2.200-.820 2.200-.820.440 1.100.160 1.920.080 2.120.510.560.820 1.270.820 2.150 0 3.070-1.870 3.750-3.650 3.950.290.250.540.730.540 1.480 0 1.070-.010 1.930-.010 2.200 0 .210.150.460.550.380A8.013 8.013 0 0016 8c0-4.420-3.580-8-8-8z"></path></svg></a>
+        <a href="#" aria-label="Tomas Neira on X" style="border-radius:4px;padding:4px;color:var(--muted);display:flex"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg></a>
+      </span>
+      <span aria-hidden="true">·</span><a href="#" style="color:inherit;text-decoration:none">Credits</a>
+      <span aria-hidden="true">·</span><a href="#" style="color:inherit;text-decoration:none">How-to</a>
+      <span aria-hidden="true">·</span><a href="#" style="color:inherit;text-decoration:none">Changelog</a>
+      <span aria-hidden="true">·</span><a href="#" style="color:inherit;text-decoration:none">Privacy</a>
+      <span aria-hidden="true">·</span><a href="#" style="color:inherit;text-decoration:none">Source (AGPL-3.0)</a>
+      <span aria-hidden="true">·</span><a href="#" style="color:inherit;text-decoration:none">Sponsor</a>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:1400},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ember&quot;,&quot;paper&quot;],&quot;default&quot;:&quot;ember&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const h = React.createElement;
+    const S = 112, k = S / 88;
+    const ringMask = `radial-gradient(farthest-side, transparent calc(100% - ${4 * k}px), #000 calc(100% - ${3.5 * k}px))`;
+    const roundFace = h('div', { role: 'img', 'aria-hidden': true, style: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 * k, width: S, height: S, flexShrink: 0, padding: 14 * k, boxSizing: 'border-box', borderRadius: '50%', background: '#0d0d10', boxShadow: '0 6px 14px rgb(0 0 0 / 35%)', color: '#f2f2f0', fontFamily: 'Geist, sans-serif', textAlign: 'center', lineHeight: 1.15 } },
+      h('span', { style: { position: 'absolute', inset: 2 * k, borderRadius: '50%', background: 'conic-gradient(from 225deg, #ff9f1c 0 180deg, #3a3a42 180deg 270deg, transparent 270deg 360deg)', WebkitMask: ringMask, mask: ringMask } }),
+      h('span', { style: { position: 'absolute', inset: 10 * k, borderRadius: '50%', background: '#6b3f0e' } }),
+      h('span', { style: { position: 'relative', fontSize: 11 * k, fontWeight: 700 } }, 'Living room'),
+      h('span', { style: { position: 'relative', fontSize: 8 * k, color: '#ffe2b8' } }, 'Relax'),
+      h('span', { style: { position: 'absolute', bottom: 16 * k, display: 'flex', gap: 3 * k } },
+        [0, 1, 2].map(i => h('i', { key: i, style: { width: 3 * k, height: 3 * k, borderRadius: '50%', background: i === 0 ? '#f2f2f0' : 'rgb(255 255 255 / 35%)' } }))));
+    const L = 22, lk = L / 14;
+    const led = h('span', { 'aria-hidden': true, style: { position: 'relative', display: 'block', width: L, height: L, borderRadius: '50%', background: '#3a2410', boxShadow: 'inset 0 0 0 1px rgb(255 140 40 / 25%)' } },
+      h('span', { style: { position: 'absolute', inset: 0, borderRadius: '50%', background: '#ff8a1f', boxShadow: `0 0 ${8 * lk}px ${2 * lk}px rgb(255 138 31 / 70%)`, opacity: 0, animation: 'cur-led-heart 3000ms step-end infinite' } }));
+    return {
+      theme: this.props.theme ?? 'ember',
+      roundFace, led,
+      steps: [
+        { n: 1, title: 'Install over USB', text: 'Plug the board into your computer and open Setup in Chrome or Edge. It installs the firmware and saves your Wi-Fi. Nothing to compile.' },
+        { n: 2, title: 'Pair with your Bridge', text: 'Press the button on your Hue Bridge when the switch asks. It sends the console your rooms, zones, lights and scenes.' },
+        { n: 3, title: 'Choose what it does', text: 'Pick the room, the scenes and what a tap, double tap or hold does. The switch picks up your changes on its own.' },
+      ],
+      facts: [
+        { title: 'Runs on your home network', text: 'Button presses go from the switch to your Hue Bridge directly. The console only stores settings; the switches keep working if it is down.' },
+        { title: 'Your Wi-Fi stays on the switch', text: 'Your Wi-Fi password goes from your browser to the switch over USB and never reaches the console.' },
+        { title: 'Free, no tracking', text: 'No ads and no analytics. The console is AGPL-3.0 and the firmware is MIT.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
