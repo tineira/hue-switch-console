@@ -53,6 +53,10 @@ export function SiteFooter() {
         <Link href="/changelog" className={TEXT_LINK}>
           Changelog
         </Link>
+        <span aria-hidden="true">·</span>
+        <Link href="/privacy" className={TEXT_LINK}>
+          Privacy
+        </Link>
       </div>
     </footer>
   );

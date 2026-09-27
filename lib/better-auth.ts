@@ -88,6 +88,8 @@ function createAuth() {
         ...stamps,
       },
       accountLinking: { enabled: true, trustedProviders: ["google", "github"] },
+      // Tokens from Google and GitHub are never used; if kept, keep them encrypted.
+      encryptOAuthTokens: true,
     },
     verification: {
       modelName: "verifications",

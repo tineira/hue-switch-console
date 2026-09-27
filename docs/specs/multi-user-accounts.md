@@ -286,7 +286,7 @@ The first limit the service will reach is board traffic, not sign-in: at 900 s, 
 
 ### 2.12 Legal pages
 
-`/privacy` and `/terms`, shown on the hosted console and linked from `/login`. Their text comes from `PRIVACY_URL` / `TERMS_URL` if set (links out) or is omitted (self-hosted). Writing the text is the operator's job, not this spec's. It should cover the emails stored by invite requests (§2.3) and the data received from Google and GitHub (email, name, avatar).
+`/privacy` is a page in the console (`app/privacy/page.tsx`), linked from `/login` and the footer, and public so Google's consent screen can point at it. It describes what this console stores; its contact is `CONTACT_EMAIL`, or the operator's X profile when unset. `PRIVACY_URL` overrides the `/login` link (a self-hoster with their own policy). `/terms` is still only a link, shown when `TERMS_URL` is set. Writing the text is the operator's job, not this spec's. It should cover the emails stored by invite requests (§2.3) and the data received from Google and GitHub (email, name, avatar).
 
 ## 3. Compatibility
 

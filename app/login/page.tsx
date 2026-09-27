@@ -44,7 +44,8 @@ export default async function LoginPage({
   const siteKey = turnstileSiteKey();
   const hasInvite = Boolean((await cookies()).get(INVITE_COOKIE)?.value);
   const error = errorText(typeof params.error === "string" ? params.error : undefined);
-  const privacy = process.env.PRIVACY_URL;
+  // The console's own /privacy page unless the operator links elsewhere.
+  const privacy = process.env.PRIVACY_URL || "/privacy";
   const terms = process.env.TERMS_URL;
 
   return (
