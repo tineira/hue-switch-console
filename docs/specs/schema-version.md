@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Tracked in `docs/problems.md` §6a ("`ensureSchema()` in the request path").
 
-**Status:** draft. Waiting for the user's approval before code. §5 lists the open decisions; the text uses the recommended answer for each.
+**Status:** draft. §5 decided by the user (2026-09-27). Waiting for approval before code.
 
 ## 1. What and why
 
@@ -92,8 +92,8 @@ Nothing to do.
 
 - [ ] `docs/problems.md` §6a row closed
 
-## 5. Open questions
+## 5. Decisions (2026-09-27)
 
-1. **Run the schema at deploy instead?** Vercel could run `npm run migrate` during the build, and requests would never apply DDL. Recommended: **no, keep the lazy check.** It is one query per cold start either way, self-hosters need no extra step, and a Preview build would migrate whatever database its env points at. Revisit if the schema check ever shows up in latency.
-2. **Data migrations once per version, or every cold start as today?** `migrateLegacyRoundSwitches` and `dropLegacySimpleRecipes` fix rows written by pre-pages firmware. Recommended: **once per version.** No such firmware is on the wall (docs/problems.md decision 7), and the register path already sets `product` for new rows.
-3. **Delete the data migrations now?** Recommended: **not in this change.** Keep them in the apply step; removing them is a separate cleanup with its own check of `switches.firmware`.
+1. **When the schema runs:** the lazy check (§2.3), not a migration during the Vercel build. One query per cold start either way; self-hosters need no extra step; a Preview build never migrates a database.
+2. **Data migrations:** once per schema version, in the apply step, not on every cold start.
+3. **Deleting the data migrations:** not in this change. A later cleanup, after checking `switches.firmware` for pre-pages Round or Simple < 0.3.0.
