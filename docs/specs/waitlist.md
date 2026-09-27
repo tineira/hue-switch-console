@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` (referred to below as "accounts spec").
 
-**Status:** in progress. Approved and implemented in the console (2026-09-27); not yet deployed. Open questions 2 to 4 in §5 use the recommended values as defaults until decided.
+**Status:** in progress. Approved, implemented and deployed (2026-09-27); waiting for the production checks. Open questions 2 to 4 in §5 use the recommended values as defaults until decided.
 
 ## 1. What and why
 
@@ -203,7 +203,7 @@ alter table auth_events add column if not exists detail text;       -- email kin
 - [x] Cleanup cron retention changes (§2.8)
 - [x] `/privacy` update (§2.10)
 - [x] `README.md` env vars (§2.9); `docs/definitions.md` if it describes sign-up; `docs/changelog.md` console entry
-- [ ] By Claude: Resend webhook created through the connector; `RESEND_WEBHOOK_SECRET`, `SIGNUP_MODE=waitlist` and `USER_CAP` set in Vercel through the connector; deployed
+- [x] By Claude: Resend webhook created through the connector; `RESEND_WEBHOOK_SECRET`, `SIGNUP_MODE=waitlist` and `USER_CAP=50` set in Vercel through the connector; deployed (2026-09-27, `fa5ef59`). Webhook answers unsigned calls with 400; schema migrated
 - [ ] Checked on production by the user: join with a seat free → invite arrives; with the cap full → "You're on the list" arrives; raise the cap → invite arrives; leave link works
 - [ ] Checked on production: a bounce test address (Resend's `bounced@resend.dev`) ends up `bounced` in `/admin`, and re-joining with it shows the "couldn't deliver" reply
 
