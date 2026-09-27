@@ -4,7 +4,7 @@ import { sql } from "@/lib/sql";
 
 // The schema lives in db/schema.sql (generated into lib/generated/schema.ts). A cold start reads
 // the version the database last applied and runs the statements only when the code's differs
-// (docs/specs/schema-version.md §2.3).
+// (docs/specs/finished/schema-version.md §2.3).
 
 let running: Promise<void> | null = null;
 

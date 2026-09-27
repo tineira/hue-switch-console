@@ -336,7 +336,7 @@ begin
 
 end $$;
 
--- The schema version this database last applied (docs/specs/schema-version.md §2.3). ensureSchema()
+-- The schema version this database last applied (docs/specs/finished/schema-version.md §2.3). ensureSchema()
 -- reads it once per process and runs this file only when the code's version differs.
 create table if not exists schema_meta (
   id boolean primary key default true check (id),

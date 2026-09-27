@@ -1,4 +1,4 @@
-// Applies db/schema.sql by hand (docs/specs/schema-version.md §2.4). The console also applies it on
+// Applies db/schema.sql by hand (docs/specs/finished/schema-version.md §2.4). The console also applies it on
 // its own at the first request after a schema change; this is for setting up a database ahead of
 // time. It leaves schema_meta alone, so the first request still runs the data migrations (they
 // live in TypeScript, lib/db.ts) and records the version.

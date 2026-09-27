@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Tracked in `docs/problems.md` §6a ("`ensureSchema()` in the request path").
 
-**Status:** approved (2026-09-27), in progress.
+**Status:** done (2026-09-27). Deployed; production recorded version `fb6036bc6a16c103` in `schema_meta`.
 
 ## 1. What and why
 
@@ -80,7 +80,7 @@ The `schema_meta` table (§2.3). Nothing is dropped.
 - [x] Tested on a local Postgres: fresh database, today's production schema, a matching version (one query), a changed statement (re-applies), a failed statement (version not written)
 - [x] `README.md` "Firmware release pipeline" and the new-product notes point to `db/schema.sql` only
 - [x] `docs/device-api.md`: no change
-- [ ] Deployed; checked on production (Neon: `schema_meta` has the version; a device request answers normally)
+- [x] Deployed; checked on production (Neon: `schema_meta` has the version; a device request answers normally)
 
 ### Round (`hue-round-switch`)
 
@@ -92,7 +92,7 @@ Nothing to do.
 
 ### Cleanup
 
-- [ ] `docs/problems.md` §6a row closed
+- [x] `docs/problems.md` §6a row closed
 
 ## 5. Decisions (2026-09-27)
 

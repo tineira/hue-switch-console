@@ -1,4 +1,4 @@
-// Writes lib/generated/schema.ts from db/schema.sql (docs/specs/schema-version.md §2.2).
+// Writes lib/generated/schema.ts from db/schema.sql (docs/specs/finished/schema-version.md §2.2).
 // Runs as part of `prebuild`; rerun by hand (`npm run schema`) after editing db/schema.sql.
 // `--check` exits 1 when the committed file is stale (CI).
 import { readFileSync, writeFileSync } from "node:fs";

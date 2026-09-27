@@ -1,4 +1,4 @@
-// Reads db/schema.sql, the only place the schema is written (docs/specs/schema-version.md §2.2).
+// Reads db/schema.sql, the only place the schema is written (docs/specs/finished/schema-version.md §2.2).
 // Shared by scripts/gen-schema.mjs (build) and scripts/migrate.mjs (by hand).
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
