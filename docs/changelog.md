@@ -15,6 +15,7 @@ The console has no version number. Each heading is the day the change went live.
 - **hue.tineira.com** now opens on a short page that says what the console is, shows the two switches and how setup works, and links to sign-in and Privacy. Once you are signed in it still takes you straight to your switches.
 - The footer and the **Credits** page have a **Sponsor** link. The console stays free; sponsoring on GitHub helps pay for its development.
 - Links to the console shared on GitHub, X or in chat now show a preview card with its name and what it does.
+- **How-to** and **Changelog** open without an account, so you can read the setup guide before you build a switch and send someone a link to an answer. How-to is also in the footer, and the home page links to it.
 
 ### 2026-09-26
 

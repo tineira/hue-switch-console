@@ -143,6 +143,9 @@ export default async function Home() {
             </li>
           ))}
         </ol>
+        <Link href="/how-to" className="text-sm font-medium text-filament hover:underline">
+          See the full setup guide
+        </Link>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">

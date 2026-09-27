@@ -51,6 +51,10 @@ export function SiteFooter() {
           Credits
         </Link>
         <span aria-hidden="true">·</span>
+        <Link href="/how-to" className={TEXT_LINK}>
+          How-to
+        </Link>
+        <span aria-hidden="true">·</span>
         <Link href="/changelog" className={TEXT_LINK}>
           Changelog
         </Link>

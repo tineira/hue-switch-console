@@ -1,14 +1,22 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { PublicFrame } from "@/app/public-frame";
 import { Shell } from "@/app/shell";
-import { requireSessionUser } from "@/lib/auth";
-import { notesToItems, parseChangelog, type ChangelogEntry } from "@/lib/changelog-parse";
+import { getSessionUser } from "@/lib/auth";
+import {
+  notesToItems,
+  parseChangelog,
+  type ChangelogDoc,
+  type ChangelogEntry,
+} from "@/lib/changelog-parse";
 import { listReleaseNotes, parseProductId } from "@/lib/firmware";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Changelog",
+  description: "What changed in Hue Switch Console and the Round and Simple switch firmware.",
+  alternates: { canonical: "/changelog" },
 };
 
 // Console entries live in docs/changelog.md; Round and Simple entries arrive with each firmware upload.
@@ -46,12 +54,9 @@ function EntryHeading({ entry }: { entry: ChangelogEntry }) {
   );
 }
 
-export default async function ChangelogPage() {
-  const user = await requireSessionUser();
-  const doc = await loadChangelog();
-
+function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
   return (
-    <Shell email={user.email}>
+    <>
       <section className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Changelog</h1>
         {doc.intro.map((paragraph) => (
@@ -94,6 +99,25 @@ export default async function ChangelogPage() {
           </div>
         </section>
       ))}
-    </Shell>
+    </>
+  );
+}
+
+// Public: signed-out visitors get the same page (docs/specs/public-how-to-changelog.md §4.3).
+export default async function ChangelogPage() {
+  const user = await getSessionUser().catch(() => null);
+  const doc = await loadChangelog();
+
+  if (user) {
+    return (
+      <Shell email={user.email}>
+        <ChangelogContent doc={doc} />
+      </Shell>
+    );
+  }
+  return (
+    <PublicFrame>
+      <ChangelogContent doc={doc} />
+    </PublicFrame>
   );
 }

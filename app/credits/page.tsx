@@ -1,6 +1,5 @@
-import Link from "next/link";
+import { PublicFrame } from "@/app/public-frame";
 import { Shell } from "@/app/shell";
-import { ThemePicker } from "@/app/theme-picker";
 import { getSessionUser } from "@/lib/auth";
 import { CONSOLE_CREDITS, SPONSOR_URL, THANKS } from "@/lib/credits";
 import { ensureSchema } from "@/lib/ensure-schema";
@@ -168,14 +167,8 @@ export default async function CreditsPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-8">
-      <div className="flex items-center justify-between">
-        <Link href="/" className="text-sm font-semibold tracking-tight">
-          Hue switch console
-        </Link>
-        <ThemePicker />
-      </div>
+    <PublicFrame>
       <CreditsContent />
-    </main>
+    </PublicFrame>
   );
 }
