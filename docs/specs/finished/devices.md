@@ -43,7 +43,7 @@ Improv already provides name and version. The rest is a text command on the same
 
 ```
 HUEGET
-HUESTA mac=aabbccddeeff product=simple ver=0.2.7 chip=c6 ssid=Milka2 wifi=up ip=192.168.1.20 bid=001788fffe123456 bip=192.168.1.2 url=https://hue.tineira.com token=1 key=1
+HUESTA mac=aabbccddeeff product=simple ver=0.2.7 chip=c6 ssid=HomeWiFi wifi=up ip=192.168.1.20 bid=001788fffe123456 bip=192.168.1.2 url=https://hue.tineira.com token=1 key=1
 ```
 
 A single line. The keys are always present; the value is empty if nothing is stored. `wifi` is `up` or `down`. `token` and `key` are `1` or `0`.
