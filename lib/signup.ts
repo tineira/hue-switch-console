@@ -85,7 +85,7 @@ export async function consumeInvite(inviteId: string, userId: string) {
 export const INVITE_STATES = ["all", "open", "used", "revoked", "expired"] as const;
 export type InviteState = (typeof INVITE_STATES)[number];
 
-/** One page of invites, newest first, filtered by state (docs/specs/admin-tools.md §2.7). */
+/** One page of invites, newest first, filtered by state (docs/specs/finished/admin-tools.md §2.7). */
 export async function listInvites(input: {
   state: InviteState;
   page: number;

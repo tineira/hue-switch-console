@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` ("accounts spec") and `docs/specs/waitlist.md`.
 
-**Status:** approved (2026-09-27), in progress.
+**Status:** done (2026-09-27). Deployed and checked on production. The `users.role` drop in §4 Cleanup waits for the user's OK.
 
 ## 1. What and why
 
@@ -111,7 +111,7 @@ The `admin_events` table and its index (§2.5) and the `switches (user_id, last_
 - [x] Limits form hint (§2.8)
 - [x] `db/schema.sql` and `lib/ensure-schema.ts` updated in the same commit (§2.9)
 - [x] `docs/device-api.md`: no change
-- [ ] Deployed; checked on production
+- [x] Deployed; checked on production
 
 ### Round (`hue-round-switch`)
 

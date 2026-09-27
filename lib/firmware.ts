@@ -212,7 +212,7 @@ export type StoredRelease = {
   current: boolean;
 };
 
-/** Every release of a product, newest first, for /admin (docs/specs/admin-tools.md §2.4). */
+/** Every release of a product, newest first, for /admin (docs/specs/finished/admin-tools.md §2.4). */
 export async function listStoredReleases(product: ProductId): Promise<StoredRelease[]> {
   const rows = await sql()`
     select r.version, r.created_at,

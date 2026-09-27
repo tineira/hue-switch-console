@@ -1,6 +1,6 @@
 import { sql } from "@/lib/sql";
 
-// What admins did, newest first (docs/specs/admin-tools.md §2.5). Kept 1 year.
+// What admins did, newest first (docs/specs/finished/admin-tools.md §2.5). Kept 1 year.
 
 export type AdminAction =
   | "suspend"

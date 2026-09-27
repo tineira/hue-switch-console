@@ -21,7 +21,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   await ensureSchema();
   const session = await auth().api.getSession({ headers: await headers() });
   if (!session) return null;
-  // A suspension past its end date no longer counts (docs/specs/admin-tools.md §2.6).
+  // A suspension past its end date no longer counts (docs/specs/finished/admin-tools.md §2.6).
   if (session.user.banned && (await isSuspended(session.user.id))) return null;
   return { id: session.user.id, email: session.user.email };
 }

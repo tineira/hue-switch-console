@@ -19,7 +19,7 @@ import {
 } from "@/lib/signup";
 import { admitEntry, admitQuietly, dismissEntry } from "@/lib/waitlist";
 
-// Every action records an admin event (docs/specs/admin-tools.md §2.5).
+// Every action records an admin event (docs/specs/finished/admin-tools.md §2.5).
 
 export type InviteState = { link?: string; error?: string } | undefined;
 

@@ -1,7 +1,7 @@
 import { sql } from "@/lib/sql";
 
 // A suspension counts while it has no end date or the end date is still ahead
-// (docs/specs/admin-tools.md §2.6). The daily cron clears expired ones.
+// (docs/specs/finished/admin-tools.md §2.6). The daily cron clears expired ones.
 
 type BanRow = { banned?: boolean | null; ban_expires?: string | Date | null };
 

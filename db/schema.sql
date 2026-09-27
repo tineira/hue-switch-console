@@ -287,7 +287,7 @@ alter table invite_requests add column if not exists leave_token_hash text;
 alter table invite_requests drop column if exists note;
 create index if not exists invite_requests_email_idx on invite_requests (lower(email), status);
 
--- Admin tools (docs/specs/admin-tools.md §2.9). target keeps the email or version as text, so an
+-- Admin tools (docs/specs/finished/admin-tools.md §2.9). target keeps the email or version as text, so an
 -- event still reads well after the account is deleted.
 create table if not exists admin_events (
   id bigserial primary key,

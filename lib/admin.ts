@@ -1,7 +1,7 @@
 import { isAdminEmail } from "@/lib/account-config";
 import { sql } from "@/lib/sql";
 
-// /admin queries (docs/specs/finished/multi-user-accounts.md §2.7, docs/specs/admin-tools.md).
+// /admin queries (docs/specs/finished/multi-user-accounts.md §2.7, docs/specs/finished/admin-tools.md).
 // Counts only: no recipes or topology.
 
 export const PAGE_SIZE = 50;

@@ -252,7 +252,7 @@ const STATEMENTS = [
   `alter table invite_requests add column if not exists leave_token_hash text`,
   `alter table invite_requests drop column if exists note`,
   `create index if not exists invite_requests_email_idx on invite_requests (lower(email), status)`,
-  // Admin tools (docs/specs/admin-tools.md §2.9).
+  // Admin tools (docs/specs/finished/admin-tools.md §2.9).
   `create table if not exists admin_events (
   id bigserial primary key,
   admin_email text not null,
