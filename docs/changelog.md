@@ -10,6 +10,10 @@ What changed in the console, the Round switch, and the Simple switch. Newest fir
 
 The console has no version number. Each heading is the day the change went live.
 
+### 2026-09-27
+
+- The footer has a **Sponsor** link. The console stays free; sponsoring on GitHub helps pay for its development.
+
 ### 2026-09-26
 
 - **Accounts.** The console can now host more than one person. Sign in with **Google**, **GitHub** or a **6-digit code** sent to your email; there is no password to remember. Sign-up is by invitation for now, and anyone can ask for an invite from the sign-in page. Everyone is signed out once by this update; sign in again with the same email and all your switches are there. Consoles without email set up keep signing in with the password.

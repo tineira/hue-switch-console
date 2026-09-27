@@ -67,6 +67,16 @@ export function SiteFooter() {
         >
           Source (AGPL-3.0)
         </a>
+        <span aria-hidden="true">·</span>
+        {/* A plain link out, never an in-app payment: donations keep the Vercel Hobby plan non-commercial. */}
+        <a
+          href="https://github.com/sponsors/tineira"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={TEXT_LINK}
+        >
+          Sponsor
+        </a>
       </div>
     </footer>
   );
