@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Shell } from "@/app/shell";
 import { ThemePicker } from "@/app/theme-picker";
 import { getSessionUser } from "@/lib/auth";
-import { CONSOLE_CREDITS, THANKS } from "@/lib/credits";
+import { CONSOLE_CREDITS, SPONSOR_URL, THANKS } from "@/lib/credits";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { currentCredits, type CreditEntry, type CurrentCredits } from "@/lib/firmware";
@@ -124,6 +124,22 @@ async function CreditsContent() {
           )}
         </Section>
       ))}
+
+      <Section id="sponsor" title="Support the project">
+        <p className="max-w-2xl text-sm text-muted">
+          The console and the switch firmware are free and open source, and stay that way. If they
+          are useful to you, you can{" "}
+          <a
+            href={SPONSOR_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-filament hover:underline"
+          >
+            sponsor the project on GitHub
+          </a>
+          . Sponsorship helps pay for development and does not unlock anything.
+        </p>
+      </Section>
 
       <Section id="trademarks" title="Trademarks">
         <p className="max-w-2xl text-sm text-muted">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SPONSOR_URL } from "@/lib/credits";
 
 const PROFILE_LINK = "rounded p-1 text-muted transition-colors hover:text-foreground";
 const TEXT_LINK = "hover:text-foreground hover:underline";
@@ -68,9 +69,8 @@ export function SiteFooter() {
           Source (AGPL-3.0)
         </a>
         <span aria-hidden="true">·</span>
-        {/* A plain link out, never an in-app payment: donations keep the Vercel Hobby plan non-commercial. */}
         <a
-          href="https://github.com/sponsors/tineira"
+          href={SPONSOR_URL}
           target="_blank"
           rel="noopener noreferrer"
           className={TEXT_LINK}

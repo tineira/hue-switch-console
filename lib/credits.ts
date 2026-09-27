@@ -3,7 +3,11 @@ import type { CreditEntry } from "@/lib/firmware";
 
 // Credits page content (docs/specs/finished/credits.md §2.2).
 
-export type Thanks = { name: string; role: string; url: string };
+// GitHub Sponsors page, linked from the footer and Credits. Always a plain link out, never an
+// in-app payment: donations keep the Vercel Hobby plan non-commercial.
+export const SPONSOR_URL = "https://github.com/sponsors/tineira";
+
+export type Thanks ={ name: string; role: string; url: string };
 
 export const THANKS: Thanks[] = [
   { name: "Vercel", role: "Hosting and deploys for the console.", url: "https://vercel.com" },
