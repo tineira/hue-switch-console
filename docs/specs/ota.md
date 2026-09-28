@@ -162,7 +162,7 @@ The new app confirms itself only after its first successful console poll (`200` 
 - [x] User flashes `0.6.0` by USB on one board
 - [x] A `0.6.1` release; user offers it from the console; the row turns `current` with a fresh `seen`
 - [x] Cancel before the next poll: the switch does not download
-- [ ] Power cut during the download: the switch boots the old firmware, reports `ota_error`, and a later retry succeeds
+- [x] Power cut during the download: the switch boots the old firmware, reports `ota_error`, and a later retry succeeds
 
 ### Round (`hue-round-switch`)
 
