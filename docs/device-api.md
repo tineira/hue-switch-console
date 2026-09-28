@@ -265,9 +265,9 @@ Simple switch (firmware ≥ 0.3.0):
 ```
 
 - `channels[]` lists only the channels the user configured. A pin that is not
-  listed does nothing. `kind` is `maintained` (toggle switch) or `momentary`
+  listed does nothing. `kind` is `maintained` (wall switch) or `momentary`
   (push button); the user picks it, not the firmware.
-- The console **derives** the recipes from each channel: a toggle switch gets
+- The console **derives** the recipes from each channel: a wall switch gets
   `on` + `off` on its target and, if it has scenes, `double_click` →
   `recall_scene`; a push button gets `short` → `toggle` plus its `double_click`
   and `hold` actions, when set.
@@ -345,7 +345,7 @@ Unknown MAC for this key’s account: `404`.
 | `target` | `{ rtype: light \| grouped_light, rid }` for `on` / `off` / `toggle` / `dim` |
 | `targets[]` | 1–8 `{ rtype: scene, rid, name }` for `recall_scene` |
 
-A toggle switch's and a push button's `double_click` are always a scene list.
+A wall switch's and a push button's `double_click` are always a scene list.
 A push button's `hold` is `off` on the group's `grouped_light` (only when the
 click target is one light) or `dim`: ramp the target with Clip v2
 `dimming_delta` while held, `stop` on release, alternating up and down
@@ -422,12 +422,18 @@ Content-Type: application/json
 }
 ```
 
-A channel left out is not used. `scenes` is the toggle-switch double-click
+A channel left out is not used. `scenes` is the wall-switch double-click
 list. For a push button, `double` is `null` or
 `{ "action": "recall_scene", "targets": ["<scene rid>", …] }`, and `hold` is
 `null`, `{ "action": "dim", "target": … }`, or
 `{ "action": "off", "target": { "rtype": "grouped_light", "rid": "<the group's>" } }`.
 On BOOT, `hold: null` means the 3 s press re-pairs with the Bridge.
+
+`label` is optional: the name the user gives the switch, shown only in the
+console and never sent to the board (`GET /api/device/config` leaves it out).
+A string is trimmed, and an empty string or `null` clears it. A channel sent
+without `label` keeps the name already stored, so a page opened before names
+existed cannot erase them. The response's `channels` carry `label`.
 
 Validation, with the `error` code:
 
@@ -437,6 +443,7 @@ Validation, with the `error` code:
 | `boot` is `momentary`; only `maintained` has `scenes`; only `momentary` has `double` / `hold`; `double` is a scene list; `hold` is `dim` or `off` | `channel_kind_not_allowed` |
 | `target` and a `dim` target are the group's `grouped_light` or one of its lights; an `off` hold targets the group's `grouped_light` | `target_outside_group` |
 | An `off` hold while the click target is already the whole group | `validation_error` |
+| `label` is a string or `null`, at most 40 characters after trimming | `validation_error` (a non-string is a 400 on the body) |
 | Every scene belongs to the group | `scene_outside_group` |
 | `group` is a room or zone in the snapshot; `scenes` holds 0–8, a `double` / `hold` list 1–8, no duplicates | `validation_error` |
 | Switch firmware is older than 0.3.0 | `409 firmware_update_required` |

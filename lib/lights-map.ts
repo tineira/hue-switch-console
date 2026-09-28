@@ -23,7 +23,7 @@ export type Target =
   | { k: "g"; key: string }
   | { k: "x"; id: string; type: "light" | "room" | "zone" | "room or zone" | "scene" };
 
-/** A Round page or a Simple input. Round pages have a `title`, and show as chips. */
+/** A Round page or a Simple input. Round pages and named Simple switches have a `title`, and show as chips. */
 export type Unit = { ctx: string; title: string | null; sub: string };
 
 export type MapSwitch = {
@@ -268,7 +268,7 @@ export function buildLightsModel(bridge: LoadedBridge, items: BridgeSwitch[]): L
         if (!config) continue;
         const u: Unit = {
           ctx: channel.label,
-          title: null,
+          title: config.label,
           sub: `GPIO ${channel.gpio} · ${kindLabel(config.kind)}`,
         };
         sw.units.push(u);

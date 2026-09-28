@@ -14,7 +14,7 @@ import type {
   TopologySnapshot,
 } from "@/lib/types";
 
-/** What a gesture card shows as its action. `onoff` is a toggle switch's lever. */
+/** What a gesture card shows as its action. `onoff` is a wall switch's lever. */
 export type GestureAction = "none" | "toggle" | "on" | "off" | "dim" | "onoff" | "scenes";
 
 /** "all of Kitchen" for a room or zone, otherwise the light's name. */
@@ -124,7 +124,7 @@ export function lowerFirst(text: string): string {
 }
 
 /**
- * The gestures a configured Simple channel has. `wantsScenes` shows a toggle switch's
+ * The gestures a configured Simple channel has. `wantsScenes` shows a wall switch's
  * double-click as Cycle scenes while the editor has it open with no scene picked yet.
  */
 export function simpleChannelGestures(

@@ -104,9 +104,15 @@ export async function PUT(
     if (!snapshot) {
       return jsonError(400, "no topology snapshot for this bridge");
     }
+    // A body without `label` (a tab opened before names existed) keeps the stored name.
+    const stored = await listSimpleChannels(sw.id);
     const resolved = parsed.map((config) => ({
       ...config,
       group: resolvePageGroup(snapshot, config.group) ?? config.group,
+      label:
+        config.label === undefined
+          ? (stored.find((item) => item.id === config.id)?.label ?? null)
+          : config.label,
     }));
     const invalid = validateSimpleChannels(resolved, sw.channels ?? [], snapshot);
     if (invalid) return jsonError(400, invalid.error, { details: invalid.details });

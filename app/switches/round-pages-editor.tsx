@@ -5,10 +5,9 @@ import {
   choiceClass,
   type GestureOption,
 } from "@/app/switches/gesture-picker";
+import { RoomGrid } from "@/app/switches/room-grid";
 import { RoundDial } from "@/app/switches/round-dial";
 import {
-  groupLights,
-  groupScenes,
   summarizeGesture,
   targetInGroup,
   type GestureAction,
@@ -92,13 +91,6 @@ function defaultRecipes(pageId: string, group: PageGroup): RoundRecipe[] {
 function recipeAction(recipe: RoundRecipe | undefined): GestureAction {
   if (!recipe) return "none";
   return recipe.action === "recall_scene" ? "scenes" : recipe.action;
-}
-
-function roomCounts(room: Room, snapshot: TopologySnapshot): string {
-  const group = pageGroupFromRoom(room);
-  const lights = group ? groupLights(snapshot, group).length : 0;
-  const scenes = group ? groupScenes(snapshot, group).length : 0;
-  return `${room.rtype === "zone" ? "Zone" : "Room"} · ${lights} light${lights === 1 ? "" : "s"} · ${scenes} scene${scenes === 1 ? "" : "s"}`;
 }
 
 export function RoundPagesEditor({
@@ -450,25 +442,11 @@ export function RoundPagesEditor({
                   it off. You can change both after.
                 </p>
               </div>
-              {rooms.length === 0 ? (
-                <p className="text-sm text-muted">
-                  No rooms or zones in this snapshot. A page needs a Hue group.
-                </p>
-              ) : (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
-                  {rooms.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => createPage(item)}
-                      className="flex flex-col items-start gap-0.5 rounded-[10px] border border-line bg-background px-3.5 py-3 text-left hover:border-filament"
-                    >
-                      <span className="text-sm font-medium">{item.name}</span>
-                      <span className="text-xs text-muted">{roomCounts(item, snapshot)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <RoomGrid
+                snapshot={snapshot}
+                onPick={createPage}
+                empty="No rooms or zones in this snapshot. A page needs a Hue group."
+              />
               <button
                 type="button"
                 onClick={() => setAddingPage(false)}

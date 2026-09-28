@@ -2,7 +2,7 @@
 
 Console-only spec. It changes no device endpoint, payload or NVS key, so the cross-repo order in `AGENTS.md` does not apply. It is written as a spec because it changes the product model's UI (`docs/definitions.md`, "How the user assigns") and adds a console-only column.
 
-**Status:** approved (2026-09-28)
+**Status:** in progress (approved 2026-09-28)
 
 Mockup: [`simple-editor-v2/mockup.html`](simple-editor-v2/mockup.html). Open it in a browser. It is clickable, uses sample Hue data, and saves nothing.
 
@@ -156,16 +156,16 @@ All decided by the user on 2026-09-28.
 
 - [x] User answers §5 (2026-09-28)
 - [x] User approves this spec (2026-09-28)
-- [ ] `db/schema.sql`: `alter table simple_channels add column if not exists label text`; regenerate `lib/generated/schema.ts`
-- [ ] `PUT /api/switches/{mac}/channels`: optional `label` (trim, ≤ 40, empty → null, missing → keep); returned in `channels`
-- [ ] `SimpleChannelConfig.label`; `simpleChannelsEqual` compares it
-- [ ] `app/landing/simple-render.ts`: take a camera (`"iso"` | `"top"`), return pad and BOOT screen positions; landing overlay moves to its caller, unchanged on screen
-- [ ] Top / 3D toggle, remembered in `localStorage` (§3.1)
-- [ ] `app/switches/simple-channels-editor.tsx` rewritten per §3 (board drawing with pad overlay, switch list with the BOOT row first, add flow, selected switch, BOOT first-run screen and Hold per §3.4)
-- [ ] `app/switches/workspace.tsx`: "Save switches", new status line; drop the `openChannel` accordion state in favour of a selected switch
-- [ ] Firmware gates removed per §3.6
-- [ ] Copy per §3.5 in the editor, `lib/how-to.ts` and `docs/definitions.md` ("How the user assigns (console, Simple)")
-- [ ] `docs/changelog.md` entry
+- [x] `db/schema.sql`: `alter table simple_channels add column if not exists label text`; regenerate `lib/generated/schema.ts`
+- [x] `PUT /api/switches/{mac}/channels`: optional `label` (trim, ≤ 40, empty → null, missing → keep); returned in `channels`
+- [x] `SimpleChannelConfig.label`; `simpleChannelsEqual` compares it
+- [x] `app/landing/simple-render.ts`: take a camera (`"iso"` | `"top"`), return pad and BOOT screen positions; landing overlay moves to its caller, unchanged on screen
+- [x] Top / 3D toggle, remembered in `localStorage` (§3.1)
+- [x] `app/switches/simple-channels-editor.tsx` rewritten per §3 (board drawing with pad overlay, switch list with the BOOT row first, add flow, selected switch, BOOT first-run screen and Hold per §3.4)
+- [x] `app/switches/workspace.tsx`: "Save switches", new status line; drop the `openChannel` accordion state in favour of a selected switch
+- [x] Firmware gates removed per §3.6
+- [x] Copy per §3.5 in the editor, `lib/how-to.ts` and `docs/definitions.md` ("How the user assigns (console, Simple)")
+- [x] `docs/changelog.md` entry
 - [ ] Deployed; checked on production with a Simple board by the user (AGENTS.md: no local Playwright for `/switches`)
 
 ### Round (`hue-round-switch`)

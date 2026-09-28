@@ -19,7 +19,6 @@ import {
   isSimpleChannelStale,
   simpleChannelsEqual,
   supportsChannelTypes,
-  supportsHoldDim,
 } from "@/lib/simple-channels";
 import { BridgeContext } from "@/app/switches/bridge-context";
 import { minutesSince } from "@/lib/ago";
@@ -217,9 +216,8 @@ export function SwitchesWorkspace({
   const [editingMac, setEditingMac] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  // Only one gesture card, and one Simple channel row, open on the page at a time.
+  // Only one gesture card open on the page at a time.
   const [openGesture, setOpenGesture] = useState<string | null>(null);
-  const [openChannel, setOpenChannel] = useState<string | null>(null);
   // The switch the open cards, notice and rename form belong to. A tab or Back / Forward
   // changes the URL; reset them during render when it does.
   const [shownMac, setShownMac] = useState(selectedMac);
@@ -227,7 +225,6 @@ export function SwitchesWorkspace({
     setShownMac(selectedMac);
     setEditingMac(null);
     setOpenGesture(null);
-    setOpenChannel(null);
     setNotice(null);
     setError(null);
   }
@@ -351,7 +348,7 @@ export function SwitchesWorkspace({
       showNotice("Reverted to the last saved pages.");
     } else {
       setDrafts((current) => ({ ...current, [selected.mac]: saved[selected.mac] ?? [] }));
-      showNotice("Reverted to the last saved channels.");
+      showNotice("Reverted to the last saved switches.");
     }
     setError(null);
     setOpenGesture(null);
@@ -430,6 +427,7 @@ export function SwitchesWorkspace({
           scenes: config.scenes.map((item) => item.rid),
           double: config.double,
           hold: config.hold,
+          label: config.label?.trim() || null,
         })),
       }),
     });
@@ -440,7 +438,7 @@ export function SwitchesWorkspace({
       details?: string;
     };
     if (!res.ok) {
-      return { ok: false, error: body.details ?? body.error ?? "Could not save channels" };
+      return { ok: false, error: body.details ?? body.error ?? "Could not save switches" };
     }
     const next = body.channels ?? configs;
     setDrafts((current) => ({ ...current, [mac]: next }));
@@ -629,7 +627,7 @@ export function SwitchesWorkspace({
       ? "Unsaved changes"
       : round
         ? "Empty gestures do nothing."
-        : "Channels without a room do nothing.");
+        : "Unused pins do nothing.");
   const statusClass = notice
     ? notice.tone === "ok"
       ? "text-ok"
@@ -801,14 +799,12 @@ export function SwitchesWorkspace({
           {!round ? (
             <SimpleChannelsEditor
               key={selected.mac}
+              mac={selected.mac}
               channels={selected.channels}
               configs={simpleConfigs}
               snapshot={snapshot}
               firmware={supportsChannelTypes(selected.firmware)}
-              dimSupported={supportsHoldDim(selected.firmware)}
-              openChannel={openChannel}
               openGesture={openGesture}
-              onOpenChannel={setOpenChannel}
               onOpenGesture={setOpenGesture}
               onChange={(next) => setSimpleFor(selected.mac, next)}
               onNotice={(text) => showNotice(text)}
@@ -839,7 +835,7 @@ export function SwitchesWorkspace({
               disabled={!dirty || pending}
               className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50"
             >
-              {pending ? "Saving…" : round ? "Save pages" : "Save channels"}
+              {pending ? "Saving…" : round ? "Save pages" : "Save switches"}
             </button>
             <button
               type="button"

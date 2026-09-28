@@ -142,6 +142,9 @@ create table if not exists simple_channels (
 
 alter table simple_channels add column if not exists double_click jsonb;
 
+-- Console-only switch name (docs/specs/simple-editor-v2.md §2). Never sent to the board.
+alter table simple_channels add column if not exists label text;
+
 -- Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
 create table if not exists firmware_releases (
   id uuid primary key default gen_random_uuid(),

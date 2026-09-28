@@ -1,5 +1,5 @@
 // Simple channel model: group → type → target → gestures.
-// Spec: docs/specs/finished/simple-channel-types.md.
+// Specs: docs/specs/finished/simple-channel-types.md, docs/specs/simple-editor-v2.md.
 
 import {
   MAX_SCENE_LIST,
@@ -27,10 +27,10 @@ import type {
 /** First Simple firmware that reads `channels[]` from the config poll. */
 export const SIMPLE_MIN_FIRMWARE = "0.3.0";
 
-/** First Simple firmware that runs a `dim` hold. */
-export const SIMPLE_DIM_FIRMWARE = "0.4.0";
-
 export const BOOT_CHANNEL_ID = "boot";
+
+/** Longest switch name the console keeps (console only, never sent to the board). */
+export const SIMPLE_LABEL_MAX = 40;
 
 function atLeast(firmware: string | null | undefined, version: string): boolean {
   const cmp = compareVersions(firmware ?? "", version);
@@ -41,16 +41,12 @@ export function supportsChannelTypes(firmware: string | null | undefined): boole
   return atLeast(firmware, SIMPLE_MIN_FIRMWARE);
 }
 
-export function supportsHoldDim(firmware: string | null | undefined): boolean {
-  return atLeast(firmware, SIMPLE_DIM_FIRMWARE);
-}
-
 export function isBootChannel(channelId: string): boolean {
   return channelId === BOOT_CHANNEL_ID;
 }
 
 export function kindLabel(kind: ChannelKind): string {
-  return kind === "momentary" ? "Push button" : "Toggle switch";
+  return kind === "momentary" ? "Push button" : "Wall switch";
 }
 
 export function defaultSimpleChannel(
@@ -65,6 +61,7 @@ export function defaultSimpleChannel(
     scenes: [],
     double: null,
     hold: null,
+    label: null,
   };
 }
 
@@ -75,7 +72,13 @@ export function withGroup(
 ): SimpleChannelConfig {
   if (config.group.rid === group.rid) return config;
   const next = defaultSimpleChannel(config.id, group);
-  return { ...next, kind: config.kind };
+  return { ...next, kind: config.kind, label: config.label };
+}
+
+/** The same settings on another pin, after the user rewired the switch. BOOT has no pin to move. */
+export function withChannelId(config: SimpleChannelConfig, channelId: string): SimpleChannelConfig {
+  if (isBootChannel(config.id) || isBootChannel(channelId)) return config;
+  return { ...config, id: channelId };
 }
 
 /** Hold turn off only exists when the click controls less than the whole group. */
@@ -99,7 +102,7 @@ export function withKind(
   kind: ChannelKind,
 ): SimpleChannelConfig {
   if (isBootChannel(config.id) || config.kind === kind) return config;
-  // Carry a scene list across: toggle-switch double-click <-> push-button double-click.
+  // Carry a scene list across: wall-switch double-click <-> push-button double-click.
   if (kind === "momentary") {
     return {
       ...config,
@@ -281,6 +284,9 @@ export function validateSimpleChannels(
       return fail("invalid_channel", `channel ${config.id} is listed twice`);
     }
     seen.add(config.id);
+    if ((config.label ?? "").length > SIMPLE_LABEL_MAX) {
+      return fail("validation_error", `Switch names can be at most ${SIMPLE_LABEL_MAX} characters.`);
+    }
     const boot = isBootChannel(config.id);
     if (boot && config.kind !== "momentary") {
       return fail("channel_kind_not_allowed", "BOOT is always a push button.");
@@ -295,7 +301,7 @@ export function validateSimpleChannels(
       if (config.double || config.hold) {
         return fail(
           "channel_kind_not_allowed",
-          "A toggle switch has no hold, and its double-click only cycles scenes.",
+          "A wall switch has no hold, and its double-click only cycles scenes.",
         );
       }
       const scenesError = checkScenes(config.scenes, group, snapshot, "The double-click list");
@@ -434,6 +440,7 @@ export function simpleChannelsEqual(
           config.scenes.map((item) => item.rid),
           gestureKey(config.double),
           gestureKey(config.hold),
+          (config.label ?? "").trim(),
         ]),
       )
       .sort()

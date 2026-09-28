@@ -67,6 +67,8 @@ export type SimpleChannelConfig = {
   double: SimpleGesture | null;
   /** Hold (momentary only). On BOOT, null = re-pair with the Bridge. */
   hold: SimpleGesture | null;
+  /** Name the user gives the switch; console only, never sent to the board. */
+  label: string | null;
 };
 
 export type SimpleRecipe = {

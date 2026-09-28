@@ -27,7 +27,7 @@ The **display name** is edited by the user in the console (`switches.label`); it
 
 **Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/specs/finished/simple-channel-types.md`); both use the same wiring:
 
-- `maintained` — UI *Toggle switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states).
+- `maintained` — UI *Wall switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states).
 - `momentary` — UI *Push button*: press and release.
 
 Channels (declared by the firmware; closed = GPIO to GND, `INPUT_PULLUP`):
@@ -118,7 +118,7 @@ Not needed in v1: triple click, long-off, double_off. Noise and long wires eat t
 
 A switch is configured against its own Bridge only. **Switches** shows every switch in the account as tabs, grouped in one section per `bridgeid`; each switch has its own URL (`/switches/<mac>`), and tabs move between switches without losing unsaved changes (pages: `docs/specs/finished/page-structure.md`). **Lights** is read-only: per Bridge, which switch gestures reach each room, zone and light, directly or through a group. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
 
-- **Simple:** channels. Each one gets a room or zone, a type (toggle switch or push button) and a target. A toggle switch adds a double-click scene list; a push button adds a double-click and a hold action. A channel without a room does nothing.
+- **Simple:** switches, one per channel the user wired, plus BOOT. Each one gets a room or zone, a type (wall switch or push button), a target and an optional name. A wall switch adds a double-click scene list; a push button adds a double-click and a hold action. A pin with no switch does nothing. Layout: `docs/specs/simple-editor-v2.md`.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.
 
 The XIAO is not drawn inside the Hue tree. A gesture's light chips are the whole room or zone (`grouped_light`) and its lights; its scene chips are that group's scenes, shown only for Cycle scenes.
@@ -155,25 +155,26 @@ Wipe round→simple **only** if the body carries an explicit `"product": "simple
 
 ### How the user assigns (console, Simple)
 
-1. Pick a **switch** tab, then open a **channel** row (one at a time).
-2. For each **channel**, pick a **room or zone**. "Not used" = the channel does nothing.
-3. Pick a **type**: Toggle switch or Push button. BOOT is always a push button.
-4. Pick the **target** on the On / Off or Click card: the whole group (`grouped_light`) or one light of it. It defaults to the whole group.
-5. Toggle switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: **double-click** is nothing or Cycle scenes; **hold** is nothing, **Dim** (firmware ≥ 0.4.0), or Turn off the whole room or zone (offered only when the click target is one light). On BOOT, a hold set to nothing re-pairs with the Bridge.
+1. Pick a **switch** tab. The editor shows the board picture (Top or 3D) and the list of switches, with **BOOT** pinned at the top.
+2. Start with **BOOT**, the button on the board: pick a room or zone and save, then press BOOT to test before wiring anything. BOOT is always a push button.
+3. **Add a switch** for each wired input: what it is (Wall switch or Push button), which free pin (D0–D5), which room or zone. Clicking a free pad on the board picture starts the same flow with that pin chosen.
+4. Pick the **target** on the On / Off or Click card: the whole group (`grouped_light`) or one light of it. It defaults to the whole group. Optionally give the switch a **name** (console only, never sent to the board).
+5. Wall switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: **double-click** is nothing or Cycle scenes; **hold** is nothing, **Dim**, or Turn off the whole room or zone (offered only when the click target is one light). On BOOT, a hold set to nothing is shown as **Re-pair with the Bridge**, and any other hold replaces re-pairing.
+6. **Wired as → Change** switches the type or moves the switch to another free pin after rewiring. **Remove switch** deletes it; on BOOT, **Clear BOOT settings** goes back to re-pairing.
 
 | Type | Gesture | What it does |
 | --- | --- | --- |
-| Toggle switch | lever closes / opens | `on` / `off` the target (automatic) |
-| Toggle switch | double-click | next scene in the list; empty list → `on` (the lever ends up; the console says "Does nothing") |
+| Wall switch | lever closes / opens | `on` / `off` the target (automatic) |
+| Wall switch | double-click | next scene in the list; empty list → `on` (the lever ends up; the console says "Does nothing") |
 | Push button | click | `toggle` the target (automatic) |
 | Push button | double-click | next scene in the list; nothing = no-op |
 | Push button | hold | dim, or turn off the whole group; nothing = no-op (BOOT: re-pair) |
 
 If the target is one light, a scene still applies to the whole group; the console warns.
 
-Each channel row sums up its gestures in words (not UUIDs): *"On / Off: lever up turns on, down turns off all of Living · Double-click: cycles Relax → Bright"*.
+Each gesture card sums up its gesture in words (not UUIDs): *"Lever up turns on, down turns off all of Living"*, *"Cycles Relax → Bright"*.
 
-Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only toggle switches have a scene list; only push buttons have double-click and hold actions. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
+Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only wall switches have a scene list; only push buttons have double-click and hold actions. A name is at most 40 characters. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
 
 `rev` increments. That is what the poll compares.
 
@@ -303,7 +304,7 @@ Production host: `https://hue.tineira.com`. In Cloudflare, CNAME `hue` to the ta
 - HTTPS to `hue.tineira.com`: **verify** the certificate (Arduino bundle). `setInsecure()` only against the Hue Bridge.
 - Poll: without recipes ~1 min; with recipes at boot and every **1 h**. GPIO / finger never wait.
 - Orphan recipe: kept; the Hue PUT fails; the UI marks it stale.
-- Toggle-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. Sign-up only as `SIGNUP_MODE` allows.
+- Wall-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. Sign-up only as `SIGNUP_MODE` allows.
 - Minimal API:
   - Human (session cookie): sign in; CRUD API keys; GET topology; PATCH switch label; PUT channels (Simple) / PUT pages (Round).
   - Device (Bearer key): `POST /api/device/register`; `GET /api/device/config?mac=` (Simple: `rev`, `product`, `channels[]`, `recipes[]`; Round: `pages`, `pageId`, axis, timeout).

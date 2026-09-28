@@ -132,7 +132,7 @@ export function setupSteps(product: Product): SetupStep[] {
       href: "/switches",
       body: round
         ? "Pick the switch, click **Add page** and choose a room or zone. Tap toggles its lights and double tap turns them off. Click **Save pages**."
-        : "Pick the switch, then choose a room or zone for each input and its type: **Toggle switch** for a wall lever, **Push button** for a momentary button. Click **Save channels**.",
+        : "Pick the switch and start with **BOOT**, the button on the board: choose a room or zone, click **Save switches**, and press BOOT to test. Then click **Add a switch** for each switch or button you wired: what it is (**Wall switch** or **Push button**), which pin, which room.",
       shows: round
         ? { caption: "Ready", visual: { face: "ready" } }
         : { caption: "Ready", visual: { led: "heart" } },
@@ -156,10 +156,10 @@ export function tasks(product: Product): Task[] {
       : {
           title: "Change what a button does",
           steps: [
-            "Open **Switches** and pick the switch from the tabs.",
-            "**Toggle switch**: the lever turns the lights on and off. A quick off-on flick steps through the scenes under **Double-click**.",
+            "Open **Switches**, pick the switch from the tabs, then pick the switch you want from the list or on the board picture.",
+            "**Wall switch**: the lever turns the lights on and off. A quick off-on flick steps through the scenes under **Double-click**.",
             "**Push button**: a click toggles the lights. **Double-click** can step through scenes. **Hold** can dim (it ramps while you hold and stops when you let go) or turn off the whole room.",
-            "Every gesture targets the whole room until you click **Change** to pick one light or scenes. Click **Save channels**.",
+            "Every gesture targets the whole room until you click **Change** to pick one light or scenes. Give it a name so you can tell switches apart. Click **Save switches**.",
           ],
         },
     round
@@ -173,14 +173,15 @@ export function tasks(product: Product): Task[] {
       : {
           title: "Use the BOOT button",
           steps: [
-            "BOOT is always a push button.",
-            "Its **Hold** pairs the board with the Bridge again, unless you give Hold another action.",
+            "BOOT, the button on the board, is at the top of the switch list. It is the easiest way to test the switch before you wire anything.",
+            "It works like any push button: click and double-click do what you set.",
+            "Its **Hold** pairs the board with the Bridge again, unless you give Hold another action. **Clear BOOT settings** brings re-pairing back.",
           ],
         },
     {
       title: "Make a change apply right away",
       steps: [
-        `Each gesture says in words what it will do. Click **${round ? "Save pages" : "Save channels"}**, and the switch picks the change up the next time it checks in, within an hour.`,
+        `Each gesture says in words what it will do. Click **${round ? "Save pages" : "Save switches"}**, and the switch picks the change up the next time it checks in, within an hour.`,
         "To apply it now, unplug the board and plug it back in.",
         "Changes on several switches? **Save all** saves them together.",
       ],

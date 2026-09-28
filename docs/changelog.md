@@ -10,6 +10,12 @@ What changed in the console, the Round switch, and the Simple switch. Newest fir
 
 The console has no version number. Each heading is the day the change went live.
 
+### 2026-09-28
+
+- The **Simple** editor on Switches is redesigned. It shows the board, in 3D or from the top, with each pin you use lit up; click a free pin to add a switch there. The list shows only the switches you wired, and you can name each one ("Front door") so two switches in one room are easy to tell apart. **Add a switch** asks what you wired (a **wall switch**, the new name for a toggle switch, or a push button), which pin, and which room. **Wired as** lets you change the type or move a switch to another pin after rewiring.
+- **BOOT**, the button on the board, sits at the top of the list and is the suggested first step: pick a room, save and press it to check everything works before you wire anything. It works like any push button; only its **Hold** is special, because by default it pairs the board with the Bridge again.
+- Named Simple switches show by name on **Lights**.
+
 ### 2026-09-27
 
 - The **home page** puts the Round together as you scroll: the antenna, pin headers and screen come together, the screen wakes up, and you can tap, double tap, drag the ring or swipe right on it. The Simple card shows the board with its inputs, BOOT button and status LED next to its try-it wall switch. The trust strip and the closing band link to the source on GitHub.

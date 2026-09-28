@@ -547,6 +547,7 @@ function mapSimpleChannel(row: Record<string, unknown>): SimpleChannelConfig {
     scenes: asTargets(row.scenes),
     double: asSimpleGesture(row.double_click),
     hold: asSimpleGesture(row.hold),
+    label: typeof row.label === "string" && row.label ? row.label : null,
   };
 }
 
@@ -555,7 +556,7 @@ export async function listSimpleChannels(
 ): Promise<SimpleChannelConfig[]> {
   const rows = await sql()`
     select channel_id, kind, group_rtype, group_rid, grouped_light_rid,
-           target_rtype, target_rid, scenes, double_click, hold
+           target_rtype, target_rid, scenes, double_click, hold, label
     from simple_channels
     where switch_id = ${switchId}
     order by channel_id asc
@@ -572,7 +573,7 @@ export async function replaceSimpleChannels(
     await sql()`
       insert into simple_channels (
         switch_id, channel_id, kind, group_rtype, group_rid, grouped_light_rid,
-        target_rtype, target_rid, scenes, double_click, hold
+        target_rtype, target_rid, scenes, double_click, hold, label
       )
       values (
         ${switchId}, ${config.id}, ${config.kind}, ${config.group.rtype},
@@ -580,7 +581,8 @@ export async function replaceSimpleChannels(
         ${config.target.rtype}, ${config.target.rid},
         ${JSON.stringify(config.scenes)}::jsonb,
         ${config.double ? JSON.stringify(config.double) : null}::jsonb,
-        ${config.hold ? JSON.stringify(config.hold) : null}::jsonb
+        ${config.hold ? JSON.stringify(config.hold) : null}::jsonb,
+        ${config.label}
       )
     `;
   }

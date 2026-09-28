@@ -308,13 +308,24 @@ function parseSimpleGesture(raw: unknown): SimpleGesture | null | undefined {
   return { action: row.action, target };
 }
 
+/** A channel from the request. `label` is undefined when the body omits it: keep the stored name. */
+export type ParsedSimpleChannel = Omit<SimpleChannelConfig, "label"> & { label?: string | null };
+
+/** Optional switch name: trimmed, empty → null, missing → undefined. False when not a string or null. */
+function parseChannelLabel(raw: unknown): string | null | undefined | false {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  if (typeof raw !== "string") return false;
+  return raw.trim() || null;
+}
+
 /**
  * `PUT /api/switches/{mac}/channels` body. `group.groupedLightRid` is left empty;
  * the route resolves it from the snapshot.
  */
-export function parseSimpleChannels(raw: unknown): SimpleChannelConfig[] | null {
+export function parseSimpleChannels(raw: unknown): ParsedSimpleChannel[] | null {
   if (!Array.isArray(raw)) return null;
-  const configs: SimpleChannelConfig[] = [];
+  const configs: ParsedSimpleChannel[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") return null;
     const row = item as Record<string, unknown>;
@@ -329,7 +340,10 @@ export function parseSimpleChannels(raw: unknown): SimpleChannelConfig[] | null 
     const scenes = parseSceneRids(row.scenes);
     const double = parseSimpleGesture(row.double);
     const hold = parseSimpleGesture(row.hold);
-    if (!target || !scenes || double === undefined || hold === undefined) return null;
+    const label = parseChannelLabel(row.label);
+    if (!target || !scenes || double === undefined || hold === undefined || label === false) {
+      return null;
+    }
     configs.push({
       id,
       kind: row.kind,
@@ -338,6 +352,7 @@ export function parseSimpleChannels(raw: unknown): SimpleChannelConfig[] | null 
       scenes,
       double,
       hold,
+      ...(label === undefined ? {} : { label }),
     });
   }
   return configs;
