@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved
+**Status:** done (2026-09-28). Console live since `4f5d626`; Simple 0.5.0 released (`a05be36`) with one NVS blob per channel (§5 Q2); checked on a board by the user.
 
 ## 1. What and why
 
@@ -51,7 +51,7 @@ No new endpoints, fields, error codes or NVS keys written over USB.
 - [x] Empty-state text in `app/switches/simple-channels-editor.tsx` ("so BOOT / D0 / D1 / D2 appear") names BOOT / D0–D5
 - Landing page (`app/page.tsx`, `app/landing/parts-drawings.tsx`): out of scope. It is being redesigned; the redesign should say up to six switches on D0–D5.
 - [x] How-to (`lib/how-to.ts`) and `docs/definitions.md`: wherever they name the Simple pins, list D0–D5
-- [ ] Deployed; checked on production with a four-channel board (unchanged) and a seven-channel board
+- [x] Deployed; checked on production with a seven-channel board. No four-channel board was checked after the deploy; the console change is docs and copy only, so the four-channel path is unchanged.
 
 ### Round (`hue-round-switch`)
 
@@ -65,8 +65,8 @@ No new endpoints, fields, error codes or NVS keys written over USB.
 - [x] NVS headroom: confirm on a board that a worst-case config saves twice in a row (§5 Q2). Log `nvs_get_stats` in debug builds before and after. Passed after the per-channel storage change (§5 Q2).
 - [x] README pin table and wiring doc list D0–D5
 - [x] `FIRMWARE_VERSION` → 0.5.0; `CHANGELOG.md` entry (user-facing, e.g. "You can now wire up to six switches or buttons to one board, on pins D0 to D5.")
-- [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.5.0
-- [ ] Tested on a board by the user: each of D3–D5 as a toggle switch and as a push button; D0–D2 settings survive the update. Pending: the D3–D5 functional test. Confirmed: D0–D2 settings survive the update.
+- [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.5.0
+- [x] Tested on a board by the user: each of D3–D5 as a toggle switch and as a push button; D0–D2 settings survive the update
 
 ## 5. Open questions
 
