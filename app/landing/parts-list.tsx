@@ -14,7 +14,9 @@ export function PartRow({
   href,
   active = false,
   dim = false,
-}: Part & { n: string; active?: boolean; dim?: boolean }) {
+  open = false,
+  onToggle,
+}: Part & { n: string; active?: boolean; dim?: boolean; open?: boolean; onToggle?: () => void }) {
   return (
     <li
       className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 border-b border-line px-[18px] py-3 transition-opacity duration-300 last:border-b-0"
@@ -29,14 +31,34 @@ export function PartRow({
       </span>
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
-          <span className="text-[15px] font-semibold">{name}</span>
+          {onToggle ? (
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-expanded={open}
+              className="flex cursor-pointer items-center gap-1.5 text-left text-[15px] font-semibold hover:text-filament"
+            >
+              {name}
+              <span aria-hidden="true" className={`text-xs text-muted transition-transform duration-300 ${open ? "rotate-180" : ""}`}>
+                ▾
+              </span>
+            </button>
+          ) : (
+            <span className="text-[15px] font-semibold">{name}</span>
+          )}
           {href ? (
             <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-filament hover:underline">
               seeedstudio.com ↗
             </a>
           ) : null}
         </div>
-        <span className="text-sm leading-normal text-muted">{text}</span>
+        {onToggle ? (
+          <div className="lv-part-text" data-open={open ? "" : undefined}>
+            <span className="text-sm leading-normal text-muted">{text}</span>
+          </div>
+        ) : (
+          <span className="text-sm leading-normal text-muted">{text}</span>
+        )}
       </div>
     </li>
   );

@@ -85,6 +85,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
   const [lit, setLit] = useState(false);
   const [tryMode, setTryMode] = useState(false);
   const [hinted, setHinted] = useState(false);
+  const [openParts, setOpenParts] = useState<number[]>([]);
   const [r, setR] = useState<RoundState>({ page: 0, on: false, level: 64, scene: 0 });
 
   const pRef = useRef(0);
@@ -313,7 +314,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
 
       <div className="lv-card-col min-w-0">
         <div ref={stickyRef} className="lv-sticky">
-          <article className="w-full overflow-hidden rounded-[20px] border border-line bg-cream">
+          <article className="relative w-full overflow-hidden rounded-[20px] border border-line bg-cream">
             <div className={CARD_HEADER}>
               <span>{noGL ? "Round · exploded view" : label}</span>
               <span aria-live="polite" className={tryMode ? "normal-case tracking-normal" : undefined}>
@@ -371,29 +372,28 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                   }}
                   className={`absolute touch-none select-none rounded-full ${tryMode ? "cursor-pointer" : "pointer-events-none"}`}
                 />
-                <div
-                  inert={!tryMode}
-                  className={`absolute inset-x-0 bottom-0 p-3 transition-[opacity,transform] duration-400 ${
-                    tryMode ? "opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-                  }`}
-                >
-                  <GesturePills
-                    className="justify-center"
-                    gestures={[
-                      { gesture: "tap", action: "on / off", run: rTap },
-                      { gesture: "double tap", action: "scenes", run: rScene },
-                      { gesture: "drag the ring", action: "dim", run: rDim },
-                      { gesture: "swipe", action: "next room", run: () => rSwipe(1) },
-                    ]}
-                  />
-                </div>
+              </div>
+            )}
+            {noGL ? null : (
+              // Over the drawing's bottom edge on desktop; its own row under the drawing on phones (globals.css).
+              <div inert={!tryMode} data-live={tryMode ? "" : undefined} className="lv-gestures p-3">
+                <GesturePills
+                  className="justify-center"
+                  gestures={[
+                    { gesture: "tap", action: "on / off", run: rTap },
+                    { gesture: "double tap", action: "scenes", run: rScene },
+                    { gesture: "drag the ring", action: "dim", run: rDim },
+                    { gesture: "swipe", action: "next room", run: () => rSwipe(1) },
+                  ]}
+                />
               </div>
             )}
           </article>
           <p className="lv-caption min-h-[18px] text-center font-mono text-xs text-muted">
             {CAPTIONS[step === null ? "none" : String(step)]}
           </p>
-          {/* Phones: the parts stay pinned under the card; the one being assembled gets the ring. */}
+          {/* Phones: the parts stay pinned under the card; the one being assembled gets the ring.
+              Rows start closed; tapping a name opens its description. */}
           <article className="lv-phone-parts overflow-hidden rounded-[20px] border border-line bg-cream">
             <div className={CARD_HEADER}>
               <span>Round · 3 parts</span>
@@ -405,6 +405,8 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                   n={String(i + 1)}
                   {...part}
                   active={step === i + 1 || step === "wake"}
+                  open={openParts.includes(i)}
+                  onToggle={() => setOpenParts((o) => (o.includes(i) ? o.filter((x) => x !== i) : [...o, i]))}
                 />
               ))}
             </ol>

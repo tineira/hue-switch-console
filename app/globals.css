@@ -719,6 +719,13 @@ option {
 }
 .lv-caption,
 .lv-phone-parts { display: none; }
+/* Try-it gesture buttons: over the drawing's bottom edge, shown once Try-it starts. */
+.lv-gestures { position: absolute; inset-inline: 0; bottom: 0; transition: opacity 400ms, transform 400ms; }
+.lv-gestures:not([data-live]) { opacity: 0; transform: translateY(8px); pointer-events: none; }
+/* Pinned phone parts list: a row's description opens when its name is tapped. */
+.lv-part-text { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms ease; }
+.lv-part-text[data-open] { grid-template-rows: 1fr; }
+.lv-part-text > * { min-height: 0; overflow: hidden; }
 /* Landing offers Ember and Paper only; any other stored theme shows as Ember. */
 .lv-only-paper { display: none; }
 [data-theme="paper"] .lv-only-paper { display: block; }
@@ -754,9 +761,10 @@ option {
      the pin lets go; the spacer below it is the scroll distance (120svh, as before). */
   .lv-card-col::after { content: ""; display: block; height: 120svh; }
   .lv-sticky { height: auto; justify-content: flex-start; padding: 12px 0; gap: 10px; }
-  /* The parts list is pinned under the card (about 540px with caption and padding); the
-     drawing takes what is left of the visible screen, down to 200px. */
-  .lv-draw { max-height: min(58svh, max(200px, calc(100svh - 540px))); }
+  .lv-draw { max-height: 58svh; }
+  /* Gesture buttons get their own row under the drawing, dimmed until Try-it starts. */
+  .lv-gestures { position: static; border-top: 1px solid var(--line); }
+  .lv-gestures:not([data-live]) { opacity: 0.38; transform: none; }
   .lv-caption,
   .lv-phone-parts { display: block; }
 }
