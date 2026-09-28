@@ -17,6 +17,8 @@ the Hue Bridge (self-signed).
 
 Local dev: `CONSOLE_URL=http://localhost:3000` (no TLS).
 
+The installer writes the console URL over USB (`HUESET url`). Firmware accepts any `http://` or `https://` URL that fits, with no host allowlist. This is on purpose: self-hosted consoles, often plain `http://` on a LAN, must work. Writing it needs physical USB access, which can reflash the board anyway.
+
 ## Auth
 
 Device endpoints use the console API key, not a Hue application key and not a
