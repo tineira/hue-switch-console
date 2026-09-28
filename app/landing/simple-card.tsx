@@ -8,7 +8,7 @@ import type { SimpleDrawing } from "@/app/landing/simple-render";
 import { webglAvailable } from "@/app/landing/webgl";
 
 // Simple card: parts and a try-it wall plate on the left, a still line drawing of the XIAO on
-// the right. Spec: docs/specs/handoff_landing_v2/README.md §3.
+// the right. Spec: docs/specs/finished/handoff_landing_v2/README.md §3.
 
 const W = 520;
 const H = 440;

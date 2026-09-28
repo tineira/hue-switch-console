@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { PAGES, clamp, type RoundState } from "@/app/landing/demo-data";
 
 // three.js models of the Round's parts and the XIAO, shared by the Round and Simple cards
-// (docs/specs/handoff_landing_v2). Everything is built in mm; each part's root is scaled to metres.
+// (docs/specs/finished/handoff_landing_v2). Everything is built in mm; each part's root is scaled to metres.
 // Plain three.js, no React: only the landing page's 3D islands import it, through a dynamic import().
 
 export const MM = 0.001;

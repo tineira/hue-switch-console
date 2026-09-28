@@ -10,7 +10,7 @@ import { webglAvailable } from "@/app/landing/webgl";
 
 // Hero + Round story: one scroll track. The hero and then the parts story sit on the left; the
 // Round card stays pinned on the right while scrolling puts the Round together, then its screen
-// comes on and can be tried. Spec: docs/specs/handoff_landing_v2/README.md §2 and round-assembly.md.
+// comes on and can be tried. Spec: docs/specs/finished/handoff_landing_v2/README.md §2 and round-assembly.md.
 
 type Step = null | 1 | 2 | 3 | "wake" | "try";
 

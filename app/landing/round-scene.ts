@@ -19,7 +19,7 @@ import {
 
 // The Round card's 3D scene: the assembly drawn twice (line and shaded) into two stacked
 // canvases, cross-faded by scroll progress p, with an SVG overlay of balloons and guides.
-// Spec: docs/specs/handoff_landing_v2/round-assembly.md.
+// Spec: docs/specs/finished/handoff_landing_v2/round-assembly.md.
 
 export type ScreenEllipse = { cx: number; cy: number; rx: number; ry: number };
 
