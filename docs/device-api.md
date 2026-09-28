@@ -9,7 +9,7 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA + firmware in the switch list: `docs/specs/ota.md` (approved, not implemented; Simple first).
+Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA (Simple first): `docs/specs/ota.md`. The console side is live; Simple firmware ≥ 0.6.0 uses it.
 
 Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
@@ -126,7 +126,7 @@ Content-Type: application/json
 | `channels` | yes when registering a GPIO board | `{ id, gpio, label }`: the pins the board has. Empty array allowed. Round Display may send `[]`. Simple firmware < 0.3.0 also sends `kind` (`maintained` \| `momentary`); it is accepted and ignored, because the user picks each channel's type in the console. Simple firmware ≥ 0.5.0 sends `boot` and `d0`–`d5` (seven channels); older Simple firmware sends `boot`, `d0`–`d2` |
 | `product` | current firmware: yes | `"round"` or `"simple"`. Current boards **send** it. If omitted (old boards), inferred from empty/`c1` channels (round) vs GPIO (simple). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
-| `firmware` | no | Free string |
+| `firmware` | no | Free string. Stored as the switch's firmware; the config poll also reports it (below) |
 | `label` | no | Console display name on **first** insert only. Later registers do not overwrite a name set in the UI. Not sent to the board |
 | `bridge_ip` | no | LAN address of the Bridge; not a tunnel |
 | `source` | no | Default `xiao` if `mac` is set, else `unknown`. Script uses `push-from-bridge` |
@@ -161,7 +161,7 @@ for old boards.
 
 ---
 
-## `GET /api/device/config?mac={mac}&rev={rev}`
+## `GET /api/device/config?mac={mac}&rev={rev}&firmware={version}&ota_error={code}`
 
 Poll recipes. Does **not** return topology. Compare `rev` to NVS: if remote
 `rev` is greater, **replace** the whole local set (channels, pages, recipes).
@@ -183,11 +183,36 @@ it to show whether the switch runs the saved config
 (`docs/specs/finished/config-sync.md`). Missing or malformed `rev` is ignored: no `400`,
 and the response is always a full `200`.
 
+`firmware` is the running `FIRMWARE_VERSION` (`major.minor.patch`). Simple
+firmware ≥ 0.6.0 sends it on every poll. The console stores it as the switch's
+firmware, as register does, so the switch list learns about an update without
+waiting for a register. Missing or malformed: ignored, the stored value is kept.
+
+`ota_error` is sent on the first poll after a failed update (§ `ota` below),
+then dropped. Codes:
+
+| Code | Meaning |
+| --- | --- |
+| `heap` | Not enough memory to start the download |
+| `connect` | Could not open the connection (DNS, TCP, TLS) |
+| `http` | The image URL answered non-200 |
+| `size` | Length ≠ `ota.size`, or larger than the app slot |
+| `write` | Flash write failed |
+| `sha` | sha256 of the image ≠ `ota.sha256` |
+| `boot` | The new image did not confirm itself; the bootloader went back to the previous slot |
+
+Unknown codes are stored for display, never a `400`.
+
 ### Response `204`
 
 When the request carries `rev` and it equals the revision the console would
 serve, the response is `204 No Content` with no body. Keep NVS; there is
 nothing to parse.
+
+Exception: while the switch has an update offered (`ota` below), the answer is
+a full `200` even when `rev` matches. Read `ota` whatever the `rev`; the rest of
+the body follows the usual rule (NVS is written only when remote `rev` is
+greater).
 
 A `rev` **greater** than the console's means the switch holds a config from a
 console state that no longer exists (e.g. after a database restore). If the
@@ -352,6 +377,35 @@ click target is one light) or `dim`: ramp the target with Clip v2
 (`docs/specs/finished/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
 keeps the rest, so its hold does nothing (BOOT still re-pairs).
 
+### `ota` (Simple firmware ≥ 0.6.0)
+
+Present only when the switch's owner offered an update on Switches
+(`docs/specs/ota.md`):
+
+```json
+"ota": {
+  "version": "0.6.1",
+  "url": "/firmware/simple/0.6.1/firmware.bin",
+  "sha256": "9f2c…",
+  "size": 1234567
+}
+```
+
+- The offer is always the product's current release. The console sends it only
+  while the switch reports a different `firmware`, and drops it once the switch
+  reports that version.
+- `url` is a path. Resolve it against the console URL in NVS, so the download
+  uses the same scheme, host and TLS trust as this poll.
+- It is the app image (`firmware.bin`) only: write it to the inactive OTA slot,
+  check `size` and sha256 before making it bootable, never erase NVS.
+- Apply only when `ota.version` ≠ `FIRMWARE_VERSION`. Absent `ota` means no
+  offer, never "remove firmware".
+- On failure, report `ota_error` on the next poll and retry the same offer at
+  most once an hour; after `size` or `sha`, not until reboot.
+- The new image confirms itself after its first successful poll (`200` or
+  `204`). If it restarts before that, the bootloader returns to the old slot,
+  which reports `ota_error=boot`.
+
 Poll cadence (firmware):
 
 - At boot and after re-pairing: poll now.
@@ -379,9 +433,12 @@ Used by the console UI. Firmware does not call these.
 | `DELETE` | `/api/keys/{id}` | revoke |
 | `GET` | `/api/bridges` | snapshots |
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
-| `GET` | `/api/switches` | registered boards; each has `applied_rev` (or `null`), `config_status` (`current` \| `pending` \| `not_applied` \| `ahead` \| `unknown`), `rev_changed_at`, `next_poll_at` |
-| `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, label, key_revoked, applied_rev, config_status, next_poll_at }` (Setup reads it after Detect) |
+| `GET` | `/api/switches` | registered boards; each has `applied_rev` (or `null`), `config_status` (`current` \| `pending` \| `not_applied` \| `ahead` \| `unknown`), `rev_changed_at`, `next_poll_at`, and for OTA `firmware_seen_at`, `latest_firmware`, `ota_capable`, `ota_status` (`current` \| `behind` \| `offered` \| `failed` \| `ahead` \| `unknown`), `ota_offered_at`, `ota_error`, `ota_error_at` |
+| `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, label, key_revoked, applied_rev, config_status, next_poll_at, firmware_seen_at, latest_firmware, ota_capable, ota_status, ota_offered_at, ota_error }` (Setup reads it after Detect) |
 | `POST` | `/api/switches/sync` | the Switches page calls it every 30 s while visible: every switch polls fast for 15 min; returns `{ switches: [{ mac, rev, applied_rev, config_status, rev_changed_at, next_poll_at, last_seen_at }] }` |
+| `POST` | `/api/switches/{mac}/ota` | offer the product's current release to this switch (a downgrade when the switch is ahead). `409 not_ota_capable` (not Simple ≥ 0.6.0), `409 no_release`, `409 already_current` |
+| `DELETE` | `/api/switches/{mac}/ota` | cancel the offer |
+| `POST` | `/api/bridges/{bridgeid}/ota` | offer the current release to every switch on that Bridge that can update over Wi-Fi and is behind (never a downgrade); returns `{ offered: [mac…] }` |
 | `POST` | `/api/switches/{mac}/replace-config` | switch `ahead`: moves `rev` past the switch's so its next poll takes the console's config. `409 not_ahead` otherwise |
 | `PATCH` | `/api/switches/{mac}` | `{ "label": "Kitchen" }` or `{ "label": null }` — console display name |
 | `GET` | `/api/switches/{mac}/channels` | Simple channel settings (`channelSettings[]`). Round Display: `400 round_switch_uses_pages` |

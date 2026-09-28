@@ -65,6 +65,11 @@ alter table switches add column if not exists apply_failed boolean not null defa
 alter table switches add column if not exists rev_changed_at timestamptz;
 alter table switches add column if not exists editing_until timestamptz;
 alter table switches add column if not exists next_poll_at timestamptz;
+-- OTA (docs/specs/ota.md §2.5): when the poll last reported a version, and the pending offer.
+alter table switches add column if not exists firmware_seen_at timestamptz;
+alter table switches add column if not exists ota_offered_at timestamptz;
+alter table switches add column if not exists ota_error text;
+alter table switches add column if not exists ota_error_at timestamptz;
 alter table switches drop constraint if exists switches_product_check;
 alter table switches add constraint switches_product_check check (product in ('simple', 'round'));
 alter table switches drop constraint if exists switches_page_swipe_axis_check;

@@ -12,6 +12,7 @@ import {
   withSceneNames,
 } from "@/lib/pages";
 import { configStatus } from "@/lib/config-sync";
+import { otaCapable } from "@/lib/ota";
 import { snapshotFromJson } from "@/lib/recipes";
 import { sql } from "@/lib/sql";
 import type {
@@ -67,6 +68,10 @@ export type SwitchRow = {
   rev_changed_at: string | null;
   editing_until: string | null;
   next_poll_at: string | null;
+  firmware_seen_at: string | null;
+  ota_offered_at: string | null;
+  ota_error: string | null;
+  ota_error_at: string | null;
 };
 
 export type BridgeRow = {
@@ -150,6 +155,10 @@ function mapSwitch(row: Record<string, unknown>): SwitchRow {
     rev_changed_at: row.rev_changed_at ? String(row.rev_changed_at) : null,
     editing_until: row.editing_until ? String(row.editing_until) : null,
     next_poll_at: row.next_poll_at ? String(row.next_poll_at) : null,
+    firmware_seen_at: row.firmware_seen_at ? String(row.firmware_seen_at) : null,
+    ota_offered_at: row.ota_offered_at ? String(row.ota_offered_at) : null,
+    ota_error: row.ota_error ? String(row.ota_error) : null,
+    ota_error_at: row.ota_error_at ? String(row.ota_error_at) : null,
   };
 }
 
@@ -200,6 +209,11 @@ export function toSwitchPublic(row: SwitchRow): SwitchPublic {
     config_status: configStatus(row),
     rev_changed_at: row.rev_changed_at,
     next_poll_at: row.next_poll_at,
+    firmware_seen_at: row.firmware_seen_at,
+    ota_capable: otaCapable(row),
+    ota_offered_at: row.ota_offered_at,
+    ota_error: row.ota_error,
+    ota_error_at: row.ota_error_at,
   };
 }
 
@@ -312,7 +326,7 @@ export async function getSwitchByMac(userId: string, mac: string) {
     select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
            api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
            screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
-           editing_until, next_poll_at
+           editing_until, next_poll_at, firmware_seen_at, ota_offered_at, ota_error, ota_error_at
     from switches
     where user_id = ${userId} and mac = ${mac}
     limit 1
@@ -326,7 +340,7 @@ export async function listSwitches(userId: string) {
     select id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
            api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
            screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
-           editing_until, next_poll_at
+           editing_until, next_poll_at, firmware_seen_at, ota_offered_at, ota_error, ota_error_at
     from switches
     where user_id = ${userId}
     order by last_seen_at desc nulls last
@@ -384,15 +398,17 @@ export async function upsertSwitch(row: {
   const rows = await sql()`
     insert into switches (
       user_id, mac, label, firmware, bridgeid, bridge_ip, channels, api_key_id, rev, last_seen_at,
-      product, page_swipe_axis, page_seq, screen_timeout_sec
+      product, page_swipe_axis, page_seq, screen_timeout_sec, firmware_seen_at
     )
     values (
       ${row.userId}, ${row.mac}, ${label}, ${firmware}, ${row.bridgeid}, ${bridgeIp},
       ${channels}::jsonb, ${row.apiKeyId}, ${rev}, now(),
-      ${product}, ${axis}, ${pageSeq}, ${screenTimeoutSec}
+      ${product}, ${axis}, ${pageSeq}, ${screenTimeoutSec},
+      case when ${row.firmware ?? null}::text is null then null else now() end
     )
     on conflict (user_id, mac) do update set
       firmware = excluded.firmware,
+      firmware_seen_at = coalesce(excluded.firmware_seen_at, switches.firmware_seen_at),
       bridgeid = excluded.bridgeid,
       bridge_ip = excluded.bridge_ip,
       channels = excluded.channels,
@@ -410,7 +426,7 @@ export async function upsertSwitch(row: {
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
               api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
               screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
-              editing_until, next_poll_at
+              editing_until, next_poll_at, firmware_seen_at, ota_offered_at, ota_error, ota_error_at
   `;
   const sw = mapSwitch(rows[0] as Record<string, unknown>);
   if (sw.product === "round") {
@@ -432,7 +448,7 @@ export async function updateSwitchLabel(
     returning id, user_id, mac, label, firmware, bridgeid, bridge_ip, channels,
               api_key_id, rev, last_seen_at, created_at, product, page_swipe_axis, page_seq,
               screen_timeout_sec, applied_rev, served_rev, apply_failed, rev_changed_at,
-              editing_until, next_poll_at
+              editing_until, next_poll_at, firmware_seen_at, ota_offered_at, ota_error, ota_error_at
   `;
   if (!rows[0]) return null;
   return mapSwitch(rows[0] as Record<string, unknown>);
@@ -457,11 +473,31 @@ export async function recordConfigPoll(input: {
   applyFailed: boolean;
   servedRev: number;
   pollSec: number;
+  /** The `firmware` the poll reported; null keeps the stored one (docs/specs/ota.md §2.1). */
+  firmware: string | null;
+  otaError: string | null;
+  /** The switch runs the current release: the offer is done (§3.2). */
+  otaDone: boolean;
 }) {
   await sql()`
     update switches
     set last_seen_at = now(),
         api_key_id = ${input.apiKeyId},
+        firmware = coalesce(${input.firmware}::text, firmware),
+        firmware_seen_at = case
+          when ${input.firmware}::text is null then firmware_seen_at
+          else now()
+        end,
+        ota_offered_at = case when ${input.otaDone} then null else ota_offered_at end,
+        ota_error = case
+          when ${input.otaDone} then null
+          else coalesce(${input.otaError}::text, ota_error)
+        end,
+        ota_error_at = case
+          when ${input.otaDone} then null
+          when ${input.otaError}::text is null then ota_error_at
+          else now()
+        end,
         applied_rev = coalesce(${input.reported}::integer, applied_rev),
         apply_failed = case
           when ${input.reported}::integer is null then apply_failed
@@ -470,6 +506,18 @@ export async function recordConfigPoll(input: {
         served_rev = ${input.servedRev},
         next_poll_at = now() + make_interval(secs => ${input.pollSec})
     where id = ${input.id}
+  `;
+}
+
+/** Offers the current release to these switches, or cancels their offers (docs/specs/ota.md §2.4). */
+export async function setOtaOffer(userId: string, switchIds: string[], offered: boolean) {
+  if (switchIds.length === 0) return;
+  await sql()`
+    update switches
+    set ota_offered_at = case when ${offered} then now() else null end,
+        ota_error = null,
+        ota_error_at = null
+    where user_id = ${userId} and id = any(${switchIds}::uuid[])
   `;
 }
 
