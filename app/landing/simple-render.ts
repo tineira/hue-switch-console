@@ -3,7 +3,7 @@ import { MM, applyLineStyle, buildHeaders, buildXiao, cssVar, disposeTree, lineS
 
 // Still line drawings of the XIAO: render once into an image, work out the overlay from the
 // same camera, then dispose the renderer. No live WebGL context stays open. The landing's Simple
-// card draws its callouts; the Simple editor (docs/specs/simple-editor-v2.md §3.1) gets the pad
+// card draws its callouts; the Simple editor (docs/specs/finished/simple-editor-v2.md §3.1) gets the pad
 // and BOOT positions and draws its own clickable markers.
 
 export type SimpleDrawing = { src: string; overlay: string };

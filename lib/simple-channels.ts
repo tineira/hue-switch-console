@@ -1,5 +1,5 @@
 // Simple channel model: group → type → target → gestures.
-// Specs: docs/specs/finished/simple-channel-types.md, docs/specs/simple-editor-v2.md.
+// Specs: docs/specs/finished/simple-channel-types.md, docs/specs/finished/simple-editor-v2.md.
 
 import {
   MAX_SCENE_LIST,

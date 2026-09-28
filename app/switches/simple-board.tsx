@@ -2,7 +2,7 @@
 
 // The Simple board picture on Switches: the landing's XIAO line drawing (the user's Claude Design
 // model), with clickable D0–D5 pads and BOOT drawn from the same camera.
-// Spec: docs/specs/simple-editor-v2.md §3.1.
+// Spec: docs/specs/finished/simple-editor-v2.md §3.1.
 
 import type { BoardDrawing, XiaoView } from "@/app/landing/simple-render";
 import { webglAvailable } from "@/app/landing/webgl";

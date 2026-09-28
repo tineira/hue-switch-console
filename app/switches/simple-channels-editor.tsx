@@ -1,7 +1,7 @@
 "use client";
 
 // The Simple editor on Switches: the board picture, the switches the user wired (BOOT first),
-// an add flow, and one editor for the selected switch. Spec: docs/specs/simple-editor-v2.md.
+// an add flow, and one editor for the selected switch. Spec: docs/specs/finished/simple-editor-v2.md.
 
 import {
   GesturePicker,

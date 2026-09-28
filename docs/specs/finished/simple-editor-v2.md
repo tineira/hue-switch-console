@@ -2,7 +2,7 @@
 
 Console-only spec. It changes no device endpoint, payload or NVS key, so the cross-repo order in `AGENTS.md` does not apply. It is written as a spec because it changes the product model's UI (`docs/definitions.md`, "How the user assigns") and adds a console-only column.
 
-**Status:** in progress (approved 2026-09-28)
+**Status:** done (2026-09-28). Live since `c8c83fc`, with follow-ups `148406a` ("Save changes"), `8dd30c4` ("Remove *name*") and `ba852d1` (Dim follows Click); checked on production with a Simple board by the user.
 
 Mockup: [`simple-editor-v2/mockup.html`](simple-editor-v2/mockup.html). Open it in a browser. It is clickable, uses sample Hue data, and saves nothing.
 
@@ -167,7 +167,7 @@ All decided by the user on 2026-09-28.
 - [x] Firmware gates removed per §3.6
 - [x] Copy per §3.5 in the editor, `lib/how-to.ts` and `docs/definitions.md` ("How the user assigns (console, Simple)")
 - [x] `docs/changelog.md` entry
-- [ ] Deployed; checked on production with a Simple board by the user (AGENTS.md: no local Playwright for `/switches`)
+- [x] Deployed; checked on production with a Simple board by the user (AGENTS.md: no local Playwright for `/switches`)
 
 ### Round (`hue-round-switch`)
 

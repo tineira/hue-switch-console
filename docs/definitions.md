@@ -118,7 +118,7 @@ Not needed in v1: triple click, long-off, double_off. Noise and long wires eat t
 
 A switch is configured against its own Bridge only. **Switches** shows every switch in the account as tabs, grouped in one section per `bridgeid`; each switch has its own URL (`/switches/<mac>`), and tabs move between switches without losing unsaved changes (pages: `docs/specs/finished/page-structure.md`). **Lights** is read-only: per Bridge, which switch gestures reach each room, zone and light, directly or through a group. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
 
-- **Simple:** switches, one per channel the user wired, plus BOOT. Each one gets a room or zone, a type (wall switch or push button), a target and an optional name. A wall switch adds a double-click scene list; a push button adds a double-click and a hold action. A pin with no switch does nothing. Layout: `docs/specs/simple-editor-v2.md`.
+- **Simple:** switches, one per channel the user wired, plus BOOT. Each one gets a room or zone, a type (wall switch or push button), a target and an optional name. A wall switch adds a double-click scene list; a push button adds a double-click and a hold action. A pin with no switch does nothing. Layout: `docs/specs/finished/simple-editor-v2.md`.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.
 
 The XIAO is not drawn inside the Hue tree. A gesture's light chips are the whole room or zone (`grouped_light`) and its lights; its scene chips are that group's scenes, shown only for Cycle scenes.
