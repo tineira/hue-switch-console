@@ -210,12 +210,15 @@ export async function createRoundScene(
     if (hw / hh > a) hh = hw / a;
     else hw = hh * a;
     let cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    // The finished Round ends centered in the frame, above any Try-it buttons covering its bottom.
+    // The finished Round ends centered in the frame, above any Try-it buttons covering its bottom,
+    // then a little lower (leaving room for the Touch-the-screen hint above it): 4.5% of the
+    // frame with the buttons over the drawing (desktop), 8% with them below it (phones).
     if (tF > 0) {
       const [rx0, rx1, ry0, ry1] = viewExtent(round.setFromObject(shade.disp));
       const inset = hooks.bottomInset?.() ?? 0;
       cx = lerp(cx, (rx0 + rx1) / 2, tF);
-      cy = lerp(cy, (ry0 + ry1) / 2 - (hh * inset) / H, tF);
+      const lower = 2 * hh * (inset > 0 ? 0.045 : 0.08);
+      cy = lerp(cy, (ry0 + ry1) / 2 - (hh * inset) / H + lower, tF);
     }
     cam.left = cx - hw;
     cam.right = cx + hw;
