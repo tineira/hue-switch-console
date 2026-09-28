@@ -47,10 +47,10 @@ No new endpoints, fields, error codes or NVS keys written over USB.
 
 ### Console (`hue-switch-console`)
 
-- [ ] `docs/device-api.md` updated as in §2
-- [ ] Empty-state text in `app/switches/simple-channels-editor.tsx` ("so BOOT / D0 / D1 / D2 appear") names BOOT / D0–D5
+- [x] `docs/device-api.md` updated as in §2
+- [x] Empty-state text in `app/switches/simple-channels-editor.tsx` ("so BOOT / D0 / D1 / D2 appear") names BOOT / D0–D5
 - Landing page (`app/page.tsx`, `app/landing/parts-drawings.tsx`): out of scope. It is being redesigned; the redesign should say up to six switches on D0–D5.
-- [ ] How-to (`lib/how-to.ts`) and `docs/definitions.md`: wherever they name the Simple pins, list D0–D5
+- [x] How-to (`lib/how-to.ts`) and `docs/definitions.md`: wherever they name the Simple pins, list D0–D5
 - [ ] Deployed; checked on production with a four-channel board (unchanged) and a seven-channel board
 
 ### Round (`hue-round-switch`)

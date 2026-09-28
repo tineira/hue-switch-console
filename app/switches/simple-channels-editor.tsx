@@ -146,7 +146,7 @@ export function SimpleChannelsEditor({
       <div className="border-t border-line px-5 py-4">
         <p className="text-sm text-muted">
           This board registered without channels. Re-register from the firmware
-          so BOOT / D0 / D1 / D2 appear.
+          so BOOT and its D pins (D0–D5 on current firmware) appear.
         </p>
       </div>
     );
