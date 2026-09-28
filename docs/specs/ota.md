@@ -155,7 +155,7 @@ The new app confirms itself only after its first successful console poll (`200` 
 ### Simple (`hue-simple-switch`)
 
 - [x] Heap test (§4.1) — numbers recorded in §6, sequential or update-mode chosen
-- [ ] `firmware=` on every poll; `ota_error=` once after a failure
+- [x] `firmware=` on every poll; `ota_error=` once after a failure
 - [x] Apply `ota` per §4.2, confirm per §4.3
 - [x] `FIRMWARE_VERSION` → `0.6.0`; `CHANGELOG.md` entry (user-facing wording)
 - [x] Release uploaded; `/firmware/simple/manifest.json` shows `0.6.0`
@@ -184,6 +184,8 @@ The new app confirms itself only after its first successful console poll (`200` 
    | Lowest since boot (register: Bridge snapshot + POST) | 93.6 KB | — |
 
    The 0.5.0 `firmware.bin` (1,269,872 bytes) downloaded in 5.5–5.8 s over the console client with verified TLS; the sha256 matched the published one, and every Hue call during the download returned 200. A Hue TLS call costs ~40–50 KB. **Decision: §4.1 step 2 (sequential download in the console task).** The update-only reboot mode (step 3) is not built.
+
+2. **`size` error text on Switches (console, to fix).** A power cut or restart during the download is reported as `ota_error=size` (bytes received ≠ `ota.size`, §2.1), and so is a download that stops early. Simple ≥ 0.6.1 reports it at the next boot. Switches then says "the image size was wrong", which reads as a bad image when the image was fine and only the download was cut off. Seen in the 0.6.1 → 0.6.2 power-cut test (2026-09-28). Suggested wording: "the download was incomplete or the wrong size". Console-only wording change (`lib/ota.ts`); the code stays `size`.
 
 ## 7. v2: Round
 
