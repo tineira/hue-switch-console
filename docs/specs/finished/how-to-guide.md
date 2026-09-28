@@ -4,7 +4,7 @@ Console-only spec. Process: `AGENTS.md` → "Cross-repo changes" (only the spec 
 
 **Status:** done. Pushed to production; the open questions are answered (§9).
 
-Design reference: `hue-switch-console/docs/specs/design_handoff_lights_map/How-to Guide.dc.html` (Claude Design handoff, Ember theme; committed under the Lights handoff's folder name). The design is the reference for layout, copy and behaviour. Colours in it are Ember literals: the code uses theme tokens (§6).
+Design reference: `docs/specs/finished/design_handoff_how_to_guide/How-to Guide.dc.html` (Claude Design handoff, Ember theme). The design is the reference for layout, copy and behaviour. Colours in it are Ember literals: the code uses theme tokens (§6).
 
 ## 1. What and why
 
