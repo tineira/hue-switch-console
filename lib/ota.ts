@@ -57,7 +57,8 @@ export function otaErrorText(code: string | null): string {
     case "http":
       return "the console did not serve the image";
     case "size":
-      return "the image size was wrong";
+      // Also a power cut or restart mid-download (docs/specs/ota.md §6 item 2).
+      return "the download was incomplete or the wrong size";
     case "write":
       return "writing the flash failed";
     case "sha":

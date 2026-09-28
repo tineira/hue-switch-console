@@ -833,6 +833,7 @@ export function SwitchesWorkspace({
                   status={otaFor(selected)}
                   latest={latestFor(selected)}
                   usbUpdate={updateFor(selected)}
+                  firmware={syncFor(selected).firmware}
                   mac={selected.mac}
                   busy={otaBusy === selected.mac}
                   onOffer={() => offerOta(selected)}
@@ -1009,12 +1010,14 @@ const PILL =
 
 /**
  * The firmware pill next to a switch's name (docs/specs/ota.md §3.1): a Wi-Fi update,
- * downgrade or cancel when the switch has an OTA client, or a link to Setup for USB.
+ * downgrade or cancel when the switch has an OTA client, a link to Setup for USB, or
+ * "Latest firmware" when the switch runs the current release.
  */
 function OtaControl({
   status,
   latest,
   usbUpdate,
+  firmware,
   mac,
   busy,
   onOffer,
@@ -1023,12 +1026,21 @@ function OtaControl({
   status: OtaStatus | null;
   latest: string;
   usbUpdate: string | null;
+  firmware: string | null;
   mac: string;
   busy: boolean;
   onOffer: () => void;
   onCancel: () => void;
 }) {
   const offerClass = `${PILL} border-filament/50 text-filament hover:bg-filament-soft`;
+  // Any product, OTA or not: it runs the release Setup installs.
+  if (compareVersions(firmware ?? "", latest) === 0) {
+    return (
+      <span title={`Runs ${latest}, the current release`} className={`${PILL} border-ok/40 text-ok`}>
+        Latest firmware
+      </span>
+    );
+  }
   if (status === null) {
     return usbUpdate ? (
       <Link
