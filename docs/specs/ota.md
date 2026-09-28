@@ -154,7 +154,7 @@ The new app confirms itself only after its first successful console poll (`200` 
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] Heap test (§4.1) — numbers recorded in §6, sequential or update-mode chosen
+- [x] Heap test (§4.1) — numbers recorded in §6, sequential or update-mode chosen
 - [ ] `firmware=` on every poll; `ota_error=` once after a failure
 - [ ] Apply `ota` per §4.2, confirm per §4.3
 - [ ] `FIRMWARE_VERSION` → `0.6.0`; `CHANGELOG.md` entry (user-facing wording)
@@ -174,7 +174,16 @@ The new app confirms itself only after its first successful console poll (`200` 
 
 ## 6. Open questions
 
-1. **Heap test results.** To be filled in by the Simple session; decides §4.1 step 2 or 3.
+1. **Heap test results** (answered 2026-09-28, Simple 0.5.0 build with temporary logging, XIAO ESP32-C6, 44 lights / 19 rooms+zones / 123 scenes, console `https://hue.tineira.com`). A sampler task read free heap and the largest free block every 10 ms:
+
+   | Phase | Lowest free heap | Lowest largest block |
+   | --- | --- | --- |
+   | Idle, after register | ~254 KB | 147 KB |
+   | Config poll (TLS open) | 153 KB (with a Hue dim running) | 131 KB |
+   | Download after closing the poll, with Hue GET/PUTs (toggle, dim start/stop) in flight | 142.5 KB | 118.8 KB |
+   | Lowest since boot (register: Bridge snapshot + POST) | 93.6 KB | — |
+
+   The 0.5.0 `firmware.bin` (1,269,872 bytes) downloaded in 5.5–5.8 s over the console client with verified TLS; the sha256 matched the published one, and every Hue call during the download returned 200. A Hue TLS call costs ~40–50 KB. **Decision: §4.1 step 2 (sequential download in the console task).** The update-only reboot mode (step 3) is not built.
 
 ## 7. v2: Round
 
