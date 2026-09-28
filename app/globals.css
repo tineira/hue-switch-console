@@ -750,8 +750,10 @@ option {
   .lv-track { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .lv-hero { min-height: 0; padding: 56px 0 40px; }
   .lv-story-wrap { display: none; }
-  .lv-card-col { height: 220svh; }
-  .lv-sticky { justify-content: flex-start; padding-top: 12px; gap: 10px; }
+  /* The pinned card is only as tall as its content, so no empty half-screen scrolls by when
+     the pin lets go; the spacer below it is the scroll distance (120svh, as before). */
+  .lv-card-col::after { content: ""; display: block; height: 120svh; }
+  .lv-sticky { height: auto; justify-content: flex-start; padding-top: 12px; gap: 10px; }
   .lv-draw { max-height: 58svh; }
   .lv-caption,
   .lv-phone-parts { display: block; }
@@ -761,6 +763,7 @@ option {
 @media (prefers-reduced-motion: reduce) {
   .lv-story-wrap,
   .lv-card-col { height: auto; }
+  .lv-card-col::after { display: none; }
   .lv-story,
   .lv-sticky { position: static; height: auto; }
   .lv-caption,
@@ -770,6 +773,7 @@ option {
 }
 .lv-track[data-flat] .lv-story-wrap,
 .lv-track[data-flat] .lv-card-col { height: auto; }
+.lv-track[data-flat] .lv-card-col::after { display: none; }
 .lv-track[data-flat] .lv-story,
 .lv-track[data-flat] .lv-sticky { position: static; height: auto; }
 .lv-track[data-flat] .lv-caption { display: none; }
