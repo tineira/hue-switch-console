@@ -77,6 +77,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
   const pulseRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
   const hitRef = useRef<HTMLDivElement>(null);
+  const gesturesRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<RoundScene | null>(null);
 
   const [noGL, setNoGL] = useState(false);
@@ -186,9 +187,14 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
         Object.assign(hit.style, { left: `${s.cx - rx}px`, top: `${s.cy - ry}px`, width: `${2 * rx}px`, height: `${2 * ry}px` });
       }
     };
+    // Desktop lays the Try-it buttons over the drawing's bottom edge; phones put them below it.
+    const bottomInset = () => {
+      const g = gesturesRef.current;
+      return g && getComputedStyle(g).position === "absolute" ? g.offsetHeight : 0;
+    };
     const els = { area: areaRef.current!, line: lineRef.current!, shade: shadeRef.current!, grid: gridRef.current!, svg: svgRef.current! };
     import("@/app/landing/round-scene")
-      .then((m) => m.createRoundScene(els, { onFrame, onFirstFrame: () => alive && setReady(true) }))
+      .then((m) => m.createRoundScene(els, { onFrame, onFirstFrame: () => alive && setReady(true), bottomInset }))
       .then((scene) => {
         if (!alive) return scene.dispose();
         sceneRef.current = scene;
@@ -376,7 +382,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
             )}
             {noGL ? null : (
               // Over the drawing's bottom edge on desktop; its own row under the drawing on phones (globals.css).
-              <div inert={!tryMode} data-live={tryMode ? "" : undefined} className="lv-gestures p-3">
+              <div ref={gesturesRef} inert={!tryMode} data-live={tryMode ? "" : undefined} className="lv-gestures p-3">
                 <GesturePills
                   className="justify-center"
                   gestures={[

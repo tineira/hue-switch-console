@@ -84,7 +84,12 @@ function buildAsm(screenMat: THREE.Material) {
 
 export async function createRoundScene(
   els: Els,
-  hooks: { onFrame: (screen: ScreenEllipse) => void; onFirstFrame: () => void },
+  hooks: {
+    onFrame: (screen: ScreenEllipse) => void;
+    onFirstFrame: () => void;
+    /** Pixels at the bottom of the drawing covered by the Try-it buttons (0 when they sit below it). */
+    bottomInset?: () => number;
+  },
 ): Promise<RoundScene> {
   const font = monoFont();
   await Promise.all([`400 110px ${font}`, `500 13px ${font}`].map((f) => document.fonts.load(f).catch(() => [])));
@@ -152,7 +157,7 @@ export async function createRoundScene(
 
   const DIR_A = new THREE.Vector3(1, 0.78, 1.15).normalize();
   const DIR_B = new THREE.Vector3(0, 1, 0.55).normalize();
-  const bbox = new THREE.Box3(), focus = new THREE.Box3();
+  const bbox = new THREE.Box3(), focus = new THREE.Box3(), round = new THREE.Box3();
   const corners = Array.from({ length: 8 }, () => new THREE.Vector3());
   const v3 = new THREE.Vector3();
 
@@ -160,6 +165,22 @@ export async function createRoundScene(
     const v = obj.localToWorld(v3.set(x, y, z)).project(cam);
     return [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H];
   };
+
+  // A box's extent in camera space: [x0, x1, y0, y1].
+  function viewExtent({ min, max }: THREE.Box3) {
+    let i = 0;
+    for (const x of [min.x, max.x])
+      for (const y of [min.y, max.y])
+        for (const z of [min.z, max.z]) corners[i++].set(x, y, z).applyMatrix4(cam.matrixWorldInverse);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const v of corners) {
+      x0 = Math.min(x0, v.x);
+      x1 = Math.max(x1, v.x);
+      y0 = Math.min(y0, v.y);
+      y1 = Math.max(y1, v.y);
+    }
+    return [x0, x1, y0, y1];
+  }
 
   function pose() {
     const tA = ss(0.1, 0.4, p), tH = ss(0.22, 0.5, p), tD = ss(0.4, 0.68, p);
@@ -183,24 +204,19 @@ export async function createRoundScene(
     cam.up.set(0, 1, 0);
     cam.lookAt(c);
     cam.updateMatrixWorld();
-    const { min, max } = bbox;
-    let i = 0;
-    for (const x of [min.x, max.x])
-      for (const y of [min.y, max.y])
-        for (const z of [min.z, max.z]) corners[i++].set(x, y, z).applyMatrix4(cam.matrixWorldInverse);
-    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-    for (const v of corners) {
-      x0 = Math.min(x0, v.x);
-      x1 = Math.max(x1, v.x);
-      y0 = Math.min(y0, v.y);
-      y1 = Math.max(y1, v.y);
-    }
+    const [x0, x1, y0, y1] = viewExtent(bbox);
     const pad = lerp(1.28, 1.3, ss(0.5, 0.85, p)), a = W / H;
     let hw = ((x1 - x0) / 2) * pad, hh = ((y1 - y0) / 2) * pad;
     if (hw / hh > a) hh = hw / a;
     else hw = hh * a;
-    // In the finished state the screen sits a little high, above the Try-it pills.
-    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 - hh * 0.14 * tF;
+    let cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    // The finished Round ends centered in the frame, above any Try-it buttons covering its bottom.
+    if (tF > 0) {
+      const [rx0, rx1, ry0, ry1] = viewExtent(round.setFromObject(shade.disp));
+      const inset = hooks.bottomInset?.() ?? 0;
+      cx = lerp(cx, (rx0 + rx1) / 2, tF);
+      cy = lerp(cy, (ry0 + ry1) / 2 - (hh * inset) / H, tF);
+    }
     cam.left = cx - hw;
     cam.right = cx + hw;
     cam.top = cy + hh;
