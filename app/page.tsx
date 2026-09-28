@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { StateVisual } from "@/app/how-to/visuals";
+import { GitHubMark } from "@/app/landing/github-mark";
 import type { Part } from "@/app/landing/parts-list";
 import { RoundTrack } from "@/app/landing/round-track";
 import { SimpleCard } from "@/app/landing/simple-card";
@@ -244,6 +245,16 @@ export default async function Home() {
               />
               <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em]">Hue Switch Console</span>
             </Link>
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub"
+              title="GitHub"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-cream hover:border-filament"
+            >
+              <GitHubMark className="h-[18px] w-[18px]" />
+            </a>
             <ThemeToggle />
             <Link
               href="/login"
@@ -299,8 +310,9 @@ export default async function Home() {
             <Link href={copy.primaryHref} className={PRIMARY}>
               {copy.primary}
             </Link>
-            <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className={SECONDARY}>
-              Source on GitHub ↗
+            <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className={`${SECONDARY} gap-2`}>
+              <GitHubMark className="h-[18px] w-[18px]" />
+              Source on GitHub
             </a>
             <Link
               href="/privacy"
