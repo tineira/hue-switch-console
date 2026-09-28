@@ -159,9 +159,9 @@ The new app confirms itself only after its first successful console poll (`200` 
 - [ ] Apply `ota` per §4.2, confirm per §4.3
 - [x] `FIRMWARE_VERSION` → `0.6.0`; `CHANGELOG.md` entry (user-facing wording)
 - [x] Release uploaded; `/firmware/simple/manifest.json` shows `0.6.0`
-- [ ] User flashes `0.6.0` by USB on one board
+- [x] User flashes `0.6.0` by USB on one board
 - [ ] A `0.6.1` release; user offers it from the console; the row turns `current` with a fresh `seen`
-- [ ] Cancel before the next poll: the switch does not download
+- [x] Cancel before the next poll: the switch does not download
 - [ ] Power cut during the download: the switch boots the old firmware, reports `ota_error`, and a later retry succeeds
 
 ### Round (`hue-round-switch`)
