@@ -15,6 +15,7 @@ The console has no version number. Each heading is the day the change went live.
 - The **Simple** editor on Switches is redesigned. It shows the board, in 3D or from the top, with each pin you use lit up; click a free pin to add a switch there. The list shows only the switches you wired, and you can name each one ("Front door") so two switches in one room are easy to tell apart. **Add a switch** asks what you wired (a **wall switch**, the new name for a toggle switch, or a push button), which pin, and which room. **Wired as** lets you change the type or move a switch to another pin after rewiring. **Remove** names the switch it removes ("Remove Front door") and frees its pin.
 - **BOOT**, the button on the board, sits at the top of the list and is the suggested first step: pick a room, save and press it to check everything works before you wire anything. It works like any push button; only its **Hold** is special, because by default it pairs the board with the Bridge again.
 - Named Simple switches show by name on **Lights**.
+- A push button's **Hold → Dim** always dims what its **Click** controls. Pick one light for Click and Dim follows it; there is no separate light to choose for Dim.
 - The save button on Switches reads **Save changes** for both Round and Simple. **Save all** still saves every switch with unsaved changes.
 
 ### 2026-09-27

@@ -429,6 +429,10 @@ list. For a push button, `double` is `null` or
 `{ "action": "off", "target": { "rtype": "grouped_light", "rid": "<the group's>" } }`.
 On BOOT, `hold: null` means the 3 s press re-pairs with the Bridge.
 
+A `dim` hold dims what Click controls: the console stores its `target` as the
+channel's `target`. A body with a different `dim` target is not refused; the
+console replaces it with the channel's `target` and returns the result.
+
 `label` is optional: the name the user gives the switch, shown only in the
 console and never sent to the board (`GET /api/device/config` leaves it out).
 A string is trimmed, and an empty string or `null` clears it. A channel sent
@@ -441,7 +445,7 @@ Validation, with the `error` code:
 | --- | --- |
 | `id` is a channel the switch registered, listed once | `invalid_channel` |
 | `boot` is `momentary`; only `maintained` has `scenes`; only `momentary` has `double` / `hold`; `double` is a scene list; `hold` is `dim` or `off` | `channel_kind_not_allowed` |
-| `target` and a `dim` target are the group's `grouped_light` or one of its lights; an `off` hold targets the group's `grouped_light` | `target_outside_group` |
+| `target` is the group's `grouped_light` or one of its lights (a `dim` hold takes the same target); an `off` hold targets the group's `grouped_light` | `target_outside_group` |
 | An `off` hold while the click target is already the whole group | `validation_error` |
 | `label` is a string or `null`, at most 40 characters after trimming | `validation_error` (a non-string is a 400 on the body) |
 | Every scene belongs to the group | `scene_outside_group` |

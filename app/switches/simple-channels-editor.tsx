@@ -90,7 +90,8 @@ function channelGestures(
       ...gesture,
       summary: boot && gesture.action === "none" ? BOOT_REPAIR_SUMMARY : gesture.summary,
       options: holdOptions,
-      fixedTarget: gesture.action === "off",
+      // Turn off is the whole group; Dim follows Click. Neither offers light chips.
+      fixedTarget: gesture.action === "off" || gesture.action === "dim",
     };
   });
 }
@@ -113,6 +114,8 @@ function gestureFromAction(
         target: { rtype: "grouped_light", rid: config.group.groupedLightRid },
       };
     case "dim":
+      // Dim dims what Click controls; it has no target of its own.
+      return { action: "dim", target: config.target };
     case "toggle":
     case "on": {
       const base = gestureTarget(current) ?? config.target;
@@ -806,7 +809,9 @@ function SwitchEditor({
       notes.push({ text: "With a double-click set, a single click waits a moment before it acts." });
     }
     if (config.hold?.action === "dim") {
-      notes.push({ text: "Hold ramps the light up or down, alternating each time. Let go to stop." });
+      notes.push({
+        text: "Hold dims whatever Click controls, up or down, alternating each time. Let go to stop.",
+      });
     }
     if (!boot && !holdOffAvailable(config) && !config.hold) {
       notes.push({ text: `Hold can turn off all of ${roomName} when Click controls a single light.` });

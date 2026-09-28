@@ -159,7 +159,7 @@ Wipe round→simple **only** if the body carries an explicit `"product": "simple
 2. Start with **BOOT**, the button on the board: pick a room or zone and save, then press BOOT to test before wiring anything. BOOT is always a push button.
 3. **Add a switch** for each wired input: what it is (Wall switch or Push button), which free pin (D0–D5), which room or zone. Clicking a free pad on the board picture starts the same flow with that pin chosen.
 4. Pick the **target** on the On / Off or Click card: the whole group (`grouped_light`) or one light of it. It defaults to the whole group. Optionally give the switch a **name** (console only, never sent to the board).
-5. Wall switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: **double-click** is nothing or Cycle scenes; **hold** is nothing, **Dim**, or Turn off the whole room or zone (offered only when the click target is one light). On BOOT, a hold set to nothing is shown as **Re-pair with the Bridge**, and any other hold replaces re-pairing.
+5. Wall switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: **double-click** is nothing or Cycle scenes; **hold** is nothing, **Dim** (always dims what Click controls; it has no target of its own), or Turn off the whole room or zone (offered only when the click target is one light). On BOOT, a hold set to nothing is shown as **Re-pair with the Bridge**, and any other hold replaces re-pairing.
 6. **Wired as → Change** switches the type or moves the switch to another free pin after rewiring. **Remove *name*** (e.g. "Remove Front door") deletes it and frees its pin; on BOOT, **Clear BOOT settings** goes back to re-pairing.
 
 | Type | Gesture | What it does |
@@ -168,7 +168,7 @@ Wipe round→simple **only** if the body carries an explicit `"product": "simple
 | Wall switch | double-click | next scene in the list; empty list → `on` (the lever ends up; the console says "Does nothing") |
 | Push button | click | `toggle` the target (automatic) |
 | Push button | double-click | next scene in the list; nothing = no-op |
-| Push button | hold | dim, or turn off the whole group; nothing = no-op (BOOT: re-pair) |
+| Push button | hold | dim the click target, or turn off the whole group; nothing = no-op (BOOT: re-pair) |
 
 If the target is one light, a scene still applies to the whole group; the console warns.
 

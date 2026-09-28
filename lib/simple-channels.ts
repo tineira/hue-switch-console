@@ -86,12 +86,23 @@ export function holdOffAvailable(config: SimpleChannelConfig): boolean {
   return config.target.rtype !== "grouped_light";
 }
 
-/** New click target; drops a hold turn off that would now repeat the click. */
+/**
+ * A dim hold dims what Click controls (docs/specs/finished/simple-hold-dim.md §1), so its
+ * target is always the channel's target. Other holds are left as they are.
+ */
+export function withDimOnTarget(config: SimpleChannelConfig): SimpleChannelConfig {
+  if (config.hold?.action !== "dim") return config;
+  const { rtype, rid } = config.hold.target;
+  if (rtype === config.target.rtype && rid === config.target.rid) return config;
+  return { ...config, hold: { action: "dim", target: config.target } };
+}
+
+/** New click target; a dim hold follows it, and a hold turn off that would now repeat the click is dropped. */
 export function withTarget(
   config: SimpleChannelConfig,
   target: RecipeTarget,
 ): SimpleChannelConfig {
-  const next = { ...config, target };
+  const next = withDimOnTarget({ ...config, target });
   return next.hold?.action === "off" && !holdOffAvailable(next)
     ? { ...next, hold: null }
     : next;
