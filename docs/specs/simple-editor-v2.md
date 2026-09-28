@@ -79,7 +79,7 @@ Then:
 
 - **Wired as** line: `Wall switch on D2 · Change`. Opening it shows the two kind cards and the pin chips. Changing the kind keeps today's `withKind` mapping and shows a notice naming what changed (e.g. "Double-click scenes moved over; hold cleared."). Changing the pin moves the settings to the free pin (§5.3).
 - **Gesture cards**: unchanged `GesturePicker` cards (On / Off and Double-click for a wall switch; Click, Double-click and Hold for a push button), with the same options and notes as today, minus the firmware-gated labels.
-- **Remove switch** at the bottom, with the same inline confirm as Round's "Delete page": "Remove Front door and its gestures?" · Remove · Keep.
+- **Remove *name*** at the bottom, naming the switch as the list does ("Remove Front door", or "Remove Kitchen · Push button" when unnamed), so it is clear the board stays. Inline confirm as Round's "Delete page": "Remove Front door? D2 becomes free and does nothing until you add a switch there." · Remove · Keep. Afterwards: "Removed Front door. D2 is free." Not "Delete switch" (the boards in the tabs are switches too) and not "Free pin" (the pin is a side effect, not the action).
 
 BOOT uses this same editor, with the differences in §3.4.
 
@@ -107,7 +107,7 @@ A board opens on BOOT when it has no D channel; otherwise on the first configure
 - **Wired as** is fixed text, no Change: "Push button · the BOOT button on the board". There is no type or pin to pick.
 - **Hold** card: nothing set reads **"Re-pairs with the Bridge (hold 3 s)"** (not muted, not "Does nothing"), and its first option is **Re-pair with the Bridge** instead of Nothing. The other options are the same as any push button: Dim, and Turn off all of *room* when Click controls a single light.
 - With any Hold other than re-pair, a warning under the cards: "BOOT no longer re-pairs with the Bridge. To re-pair, set Hold back to Re-pair, or reinstall over USB from Setup."
-- **Clear BOOT settings** instead of Remove switch, with confirm "Clear BOOT's settings? Hold goes back to re-pairing with the Bridge." · Clear · Keep. The BOOT channel is deleted; the row stays, back to "not set up".
+- **Clear BOOT settings** instead of Remove *name*, with confirm "Clear BOOT's settings? Hold goes back to re-pairing with the Bridge." · Clear · Keep. The BOOT channel is deleted; the row stays, back to "not set up".
 
 ### 3.5 Words
 
@@ -118,7 +118,7 @@ A board opens on BOOT when it has no D channel; otherwise on the first configure
 | Channel (in UI copy) | **Switch** (the thing on the wall); pins are D0–D5 |
 | `Save channels` (and Round's `Save pages`) | **Save changes** (both products; "switch" also names the boards in the tabs, and **Save all (n)** saves every board) |
 | "Channels without a room do nothing." | "Unused pins do nothing." |
-| "Not used" (room option) | removed; **Remove switch** |
+| "Not used" (room option) | removed; **Remove *name*** (e.g. "Remove Front door") |
 | "Missing from snapshot" | **"Not on the Bridge anymore"** |
 | BOOT row among the pins | **BOOT button**, "On the board", pinned at the top |
 | BOOT hold "Nothing" / "Re-pair with Bridge" | **Re-pair with the Bridge** (option); "Re-pairs with the Bridge (hold 3 s)" (summary) |

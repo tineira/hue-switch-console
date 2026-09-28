@@ -488,8 +488,8 @@ function renderSelected() {
       ? `<div class="confirm"><span class="q">Clear BOOT's settings? Hold goes back to re-pairing with the Bridge.</span><button style="color:var(--danger)" data-remove-yes="1">Clear</button><button data-remove-no="1">Keep</button></div>`
       : `<button class="danger-link" data-remove="1">Clear BOOT settings</button>`)
     : (S.confirmRemove
-      ? `<div class="confirm"><span class="q">Remove ${esc(displayName(c))} and its gestures?</span><button style="color:var(--danger)" data-remove-yes="1">Remove</button><button data-remove-no="1">Keep</button></div>`
-      : `<button class="danger-link" data-remove="1">Remove switch</button>`);
+      ? `<div class="confirm"><span class="q">Remove ${esc(displayName(c))}? ${pin(c.id).label} becomes free and does nothing until you add a switch there.</span><button style="color:var(--danger)" data-remove-yes="1">Remove</button><button data-remove-no="1">Keep</button></div>`
+      : `<button class="danger-link" data-remove="1">Remove ${esc(displayName(c))}</button>`);
   return `<div class="right">
     <div class="fields">
       <div class="field"><label for="nm">Name <span class="mono">· ${c.label.length}/40</span></label>

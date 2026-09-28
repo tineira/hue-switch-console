@@ -409,11 +409,16 @@ export function SimpleChannelsEditor({
               onRemove={() => {
                 const boot = isBootChannel(selectedConfig.id);
                 const name = switchName(selectedConfig, snapshot);
+                const pinLabel = pins.find((item) => item.id === selectedConfig.id)?.label ?? selectedConfig.id;
                 patch(selectedConfig.id, null);
                 setConfirmRemove(false);
                 onOpenGesture(null);
                 if (!boot) setPicked(null);
-                onNotice(boot ? "Cleared BOOT. Holding it re-pairs with the Bridge again." : `Removed ${name}.`);
+                onNotice(
+                  boot
+                    ? "Cleared BOOT. Holding it re-pairs with the Bridge again."
+                    : `Removed ${name}. ${pinLabel} is free.`,
+                );
               }}
               onNotice={onNotice}
             />
@@ -808,7 +813,9 @@ function SwitchEditor({
     }
   }
 
-  const name = config.label?.trim() || (boot ? "BOOT" : roomName);
+  // "Remove Front door": the switch by name, so it is clear the board stays.
+  const name = switchName(config, snapshot);
+  const pinLabel = pin?.label ?? config.id;
 
   return (
     <>
@@ -934,7 +941,7 @@ function SwitchEditor({
             <span className="text-danger">
               {boot
                 ? "Clear BOOT's settings? Hold goes back to re-pairing with the Bridge."
-                : `Remove ${name} and its gestures?`}
+                : `Remove ${name}? ${pinLabel} becomes free and does nothing until you add a switch there.`}
             </span>
             <button type="button" onClick={onRemove} className="font-medium text-danger">
               {boot ? "Clear" : "Remove"}
@@ -945,7 +952,7 @@ function SwitchEditor({
           </>
         ) : (
           <button type="button" onClick={() => onConfirmRemove(true)} className="text-muted hover:text-danger">
-            {boot ? "Clear BOOT settings" : "Remove switch"}
+            {boot ? "Clear BOOT settings" : `Remove ${name}`}
           </button>
         )}
       </div>
