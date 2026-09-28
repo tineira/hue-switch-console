@@ -1,0 +1,75 @@
+# Simple: inputs on D0–D5
+
+Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
+
+**Status:** approved
+
+## 1. What and why
+
+A Simple switch today offers four inputs: the BOOT button and D0, D1 and D2. After this change it offers seven: BOOT plus D0–D5. In the console, each one can be set up as a toggle switch or a push button, or left unused, exactly like D0–D2 today. One board can then drive up to six wall switches or buttons, plus BOOT.
+
+D3–D5 are GPIO 21, 22 and 23. None of them is a strapping pin, and the firmware uses none of them for anything else: it has no I2C, even though D4/D5 are the board's usual I2C pins. D6–D10 stay unused. D6 is the chip's serial TX at boot, and six switches is enough for a wall plate.
+
+## 2. Contract change
+
+The payload shapes do not change. `channels[]` on register is already "the pins the board has", and `PUT /api/switches/{mac}/channels` already accepts any channel the switch registered (`invalid_channel` otherwise). What changes is the data a Simple board sends, and the docs that describe it.
+
+**`POST /api/device/register`: additive (data only).** Simple firmware ≥ 0.5.0 registers seven channels, in this order:
+
+| `id` | `gpio` | `label` |
+| --- | --- | --- |
+| `boot` | 9 | BOOT |
+| `d0` | 0 | D0 |
+| `d1` | 1 | D1 |
+| `d2` | 2 | D2 |
+| `d3` | 21 | D3 |
+| `d4` | 22 | D4 |
+| `d5` | 23 | D5 |
+
+Older Simple firmware keeps sending `boot`, `d0`–`d2`.
+
+**`docs/device-api.md` edits:**
+
+- Under the register `channels` row: "Simple firmware ≥ 0.5.0 sends `boot` and `d0`–`d5` (seven channels); older Simple firmware sends `boot`, `d0`–`d2`." Keep the four-channel example as it is.
+- `GET /api/device/config`: "A Simple switch runs at most 7 channels and 21 recipes (3 per channel)." These are the firmware's limits after this change. The console never builds more than that, because each channel derives at most 3 recipes.
+
+No new endpoints, fields, error codes or NVS keys written over USB.
+
+## 3. Compatibility
+
+- **Console with a board that has not updated:** it registers four channels, and the console shows four rows as today. Nothing changes.
+- **Board with a console that has not deployed:** safe. The current console stores any channel list and validates `PUT /channels` against it. Only the copy ("up to three switches") and the empty-state text are stale. Console first is still the order.
+- **Updating a board:** the next register replaces `switches.channels` with seven entries. The console keeps existing `simple_channels` rows (it wipes them only when the bridge or product changes), so D0–D2 settings survive. D3–D5 show as "Set up".
+- **Downgrading a board:** firmware < 0.5.0 ignores the channel ids it does not have. Settings on D3–D5 stay in the console but do nothing until the board is updated again.
+- **Old path:** there is none to remove. Four-channel boards remain valid.
+
+## 4. Checklist
+
+### Console (`hue-switch-console`)
+
+- [ ] `docs/device-api.md` updated as in §2
+- [ ] Empty-state text in `app/switches/simple-channels-editor.tsx` ("so BOOT / D0 / D1 / D2 appear") names BOOT / D0–D5
+- Landing page (`app/page.tsx`, `app/landing/parts-drawings.tsx`): out of scope. It is being redesigned; the redesign should say up to six switches on D0–D5.
+- [ ] How-to (`lib/how-to.ts`) and `docs/definitions.md`: wherever they name the Simple pins, list D0–D5
+- [ ] Deployed; checked on production with a four-channel board (unchanged) and a seven-channel board
+
+### Round (`hue-round-switch`)
+
+- [ ] No change
+
+### Simple (`hue-simple-switch`)
+
+- [ ] `kChannels[]` in `channels.h` lists `boot` and `d0`–`d5` with the GPIOs in §2
+- [ ] Default kind when the config has no `channels[]` (old payload): `d0`–`d2` keep `maintained`, and `d3`–`d5` are `CHK_NONE`, so unwired pins never act
+- [ ] `recipes.h`: `kMaxRecipes` 16 → 21. `kMaxChannelSettings` is already 8 (≥ 7).
+- [ ] NVS headroom: confirm on a board that a worst-case config saves twice in a row (§5 Q2). Log `nvs_get_stats` in debug builds before and after.
+- [ ] README pin table and wiring doc list D0–D5
+- [ ] `FIRMWARE_VERSION` → 0.5.0; `CHANGELOG.md` entry (user-facing, e.g. "You can now wire up to six switches or buttons to one board, on pins D0 to D5.")
+- [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.5.0
+- [ ] Tested on a board by the user: each of D3–D5 as a toggle switch and as a push button; D0–D2 settings survive the update
+
+## 5. Open questions
+
+1. ~~Landing drawing~~ Decided: out of scope, the landing page is being redesigned.
+2. **NVS headroom is thin.** The firmware saves the whole config as one JSON blob (`recipes` / `jsonb`, scene names already dropped). The worst case is 7 channels × 3 recipes = 21 recipes, each channel with one 8-scene list, and it serializes to **6,117 bytes** (today's four-channel worst case is 3,513). NVS stores 32-byte entries: 5 pages minus 1 kept free leaves ~504. A blob rewrite writes the new copy before erasing the old one, so a save briefly needs ~2 × 192 entries. Add ~100 for Wi-Fi, console, Hue and last-scene keys, and the total is ~484 of ~504. It should fit, with little margin. This is an estimate from how ESP-IDF NVS works, not a measurement on a board.
+   If the board check fails or is close, the fix stays in the firmware with no protocol change. Store one blob per channel (`c_<id>` plus a small `channels` key; write the channel blobs first and `rev` last, as today). The peak is then the total plus one channel. On first boot, convert the old `jsonb`. Do not grow the `nvs` partition: that needs a USB reflash and cannot ship over OTA (`docs/specs/ota.md`).
