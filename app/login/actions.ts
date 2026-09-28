@@ -179,5 +179,5 @@ export async function signOut() {
       // Already signed out.
     }
   }
-  redirect("/login");
+  redirect("/");
 }

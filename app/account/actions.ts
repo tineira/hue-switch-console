@@ -67,7 +67,7 @@ export async function changeEmail(
 export async function signOutEverywhere() {
   await requireSessionUser();
   await auth().api.revokeSessions({ headers: await headers() }).catch(() => {});
-  redirect("/login");
+  redirect("/");
 }
 
 export async function deleteAccount(_prev: { error?: string } | undefined, formData: FormData) {
@@ -84,5 +84,5 @@ export async function deleteAccount(_prev: { error?: string } | undefined, formD
   await sql()`delete from users where id = ${user.id}`;
   // The seat is free: offer it to the next person waiting (docs/specs/waitlist.md §2.3).
   await admitQuietly();
-  redirect("/login");
+  redirect("/");
 }
