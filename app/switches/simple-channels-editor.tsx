@@ -290,6 +290,12 @@ export function SimpleChannelsEditor({
             }
             onPick={pickOnBoard}
           />
+          <Link
+            href="/how-to?product=simple#status"
+            className="-mt-2 self-center text-xs text-filament underline underline-offset-2"
+          >
+            What the LED shows
+          </Link>
 
           <div className="flex w-full flex-col gap-1.5">
             <div className="flex items-baseline justify-between">

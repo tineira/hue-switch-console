@@ -2,6 +2,7 @@
 
 import { SwitchesWorkspace } from "@/app/switches/workspace";
 import type { BridgeSwitch, LoadedBridge } from "@/lib/bridge-switches";
+import type { FirmwareNotes } from "@/lib/firmware";
 import { usePathname } from "next/navigation";
 
 /**
@@ -12,11 +13,13 @@ export function SwitchesArea({
   bridges,
   switches,
   latestFirmware,
+  releaseNotes,
   children,
 }: {
   bridges: LoadedBridge[];
   switches: BridgeSwitch[];
   latestFirmware: { round: string; simple: string };
+  releaseNotes: { round: FirmwareNotes[]; simple: FirmwareNotes[] };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -31,6 +34,7 @@ export function SwitchesArea({
           bridges={bridges}
           switches={switches}
           latestFirmware={latestFirmware}
+          releaseNotes={releaseNotes}
         />
       ) : null}
     </>
