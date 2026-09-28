@@ -668,3 +668,108 @@ option {
   .led-event { animation: none; }
   .room-layer { transition: none; }
 }
+
+/* Landing page hero + Round story track (docs/specs/handoff_landing_v2/README.md §2).
+   The card column and the story stay pinned while scrolling scrubs the Round's assembly. */
+.lv-track {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: clamp(28px, 4cqi, 56px);
+}
+.lv-hero {
+  min-height: calc(100svh - 60px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 24px 0;
+}
+.lv-story-wrap { height: 340svh; }
+.lv-story {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+.lv-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 0;
+}
+.lv-draw {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 520 / 440;
+  max-height: calc(100svh - 110px);
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.lv-grid {
+  background:
+    repeating-linear-gradient(0deg, var(--line) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 24px);
+}
+.lv-caption,
+.lv-phone-parts { display: none; }
+/* Landing offers Ember and Paper only; any other stored theme shows as Ember. */
+.lv-only-paper { display: none; }
+[data-theme="paper"] .lv-only-paper { display: block; }
+[data-theme="paper"] .lv-only-ember { display: none; }
+
+/* "It's live" hint: two rings on the screen outline. */
+.lv-pulse {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+.lv-pulse::before,
+.lv-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--filament);
+  animation: lv-pulse 1.8s ease-out infinite;
+}
+.lv-pulse::after { animation-delay: 0.9s; }
+@keyframes lv-pulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+@media (max-width: 860px) {
+  .lv-track { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .lv-hero { min-height: 0; padding: 56px 0 40px; }
+  .lv-story-wrap { display: none; }
+  .lv-card-col { height: 220svh; }
+  .lv-sticky { justify-content: flex-start; padding-top: 12px; gap: 10px; }
+  .lv-draw { max-height: 58svh; }
+  .lv-caption,
+  .lv-phone-parts { display: block; }
+}
+
+/* Scrub off (reduced motion, or no WebGL): nothing pinned and no empty scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .lv-story-wrap,
+  .lv-card-col { height: auto; }
+  .lv-story,
+  .lv-sticky { position: static; height: auto; }
+  .lv-caption,
+  .lv-scroll-hint,
+  .lv-pulse { display: none; }
+  .lv-grid { opacity: 0; }
+}
+.lv-track[data-flat] .lv-story-wrap,
+.lv-track[data-flat] .lv-card-col { height: auto; }
+.lv-track[data-flat] .lv-story,
+.lv-track[data-flat] .lv-sticky { position: static; height: auto; }
+.lv-track[data-flat] .lv-caption { display: none; }

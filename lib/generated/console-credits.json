@@ -66,6 +66,12 @@
     "url": "https://tailwindcss.com"
   },
   {
+    "name": "three",
+    "version": "0.186.1",
+    "license": "MIT",
+    "url": "https://threejs.org/"
+  },
+  {
     "name": "typescript",
     "version": "5.9.3",
     "license": "Apache-2.0",

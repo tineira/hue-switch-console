@@ -2,8 +2,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { StateVisual } from "@/app/how-to/visuals";
-import { RoundDrawing, SimpleDrawing } from "@/app/landing/parts-drawings";
-import { SwitchBench } from "@/app/landing/switch-bench";
+import type { Part } from "@/app/landing/parts-list";
+import { RoundTrack } from "@/app/landing/round-track";
+import { SimpleCard } from "@/app/landing/simple-card";
 import { ThemeToggle } from "@/app/landing/theme-toggle";
 import type { SignupMode } from "@/lib/account-config";
 import { getSessionUser } from "@/lib/auth";
@@ -21,7 +22,6 @@ export const metadata = {
 const BUTTON = "inline-flex min-h-[46px] items-center rounded-lg px-5 text-[15px] font-medium";
 const PRIMARY = `${BUTTON} bg-filament text-filament-ink`;
 const SECONDARY = `${BUTTON} border border-line bg-background hover:border-filament`;
-const MONO_LABEL = "font-mono text-[11px] uppercase tracking-[0.06em] text-muted";
 const H2 = "text-[clamp(26px,3cqi,36px)] font-semibold leading-[1.1] tracking-[-0.025em]";
 
 const COPY: Record<
@@ -60,7 +60,30 @@ const COPY: Record<
   },
 };
 
-const FACTS = [
+const REPO_URL = "https://github.com/tineira/hue-switch-console";
+
+function RepoLink({ children }: { children: ReactNode }) {
+  return (
+    <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="text-filament hover:underline">
+      {children}
+    </a>
+  );
+}
+
+// The first "open source" in a mode's closing text links to the repo.
+function withRepoLink(text: string): ReactNode {
+  const i = text.indexOf("open source");
+  if (i < 0) return text;
+  return (
+    <>
+      {text.slice(0, i)}
+      <RepoLink>open source</RepoLink>
+      {text.slice(i + "open source".length)}
+    </>
+  );
+}
+
+const FACTS: { title: string; text: ReactNode }[] = [
   {
     title: "Runs on your home network",
     text: "Presses go from the switch to your Hue Bridge. The console only stores settings; switches keep working if it is down.",
@@ -75,11 +98,13 @@ const FACTS = [
   },
   {
     title: "Open source",
-    text: "The console is AGPL-3.0 and the firmware is MIT. Read it, fork it, host your own.",
+    text: (
+      <>
+        The console is AGPL-3.0 and the firmware is MIT. <RepoLink>Read it, fork it, host your own ↗</RepoLink>
+      </>
+    ),
   },
 ];
-
-type Part = { name: string; text: string; href?: string };
 
 const ROUND_PARTS: Part[] = [
   {
@@ -101,7 +126,7 @@ const ROUND_PARTS: Part[] = [
 const SIMPLE_PARTS: Part[] = [
   {
     name: "XIAO ESP32-C6",
-    text: "21 × 17.5 mm. Up to three wall switches or push buttons on D0, D1 and D2; the BOOT button on the board works as one more.",
+    text: "21 × 17.5 mm. Up to seven wall switches or push buttons: D0 to D5, plus the BOOT button on the board.",
     href: "https://www.seeedstudio.com/Seeed-Studio-XIAO-ESP32C6-p-5884.html",
   },
   {
@@ -124,44 +149,6 @@ const STEPS = [
     text: "Pick the room, the scenes and what a tap, double tap or hold does. The switch picks up your changes on its own.",
   },
 ];
-
-function PartCard({ label, drawing, parts }: { label: string; drawing: ReactNode; parts: Part[] }) {
-  return (
-    <article className="@container flex flex-col overflow-hidden rounded-[20px] border border-line bg-cream">
-      <div className={`flex justify-between gap-3 border-b border-line px-[18px] py-3.5 ${MONO_LABEL}`}>
-        <span>{label}</span>
-        <span>mm</span>
-      </div>
-      {drawing}
-      <ol className="flex flex-col border-t border-line">
-        {parts.map((part, i) => (
-          <li
-            key={part.name}
-            className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 border-b border-line px-[18px] py-3.5 last:border-b-0"
-          >
-            <span className="font-mono text-[13px] text-filament">{i + 1}</span>
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
-                <span className="text-[15px] font-semibold">{part.name}</span>
-                {part.href ? (
-                  <a
-                    href={part.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-filament hover:underline"
-                  >
-                    seeedstudio.com ↗
-                  </a>
-                ) : null}
-              </div>
-              <span className="text-sm leading-normal text-muted">{part.text}</span>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </article>
-  );
-}
 
 function StepVisual({ index }: { index: number }) {
   const box = "flex h-[180px] items-center justify-center rounded-2xl border border-line bg-cream";
@@ -216,56 +203,59 @@ export default async function Home() {
 
   const mode = await currentSignupMode();
   const copy = COPY[mode];
+  const hero = (
+    <>
+      <p className="font-mono text-xs uppercase tracking-[0.08em] text-muted">Open source · For Philips Hue</p>
+      <h1 className="text-balance text-[clamp(40px,5.2cqi,64px)] font-semibold leading-none tracking-[-0.035em]">
+        Build a wall switch for your Hue lights.
+      </h1>
+      <p className="max-w-[34em] text-pretty text-[clamp(16px,1.5cqi,18px)] leading-[1.55] text-muted">
+        Flash a Seeed Studio XIAO from Chrome or Edge, pair it with your Hue Bridge, and choose what each button
+        does. Presses go straight to the Bridge on your home network.
+      </p>
+      <div className="flex flex-wrap gap-2.5">
+        <Link href={copy.primaryHref} className={PRIMARY}>
+          {copy.primary}
+        </Link>
+        {mode === "closed" ? null : (
+          <Link href="/how-to" className={SECONDARY}>
+            Read the setup guide
+          </Link>
+        )}
+      </div>
+      <p className="text-sm text-muted">
+        {copy.account}{" "}
+        <Link href="/login" className="text-foreground underline underline-offset-[3px]">
+          Sign in
+        </Link>
+      </p>
+    </>
+  );
 
   return (
     <div className="@container flex w-full flex-1 flex-col">
       <main className="mx-auto box-border flex w-full max-w-[1200px] flex-col gap-[clamp(56px,8cqi,104px)] px-[clamp(18px,4cqi,48px)]">
-        <header className="flex items-center gap-2 pt-5">
-          <Link href="/" className="mr-auto flex items-center gap-2.5">
-            <span
-              aria-hidden="true"
-              className="box-border block h-[18px] w-[18px] rotate-45 rounded-full border-2 border-filament border-b-transparent"
-            />
-            <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em]">Hue Switch Console</span>
-          </Link>
-          <ThemeToggle />
-          <Link
-            href="/login"
-            className="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg border border-line bg-background px-3.5 text-sm font-medium hover:border-filament"
-          >
-            Sign in
-          </Link>
-        </header>
+        <div>
+          <header className="flex items-center gap-2 pt-5">
+            <Link href="/" className="mr-auto flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="box-border block h-[18px] w-[18px] rotate-45 rounded-full border-2 border-filament border-b-transparent"
+              />
+              <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em]">Hue Switch Console</span>
+            </Link>
+            <ThemeToggle />
+            <Link
+              href="/login"
+              className="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg border border-line bg-background px-3.5 text-sm font-medium hover:border-filament"
+            >
+              Sign in
+            </Link>
+          </header>
+          <RoundTrack hero={hero} parts={ROUND_PARTS} />
+        </div>
 
-        <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] items-start gap-[clamp(36px,5cqi,64px)]">
-          <div className="flex flex-col items-start gap-6 pt-[clamp(8px,3cqi,48px)]">
-            <p className="font-mono text-xs uppercase tracking-[0.08em] text-muted">Open source · For Philips Hue</p>
-            <h1 className="text-balance text-[clamp(40px,5.6cqi,68px)] font-semibold leading-none tracking-[-0.035em]">
-              Build a wall switch for your Hue lights.
-            </h1>
-            <p className="max-w-[34em] text-pretty text-[clamp(16px,1.5cqi,18px)] leading-[1.55] text-muted">
-              Flash a Seeed Studio XIAO from Chrome or Edge, pair it with your Hue Bridge, and choose what each
-              button does. Presses go straight to the Bridge on your home network.
-            </p>
-            <div className="flex flex-wrap gap-2.5">
-              <Link href={copy.primaryHref} className={PRIMARY}>
-                {copy.primary}
-              </Link>
-              {mode === "closed" ? null : (
-                <Link href="/how-to" className={SECONDARY}>
-                  Read the setup guide
-                </Link>
-              )}
-            </div>
-            <p className="text-sm text-muted">
-              {copy.account}{" "}
-              <Link href="/login" className="text-foreground underline underline-offset-[3px]">
-                Sign in
-              </Link>
-            </p>
-          </div>
-          <SwitchBench />
-        </section>
+        <SimpleCard parts={SIMPLE_PARTS} />
 
         <section
           aria-label="Why it works this way"
@@ -277,20 +267,6 @@ export default async function Home() {
               <p className="text-pretty text-sm leading-normal text-muted">{fact.text}</p>
             </div>
           ))}
-        </section>
-
-        <section id="parts" className="flex scroll-mt-6 flex-col gap-7">
-          <div className="flex flex-col gap-2">
-            <h2 className={H2}>What you need</h2>
-            <p className="max-w-[40em] text-[15px] leading-normal text-muted">
-              Two parts for a Round, one for a Simple. Both are made by Seeed Studio and sold by them and most
-              electronics resellers.
-            </p>
-          </div>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] gap-4">
-            <PartCard label="Round · exploded view" drawing={<RoundDrawing />} parts={ROUND_PARTS} />
-            <PartCard label="Simple · pre-soldered" drawing={<SimpleDrawing />} parts={SIMPLE_PARTS} />
-          </div>
         </section>
 
         <section className="flex flex-col gap-7">
@@ -317,15 +293,15 @@ export default async function Home() {
             <h2 className="text-[clamp(24px,2.6cqi,32px)] font-semibold leading-[1.15] tracking-[-0.02em]">
               {copy.closingTitle}
             </h2>
-            <p className="text-[15px] leading-normal text-muted">{copy.closingText}</p>
+            <p className="text-[15px] leading-normal text-muted">{withRepoLink(copy.closingText)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
             <Link href={copy.primaryHref} className={PRIMARY}>
               {copy.primary}
             </Link>
-            <Link href="/login" className={SECONDARY}>
-              Sign in
-            </Link>
+            <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className={SECONDARY}>
+              Source on GitHub ↗
+            </a>
             <Link
               href="/privacy"
               className="inline-flex min-h-[46px] items-center px-2 text-[15px] text-muted underline underline-offset-[3px] hover:text-foreground"
