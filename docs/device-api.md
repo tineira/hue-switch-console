@@ -123,7 +123,7 @@ Content-Type: application/json
 | `lights` | yes | **Required array** (omit or non-array → 400). May be empty `[]` if the Bridge really has no lights. Each item needs `id`, `name`. `on`, `caps[]` optional |
 | `rooms` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
 | `scenes` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
-| `channels` | yes when registering a GPIO board | `{ id, gpio, label }`: the pins the board has. Empty array allowed. Round Display may send `[]`. Simple firmware < 0.3.0 also sends `kind` (`maintained` \| `momentary`); it is accepted and ignored, because the user picks each channel's type in the console |
+| `channels` | yes when registering a GPIO board | `{ id, gpio, label }`: the pins the board has. Empty array allowed. Round Display may send `[]`. Simple firmware < 0.3.0 also sends `kind` (`maintained` \| `momentary`); it is accepted and ignored, because the user picks each channel's type in the console. Simple firmware ≥ 0.5.0 sends `boot` and `d0`–`d5` (seven channels); older Simple firmware sends `boot`, `d0`–`d2` |
 | `product` | current firmware: yes | `"round"` or `"simple"`. Current boards **send** it. If omitted (old boards), inferred from empty/`c1` channels (round) vs GPIO (simple). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string |
@@ -333,6 +333,8 @@ Limits the Round firmware relies on, and the console never exceeds: at most
 at most 12 recipes (the firmware keeps 16). Anything past a limit is dropped
 on the board without an error, so a console change that raises one needs a
 spec and a firmware release first.
+
+A Simple switch runs at most 7 channels and 21 recipes (3 per channel).
 
 Unknown MAC for this key’s account: `404`.
 

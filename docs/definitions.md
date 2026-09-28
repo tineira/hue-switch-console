@@ -6,7 +6,7 @@ Three repos:
 
 | Repo | Role |
 | --- | --- |
-| `hue-simple-switch` | XIAO ESP32-C6 firmware. GPIO press → Hue Bridge on the LAN (Clip v2). Channels `boot` / `d0` / `d1` / `d2`. |
+| `hue-simple-switch` | XIAO ESP32-C6 firmware. GPIO press → Hue Bridge on the LAN (Clip v2). Channels `boot` and `d0`–`d5` (firmware < 0.5.0: `boot`, `d0`–`d2`). |
 | `hue-round-switch` | XIAO ESP32-S3 + Round Display firmware. Tap on the circle, not pins. Pages: `docs/round-pages.md`. |
 | `hue-switch-console` | Web app (Vercel + **Neon** Postgres). User account, topology, function assignment. This repo. |
 
@@ -38,6 +38,11 @@ Channels (declared by the firmware; closed = GPIO to GND, `INPUT_PULLUP`):
 | `d0` | 0 | D0 | user's choice |
 | `d1` | 1 | D1 | user's choice |
 | `d2` | 2 | D2 | user's choice |
+| `d3` | 21 | D3 | user's choice |
+| `d4` | 22 | D4 | user's choice |
+| `d5` | 23 | D5 | user's choice |
+
+Firmware < 0.5.0 declares only `boot` and `d0`–`d2`.
 
 Do not use GPIO 3/14 (RF), 15 (LED), or USB.
 

@@ -362,7 +362,7 @@ The device **register** may create `p1` without a group. The human **Save** (PUT
 
 ### 9.4 Simple switch
 
-No UI changes: channels `boot` / `d0` / `d1` / `d2`, events `on` / `off` / `double_click` / `short`. The circle does not add `hold` to the shared schema.
+No UI changes: channels `boot` and `d0`–`d5` (`d0`–`d2` before Simple firmware 0.5.0), events `on` / `off` / `double_click` / `short`. The circle does not add `hold` to the shared schema.
 
 The console tells products apart by what the firmware registers (`product: "round"` vs GPIO channels). An old Round that still sends only `c1` is treated as a one-page Round (migration, §14).
 

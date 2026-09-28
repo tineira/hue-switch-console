@@ -47,29 +47,32 @@ No new endpoints, fields, error codes or NVS keys written over USB.
 
 ### Console (`hue-switch-console`)
 
-- [ ] `docs/device-api.md` updated as in §2
-- [ ] Empty-state text in `app/switches/simple-channels-editor.tsx` ("so BOOT / D0 / D1 / D2 appear") names BOOT / D0–D5
+- [x] `docs/device-api.md` updated as in §2
+- [x] Empty-state text in `app/switches/simple-channels-editor.tsx` ("so BOOT / D0 / D1 / D2 appear") names BOOT / D0–D5
 - Landing page (`app/page.tsx`, `app/landing/parts-drawings.tsx`): out of scope. It is being redesigned; the redesign should say up to six switches on D0–D5.
-- [ ] How-to (`lib/how-to.ts`) and `docs/definitions.md`: wherever they name the Simple pins, list D0–D5
+- [x] How-to (`lib/how-to.ts`) and `docs/definitions.md`: wherever they name the Simple pins, list D0–D5
 - [ ] Deployed; checked on production with a four-channel board (unchanged) and a seven-channel board
 
 ### Round (`hue-round-switch`)
 
-- [ ] No change
+- [x] No change
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `kChannels[]` in `channels.h` lists `boot` and `d0`–`d5` with the GPIOs in §2
-- [ ] Default kind when the config has no `channels[]` (old payload): `d0`–`d2` keep `maintained`, and `d3`–`d5` are `CHK_NONE`, so unwired pins never act
-- [ ] `recipes.h`: `kMaxRecipes` 16 → 21. `kMaxChannelSettings` is already 8 (≥ 7).
-- [ ] NVS headroom: confirm on a board that a worst-case config saves twice in a row (§5 Q2). Log `nvs_get_stats` in debug builds before and after.
-- [ ] README pin table and wiring doc list D0–D5
-- [ ] `FIRMWARE_VERSION` → 0.5.0; `CHANGELOG.md` entry (user-facing, e.g. "You can now wire up to six switches or buttons to one board, on pins D0 to D5.")
+- [x] `kChannels[]` in `channels.h` lists `boot` and `d0`–`d5` with the GPIOs in §2
+- [x] Default kind when the config has no `channels[]` (old payload): `d0`–`d2` keep `maintained`, and `d3`–`d5` are `CHK_NONE`, so unwired pins never act
+- [x] `recipes.h`: `kMaxRecipes` 16 → 21. `kMaxChannelSettings` is already 8 (≥ 7).
+- [x] NVS headroom: confirm on a board that a worst-case config saves twice in a row (§5 Q2). Log `nvs_get_stats` in debug builds before and after. Passed after the per-channel storage change (§5 Q2).
+- [x] README pin table and wiring doc list D0–D5
+- [x] `FIRMWARE_VERSION` → 0.5.0; `CHANGELOG.md` entry (user-facing, e.g. "You can now wire up to six switches or buttons to one board, on pins D0 to D5.")
 - [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.5.0
-- [ ] Tested on a board by the user: each of D3–D5 as a toggle switch and as a push button; D0–D2 settings survive the update
+- [ ] Tested on a board by the user: each of D3–D5 as a toggle switch and as a push button; D0–D2 settings survive the update. Pending: the D3–D5 functional test. Confirmed: D0–D2 settings survive the update.
 
 ## 5. Open questions
 
 1. ~~Landing drawing~~ Decided: out of scope, the landing page is being redesigned.
-2. **NVS headroom is thin.** The firmware saves the whole config as one JSON blob (`recipes` / `jsonb`, scene names already dropped). The worst case is 7 channels × 3 recipes = 21 recipes, each channel with one 8-scene list, and it serializes to **6,117 bytes** (today's four-channel worst case is 3,513). NVS stores 32-byte entries: 5 pages minus 1 kept free leaves ~504. A blob rewrite writes the new copy before erasing the old one, so a save briefly needs ~2 × 192 entries. Add ~100 for Wi-Fi, console, Hue and last-scene keys, and the total is ~484 of ~504. It should fit, with little margin. This is an estimate from how ESP-IDF NVS works, not a measurement on a board.
-   If the board check fails or is close, the fix stays in the firmware with no protocol change. Store one blob per channel (`c_<id>` plus a small `channels` key; write the channel blobs first and `rev` last, as today). The peak is then the total plus one channel. On first boot, convert the old `jsonb`. Do not grow the `nvs` partition: that needs a USB reflash and cannot ship over OTA (`docs/specs/ota.md`).
+2. ~~NVS headroom~~ **Resolved: measured on a board, and the fix shipped in 0.5.0.** Board: XIAO C6, debug build, 20 KB `nvs` partition, 630 entries in total, 504 usable.
+   - Everything outside the `recipes` namespace takes ~165 entries, not the ~100 estimated.
+   - **Single-blob layout (first cut of 0.5.0): the check failed.** The worst case (21 recipes) is a 6,095-byte blob. The `recipes` namespace took 198 entries, leaving 363 used and 141 available after the save. That save fit by only ~1–3 entries. A second worst-case save would need ~195 entries with 141 free, so it would fail.
+   - **Fix shipped in 0.5.0**, the fallback this question described: one blob per channel (`c_<id>`) plus a `channels` key. `rev` is removed before the first changed write and written last, and unchanged channel blobs are skipped. On first boot the firmware migrates the old `jsonb`: it parses it into RAM, erases it, then writes the per-channel blobs.
+   - **Measured after the fix.** Migrating the stored worst case went from 363 to 386 used entries (221 in the namespace). A worst-case save that changed one channel went from 385 to 386 used, with 118 available. The peak is the stored config plus one channel (~31 entries). With all seven scene cursors written, the steady state is ~407 of 504. The `nvs` partition is unchanged, so no USB reflash is needed and OTA stays possible (`docs/specs/ota.md`).

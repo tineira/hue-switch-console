@@ -7,7 +7,7 @@ without email). Devices use an API key.
 
 Two products, one console:
 
-- **Simple** (`hue-simple-switch`, ESP32-C6) — GPIO channels (`boot` / `d0` / `d1` / `d2`), recipes per channel and event.
+- **Simple** (`hue-simple-switch`, ESP32-C6) — GPIO channels (`boot` and `d0`–`d5`), recipes per channel and event.
 - **Round** (`hue-round-switch`, ESP32-S3 + circle) — pages (room/zone group, tap / double-tap, scene lists, dimmer). Not GPIO.
 
 Everything in the three repos is **English**: UI, docs, comments.
