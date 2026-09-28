@@ -308,3 +308,19 @@ export async function currentCredits(product: ProductId): Promise<CurrentCredits
   if (!row) return null;
   return { version: String(row.version), credits: Array.isArray(row.credits) ? row.credits : null };
 }
+
+export type AppImage = { version: string; sha256: string; size: number };
+
+/** The current release's `firmware.bin`, what an OTA offer points at (docs/specs/ota.md §2.2). */
+export async function currentAppImage(product: ProductId): Promise<AppImage | null> {
+  const rows = await sql()`
+    select r.version, p.sha256, p.size
+    from firmware_current c
+    join firmware_releases r on r.id = c.release_id
+    join firmware_parts p on p.release_id = r.id and p.name = 'firmware.bin'
+    where c.product = ${product}
+  `;
+  const row = rows[0] as { version: string; sha256: string; size: number } | undefined;
+  if (!row) return null;
+  return { version: String(row.version), sha256: String(row.sha256), size: Number(row.size) };
+}

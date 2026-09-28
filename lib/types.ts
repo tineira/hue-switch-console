@@ -157,4 +157,12 @@ export type SwitchPublic = {
   rev_changed_at: string | null;
   /** When the switch is next expected to poll. */
   next_poll_at: string | null;
+  /** When a poll or register last reported `firmware` (docs/specs/ota.md §3). */
+  firmware_seen_at: string | null;
+  /** Simple with an OTA client (docs/specs/ota.md §3.2). */
+  ota_capable: boolean;
+  /** Set while an update is offered; the offer is always the product's current release. */
+  ota_offered_at: string | null;
+  ota_error: string | null;
+  ota_error_at: string | null;
 };

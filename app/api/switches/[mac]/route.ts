@@ -1,4 +1,5 @@
 import { getSessionUser } from "@/lib/auth";
+import { latestFirmware } from "@/lib/bridge-switches";
 import { configStatus } from "@/lib/config-sync";
 import {
   getSwitchByMac,
@@ -8,6 +9,7 @@ import {
 } from "@/lib/db";
 import { isDbConfigured } from "@/lib/env";
 import { databaseError, jsonError, jsonOk } from "@/lib/http";
+import { otaCapable, otaStatus } from "@/lib/ota";
 import { normalizeMac } from "@/lib/tokens";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +31,7 @@ export async function GET(
   try {
     const sw = await getSwitchByMac(user.id, mac);
     if (!sw) return jsonOk({ found: false });
+    const latest = (await latestFirmware())[sw.product];
     return jsonOk({
       found: true,
       last_seen_at: sw.last_seen_at,
@@ -38,6 +41,12 @@ export async function GET(
       applied_rev: sw.applied_rev,
       config_status: configStatus(sw),
       next_poll_at: sw.next_poll_at,
+      firmware_seen_at: sw.firmware_seen_at,
+      latest_firmware: latest || null,
+      ota_capable: otaCapable(sw),
+      ota_status: otaStatus(sw, latest),
+      ota_offered_at: sw.ota_offered_at,
+      ota_error: sw.ota_error,
     });
   } catch (err) {
     return databaseError(err);

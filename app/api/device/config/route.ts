@@ -15,7 +15,9 @@ import {
 import { authenticateDevice } from "@/lib/device-auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
+import { currentAppImage } from "@/lib/firmware";
 import { databaseError, jsonError } from "@/lib/http";
+import { otaCapable, parseOtaError, parseReportedFirmware } from "@/lib/ota";
 import {
   computeDim,
   deviceRoundPage,
@@ -61,10 +63,15 @@ export async function GET(req: Request) {
   if (!mac) return jsonError(400, "mac query parameter is required");
   // Optional: the revision in the switch's NVS (docs/specs/finished/config-sync.md §2.1).
   const reported = parseReportedRev(url.searchParams.get("rev"));
+  // Optional: the running firmware and the last OTA failure (docs/specs/ota.md §2.1).
+  const reportedFirmware = parseReportedFirmware(url.searchParams.get("firmware"));
+  const otaError = parseOtaError(url.searchParams.get("ota_error"));
 
   try {
-    const sw = await getSwitchByMac(device.userId, mac);
-    if (!sw) return jsonError(404, "not_found");
+    const stored = await getSwitchByMac(device.userId, mac);
+    if (!stored) return jsonError(404, "not_found");
+    // What the switch runs now decides what it can be served.
+    const sw = reportedFirmware ? { ...stored, firmware: reportedFirmware } : stored;
 
     // A switch holding a higher revision than ours keeps its NVS and ignores us.
     // When we have a config for it, move past that revision so ours wins (§4.4).
@@ -128,6 +135,20 @@ export async function GET(req: Request) {
       };
     }
 
+    // An offer is always the current release, looked up now (docs/specs/ota.md §2.2, §3.2).
+    const pendingOta = Boolean(sw.ota_offered_at || sw.ota_error);
+    const image = pendingOta && otaCapable(sw) ? await currentAppImage(sw.product) : null;
+    const otaDone = image !== null && image.version === sw.firmware;
+    const ota =
+      image && !otaDone && sw.ota_offered_at
+        ? {
+            version: image.version,
+            url: `/firmware/${sw.product}/${image.version}/firmware.bin`,
+            sha256: image.sha256,
+            size: image.size,
+          }
+        : null;
+
     const pollSec = pollSecFor({
       hasConfig,
       editingUntil: sw.editing_until,
@@ -141,13 +162,17 @@ export async function GET(req: Request) {
       applyFailed: reported !== null && sw.served_rev !== null && reported < sw.served_rev,
       servedRev: rev,
       pollSec,
+      firmware: reportedFirmware,
+      otaError,
+      otaDone,
     });
 
     const headers = { "X-Poll-Sec": String(pollSec) };
-    if (reported === rev) {
+    // A pending offer needs a body even when the config is unchanged (§2.3).
+    if (reported === rev && !ota) {
       return new Response(null, { status: 204, headers });
     }
-    return NextResponse.json({ ...body, pollSec }, { headers });
+    return NextResponse.json({ ...body, ...(ota ? { ota } : {}), pollSec }, { headers });
   } catch (err) {
     return databaseError(err);
   }

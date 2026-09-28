@@ -31,6 +31,7 @@ import type {
   SwitchPublic,
   TopologySnapshot,
 } from "@/lib/types";
+import { otaCapable, otaErrorText, otaStatus, type OtaStatus } from "@/lib/ota";
 import { compareVersions } from "@/lib/web-setup/devices";
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -46,7 +47,17 @@ const SAVED_TAIL = "The switch picks this up on its next check-in.";
 
 type SyncInfo = Pick<
   SwitchPublic,
-  "rev" | "applied_rev" | "config_status" | "rev_changed_at" | "next_poll_at" | "last_seen_at"
+  | "rev"
+  | "applied_rev"
+  | "config_status"
+  | "rev_changed_at"
+  | "next_poll_at"
+  | "last_seen_at"
+  | "firmware"
+  | "firmware_seen_at"
+  | "ota_offered_at"
+  | "ota_error"
+  | "ota_error_at"
 >;
 
 function syncOf(item: SyncInfo): SyncInfo {
@@ -57,6 +68,11 @@ function syncOf(item: SyncInfo): SyncInfo {
     rev_changed_at: item.rev_changed_at,
     next_poll_at: item.next_poll_at,
     last_seen_at: item.last_seen_at,
+    firmware: item.firmware,
+    firmware_seen_at: item.firmware_seen_at,
+    ota_offered_at: item.ota_offered_at,
+    ota_error: item.ota_error,
+    ota_error_at: item.ota_error_at,
   };
 }
 
@@ -208,6 +224,8 @@ export function SwitchesWorkspace({
     Object.fromEntries(switches.map((item) => [item.mac, syncOf(item)])),
   );
   const [replacing, setReplacing] = useState(false);
+  // The switch mac or Bridge id an OTA request is running for.
+  const [otaBusy, setOtaBusy] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [names, setNames] = useState<Record<string, string | null>>(() =>
@@ -557,8 +575,85 @@ export function SwitchesWorkspace({
 
   // Newer uploaded firmware for this board's product, or null when it is current.
   function updateFor(item: WorkspaceSwitch): string | null {
-    const latest = latestFirmware[isRoundItem(item) ? "round" : "simple"];
-    return compareVersions(item.firmware ?? "", latest) === -1 ? latest : null;
+    const latest = latestFor(item);
+    return compareVersions(syncFor(item).firmware ?? "", latest) === -1 ? latest : null;
+  }
+
+  function latestFor(item: WorkspaceSwitch): string {
+    return latestFirmware[isRoundItem(item) ? "round" : "simple"];
+  }
+
+  // Wi-Fi updates (docs/specs/ota.md §3.1). Null when the switch cannot update over Wi-Fi.
+  function otaFor(item: WorkspaceSwitch): OtaStatus | null {
+    const info = syncFor(item);
+    if (!otaCapable({ product: item.product, firmware: info.firmware })) return null;
+    return otaStatus(info, latestFor(item));
+  }
+
+  // The firmware came from the last register: polls since then did not report one.
+  function firmwareFromRegister(item: WorkspaceSwitch): boolean {
+    const info = syncFor(item);
+    if (!info.firmware || !info.last_seen_at) return false;
+    if (!info.firmware_seen_at) return true;
+    return Date.parse(info.last_seen_at) - Date.parse(info.firmware_seen_at) > 60 * 1000;
+  }
+
+  async function otaRequest(key: string, url: string, method: "POST" | "DELETE", failed: string) {
+    setOtaBusy(key);
+    setError(null);
+    try {
+      const res = await fetch(url, { method });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string; details?: string };
+        setError(body.details ?? body.error ?? failed);
+        return;
+      }
+      const next = await fetchSync();
+      if (next) setSync(next);
+    } catch {
+      setError(failed);
+    } finally {
+      setOtaBusy(null);
+    }
+  }
+
+  function offerOta(item: WorkspaceSwitch) {
+    return otaRequest(item.mac, `/api/switches/${item.mac}/ota`, "POST", "Could not offer the update");
+  }
+
+  function cancelOta(item: WorkspaceSwitch) {
+    return otaRequest(item.mac, `/api/switches/${item.mac}/ota`, "DELETE", "Could not cancel the update");
+  }
+
+  function offerOtaToBridge(bridgeid: string) {
+    return otaRequest(
+      bridgeid,
+      `/api/bridges/${encodeURIComponent(bridgeid)}/ota`,
+      "POST",
+      "Could not offer the update",
+    );
+  }
+
+  // One line on a pending or failed Wi-Fi update.
+  function otaLine(item: WorkspaceSwitch): { text: string; tone: "muted" | "warn" } | null {
+    const status = otaFor(item);
+    const latest = latestFor(item);
+    if (status === "offered") {
+      const until = formatUntil(syncFor(item).next_poll_at);
+      return {
+        text:
+          `Update to ${latest} offered. The switch downloads it when it checks in` +
+          `${until ? ` (${until})` : ""}, then restarts.`,
+        tone: "muted",
+      };
+    }
+    if (status === "failed") {
+      return {
+        text: `Update to ${latest} failed: ${otaErrorText(syncFor(item).ota_error)}. The switch tries again within an hour, or you can cancel.`,
+        tone: "warn",
+      };
+    }
+    return null;
   }
 
   function boardName(item: WorkspaceSwitch): string {
@@ -572,7 +667,12 @@ export function SwitchesWorkspace({
     const tooOld = !isRoundItem(item) && !supportsChannelTypes(item.firmware);
     const status = syncFor(item).config_status;
     const warn =
-      unseen !== null || stale > 0 || tooOld || status === "not_applied" || status === "ahead";
+      unseen !== null ||
+      stale > 0 ||
+      tooOld ||
+      status === "not_applied" ||
+      status === "ahead" ||
+      otaFor(item) === "failed";
     return (
       <button
         key={item.mac}
@@ -615,7 +715,12 @@ export function SwitchesWorkspace({
           {status === "not_applied" ? <span className="text-warn"> · not applied</span> : null}
           {status === "ahead" ? <span className="text-warn"> · ahead</span> : null}
           {stale > 0 ? <span className="text-warn"> · {stale} stale</span> : null}
-          {updateFor(item) ? <span className="text-filament"> · update</span> : null}
+          {(() => {
+            const ota = otaFor(item);
+            if (ota === "offered") return <span className="text-filament"> · updating</span>;
+            if (ota === "failed") return <span className="text-warn"> · update failed</span>;
+            return updateFor(item) ? <span className="text-filament"> · update</span> : null;
+          })()}
         </span>
       </button>
     );
@@ -669,7 +774,23 @@ export function SwitchesWorkspace({
             aria-label={`Bridge ${bridge.bridgeid}`}
             className="flex flex-col gap-2"
           >
-            <BridgeContext bridge={bridge} />
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <BridgeContext bridge={bridge} />
+              {(() => {
+                const behind = onBridge.filter((item) => otaFor(item) === "behind").length;
+                if (behind === 0) return null;
+                return (
+                  <button
+                    type="button"
+                    disabled={otaBusy !== null}
+                    onClick={() => offerOtaToBridge(bridge.bridgeid)}
+                    className="rounded-md border border-filament/50 px-2.5 py-1 text-xs font-medium text-filament hover:bg-filament-soft disabled:opacity-50"
+                  >
+                    {otaBusy === bridge.bridgeid ? "Offering…" : `Update all behind (${behind})`}
+                  </button>
+                );
+              })()}
+            </div>
             {empty ? (
               <p className="text-sm text-muted">
                 No lights yet. A switch paired with this Bridge sends its rooms,
@@ -708,19 +829,23 @@ export function SwitchesWorkspace({
                     Saved
                   </span>
                 ) : null}
-                {updateFor(selected) ? (
-                  <Link
-                    href={`/setup?mac=${selected.mac}`}
-                    title="Plug the board in over USB and install from Setup"
-                    className="rounded-full border border-filament/50 px-2 py-0.5 text-[11px] font-medium text-filament hover:bg-filament-soft"
-                  >
-                    Update to {updateFor(selected)}
-                  </Link>
-                ) : null}
+                <OtaControl
+                  status={otaFor(selected)}
+                  latest={latestFor(selected)}
+                  usbUpdate={updateFor(selected)}
+                  mac={selected.mac}
+                  busy={otaBusy === selected.mac}
+                  onOffer={() => offerOta(selected)}
+                  onCancel={() => cancelOta(selected)}
+                />
               </h2>
               <p className="text-xs text-muted">
                 <span className="font-mono">{formatMac(selected.mac)}</span>
-                {selected.firmware ? ` · firmware ${selected.firmware}` : ""}
+                {syncFor(selected).firmware
+                  ? ` · firmware ${syncFor(selected).firmware}${
+                      firmwareFromRegister(selected) ? " (from last register)" : ""
+                    }`
+                  : ""}
                 {` · rev ${sync[selected.mac]?.rev ?? revs[selected.mac] ?? selected.rev}`}
                 {" · "}
                 <Link
@@ -751,6 +876,15 @@ export function SwitchesWorkspace({
                         </button>
                       </>
                     ) : null}
+                  </p>
+                );
+              })()}
+              {(() => {
+                const line = otaLine(selected);
+                if (!line) return null;
+                return (
+                  <p className={`text-xs ${line.tone === "warn" ? "text-warn" : "text-muted"}`}>
+                    {line.text}
                   </p>
                 );
               })()}
@@ -868,6 +1002,88 @@ export function SwitchesWorkspace({
       ) : null}
     </div>
   );
+}
+
+const PILL =
+  "rounded-full border px-2 py-0.5 text-[11px] font-medium disabled:opacity-50";
+
+/**
+ * The firmware pill next to a switch's name (docs/specs/ota.md §3.1): a Wi-Fi update,
+ * downgrade or cancel when the switch has an OTA client, or a link to Setup for USB.
+ */
+function OtaControl({
+  status,
+  latest,
+  usbUpdate,
+  mac,
+  busy,
+  onOffer,
+  onCancel,
+}: {
+  status: OtaStatus | null;
+  latest: string;
+  usbUpdate: string | null;
+  mac: string;
+  busy: boolean;
+  onOffer: () => void;
+  onCancel: () => void;
+}) {
+  const offerClass = `${PILL} border-filament/50 text-filament hover:bg-filament-soft`;
+  if (status === null) {
+    return usbUpdate ? (
+      <Link
+        href={`/setup?mac=${mac}`}
+        title="This switch updates over USB. Plug it in and install from Setup."
+        className={`${PILL} border-filament/50 text-filament hover:bg-filament-soft`}
+      >
+        Update to {usbUpdate} over USB
+      </Link>
+    ) : null;
+  }
+  switch (status) {
+    case "behind":
+      return (
+        <button type="button" disabled={busy} onClick={onOffer} className={offerClass}>
+          {busy ? "Offering…" : `Update to ${latest}`}
+        </button>
+      );
+    case "ahead":
+      return (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            if (window.confirm(`Install ${latest}, older than the firmware on this switch?`)) onOffer();
+          }}
+          className={`${PILL} border-line text-muted hover:border-filament/50 hover:text-filament`}
+        >
+          {busy ? "Offering…" : `Downgrade to ${latest}`}
+        </button>
+      );
+    case "offered":
+    case "failed":
+      return (
+        <span className="flex items-center gap-1.5">
+          <span
+            className={`${PILL} ${
+              status === "failed" ? "border-warn/50 text-warn" : "border-filament/50 bg-filament-soft text-filament"
+            }`}
+          >
+            {status === "failed" ? `Update to ${latest} failed` : `Updating to ${latest}`}
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onCancel}
+            className="text-[11px] font-medium text-muted underline underline-offset-2 hover:text-filament disabled:opacity-50"
+          >
+            {busy ? "Cancelling…" : "Cancel update"}
+          </button>
+        </span>
+      );
+    default:
+      return null;
+  }
 }
 
 function PencilIcon() {

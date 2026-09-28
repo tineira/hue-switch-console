@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved
+**Status:** in progress
 
 **Scope:** v1 is the **Simple** switch (`hue-simple-switch`, XIAO ESP32-C6). Round gets OTA in v2 (§7).
 
@@ -141,15 +141,15 @@ The new app confirms itself only after its first successful console poll (`200` 
 
 ### Console (`hue-switch-console`)
 
-- [ ] Schema columns (§2.5)
-- [ ] Poll: read `firmware` and `ota_error`, stamp `firmware_seen_at`; register stamps it too
-- [ ] Poll: `ota` block and `200`-while-offered (§2.2, §2.3); clear the offer once reported = latest
-- [ ] `POST`/`DELETE /api/switches/{mac}/ota`, `POST /api/bridges/{bridgeid}/ota`
-- [ ] `ota_status` and fields in `GET /api/switches` and `GET /api/switches/{mac}`
-- [ ] Bridge page switch rows: version, latest, badge, **Update** / **Downgrade to x.y.z** / **Cancel update**; **Update all behind** on the bridge page; "Update over USB" for non-capable switches that are behind
-- [ ] `/setup`: reported version and latest, read-only
-- [ ] `docs/device-api.md` updated in the same commit
-- [ ] `docs/changelog.md` entry
+- [x] Schema columns (§2.5)
+- [x] Poll: read `firmware` and `ota_error`, stamp `firmware_seen_at`; register stamps it too
+- [x] Poll: `ota` block and `200`-while-offered (§2.2, §2.3); clear the offer once reported = latest
+- [x] `POST`/`DELETE /api/switches/{mac}/ota`, `POST /api/bridges/{bridgeid}/ota`
+- [x] `ota_status` and fields in `GET /api/switches` and `GET /api/switches/{mac}`
+- [x] Bridge page switch rows: version, latest, badge, **Update** / **Downgrade to x.y.z** / **Cancel update**; **Update all behind** on the bridge page; "Update over USB" for non-capable switches that are behind
+- [x] `/setup`: reported version and latest, read-only
+- [x] `docs/device-api.md` updated in the same commit
+- [x] `docs/changelog.md` entry
 - [ ] Deployed; checked on production
 
 ### Simple (`hue-simple-switch`)

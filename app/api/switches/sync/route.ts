@@ -31,6 +31,11 @@ export async function POST() {
         rev_changed_at: item.rev_changed_at,
         next_poll_at: item.next_poll_at,
         last_seen_at: item.last_seen_at,
+        firmware: item.firmware,
+        firmware_seen_at: item.firmware_seen_at,
+        ota_offered_at: item.ota_offered_at,
+        ota_error: item.ota_error,
+        ota_error_at: item.ota_error_at,
       })),
     });
   } catch (err) {

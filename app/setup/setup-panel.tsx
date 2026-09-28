@@ -6,6 +6,7 @@ import { firmwareChangelogHref } from "@/lib/changelog-href";
 import { agoText, CONSOLE_QUIET_MIN, minutesSince } from "@/lib/ago";
 import type { FirmwareNotes } from "@/lib/firmware";
 import { notesBetween, type VersionNotes } from "@/lib/firmware-notes";
+import { otaErrorText } from "@/lib/ota";
 import { formatMac } from "@/lib/mac";
 import { webSerialBlockedReason } from "@/lib/web-setup/browser";
 import {
@@ -65,6 +66,9 @@ type ConsoleRecord = {
   label: string | null;
   // The key this board last used was revoked on API keys.
   keyRevoked: boolean;
+  // Wi-Fi update state (docs/specs/ota.md §3.1); null when the console did not say.
+  otaStatus: string | null;
+  otaError: string | null;
 };
 
 type Detected = {
@@ -142,6 +146,8 @@ async function lookupConsole(
       firmware?: unknown;
       label?: unknown;
       key_revoked?: unknown;
+      ota_status?: unknown;
+      ota_error?: unknown;
     };
     if (body.found !== true) return "missing";
     return {
@@ -149,6 +155,8 @@ async function lookupConsole(
       firmware: typeof body.firmware === "string" ? body.firmware : null,
       label: typeof body.label === "string" ? body.label : null,
       keyRevoked: body.key_revoked === true,
+      otaStatus: typeof body.ota_status === "string" ? body.ota_status : null,
+      otaError: typeof body.ota_error === "string" ? body.ota_error : null,
     };
   } catch {
     return "error";
@@ -1631,6 +1639,17 @@ export function SetupPanel({
                           : null
                       }
                     />
+                    {detected.consoleRecord.otaStatus === "offered" ||
+                    detected.consoleRecord.otaStatus === "failed" ? (
+                      <Field
+                        label="Wi-Fi update"
+                        value={
+                          detected.consoleRecord.otaStatus === "failed"
+                            ? `Failed: ${otaErrorText(detected.consoleRecord.otaError)}`
+                            : "Offered on Switches; the switch installs it when it checks in"
+                        }
+                      />
+                    ) : null}
                   </>
                 ) : null}
               </dl>
