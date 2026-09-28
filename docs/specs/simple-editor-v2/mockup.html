@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simple editor v2</title>
+<!-- Mockup for docs/specs/simple-editor-v2.md. Sample data only; nothing is saved. -->
+<style>
+  :root {
+    --background: #f3eee4; --foreground: #1c1814; --cream: #fffaf2; --muted: #6e675c;
+    --line: #e0d4c4; --filament: #c45c26; --filament-ink: #fffaf2; --filament-soft: #f6e4d6;
+    --ok: #2f5d38; --ok-soft: #e4f0dc; --warn: #8a6314; --warn-soft: #f8ecd0; --danger: #a33b2a;
+    --pcb: #2c4a3a; --pcb-edge: #1f3529; --metal: #c9c2b4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: #14110f; --foreground: #f4eee6; --cream: #1e1a17; --muted: #a89a8c;
+      --line: #3a322c; --filament: #e07a3d; --filament-ink: #1c140e; --filament-soft: #3a2618;
+      --ok: #9dce9a; --ok-soft: #1d2b1e; --warn: #e0c078; --warn-soft: #2f2718; --danger: #e08a7a;
+      --pcb: #22382c; --pcb-edge: #172820; --metal: #8a8478;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--foreground);
+    font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+  button:disabled { cursor: default; opacity: .4; }
+  input, select { font: inherit; color: inherit; }
+  .mono { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; }
+  .muted { color: var(--muted); }
+  .accent { color: var(--filament); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 18px; }
+  .banner { font-size: 12px; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
+  h1 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
+  .card { background: var(--cream); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .head { padding: 14px 20px; display: flex; flex-direction: column; gap: 4px; }
+  .head h2 { margin: 0; font-size: 16px; font-weight: 500; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .pill { border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .pill.unsaved { border-color: transparent; background: var(--filament-soft); color: var(--filament); }
+  .small { font-size: 12px; }
+  .cols { display: flex; flex-wrap: wrap; border-top: 1px solid var(--line); }
+  .left { flex: 1 1 380px; max-width: 100%; background: var(--background); padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+  .right { flex: 999 1 420px; min-width: 0; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .row-between { display: flex; justify-content: space-between; align-items: baseline; }
+  .board { display: flex; justify-content: center; }
+  .board { position: relative; }
+  .viewtoggle { position: absolute; top: -8px; left: 0; display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--cream); z-index: 1; }
+  .viewtoggle button { font-size: 11px; padding: 2px 10px; color: var(--muted); }
+  .viewtoggle button[aria-pressed="true"] { background: var(--filament-soft); color: var(--filament); font-weight: 500; }
+  .board3d { position: relative; width: 100%; max-width: 360px; aspect-ratio: 32 / 27; }
+  .board3d img, .board3d svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .board3d svg { overflow: visible; }
+  .board3d .hit { fill: transparent; }
+  .board3d .pad:hover circle.dot { stroke: var(--filament); stroke-width: 2; }
+  .board > svg { width: 100%; max-width: 280px; height: auto; }
+  .pad { cursor: pointer; }
+  .pad:hover .pad-hit { stroke: var(--filament); }
+  .list { display: flex; flex-direction: column; gap: 6px; }
+  .sw { display: grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: 10px; align-items: center;
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--cream); width: 100%; }
+  .sw:hover { border-color: color-mix(in srgb, var(--filament) 50%, var(--line)); }
+  .sw[aria-current="true"] { border-color: var(--filament); box-shadow: 0 0 0 1px var(--filament); background: var(--filament-soft); }
+  .sw .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sw .sub { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 999px;
+    background: var(--filament); color: var(--filament-ink); font-size: 11px; font-weight: 600; }
+  .num.ghost { background: transparent; color: var(--muted); border: 1.5px dashed var(--line); }
+  .add { display: flex; gap: 10px; align-items: center; padding: 9px 10px; border: 1.5px dashed var(--line);
+    border-radius: 10px; color: var(--filament); width: 100%; font-weight: 500; }
+  .add:hover { border-color: var(--filament); }
+  .choice { border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-size: 14px; }
+  .choice:hover:not(:disabled) { border-color: color-mix(in srgb, var(--filament) 50%, var(--line)); }
+  .choice[aria-pressed="true"] { border-color: var(--filament); background: var(--filament-soft); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .kind { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: center; background: var(--background); }
+  .kind:hover { border-color: var(--filament); }
+  .kind[aria-pressed="true"] { border-color: var(--filament); box-shadow: 0 0 0 1px var(--filament); background: var(--filament-soft); }
+  .kind b { display: block; font-weight: 600; }
+  .kind span { font-size: 12px; color: var(--muted); }
+  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .room { border: 1px solid var(--line); border-radius: 10px; background: var(--background); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .room:hover { border-color: var(--filament); }
+  .step { display: flex; flex-direction: column; gap: 10px; }
+  .step h4 { margin: 0; font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+  .step h4 .n { width: 20px; height: 20px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 11px; background: var(--line); }
+  .step.done h4 .n { background: var(--filament); color: var(--filament-ink); }
+  .step.later { opacity: .45; pointer-events: none; }
+  h3 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+  .fields { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 200px; min-width: 0; }
+  .field label, .field .lbl { font-size: 12px; color: var(--muted); }
+  .bigname { border: 0; border-bottom: 1px solid var(--line); background: transparent; padding: 2px 0 6px; font-size: 20px; font-weight: 600; letter-spacing: -.01em; outline: none; width: 100%; }
+  .bigname:focus { border-color: var(--filament); }
+  .bigname::placeholder { color: var(--muted); font-weight: 500; }
+  select { border: 1px solid var(--line); background: var(--cream); border-radius: 6px; padding: 7px 8px; outline: none; }
+  select:focus { border-color: var(--filament); }
+  .gesture { border: 1px solid var(--line); border-radius: 10px; }
+  .gesture.open { border-color: var(--filament); background: var(--background); }
+  .gesture > button { width: 100%; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 14px 16px; }
+  .gesture .glabel { width: 88px; flex-shrink: 0; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .gesture .gsum { flex: 1 1 200px; min-width: 0; font-size: 15px; }
+  .gesture .gsum.none { color: var(--muted); }
+  .gesture .gbody { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .note.warn { color: var(--warn); }
+  .wired { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 12px 16px; border: 1px solid var(--line); border-radius: 10px; width: 100%; }
+  .wired.open { border-color: var(--filament); background: var(--background); }
+  .danger-link { font-size: 12px; color: var(--muted); }
+  .danger-link:hover { color: var(--danger); }
+  .confirm { font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .confirm .q { color: var(--danger); }
+  .confirm button { font-weight: 500; }
+  .section { border-top: 1px solid var(--line); }
+  .section > button { width: 100%; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 14px 24px; }
+  .section .body { padding: 0 24px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .bar { position: sticky; bottom: 12px; margin: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--cream) 94%, transparent);
+    backdrop-filter: blur(6px); padding: 8px 12px; }
+  .btn { border-radius: 6px; padding: 6px 12px; font-size: 14px; font-weight: 500; }
+  .btn.primary { background: var(--filament); color: var(--filament-ink); }
+  .btn.ghost { border: 1px solid var(--line); font-weight: 400; }
+  .status { font-size: 12px; }
+  .empty { text-align: center; padding: 8px 0; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
+  .toolbar button { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+  .toolbar button[aria-pressed="true"] { border-color: var(--filament); color: var(--filament); }
+  .scene-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; border-radius: 999px; background: var(--filament); color: var(--filament-ink); font-size: 11px; font-weight: 600; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="banner">Mockup for <span class="mono">docs/specs/simple-editor-v2.md</span>. Sample Hue data; nothing is saved. Click pads, the BOOT marker, switches, gesture cards and "Add a switch".</p>
+  <div class="toolbar">
+    <span>Preview state:</span>
+    <button data-demo="normal" aria-pressed="true">Three switches</button>
+    <button data-demo="empty">Nothing wired yet</button>
+    <button data-demo="full">All six pins used</button>
+  </div>
+  <h1>Switches</h1>
+  <section class="card" id="app"></section>
+</div>
+
+<script>
+const ROOMS = [
+  { id: "r1", name: "Living", rtype: "room", lights: ["Floor lamp", "Ceiling", "Velador Tomás"], scenes: ["Relax", "Bright", "Read", "Nightlight"] },
+  { id: "r2", name: "Kitchen", rtype: "room", lights: ["Pendants", "Under cabinet"], scenes: ["Cook", "Dinner"] },
+  { id: "r3", name: "Hallway", rtype: "zone", lights: ["Entry", "Stairs"], scenes: ["Dim"] },
+  { id: "r4", name: "Bedroom", rtype: "room", lights: ["Bedside L", "Bedside R", "Ceiling"], scenes: ["Wake up", "Relax"] },
+  { id: "r5", name: "Office", rtype: "room", lights: ["Desk"], scenes: [] },
+];
+const PINS = [
+  { id: "d0", label: "D0", gpio: 0 }, { id: "d1", label: "D1", gpio: 1 }, { id: "d2", label: "D2", gpio: 2 },
+  { id: "d3", label: "D3", gpio: 21 }, { id: "d4", label: "D4", gpio: 22 }, { id: "d5", label: "D5", gpio: 23 },
+];
+const room = (id) => ROOMS.find((r) => r.id === id);
+const pin = (id) => PINS.find((p) => p.id === id);
+const KIND = { maintained: "Wall switch", momentary: "Push button" };
+
+function sample(which) {
+  if (which === "empty") return [];
+  const base = [
+    { id: "d0", kind: "maintained", room: "r1", label: "Front door", target: "all", scenes: ["Relax", "Bright"], double: null, hold: null },
+    { id: "d1", kind: "momentary", room: "r2", label: "", target: "all", scenes: [], double: null, hold: { action: "dim" } },
+    { id: "d2", kind: "maintained", room: "r3", label: "", target: "Entry", scenes: [], double: null, hold: null },
+  ];
+  if (which === "full") {
+    base.push(
+      { id: "d3", kind: "momentary", room: "r4", label: "Bed, left", target: "Bedside L", scenes: [], double: { action: "scenes", scenes: ["Relax"] }, hold: { action: "off" } },
+      { id: "d4", kind: "momentary", room: "r4", label: "Bed, right", target: "Bedside R", scenes: [], double: null, hold: null },
+      { id: "d5", kind: "maintained", room: "r5", label: "", target: "all", scenes: [], double: null, hold: null },
+      { id: "boot", kind: "momentary", room: "r3", label: "", target: "all", scenes: [], double: null, hold: null },
+    );
+  }
+  return base;
+}
+
+// BOOT is a switch like the others (channel id "boot", always a push button), pinned at the top
+// of the list. Only its Hold differs: nothing set means "re-pair with the Bridge".
+let saved, S;
+function reset(which) {
+  saved = JSON.stringify(sample(which));
+  S = {
+    channels: JSON.parse(saved),
+    selected: which === "empty" ? "boot" : "d0",
+    adding: null,
+    openGesture: null, wiredOpen: false, confirmRemove: false, notice: null,
+  };
+}
+reset("normal");
+
+const isBoot = (id) => id === "boot";
+const bootConfig = () => S.channels.find((c) => isBoot(c.id));
+const sorted = () => S.channels.filter((c) => !isBoot(c.id)).sort((a, b) => a.id.localeCompare(b.id));
+const indexOf = (id) => sorted().findIndex((c) => c.id === id) + 1;
+const freePins = () => PINS.filter((p) => !S.channels.some((c) => c.id === p.id));
+const dirty = () => JSON.stringify(S.channels) !== saved;
+const displayName = (c) => c.label.trim() || (isBoot(c.id) ? `BOOT · ${room(c.room).name}` : `${room(c.room).name} · ${KIND[c.kind]}`);
+const targetText = (c, t) => (t === "all" ? `all of ${room(c.room).name}` : t);
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+
+function icon(kind, size = 22) {
+  if (kind === "maintained") {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+      <rect x="6" y="3" width="12" height="18" rx="2.5"/><rect x="9.5" y="6" width="5" height="7" rx="1.2" fill="currentColor" stroke="none"/></svg>`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+    <rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>`;
+}
+
+function bigIcon(kind) {
+  if (kind === "maintained") {
+    return `<svg width="44" height="54" viewBox="0 0 44 54" aria-hidden="true">
+      <rect x="4" y="2" width="36" height="50" rx="6" fill="var(--cream)" stroke="var(--muted)" stroke-width="1.5"/>
+      <rect x="15" y="10" width="14" height="34" rx="4" fill="var(--line)"/>
+      <rect x="16" y="11" width="12" height="16" rx="3" fill="var(--filament)"/></svg>`;
+  }
+  return `<svg width="44" height="54" viewBox="0 0 44 54" aria-hidden="true">
+    <rect x="4" y="5" width="36" height="44" rx="6" fill="var(--cream)" stroke="var(--muted)" stroke-width="1.5"/>
+    <circle cx="22" cy="27" r="11" fill="var(--line)"/><circle cx="22" cy="27" r="7.5" fill="var(--filament)"/></svg>`;
+}
+
+// XIAO ESP32-C6, top view, USB-C up. Left edge: D0–D6. Right edge: 5V, GND, 3V3, D10–D7.
+function boardSvg() {
+  const top = 58, step = 30;
+  const left = ["d0", "d1", "d2", "d3", "d4", "d5", "d6"];
+  const right = ["5V", "GND", "3V3", "D10", "D9", "D8", "D7"];
+  let pads = "";
+  left.forEach((id, i) => {
+    const y = top + i * step;
+    const p = pin(id);
+    const c = S.channels.find((ch) => ch.id === id);
+    const sel = c && S.selected === id && !S.adding;
+    const addingHere = S.adding && S.adding.pin === id;
+    if (!p) {
+      pads += `<circle cx="70" cy="${y}" r="9" fill="var(--pcb-edge)" stroke="var(--metal)" stroke-width="1.5" opacity=".5"/>
+        <text x="46" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)" class="mono" opacity=".6">D6</text>`;
+      return;
+    }
+    const fill = c ? "var(--filament)" : "var(--pcb-edge)";
+    const ring = sel || addingHere ? `<circle cx="70" cy="${y}" r="14" fill="none" stroke="var(--filament)" stroke-width="2"/>` : "";
+    const label = c ? `<text x="70" y="${y + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--filament-ink)">${indexOf(id)}</text>` : "";
+    const title = c ? `${p.label}: ${esc(displayName(c))}` : `${p.label} is free. Click to add a switch here.`;
+    pads += `<g class="pad" data-pad="${id}" role="button" tabindex="0" aria-label="${esc(title)}"><title>${esc(title)}</title>
+      ${ring}<circle class="pad-hit" cx="70" cy="${y}" r="9" fill="${fill}" stroke="var(--metal)" stroke-width="1.5"/>${label}
+      <text x="46" y="${y + 4}" text-anchor="end" font-size="12" font-weight="${c ? 700 : 500}" fill="${c ? "var(--foreground)" : "var(--muted)"}" class="mono">${p.label}</text></g>`;
+  });
+  right.forEach((name, i) => {
+    const y = top + i * step;
+    pads += `<circle cx="210" cy="${y}" r="9" fill="var(--pcb-edge)" stroke="var(--metal)" stroke-width="1.5" opacity=".5"/>
+      <text x="234" y="${y + 4}" font-size="10" fill="var(--muted)" class="mono" opacity=".6">${name}</text>`;
+  });
+  const bootOn = !!bootConfig();
+  return `<svg viewBox="0 0 280 290" role="img" aria-label="XIAO ESP32-C6 board with pins D0 to D5">
+    <rect x="118" y="6" width="44" height="26" rx="6" fill="var(--metal)"/>
+    <rect x="54" y="24" width="172" height="252" rx="16" fill="var(--pcb)" stroke="var(--pcb-edge)" stroke-width="2"/>
+    <rect x="104" y="96" width="72" height="72" rx="6" fill="var(--pcb-edge)"/>
+    <text x="140" y="136" text-anchor="middle" font-size="10" fill="var(--metal)" class="mono">ESP32-C6</text>
+    <g data-select="boot" style="cursor:pointer"><title>BOOT, the button on the board</title>
+      <rect x="98" y="40" width="22" height="16" rx="3" fill="var(--metal)"/>
+      <rect x="103" y="44" width="12" height="8" rx="2" fill="${bootOn ? "var(--filament)" : "var(--pcb-edge)"}"/>
+      <text x="109" y="68" text-anchor="middle" font-size="8" fill="var(--metal)" class="mono">BOOT</text></g>
+    <rect x="160" y="40" width="22" height="16" rx="3" fill="var(--metal)" opacity=".6"/>
+    <text x="171" y="68" text-anchor="middle" font-size="8" fill="var(--metal)" class="mono" opacity=".6">RESET</text>
+    ${pads}
+  </svg>`;
+}
+
+// The real XIAO drawing (module script below) plus pad markers projected from the same camera.
+let DRAW = null; // { src, w, h, pads: { d0: [x, y], … }, boot: [x, y], center: [x, y] }
+// Per-viewer preference; 3D by default, like the landing.
+let VIEW = "iso";
+try { if (localStorage.getItem("simple-board-view") === "top") VIEW = "top"; } catch {}
+function board3d() {
+  const { src, w, h, pads, boot } = DRAW;
+  const pts = PINS.map((p) => pads[p.id]);
+  // Dots as big as the pad pitch allows; labels in a column left of the pads, one leader each.
+  const pitch = Math.min(...pts.slice(1).map((q, i) => Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1])));
+  const r = Math.max(3.5, Math.min(7, pitch * 0.42));
+  const colX = Math.min(...pts.map((q) => q[0])) - 26;
+  const gap = Math.max(18, pitch);
+  const midY = pts.reduce((s, q) => s + q[1], 0) / pts.length;
+  const labelY = (i) => midY + (i - (PINS.length - 1) / 2) * gap;
+  // Selected pin: dark ring, dark leader, label as a dark pill, drawn last so no neighbour covers it.
+  // Other used pins are softer (light fill, orange outline) so the selection stands out.
+  const rows = PINS.map((p, i) => {
+    const [x, y] = pads[p.id];
+    const c = S.channels.find((ch) => ch.id === p.id);
+    const sel = (c && S.selected === p.id && !S.adding) || (S.adding && S.adding.pin === p.id);
+    const ly = labelY(i);
+    const title = c ? `${p.label}: ${displayName(c)}` : `${p.label} is free. Click to add a switch here.`;
+    const leader = sel ? "var(--foreground)" : c ? "color-mix(in srgb, var(--filament) 55%, transparent)" : "var(--line)";
+    const dotFill = sel ? "var(--filament)" : c ? "var(--filament-soft)" : "var(--background)";
+    const dotStroke = sel || c ? "var(--filament)" : "var(--foreground)";
+    const label = sel
+      ? `<rect x="${colX - 21}" y="${ly - 8}" width="24" height="16" rx="4" fill="var(--foreground)"/>
+         <text x="${colX - 9}" y="${ly + 0.5}" text-anchor="middle" dominant-baseline="middle" font-size="11" font-weight="700" fill="var(--background)" class="mono">${p.label}</text>`
+      : `<text x="${colX}" y="${ly}" text-anchor="end" dominant-baseline="middle" font-size="11" font-weight="${c ? 600 : 500}" fill="${c ? "var(--foreground)" : "var(--muted)"}" class="mono">${p.label}</text>`;
+    const svg = `<g class="pad" data-pad="${p.id}" role="button" tabindex="0" aria-label="${esc(title)}" aria-current="${sel}" style="cursor:pointer"><title>${esc(title)}</title>
+      <rect class="hit" x="${colX - 44}" y="${ly - gap / 2}" width="${x - colX + 44 + r}" height="${gap}"/>
+      <line x1="${colX + 4}" y1="${ly}" x2="${x}" y2="${y}" stroke="${leader}" stroke-width="${sel ? 1.75 : 1}"/>
+      ${sel ? `<circle cx="${x}" cy="${y}" r="${r + 4}" fill="var(--background)" stroke="var(--foreground)" stroke-width="2"/>` : ""}
+      <circle class="dot" cx="${x}" cy="${y}" r="${sel ? r + 0.5 : r}" fill="${dotFill}" stroke="${dotStroke}" stroke-width="1.25"/>
+      ${label}
+      ${c ? `<circle cx="${colX - 32}" cy="${ly}" r="8" fill="var(--filament)"/><text x="${colX - 32}" y="${ly + 0.5}" text-anchor="middle" dominant-baseline="middle" font-size="9" font-weight="700" fill="var(--filament-ink)">${indexOf(p.id)}</text>` : ""}</g>`;
+    return { sel, svg };
+  });
+  let marks = rows.filter((row) => !row.sel).map((row) => row.svg).join("") + rows.filter((row) => row.sel).map((row) => row.svg).join("");
+  // BOOT callout: a leader up and out to a label above the board. Same three states as a pad.
+  const bootOn = !!bootConfig();
+  const bootSel = S.selected === "boot" && !S.adding;
+  const [bx, by] = boot;
+  const side = bx + 64 > w ? -1 : 1; // flip left when the label would run off the right
+  const ky = Math.min(by - 22, 14), kx = bx + side * 10;
+  const tx = kx + side * 14;
+  const bLine = bootSel ? "var(--foreground)" : bootOn ? "color-mix(in srgb, var(--filament) 55%, transparent)" : "var(--muted)";
+  const bLabel = bootSel
+    ? `<rect x="${side > 0 ? tx - 3 : tx - 37}" y="${ky - 8}" width="40" height="16" rx="4" fill="var(--foreground)"/>
+       <text x="${side > 0 ? tx + 17 : tx - 17}" y="${ky + 0.5}" text-anchor="middle" dominant-baseline="middle" font-size="11" font-weight="700" fill="var(--background)" class="mono">BOOT</text>`
+    : `<text x="${tx}" y="${ky}" text-anchor="${side > 0 ? "start" : "end"}" dominant-baseline="middle" font-size="11" font-weight="${bootOn ? 600 : 500}" fill="${bootOn ? "var(--foreground)" : "var(--muted)"}" class="mono">BOOT</text>`;
+  marks += `<g data-select="boot" style="cursor:pointer"><title>BOOT, the button on the board</title>
+    <circle class="hit" cx="${bx}" cy="${by}" r="12"/>
+    <rect class="hit" x="${side > 0 ? kx : tx - 44}" y="${ky - 9}" width="${Math.abs(tx - kx) + 44}" height="18"/>
+    <line x1="${bx}" y1="${by}" x2="${kx}" y2="${ky}" stroke="${bLine}" stroke-width="${bootSel ? 1.75 : 1}"/>
+    <line x1="${kx}" y1="${ky}" x2="${tx - side * 3}" y2="${ky}" stroke="${bLine}" stroke-width="${bootSel ? 1.75 : 1}"/>
+    ${bootSel ? `<circle cx="${bx}" cy="${by}" r="8" fill="var(--background)" stroke="var(--foreground)" stroke-width="2"/>` : ""}
+    <circle cx="${bx}" cy="${by}" r="4.5" fill="${bootSel ? "var(--filament)" : bootOn ? "var(--filament-soft)" : "var(--background)"}" stroke="${bootSel || bootOn ? "var(--filament)" : "var(--foreground)"}" stroke-width="1.25"/>
+    ${bLabel}</g>`;
+  return `<div class="board3d"><img src="${src}" alt="XIAO board">
+    <svg viewBox="0 0 ${w} ${h}" aria-label="Pins D0 to D5">${marks}</svg></div>`;
+}
+
+function renderLeft() {
+  const list = sorted();
+  const rows = list.map((c) => `
+    <button class="sw" data-select="${c.id}" aria-current="${S.selected === c.id && !S.adding}">
+      <span class="num">${indexOf(c.id)}</span>
+      <span style="min-width:0"><span class="name">${esc(displayName(c))}</span>
+        <span class="sub">${c.label.trim() ? `${esc(room(c.room).name)} · ` : ""}${KIND[c.kind]}</span></span>
+      <span class="mono small muted">${pin(c.id).label}</span>
+    </button>`).join("");
+  const b = bootConfig();
+  const bootRow = `
+    <button class="sw" data-select="boot" aria-current="${S.selected === "boot" && !S.adding}">
+      <span class="num ${b ? "" : "ghost"}" aria-hidden="true">B</span>
+      <span style="min-width:0"><span class="name">${b ? esc(displayName(b)) : "BOOT button"}</span>
+        <span class="sub">${b ? `${b.label.trim() ? `${esc(room(b.room).name)} · ` : ""}On the board · push button` : "On the board · set it up to test"}</span></span>
+      <span class="mono small muted">BOOT</span>
+    </button>`;
+  const addBtn = freePins().length > 0
+    ? `<button class="add" data-add="1"><span style="font-size:18px;line-height:1">+</span> Add a switch</button>`
+    : `<p class="note">All six pins are in use.</p>`;
+  return `<div class="left">
+    <div class="board">${DRAW ? `<div class="viewtoggle" role="group" aria-label="Board view">
+      <button data-view="top" aria-pressed="${VIEW === "top"}">Top</button>
+      <button data-view="iso" aria-pressed="${VIEW === "iso"}">3D</button></div>${board3d()}` : boardSvg()}</div>
+    <div class="list">
+      <div class="row-between"><span class="eyebrow">Switches</span><span class="small muted">${list.length} of 6 pins</span></div>
+      ${bootRow}
+      ${list.length === 0 ? `<p class="note empty">Nothing wired yet.</p>` : rows}
+      ${addBtn}
+    </div>
+  </div>`;
+}
+
+function renderAdd() {
+  const a = S.adding;
+  const free = freePins();
+  const s1 = `<div class="step ${a.kind ? "done" : ""}">
+    <h4><span class="n">1</span> What did you wire?</h4>
+    <div class="kinds">
+      ${["maintained", "momentary"].map((k) => `<button class="kind" data-add-kind="${k}" aria-pressed="${a.kind === k}">
+        ${bigIcon(k)}<span><b>${KIND[k]}</b><span>${k === "maintained" ? "A lever that stays up or down." : "A button that springs back."}</span></span></button>`).join("")}
+    </div></div>`;
+  const s2 = free.length === 1 ? "" : `<div class="step ${a.pin ? "done" : ""} ${a.kind ? "" : "later"}">
+    <h4><span class="n">2</span> Which pin is it on?</h4>
+    <div class="chips">${free.map((p) => `<button class="choice" data-add-pin="${p.id}" aria-pressed="${a.pin === p.id}">
+      <span class="mono">${p.label}</span> <span class="small muted">· GPIO ${p.gpio}</span></button>`).join("")}</div></div>`;
+  const ready = a.kind && a.pin;
+  const s3 = `<div class="step ${ready ? "" : "later"}">
+    <h4><span class="n">${free.length === 1 ? 2 : 3}</span> Which room or zone does it control?</h4>
+    <div class="rooms">${ROOMS.map((r) => `<button class="room" data-add-room="${r.id}"><span style="font-weight:500">${esc(r.name)}</span>
+      <span class="small muted">${r.rtype === "zone" ? "Zone" : "Room"} · ${r.lights.length} light${r.lights.length === 1 ? "" : "s"} · ${r.scenes.length} scene${r.scenes.length === 1 ? "" : "s"}</span></button>`).join("")}</div>
+    <p class="note">${a.kind === "momentary" ? "Click will toggle the whole group. You can change it after." : "Up turns the whole group on, down turns it off. You can change it after."}</p></div>`;
+  return `<div class="right">
+    <div><h3>Add a switch</h3><p class="note" style="margin-top:4px;font-size:14px">Tell the console what you connected to the board.</p></div>
+    ${s1}${s2}${s3}
+    <button class="small muted" data-cancel-add="1" style="align-self:flex-start">Cancel</button>
+  </div>`;
+}
+
+function gestureCards(c) {
+  const r = room(c.room);
+  const cards = [];
+  if (c.kind === "maintained") {
+    cards.push({ slot: "primary", label: "On / Off", summary: `Lever up turns on, down turns off ${targetText(c, c.target)}`, none: false });
+    cards.push({ slot: "double", label: "Double-click", summary: c.scenes.length ? `Cycles ${c.scenes.join(" → ")}` : "Does nothing", none: !c.scenes.length });
+  } else {
+    cards.push({ slot: "primary", label: "Click", summary: `Toggles ${targetText(c, c.target)}`, none: false });
+    const d = c.double;
+    cards.push({ slot: "double", label: "Double-click", summary: d ? `Cycles ${d.scenes.join(" → ") || "no scenes yet"}` : "Does nothing", none: !d });
+    const h = c.hold;
+    const holdNone = isBoot(c.id) ? "Re-pairs with the Bridge (hold 3 s)" : "Does nothing";
+    cards.push({ slot: "hold", label: "Hold", summary: h ? (h.action === "dim" ? `Dims ${targetText(c, c.target)} up or down` : `Turns off all of ${r.name}`) : holdNone, none: !h && !isBoot(c.id) });
+  }
+  return cards.map((g) => {
+    const key = `${c.id}:${g.slot}`;
+    const open = S.openGesture === key;
+    return `<div class="gesture ${open ? "open" : ""}">
+      <button data-gesture="${key}" aria-expanded="${open}"><span class="glabel">${g.label}</span>
+        <span class="gsum ${g.none ? "none" : ""}">${esc(g.summary)}</span><span class="small accent" style="font-weight:500">${open ? "Done" : "Change"}</span></button>
+      ${open ? `<div class="gbody">${gestureBody(c, g.slot)}</div>` : ""}</div>`;
+  }).join("");
+}
+
+function lightChips(c, current, attr) {
+  const r = room(c.room);
+  return `<div style="display:flex;flex-direction:column;gap:8px"><span class="small muted">Which lights in ${esc(r.name)}</span>
+    <div class="chips"><button class="choice" ${attr}="all" aria-pressed="${current === "all"}">Whole ${r.rtype} <span class="small muted">all lights</span></button>
+    ${r.lights.map((l) => `<button class="choice" ${attr}="${esc(l)}" aria-pressed="${current === l}">${esc(l)}</button>`).join("")}</div></div>`;
+}
+
+function sceneChips(c, list, attr) {
+  const r = room(c.room);
+  if (!r.scenes.length) return `<p class="note">${esc(r.name)} has no scenes. Create one in the Hue app; it shows up here after the next snapshot.</p>`;
+  return `<div style="display:flex;flex-direction:column;gap:8px"><span class="small muted">${list.length ? `${list.length} of 8 · click order is cycle order` : `Click scenes in ${esc(r.name)} in the order to cycle them.`}</span>
+    <div class="chips">${r.scenes.map((s) => { const i = list.indexOf(s); return `<button class="choice" ${attr}="${esc(s)}" aria-pressed="${i >= 0}">${i >= 0 ? `<span class="scene-n">${i + 1}</span>` : ""}${esc(s)}</button>`; }).join("")}</div></div>`;
+}
+
+function options(opts, current, attr) {
+  return `<div class="chips">${opts.map(([v, l, dis]) => `<button class="choice" ${attr}="${v}" aria-pressed="${current === v}" ${dis ? "disabled" : ""}>${l}</button>`).join("")}</div>`;
+}
+
+function gestureBody(c, slot) {
+  if (slot === "primary") return lightChips(c, c.target, "data-target");
+  if (c.kind === "maintained") {
+    const on = c.scenes.length > 0 || c._wantScenes;
+    return options([["none", "Nothing"], ["scenes", "Cycle scenes"]], on ? "scenes" : "none", "data-mdouble") + (on ? sceneChips(c, c.scenes, "data-mscene") : "");
+  }
+  if (slot === "double") {
+    return options([["none", "Nothing"], ["scenes", "Cycle scenes"]], c.double ? "scenes" : "none", "data-pdouble") + (c.double ? sceneChips(c, c.double.scenes, "data-pscene") : "");
+  }
+  const r = room(c.room);
+  const opts = [["none", isBoot(c.id) ? "Re-pair with the Bridge" : "Nothing"], ["dim", "Dim"]];
+  if (c.target !== "all" || c.hold?.action === "off") opts.push(["off", `Turn off all of ${esc(r.name)}`]);
+  return options(opts, c.hold ? c.hold.action : "none", "data-hold");
+}
+
+// BOOT not set up yet: the first thing to try, before anything is wired.
+function renderBootSetup() {
+  const first = sorted().length === 0;
+  return `<div class="right">
+    <div><h3>${first ? "Start with the BOOT button" : "BOOT button"}</h3>
+      <p class="note" style="margin-top:4px;font-size:14px">The small button on the board. Use it to check that everything works before you wire anything: pick a room, save, then press BOOT.</p></div>
+    <div class="step">
+      <h4>Which room or zone should BOOT control?</h4>
+      <div class="rooms">${ROOMS.map((r) => `<button class="room" data-boot-pick="${r.id}"><span style="font-weight:500">${esc(r.name)}</span>
+        <span class="small muted">${r.rtype === "zone" ? "Zone" : "Room"} · ${r.lights.length} light${r.lights.length === 1 ? "" : "s"} · ${r.scenes.length} scene${r.scenes.length === 1 ? "" : "s"}</span></button>`).join("")}</div>
+      <p class="note">Click will toggle the whole group. Holding BOOT for 3 s still re-pairs with the Bridge unless you change Hold.</p>
+    </div>
+    ${first && freePins().length ? `<button class="small accent" data-add="1" style="align-self:flex-start;font-weight:500">Or add a wired switch</button>` : ""}
+  </div>`;
+}
+
+function renderSelected() {
+  if (S.selected === "boot" && !bootConfig()) return renderBootSetup();
+  const c = S.channels.find((ch) => ch.id === S.selected);
+  if (!c) return `<div class="right"><p class="muted">Pick a switch on the left, or add one.</p></div>`;
+  const boot = isBoot(c.id);
+  const r = room(c.room);
+  const notes = [];
+  if (boot && c.hold) notes.push(["BOOT no longer re-pairs with the Bridge. To re-pair, set Hold back to Re-pair, or reinstall over USB from Setup.", true]);
+  if (c.kind === "maintained" && c.target !== "all" && c.scenes.length) notes.push(["Scenes apply to the whole " + r.rtype + ", not only this light."]);
+  if (c.kind === "momentary" && c.double) notes.push(["With a double-click set, a single click waits a moment before it acts."]);
+  if (c.kind === "momentary" && c.hold?.action === "dim") notes.push(["Hold ramps the light up or down, alternating each time. Let go to stop."]);
+  if (c.kind === "momentary" && c.target === "all" && !c.hold && !boot) notes.push([`Hold can turn off all of ${r.name} when Click controls a single light.`]);
+  const free = freePins();
+  const wired = boot
+    ? `<div class="wired"><span class="glabel" style="width:88px;font-size:12px;font-weight:500;color:var(--muted)">Wired as</span>
+        <span style="flex:1 1 200px;display:flex;gap:8px;align-items:center">${icon("momentary", 18)} Push button · the BOOT button on the board</span></div>`
+    : `<button class="wired ${S.wiredOpen ? "open" : ""}" data-wired="1" aria-expanded="${S.wiredOpen}">
+        <span class="glabel" style="width:88px;font-size:12px;font-weight:500;color:var(--muted)">Wired as</span>
+        <span style="flex:1 1 200px;display:flex;gap:8px;align-items:center">${icon(c.kind, 18)} ${KIND[c.kind]} on <span class="mono">${pin(c.id).label}</span></span>
+        <span class="small accent" style="font-weight:500">${S.wiredOpen ? "Done" : "Change"}</span></button>`;
+  const remove = boot
+    ? (S.confirmRemove
+      ? `<div class="confirm"><span class="q">Clear BOOT's settings? Hold goes back to re-pairing with the Bridge.</span><button style="color:var(--danger)" data-remove-yes="1">Clear</button><button data-remove-no="1">Keep</button></div>`
+      : `<button class="danger-link" data-remove="1">Clear BOOT settings</button>`)
+    : (S.confirmRemove
+      ? `<div class="confirm"><span class="q">Remove ${esc(displayName(c))} and its gestures?</span><button style="color:var(--danger)" data-remove-yes="1">Remove</button><button data-remove-no="1">Keep</button></div>`
+      : `<button class="danger-link" data-remove="1">Remove switch</button>`);
+  return `<div class="right">
+    <div class="fields">
+      <div class="field"><label for="nm">Name <span class="mono">· ${c.label.length}/40</span></label>
+        <input id="nm" class="bigname" maxlength="40" value="${esc(c.label)}" placeholder="${esc(r.name)}" data-name="1"></div>
+      <div class="field"><label for="rm">Room or zone</label>
+        <select id="rm" data-room="1">${ROOMS.map((x) => `<option value="${x.id}" ${x.id === c.room ? "selected" : ""}>${esc(x.name)} (${x.rtype})</option>`).join("")}</select></div>
+    </div>
+    <div>
+      ${wired}
+      ${S.wiredOpen && !boot ? `<div style="display:flex;flex-direction:column;gap:12px;padding:14px 4px 4px">
+        <div class="kinds">${["maintained", "momentary"].map((k) => `<button class="kind" data-kind="${k}" aria-pressed="${c.kind === k}">${bigIcon(k)}<span><b>${KIND[k]}</b>
+          <span>${k === "maintained" ? "A lever that stays up or down." : "A button that springs back."}</span></span></button>`).join("")}</div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span class="small muted">Pin${free.length ? " (move it if you rewired)" : ""}</span>
+          <div class="chips"><button class="choice" aria-pressed="true"><span class="mono">${pin(c.id).label}</span> <span class="small muted">· GPIO ${pin(c.id).gpio}</span></button>
+          ${free.map((p) => `<button class="choice" data-move="${p.id}"><span class="mono">${p.label}</span> <span class="small muted">· GPIO ${p.gpio}</span></button>`).join("")}</div></div>
+      </div>` : ""}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">${gestureCards(c)}</div>
+    ${notes.map(([t, w]) => `<p class="note ${w ? "warn" : ""}">${esc(t)}</p>`).join("")}
+    <div>${remove}</div>
+  </div>`;
+}
+
+function render() {
+  const d = dirty();
+  document.getElementById("app").innerHTML = `
+    <header class="head">
+      <h2>Hallway board <span class="pill">Simple</span>${d ? `<span class="pill unsaved">Unsaved</span>` : ""}</h2>
+      <p class="small muted"><span class="mono">40:4C:CA:12:34:56</span> · firmware 0.5.0 · rev 14 · <span class="accent" style="text-decoration:underline">What the LED shows</span></p>
+      <p class="small" style="color:var(--ok)">Up to date: the switch runs the saved config.</p>
+    </header>
+    <div class="cols">${renderLeft()}${S.adding ? renderAdd() : renderSelected()}</div>
+    <div class="bar">
+      <button class="btn primary" data-save="1" ${d ? "" : "disabled"}>Save switches</button>
+      <button class="btn ghost" data-discard="1" ${d ? "" : "disabled"}>Discard</button>
+      <span class="status ${S.notice ? "" : d ? "accent" : "muted"}" style="${S.notice?.ok ? "color:var(--ok)" : ""}">${esc(S.notice?.text ?? (d ? "Unsaved changes" : "Unused pins do nothing."))}</span>
+    </div>`;
+}
+
+const current = () => S.channels.find((c) => c.id === S.selected);
+function toggle(list, item) { return list.includes(item) ? list.filter((x) => x !== item) : [...list, item]; }
+function startAdd(pinId) {
+  const free = freePins();
+  S.adding = { kind: null, pin: pinId ?? (free.length === 1 ? free[0].id : null) };
+  S.openGesture = null; S.wiredOpen = false; S.confirmRemove = false; S.notice = null;
+}
+
+document.addEventListener("input", (e) => {
+  if (e.target.matches("[data-name]")) {
+    current().label = e.target.value.slice(0, 40);
+    const pos = e.target.selectionStart; render();
+    const el = document.getElementById("nm"); el.focus(); el.setSelectionRange(pos, pos);
+  }
+});
+
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.matches("[data-room]")) {
+    const c = current(); c.room = t.value; c.target = "all"; c.scenes = []; c.double = null; c.hold = null; S.openGesture = null;
+    S.notice = { text: `Gestures reset for ${room(c.room).name}.` };
+  }
+  render();
+});
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("button, [data-pad], [data-select]");
+  if (!el) return;
+  const d = el.dataset;
+  const before = S.notice;
+  if (d.view) {
+    if (d.view === VIEW) return;
+    VIEW = d.view;
+    try { localStorage.setItem("simple-board-view", VIEW); } catch {}
+    window.drawXiao?.();
+    return;
+  }
+  if (d.demo) {
+    document.querySelectorAll("[data-demo]").forEach((b) => b.setAttribute("aria-pressed", b === el));
+    reset(d.demo);
+  } else if (d.bootPick) {
+    S.channels.push({ id: "boot", kind: "momentary", room: d.bootPick, label: "", target: "all", scenes: [], double: null, hold: null });
+    S.notice = { text: `BOOT now toggles ${room(d.bootPick).name}. Save, then press BOOT on the board to test.` };
+  } else if (d.pad) {
+    const c = S.channels.find((ch) => ch.id === d.pad);
+    if (c) { S.selected = c.id; S.adding = null; S.openGesture = null; S.wiredOpen = false; S.confirmRemove = false; }
+    else startAdd(d.pad);
+  } else if (d.select) {
+    S.selected = d.select; S.adding = null; S.openGesture = null; S.wiredOpen = false; S.confirmRemove = false; S.notice = null;
+  } else if (d.add) startAdd();
+  else if (d.cancelAdd) S.adding = null;
+  else if (d.addKind) S.adding.kind = d.addKind;
+  else if (d.addPin) S.adding.pin = d.addPin;
+  else if (d.addRoom) {
+    const c = { id: S.adding.pin, kind: S.adding.kind, room: d.addRoom, label: "", target: "all", scenes: [], double: null, hold: null };
+    S.channels.push(c); S.selected = c.id; S.adding = null;
+    S.notice = { text: `Added ${KIND[c.kind].toLowerCase()} on ${pin(c.id).label}. Name it so you can tell switches apart.` };
+  } else if (d.gesture) S.openGesture = S.openGesture === d.gesture ? null : d.gesture;
+  else if (d.wired) S.wiredOpen = !S.wiredOpen;
+  else if (d.kind) {
+    const c = current();
+    if (c.kind !== d.kind) {
+      if (d.kind === "momentary") {
+        c.double = c.scenes.length ? { action: "scenes", scenes: c.scenes } : null; c.scenes = []; c.hold = null;
+        S.notice = { text: c.double ? "Now a push button: double-click scenes moved over." : "Now a push button: Click toggles, Double-click and Hold do nothing yet." };
+      } else {
+        c.scenes = c.double ? c.double.scenes : []; c.double = null; c.hold = null;
+        S.notice = { text: "Now a wall switch: hold cleared; double-click scenes kept." };
+      }
+      c.kind = d.kind; S.openGesture = null;
+    }
+  } else if (d.move) {
+    const c = current(); const from = pin(c.id).label; c.id = d.move; S.selected = d.move;
+    S.notice = { text: `Moved from ${from} to ${pin(c.id).label}.` };
+  } else if (d.target) {
+    const c = current(); c.target = d.target;
+    if (c.hold?.action === "off" && d.target === "all") { c.hold = null; S.notice = { text: `Hold turn off removed: Click already controls all of ${room(c.room).name}.` }; }
+  } else if (d.mdouble) { const c = current(); c._wantScenes = d.mdouble === "scenes"; if (d.mdouble === "none") c.scenes = []; }
+  else if (d.mscene) { const c = current(); c.scenes = toggle(c.scenes, d.mscene); c._wantScenes = true; }
+  else if (d.pdouble) { const c = current(); c.double = d.pdouble === "scenes" ? (c.double ?? { action: "scenes", scenes: [] }) : null; }
+  else if (d.pscene) { const c = current(); c.double.scenes = toggle(c.double.scenes, d.pscene); }
+  else if (d.hold) { const c = current(); c.hold = d.hold === "none" ? null : { action: d.hold }; }
+  else if (d.remove) S.confirmRemove = true;
+  else if (d.removeNo) S.confirmRemove = false;
+  else if (d.removeYes) {
+    const c = current(), boot = isBoot(c.id), name = displayName(c);
+    S.channels = S.channels.filter((ch) => ch.id !== S.selected); S.confirmRemove = false; S.openGesture = null;
+    if (!boot) S.selected = sorted()[0]?.id ?? "boot";
+    S.notice = { text: boot ? "Cleared BOOT. Holding it re-pairs with the Bridge again." : `Removed ${name}.` };
+  } else if (d.save) {
+    S.channels.forEach((c) => delete c._wantScenes);
+    saved = JSON.stringify(S.channels);
+    S.notice = { text: "Saved · rev 15. The switch picks this up on its next check-in.", ok: true };
+  } else if (d.discard) {
+    S.channels = JSON.parse(saved);
+    S.adding = null;
+    if (!isBoot(S.selected) && !S.channels.some((c) => c.id === S.selected)) S.selected = sorted()[0]?.id ?? "boot";
+    S.notice = { text: "Reverted to the last saved switches." };
+  } else return;
+  // An edit that set no notice of its own clears the last one ("Saved" must not outlive a change).
+  const navigation = d.gesture || d.wired || d.pad || d.remove || d.removeNo || d.add || d.addKind || d.addPin || d.cancelAdd;
+  if (S.notice === before && !navigation) S.notice = null;
+  render();
+});
+
+render();
+</script>
+
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js" } }</script>
+<script type="module">
+// Port of buildXiao / buildHeaders / lineStyle from app/landing/round-model.ts and the camera
+// from app/landing/simple-render.ts (the user's Claude Design model). The editor imports those.
+import * as THREE from "three";
+
+const MM = 0.001, T = 1.25;
+const PAD_Z = [7.62, 5.08, 2.54, 0, -2.54, -5.08]; // D0–D5, as in simple-render.ts
+
+function builder(name) {
+  const root = new THREE.Group();
+  root.name = name;
+  root.scale.setScalar(MM);
+  const add = (n, geo, mat, x, y, z, parent = root) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.name = n; m.position.set(x, y, z); parent.add(m); return m;
+  };
+  return { root, add };
+}
+const mat = () => new THREE.MeshBasicMaterial();
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const cyl = (r, h, seg = 48) => new THREE.CylinderGeometry(r, r, h, seg);
+function extrudeFlat(sh, h) {
+  const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 24 });
+  g.rotateX(Math.PI / 2); g.translate(0, h, 0); return g;
+}
+
+function buildXiao() {
+  const W = 17.8, L = 21.0, T_PCB = 1.2, PITCH = 2.54, PAD_X = 7.62, HOLE_R = 0.5;
+  const PAD_ZS = Array.from({ length: 7 }, (_, i) => (i - 3) * PITCH);
+  const M = mat();
+  const { root, add } = builder("XIAO");
+  function roundRect(w, d, r, h, holes) {
+    const sh = new THREE.Shape(), x = -w / 2, y = -d / 2;
+    sh.moveTo(x + r, y); sh.lineTo(x + w - r, y); sh.absarc(x + w - r, y + r, r, -Math.PI / 2, 0, false);
+    sh.lineTo(x + w, y + d - r); sh.absarc(x + w - r, y + d - r, r, 0, Math.PI / 2, false);
+    sh.lineTo(x + r, y + d); sh.absarc(x + r, y + d - r, r, Math.PI / 2, Math.PI, false);
+    sh.lineTo(x, y + r); sh.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false);
+    for (const [hx, hz, hr] of holes) { const p = new THREE.Path(); p.absarc(hx, hz, hr, 0, Math.PI * 2, true); sh.holes.push(p); }
+    return extrudeFlat(sh, h);
+  }
+  function padGeo(side, z) {
+    const x0 = side * (PAD_X - 0.85), x1 = side * (W / 2), sh = new THREE.Shape();
+    const lo = Math.min(x0, x1), hi = Math.max(x0, x1);
+    sh.moveTo(lo, z - 0.8); sh.lineTo(hi, z - 0.8); sh.lineTo(hi, z + 0.8); sh.lineTo(lo, z + 0.8); sh.closePath();
+    const p = new THREE.Path(); p.absarc(side * PAD_X, z, HOLE_R, 0, Math.PI * 2, true); sh.holes.push(p);
+    return extrudeFlat(sh, 0.04);
+  }
+  add("pcb", roundRect(W, L, 1.2, T_PCB, [-1, 1].flatMap((sd) => PAD_ZS.map((z) => [sd * PAD_X, z, HOLE_R]))), M, 0, 0, 0);
+  for (const side of [-1, 1])
+    for (let i = 0; i < 7; i++) {
+      const z = (i - 3) * PITCH;
+      add("pad_top", padGeo(side, z), M, 0, T_PCB + 0.001, 0);
+      add("via", new THREE.CylinderGeometry(HOLE_R - 0.01, HOLE_R - 0.01, T_PCB + 0.08, 32, 1, true), M, side * PAD_X, T_PCB / 2, z);
+    }
+  {
+    const r = 1.58, hx = 8.94 / 2 - r, sh = new THREE.Shape();
+    sh.moveTo(-hx, -r); sh.lineTo(hx, -r); sh.absarc(hx, 0, r, -Math.PI / 2, Math.PI / 2, false);
+    sh.lineTo(-hx, r); sh.absarc(-hx, 0, r, Math.PI / 2, Math.PI * 1.5, false);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: 7.35, bevelEnabled: false, curveSegments: 16 });
+    g.translate(0, 0, -7.35 / 2);
+    add("usb_c", g, M, 0, T_PCB + 1.58, L / 2 - 3.2);
+  }
+  add("rf_shield", box(12.6, 1.9, 9.6), M, 0, T_PCB + 0.95, -2.4);
+  add("ufl_connector", box(2.6, 0.6, 2.6), M, 3.8, T_PCB + 0.3, -9.0);
+  add("ufl_jack", cyl(1.0, 0.65, 32), M, 3.8, T_PCB + 0.6 + 0.325, -9.0);
+  add("button_boot", box(2.6, 0.9, 1.6), M, -5.3, T_PCB + 0.45, 4.8);
+  add("button_boot_cap", box(1.2, 0.3, 0.8), M, -5.3, T_PCB + 1.05, 4.8);
+  add("button_reset", box(2.6, 0.9, 1.6), M, 5.3, T_PCB + 0.45, 4.8);
+  add("button_reset_cap", box(1.2, 0.3, 0.8), M, 5.3, T_PCB + 1.05, 4.8);
+  add("charge_led", box(1.0, 0.5, 0.6), M, 5.2, T_PCB + 0.25, 8.9);
+  [[-5.2, 8.9], [-6.0, 2.9], [6.0, 2.9], [-2.0, 3.4], [2.0, 3.4], [-6.0, -9.2], [-3.6, -9.2]].forEach(([x, z]) =>
+    add("passive", box(1.0, 0.5, 0.5), M, x, T_PCB + 0.25, z));
+  return root;
+}
+
+function buildHeaders() {
+  const PITCH = 2.54, N = 7, ROW_X = 7.62, BODY = 2.5, PIN = 0.64, SHORT = 3.0, LONG = 6.0;
+  const Y_BODY0 = SHORT, Y_BODY1 = SHORT + BODY, Y_MAX = SHORT + BODY + LONG, CH = 0.35;
+  const M = mat();
+  const { root, add } = builder("headers");
+  const tip = () => new THREE.CylinderGeometry(0.16, PIN / Math.SQRT2, CH, 4, 1).rotateY(Math.PI / 4);
+  for (const side of [-1, 1]) {
+    const row = new THREE.Group(); row.position.x = side * ROW_X; root.add(row);
+    for (let i = 0; i < N; i++) {
+      const z = (i - (N - 1) / 2) * PITCH;
+      add("body", box(BODY, BODY, PITCH - 0.02), M, 0, (Y_BODY0 + Y_BODY1) / 2, z, row);
+      add("pin", box(PIN, Y_MAX - 2 * CH, PIN), M, 0, Y_MAX / 2, z, row);
+      add("tip", tip(), M, 0, Y_MAX - CH / 2, z, row);
+      add("tail", tip().rotateX(Math.PI), M, 0, CH / 2, z, row);
+    }
+  }
+  return root;
+}
+
+function lineStyle(fg, bg, w, h) {
+  const fill = new THREE.MeshBasicMaterial({ color: bg, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  const edge = new THREE.LineBasicMaterial({ color: fg });
+  const outline = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: { thickness: { value: 1.0 }, resolution: { value: new THREE.Vector2(w, h) }, color: { value: new THREE.Color(fg) } },
+    vertexShader: `uniform float thickness; uniform vec2 resolution;
+      void main(){ vec4 c = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+        vec3 n = normalize(normalMatrix * normal); vec2 d = n.xy; float l = length(d);
+        if (l > 1e-4) c.xy += (d / l) * thickness * 2.0 / resolution * c.w; gl_Position = c; }`,
+    fragmentShader: `uniform vec3 color; void main(){ gl_FragColor = vec4(color,1.0); }`,
+  });
+  return { fill, edge, outline };
+}
+function applyLineStyle(root, st) {
+  const meshes = [];
+  root.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  for (const m of meshes) {
+    m.material = st.fill;
+    m.add(new THREE.Mesh(m.geometry, st.outline));
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 20), st.edge));
+  }
+}
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function renderXiao(w, h, view) {
+  const grp = new THREE.Group();
+  const board = buildXiao(), headers = buildHeaders();
+  headers.rotation.x = Math.PI;
+  headers.position.set(0, 3 * MM, 0);
+  grp.add(board);
+  if (view === "iso") grp.add(headers);
+  applyLineStyle(grp, lineStyle(cssVar("--foreground"), cssVar("--background"), w, h));
+  const scene = new THREE.Scene();
+  scene.add(grp);
+  grp.updateMatrixWorld(true);
+
+  const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.001, 2);
+  const bb = new THREE.Box3().setFromObject(grp), ctr = bb.getCenter(new THREE.Vector3());
+  // Iso: the landing's direction. Top: straight down, USB-C up, so D0–D5 run down the left edge.
+  const dir = view === "iso" ? new THREE.Vector3(0.8, 2.2, -1) : new THREE.Vector3(0, 1, 0);
+  if (view === "top") cam.up.set(0, 0, 1);
+  cam.position.copy(ctr).addScaledVector(dir.normalize(), 0.5);
+  cam.lookAt(ctr);
+  cam.updateMatrixWorld();
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) {
+    const v = new THREE.Vector3(x, y, z).applyMatrix4(cam.matrixWorldInverse);
+    x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y);
+  }
+  // Board centred; the side margins are wide enough for the pin label column on the left.
+  const a = w / h, bw = x1 - x0, bh = y1 - y0;
+  let left = x0 - bw * 0.4, right = x1 + bw * 0.4, top = y1 + bh * 0.1, bottom = y0 - bh * 0.1;
+  const fw = right - left, fh = top - bottom;
+  if (fw / fh > a) { const e = (fw / a - fh) / 2; top += e; bottom -= e; }
+  else { const e = (fh * a - fw) / 2; left -= e; right += e; }
+  Object.assign(cam, { left, right, top, bottom });
+  cam.updateProjectionMatrix();
+
+  const canvas = document.createElement("canvas");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setClearColor(0, 0);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * 1.5);
+  renderer.setSize(w, h, false);
+  renderer.render(scene, cam);
+  const src = canvas.toDataURL("image/png");
+  const px = (x, y, z) => {
+    const v = board.localToWorld(new THREE.Vector3(x, y, z)).project(cam);
+    return [((v.x + 1) / 2) * w, ((1 - v.y) / 2) * h];
+  };
+  const pads = {};
+  PAD_Z.forEach((z, i) => (pads["d" + i] = px(7.62, T, z)));
+  const boot = px(-5.2, T + 0.5, 8.9); // same point as the landing's BOOT callout
+  renderer.dispose();
+  renderer.forceContextLoss();
+  return { src, w, h, pads, boot };
+}
+
+window.drawXiao = () => {
+  try {
+    DRAW = renderXiao(360, 304, VIEW);
+  } catch (err) {
+    console.warn("No WebGL drawing; keeping the flat one.", err);
+    DRAW = null;
+  }
+  render();
+};
+window.drawXiao();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => window.drawXiao());
+</script>
+</body>
+</html>
