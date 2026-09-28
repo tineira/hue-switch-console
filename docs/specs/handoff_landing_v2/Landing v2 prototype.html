@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="ember">
+<head>
+<meta charset="utf-8">
+<title>Hue Switch Console · landing v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.184.0/examples/jsm/"
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html[data-theme="ember"] { --background:#14110f; --foreground:#f4eee6; --cream:#1e1a17; --muted:#a89a8c; --line:#3a322c; --filament:#e07a3d; --filament-ink:#1c140e; --filament-soft:#3a2618; }
+  html[data-theme="paper"] { --background:#f3eee4; --foreground:#1c1814; --cream:#fffaf2; --muted:#6e675c; --line:#e0d4c4; --filament:#c45c26; --filament-ink:#fffaf2; --filament-soft:#f6e4d6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--background); color: var(--foreground); font-family: "Geist", system-ui, sans-serif; }
+  a { color: var(--filament); } a:hover { color: var(--foreground); }
+  .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+  header { max-width: 1200px; margin: 0 auto; padding: 20px clamp(18px,4vw,48px) 0; display: flex; align-items: center; gap: 10px; }
+  .logo { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--filament); border-bottom-color: transparent; transform: rotate(45deg); }
+  .brand { font-size: 15px; font-weight: 600; letter-spacing: -.01em; flex: 1; }
+  .toggle { width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--cream); cursor: pointer; display: grid; place-items: center; }
+  .toggle:hover { border-color: var(--filament); }
+  .toggle i { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--foreground); background: linear-gradient(90deg, var(--foreground) 50%, transparent 50%); }
+  .intro { max-width: 1200px; margin: 0 auto; padding: 72px clamp(18px,4vw,48px) 24px; }
+  h2 { margin: 0 0 10px; font-size: clamp(26px,3vw,36px); line-height: 1.1; font-weight: 600; letter-spacing: -.025em; }
+  .sub { margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 40em; }
+  #track { position: relative; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: clamp(28px, 4vw, 56px); padding: 0 clamp(18px,4vw,48px); }
+  .hero { min-height: calc(100vh - 60px); display: flex; flex-direction: column; justify-content: center; gap: 24px; padding: 24px 0; }
+  .hero .eyebrow { font-size: 12px; letter-spacing: .08em; }
+  h1 { margin: 0; font-size: clamp(40px, 5.2vw, 64px); line-height: 1; font-weight: 600; letter-spacing: -.035em; text-wrap: balance; }
+  .lead { margin: 0; font-size: clamp(16px, 1.5vw, 18px); line-height: 1.55; color: var(--muted); max-width: 34em; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { min-height: 46px; padding: 0 20px; border-radius: 8px; font: 500 15px "Geist", sans-serif; display: inline-flex; align-items: center; text-decoration: none; border: 1px solid var(--line); background: var(--background); color: var(--foreground); }
+  .btn:hover { border-color: var(--filament); color: var(--foreground); }
+  .btn.primary { background: var(--filament); border-color: var(--filament); color: var(--filament-ink); }
+  .btn.primary:hover { filter: brightness(1.08); color: var(--filament-ink); }
+  .acct { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .acct a { color: var(--foreground); text-underline-offset: 3px; }
+  .signin { min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--background); color: var(--foreground); font: 500 14px "Geist", sans-serif; display: inline-flex; align-items: center; text-decoration: none; }
+  .signin:hover { border-color: var(--filament); color: var(--foreground); }
+  .storyWrap { height: 340vh; }
+  #sticky { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 20px 0; }
+  .story { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+  #scrollHint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font: 400 11px "Geist Mono", monospace; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); background: var(--cream); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); opacity: 0; transition: opacity 300ms; pointer-events: none; white-space: nowrap; }
+  #scrollHint.on { opacity: 1; }
+  .sec { max-width: 1200px; margin: 0 auto; padding: clamp(56px, 8vw, 104px) clamp(18px,4vw,48px) 0; }
+  .trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .trust > div { padding: 22px 20px 22px 0; display: flex; flex-direction: column; gap: 6px; }
+  .trust b { font-size: 15px; font-weight: 600; } .trust span { font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .hrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 24px; }
+  .hrow a { font-size: 15px; font-weight: 500; text-decoration: none; } .hrow a:hover { text-decoration: underline; }
+  .steps3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
+  .vis { height: 180px; border-radius: 16px; background: var(--cream); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .face { width: 112px; height: 112px; border-radius: 50%; background: #0d0d10; box-shadow: 0 0 0 5px #0b0b0c, 0 6px 14px rgb(0 0 0 / 35%); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font: 600 11px "Geist Mono", monospace; color: #f2f2f0; text-align: center; gap: 3px; }
+  .face::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; border: 5px solid var(--ring, #8e8e96); }
+  .face small { font-weight: 400; font-size: 9px; color: #8e8e96; }
+  .vlist { font: 400 11px/1.9 "Geist Mono", monospace; color: var(--muted); }
+  .mini { width: min(260px, 86%); background: var(--background); border: 1px solid var(--line); border-radius: 10px; font: 400 12px "Geist Mono", monospace; }
+  .mini div { display: flex; justify-content: space-between; padding: 7px 10px; border-top: 1px solid var(--line); } .mini div:first-child { border-top: 0; }
+  .mini span:last-child { color: var(--muted); }
+  .snum { font: 400 12px "Geist Mono", monospace; color: var(--filament); margin: 14px 0 6px; }
+  .steps3 h4 { margin: 0 0 6px; font-size: 18px; font-weight: 600; } .steps3 p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+  .band { background: var(--cream); border: 1px solid var(--line); border-radius: 24px; padding: clamp(24px, 4vw, 44px); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; }
+  .band h3 { margin: 0 0 6px; font-size: clamp(24px, 2.6vw, 32px); line-height: 1.15; font-weight: 600; letter-spacing: -.02em; } .band p { margin: 0; font-size: 15px; color: var(--muted); max-width: 36em; line-height: 1.5; }
+  .band .acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; } .band .acts > a:last-child { color: var(--muted); font-size: 15px; text-decoration: none; }
+  .tm { max-width: 1200px; margin: 0 auto; padding: 32px clamp(18px,4vw,48px) 40px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+  .tm p { margin: 0; max-width: 52em; }
+  .eyebrow { font: 400 11px "Geist Mono", monospace; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .story h3 { margin: 0; font-size: clamp(22px, 2.2vw, 28px); line-height: 1.15; font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
+  .steps { border-top: 1px solid var(--line); }
+  .steps li { transition: opacity 300ms ease; }
+  .steps.playing li.try { opacity: .38; }
+  .steps.playing li.on { opacity: 1; }
+  .steps li .n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; padding: 0; border: 1.5px solid transparent; transition: background 300ms, color 300ms, border-color 300ms; }
+  .steps li.on .n { border-color: var(--filament); }
+  .steps li.try .n { font-size: 14px; }
+  #caption { display: none; font: 400 12px "Geist Mono", monospace; color: var(--muted); text-align: center; min-height: 18px; }
+  #caption b { color: var(--filament); font-weight: 400; }
+  .card { width: 100%; background: var(--cream); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+  .card-h { display: flex; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  #draw { position: relative; aspect-ratio: 520 / 440; max-height: calc(100vh - 110px); width: 100%; overflow: hidden; touch-action: pan-y; background: var(--cream); }
+  #draw.try { touch-action: none; }
+  #grid { position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, var(--line) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 24px); }
+  #pulse { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 400ms ease; }
+  #pulse::before, #pulse::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--filament); animation: pulse 1.8s ease-out infinite; }
+  #pulse::after { animation-delay: .9s; }
+  @keyframes pulse { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+  #hint { position: absolute; pointer-events: none; opacity: 0; transform: translate(-50%, 6px); transition: opacity 400ms ease, transform 400ms ease;
+    background: var(--filament); color: var(--filament-ink); font: 500 12px "Geist Mono", monospace; padding: 7px 12px; border-radius: 999px; white-space: nowrap; }
+  #hint.on, #pulse.on { opacity: 1; } #hint.on { transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { #pulse::before, #pulse::after { animation: none; } }
+  #room, #roomDark { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 450ms ease; }
+  #roomDark { background: #000; }
+  #draw canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #calls { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  #calls text { font: 500 13px "Geist Mono", monospace; fill: var(--foreground); }
+  #try { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+    opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity 400ms ease, transform 400ms ease; }
+  #try.on { opacity: 1; transform: none; pointer-events: auto; }
+  #try button { appearance: none; background: var(--cream); border: 1px solid var(--line); border-radius: 999px; color: var(--foreground);
+    font: 400 12px "Geist Mono", monospace; min-height: 36px; padding: 0 12px; display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  #try button:hover { border-color: var(--filament); background: var(--filament-soft); }
+  #try button span:last-child { color: var(--muted); }
+  #readout { text-transform: none; letter-spacing: 0; }
+  ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+  li:last-child { border-bottom: 0; }
+  .n { font: 400 13px "Geist Mono", monospace; color: var(--filament); padding-top: 2px; }
+  .pn { font-size: 15px; font-weight: 600; }
+  .pd { font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .simple { max-width: 1200px; margin: 0 auto; padding: clamp(56px, 8vw, 104px) clamp(18px,4vw,48px) 0; }
+  .simple .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+  .simple .card > .col { min-width: 0; }
+  .simple .card > .col + .col { border-left: 1px solid var(--line); }
+  .simple ol { border-top: 0; }
+  .simple .card > .col:last-child { display: flex; flex-direction: column; }
+  .dswrap { flex: 1; display: flex; align-items: center; background-image: repeating-linear-gradient(0deg,var(--line) 0 1px,transparent 1px 24px),repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 24px); background-position: center; }
+  .ds { position: relative; width: 100%; overflow: hidden; }
+  .ds > .inner { position: absolute; left: 50%; top: 0; width: 520px; height: 440px; transform-origin: top center; font: 400 12px/16px "Geist Mono", monospace; color: var(--foreground); }
+  @media (max-width: 860px) {
+    #track { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .hero { min-height: auto; padding: 56px 0 40px; }
+    .storyWrap { display: none; }
+    .right { height: 300vh; }
+    #sticky { justify-content: flex-start; padding-top: 12px; gap: 10px; }
+    #caption { display: block; }
+    #draw { max-height: 58vh; }
+    .simple .card { grid-template-columns: minmax(0, 1fr); }
+    .simple .card > .col + .col { border-left: 0; border-top: 1px solid var(--line); }
+    .simple .card > .col:first-child { order: 2; }
+  }
+  .sroom { position: relative; height: 236px; margin: 0 18px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--background);
+    display: flex; align-items: center; justify-content: center; }
+  .sroom .rl { position: absolute; pointer-events: none; transition: opacity 450ms ease, background 450ms ease; }
+  .sroom.still .rl { transition: none; }
+  .plate { position: relative; width: 108px; height: 160px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, #f7f4ee 0%, #e9e4db 100%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%), inset 0 -2px 0 rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 30%), 0 16px 32px rgb(0 0 0 / 35%); }
+  .screw { position: absolute; left: 50%; margin-left: -4px; width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #d6d0c6, #bfb8ad); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%); }
+  .well { box-sizing: border-box; width: 60px; height: 96px; border-radius: 8px; padding: 3px; background: #d9d3c9; box-shadow: inset 0 1px 3px rgb(0 0 0 / 25%); }
+  #rocker { width: 100%; height: 100%; border-radius: 6px; cursor: pointer; touch-action: none; user-select: none; transition: transform 140ms, background 140ms;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 25%), inset 0 0 0 1px rgb(255 255 255 / 60%); }
+  .ledtag { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--background); border-radius: 999px; padding: 4px 10px; font: 400 10px "Geist Mono", monospace; color: var(--muted); }
+  .dev { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .led { --k: .857; position: relative; display: block; width: calc(14px * var(--k)); height: calc(14px * var(--k)); border-radius: 50%; background: #3a2410; box-shadow: inset 0 0 0 1px rgb(255 140 40 / 25%); }
+  .led::after, .led-event { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #ff8a1f; box-shadow: 0 0 calc(8px * var(--k)) calc(2px * var(--k)) rgb(255 138 31 / 70%); opacity: 0; }
+  .led::after { animation-timing-function: step-end; animation-iteration-count: infinite; }
+  .led-heart::after { animation-name: led-heart; animation-duration: 3000ms; }
+  .led-fast::after { animation-name: led-fast; animation-duration: 500ms; }
+  .led-event { animation: led-event 300ms step-end 1; }
+  @keyframes led-heart { 0% { opacity: 1; } 2.667% { opacity: 0; } }
+  @keyframes led-fast { 0% { opacity: 1; } 50% { opacity: 0; } }
+  @keyframes led-event { 0% { opacity: 1; } 100% { opacity: 0; } }
+  .spills { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 18px 18px; }
+  .spills button { appearance: none; background: var(--cream); border: 1px solid var(--line); border-radius: 999px; color: var(--foreground);
+    font: 400 12px "Geist Mono", monospace; min-height: 36px; padding: 0 12px; display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .spills button:hover { border-color: var(--filament); background: var(--filament-soft); }
+  .spills button span:last-child { color: var(--muted); }
+  .stry-h { border-top: 1px solid var(--line); margin-top: 4px; border-bottom: 0; }
+  @media (prefers-reduced-motion: reduce) { .led::after, .led-event { animation: none; } .led::after { opacity: .5; } .sroom .rl { transition: none; } }
+  .outro { max-width: 1200px; margin: 0 auto; padding: 24px clamp(18px,4vw,48px) 30vh; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo"></span><span class="brand">Hue Switch Console</span>
+  <button class="toggle" id="theme" aria-label="Switch to light"><i></i></button>
+  <a class="signin" href="https://hue.tineira.com/login">Sign in</a>
+</header>
+<section id="track">
+  <div class="left">
+    <div class="hero" id="hero">
+      <span class="eyebrow">Open source · For Philips Hue</span>
+      <h1>Build a wall switch for your Hue lights.</h1>
+      <p class="lead">Flash a Seeed Studio XIAO from Chrome or Edge, pair it with your Hue Bridge, and choose what each button does. Presses go straight to the Bridge on your home network.</p>
+      <div class="btns">
+        <a class="btn primary" href="https://hue.tineira.com/login?request=waitlist">Join the waitlist</a>
+        <a class="btn" href="https://hue.tineira.com/how-to">Read the setup guide</a>
+      </div>
+      <p class="acct">We let people in in batches while the service runs on free servers. Already have an account? <a href="https://hue.tineira.com/login">Sign in</a></p>
+    </div>
+    <div class="storyWrap"><div class="story">
+      <span class="eyebrow">Round · 3 parts</span>
+      <h3>A touch screen that snaps onto a XIAO.</h3>
+      <ol class="steps" id="steps">
+        <li data-step="1"><span class="n">1</span><div><div class="pn">Round Display for XIAO <a href="https://www.seeedstudio.com/Seeed-Studio-Round-Display-for-XIAO-p-5638.html" target="_blank" rel="noopener noreferrer" style="font-size:14px;font-weight:400">seeedstudio.com ↗</a></div><div class="pd">1.28″ round touch screen, 240 × 240, on a 39 mm board. The XIAO plugs into the sockets on its back.</div></div></li>
+        <li data-step="2"><span class="n">2</span><div><div class="pn">XIAO ESP32-S3 <a href="https://www.seeedstudio.com/XIAO-ESP32S3-p-5627.html" target="_blank" rel="noopener noreferrer" style="font-size:14px;font-weight:400">seeedstudio.com ↗</a></div><div class="pd">21 × 17.8 mm, Wi-Fi and Bluetooth. Its USB-C port is how you install the firmware.</div></div></li>
+        <li data-step="3"><span class="n">3</span><div><div class="pn">2.4 GHz antenna</div><div class="pd">Comes with the XIAO. Plug it in: without it the screen says “No Wi-Fi”.</div></div></li>
+        <li data-step="try" class="try"><span class="n">→</span><div><div class="pn">Try it</div><div class="pd">Tap, double tap, drag the ring or swipe, right on the screen.</div></div></li>
+      </ol>
+    </div></div>
+  </div>
+  <div class="right"><div id="sticky">
+      <div class="card">
+        <div class="card-h mono"><span id="cardTitle">Round · exploded view</span><span id="readout" aria-live="polite">mm</span></div>
+        <div id="draw" aria-hidden="true">
+          <div id="grid"></div><div id="room"></div><div id="roomDark"></div>
+          <canvas id="cLine"></canvas><canvas id="cShade"></canvas>
+          <svg id="calls"></svg>
+          <div id="pulse"></div>
+          <div id="hint">Touch the screen · it works</div>
+          <div id="scrollHint">Scroll to put it together ↓</div>
+          <div id="try">
+            <button data-g="tap"><span>tap</span><span>on / off</span></button>
+            <button data-g="double"><span>double tap</span><span>scenes</span></button>
+            <button data-g="ring"><span>drag the ring</span><span>dim</span></button>
+            <button data-g="swipe"><span>swipe</span><span>next room</span></button>
+          </div>
+        </div>
+      </div>
+      <p id="caption"></p>
+    </div>
+  </div>
+</section>
+<section class="simple">
+  <div class="card">
+    <div class="col">
+      <div class="card-h mono"><span>Simple · 1 part</span><span></span></div>
+      <ol>
+        <li><span class="n">1</span><div><div class="pn">XIAO ESP32-C6 <a href="https://www.seeedstudio.com/Seeed-Studio-XIAO-ESP32C6-p-5884.html" target="_blank" rel="noopener noreferrer" style="font-size:14px;font-weight:400">seeedstudio.com ↗</a></div><div class="pd">21 × 17.5 mm. Up to seven wall switches or push buttons: D0 to D5, plus the BOOT button on the board.</div></div></li>
+        <li><span class="n">2</span><div><div class="pn">The switches already in your wall</div><div class="pd">Toggle switches or push buttons, plus a few wires. The setup guide shows the wiring.</div></div></li>
+      </ol>
+      <div class="card-h mono stry-h"><span>Simple · try it</span><span id="sReadout" aria-live="polite"></span></div>
+      <div class="sroom" id="sRoom" aria-hidden="true">
+        <div class="rl" id="sDark" style="inset:0;background:#000"></div>
+        <div class="rl" id="sGlow" style="inset:0"></div>
+        <div class="rl" id="sLamp" style="left:50%;top:0;margin-left:-32px;width:64px;height:5px;border-radius:0 0 6px 6px"></div>
+        <div class="dev">
+          <div class="plate">
+            <span class="screw" style="top:12px"></span><span class="screw" style="bottom:12px"></span>
+            <div class="well"><div id="rocker"></div></div>
+          </div>
+          <div class="ledtag"><span class="led led-heart" id="sLed"></span><span>status LED</span></div>
+        </div>
+      </div>
+      <div class="spills" id="sPills">
+        <button data-g="click"><span>click</span><span>on / off</span></button>
+        <button data-g="double"><span>double-click</span><span>scenes</span></button>
+        <button data-g="hold"><span>hold</span><span>dim</span></button>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card-h mono"><span>Simple</span><span>mm</span></div>
+      <div class="dswrap"><div class="ds" id="simpleDs"><div class="inner" id="simple"></div></div></div>
+    </div>
+  </div>
+</section>
+<section class="sec">
+  <div class="trust">
+    <div><b>Runs on your home network</b><span>Presses go from the switch to your Hue Bridge. The console only stores settings; switches keep working if it is down.</span></div>
+    <div><b>Wi-Fi stays on the switch</b><span>Your Wi-Fi password goes from the browser to the switch over USB and never reaches the console.</span></div>
+    <div><b>Free, no tracking</b><span>No ads and no analytics. Sponsorship does not unlock anything.</span></div>
+    <div><b>Open source</b><span>The console is AGPL-3.0 and the firmware is MIT. <a href="https://github.com/tineira/hue-switch-console" target="_blank" rel="noopener noreferrer">Read it, fork it, host your own ↗</a></span></div>
+  </div>
+</section>
+<section class="sec">
+  <div class="hrow"><h2>From USB to wall in three steps</h2><a href="https://hue.tineira.com/how-to">Full setup guide →</a></div>
+  <div class="steps3">
+    <div><div class="vis"><div class="face" style="--ring:#8e8e96">Wi-Fi...</div><div class="vlist">USB-C<br>Chrome · Edge<br>Web Serial</div></div>
+      <div class="snum">01</div><h4>Install over USB</h4><p>Plug the board into your computer and open Setup in Chrome or Edge. It installs the firmware and saves your Wi-Fi. Nothing to compile.</p></div>
+    <div><div class="vis"><div class="face" style="--ring:#ffe000;width:124px;height:124px">Press Bridge button<small>on the Hue Bridge</small></div></div>
+      <div class="snum">02</div><h4>Pair with your Bridge</h4><p>Press the button on your Hue Bridge when the switch asks. It sends the console your rooms, zones, lights and scenes.</p></div>
+    <div><div class="vis"><div class="mini"><div><span>Page 1 · Living</span><span></span></div><div><span>tap</span><span>on / off</span></div><div><span>double tap</span><span>Sunset, Aurora</span></div><div><span>ring</span><span>dim</span></div></div></div>
+      <div class="snum">03</div><h4>Choose what it does</h4><p>Pick the room, the scenes and what a tap, double tap or hold does. The switch picks up your changes on its own.</p></div>
+  </div>
+</section>
+<section class="sec">
+  <div class="band">
+    <div><h3>Join the waitlist, or run your own.</h3><p>You get an email when there is room for you. The console is <a href="https://github.com/tineira/hue-switch-console" target="_blank" rel="noopener noreferrer">open source</a>, so you can also host your own, and the setup guide is open to everyone.</p></div>
+    <div class="acts"><a class="btn primary" href="https://hue.tineira.com/login?request=waitlist">Join the waitlist</a><a class="btn" href="https://github.com/tineira/hue-switch-console" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a><a href="https://hue.tineira.com/privacy">Privacy</a></div>
+  </div>
+</section>
+<div class="tm"><p>Philips Hue is a trademark of Signify. This project is independent and is not affiliated with, endorsed by or sponsored by Signify. XIAO is a trademark of Seeed Studio.</p></div>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+await Promise.all(['400 110px "Geist Mono"', '500 13px "Geist Mono"'].map((f) => document.fonts.load(f).catch(() => {})));
+
+const html = document.documentElement;
+const stored = localStorage.getItem('hsw-theme');
+html.dataset.theme = stored === 'paper' || (!stored && matchMedia('(prefers-color-scheme: light)').matches) ? 'paper' : 'ember';
+const css = (v) => getComputedStyle(html).getPropertyValue(v).trim();
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Round screen (mirrors app/landing/switch-bench.tsx) ----------
+const TH = {
+  ember:  { bg: '#101410', ink: '#eee8e0', mute: '#7c7a74', fillOn: '#a54a00', fillOff: '#212021', accent: '#ff9e00', track: '#313131' },
+  ocean:  { bg: '#071018', ink: '#dceef8', mute: '#7fa3bb', fillOn: '#0a4a6a', fillOff: '#0d1b28', accent: '#38bdf8', track: '#1c3348' },
+  violet: { bg: '#120e18', ink: '#f0e8ff', mute: '#a090b8', fillOn: '#4a3470', fillOff: '#1a1524', accent: '#c4a0ff', track: '#322848' },
+};
+const PAGES = [
+  { name: 'Living', scenes: ['Sunset', 'Aurora', 'Relax', 'Read'], pal: TH.ember },
+  { name: 'Kitchen', scenes: ['Bright', 'Lagoon', 'Dimmed'], pal: TH.ocean },
+  { name: 'Bedroom', scenes: ['Neon', 'Nightlight', 'Relax'], pal: TH.violet },
+];
+const SCENE_COLOURS = {
+  Relax: ['255 172 92'], Read: ['255 222 176'], Bright: ['255 238 212'], Dimmed: ['255 186 120'], Nightlight: ['255 120 40'],
+  Sunset: ['255 128 52', '255 64 112', '176 64 210'], Aurora: ['40 220 160', '64 132 255', '168 88 255'],
+  Lagoon: ['0 196 224', '36 112 255', '110 240 196'], Neon: ['255 40 160', '118 56 255', '0 196 255'],
+};
+const SPOTS = ['18% -12%', '82% -12%', '50% 118%'];
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const st = { page: 0, on: false, level: 64, scene: 0 };
+
+const S = 1024, K = S / 104, C = S / 2;
+const scr = document.createElement('canvas'); scr.width = scr.height = S;
+const sctx = scr.getContext('2d');
+const tex = new THREE.CanvasTexture(scr); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+const rad = (d) => (d - 90) * Math.PI / 180;
+function annulus(ctx, from, sweep, rO, rI, color) {
+  ctx.beginPath(); ctx.arc(C, C, rO, rad(from), rad(from + sweep)); ctx.arc(C, C, rI, rad(from + sweep), rad(from), true);
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+}
+function drawScreen() {
+  const ctx = sctx, page = PAGES[st.page], T = page.pal, on = st.on, scene = page.scenes[st.scene];
+  const accent = on ? T.accent : T.track, deg = clamp(st.level, 0, 100) * 2.7;
+  ctx.clearRect(0, 0, S, S);
+  ctx.beginPath(); ctx.arc(C, C, C, 0, Math.PI * 2); ctx.fillStyle = T.bg; ctx.fill();
+  const rO = C - 4 * K, rI = rO - 8 * K;
+  annulus(ctx, 225, 270, rO, rI, T.track);
+  if (deg > 0) { ctx.globalAlpha = on ? 1 : 0.35; annulus(ctx, 225, deg, rO, rI, accent); ctx.globalAlpha = 1; }
+  const rF = C - 16 * K;
+  ctx.beginPath(); ctx.arc(C, C, rF, 0, Math.PI * 2); ctx.fillStyle = on ? T.fillOn : T.fillOff; ctx.fill();
+  ctx.beginPath(); ctx.arc(C, C, rF - K, 0, Math.PI * 2); ctx.lineWidth = 2 * K; ctx.strokeStyle = accent; ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const nameH = 11 * K * 1.2, sceneH = on && scene ? 7 * K * 1.2 : 0, gap = sceneH ? 3 * K : 0, top = C - (nameH + gap + sceneH) / 2;
+  ctx.font = `400 ${11 * K}px "Geist Mono", monospace`; if ('letterSpacing' in ctx) ctx.letterSpacing = `${0.3 * K}px`;
+  ctx.fillStyle = on ? T.ink : T.mute; ctx.fillText(page.name, C, top + nameH / 2);
+  if (sceneH) {
+    ctx.font = `400 ${7 * K}px "Geist Mono", monospace`; if ('letterSpacing' in ctx) ctx.letterSpacing = `${0.2 * K}px`;
+    ctx.globalAlpha = 0.88; ctx.fillStyle = T.ink; ctx.fillText(scene, C, top + nameH + gap + sceneH / 2); ctx.globalAlpha = 1;
+  }
+  const dot = 4 * K, dg = 3 * K, n = PAGES.length, w = n * dot + (n - 1) * dg, y = S - 22 * K - dot / 2;
+  PAGES.forEach((_, i) => {
+    ctx.beginPath(); ctx.arc(C - w / 2 + dot / 2 + i * (dot + dg), y, dot / 2, 0, Math.PI * 2);
+    if (i === st.page) { ctx.globalAlpha = 1; ctx.fillStyle = on ? T.ink : T.mute; } else { ctx.globalAlpha = 0.3; ctx.fillStyle = T.ink; }
+    ctx.fill(); ctx.globalAlpha = 1;
+  });
+  tex.needsUpdate = true;
+}
+const roomEl = document.getElementById('room'), darkEl = document.getElementById('roomDark');
+function updateRoom(active) {
+  const scene = PAGES[st.page].scenes[st.scene], L = st.on ? clamp(st.level, 0, 100) / 100 : 0;
+  const pal = SCENE_COLOURS[scene] || ['255 200 140'];
+  roomEl.style.background = pal.length === 1
+    ? `radial-gradient(120% 90% at 50% -10%, rgb(${pal[0]} / .75) 0, rgb(${pal[0]} / .32) 38%, rgb(${pal[0]} / .08) 70%, transparent 100%)`
+    : pal.map((c, i) => `radial-gradient(75% 75% at ${SPOTS[i]}, rgb(${c} / .8) 0, rgb(${c} / .3) 45%, transparent 80%)`).join(', ');
+  roomEl.style.opacity = active ? (L * 0.95).toFixed(3) : 0;
+  darkEl.style.opacity = active ? (st.on ? 0.42 * (1 - L) : 0.55).toFixed(3) : 0;
+}
+function refresh() {
+  drawScreen(); updateRoom(litPhase);
+  const page = PAGES[st.page];
+  document.getElementById('readout').textContent = tryMode ? `→ ${page.name} · ${st.on ? `${page.scenes[st.scene]} · ${st.level}%` : 'off'}` : 'mm';
+  dirty = true;
+}
+let hinted = false;
+const touched = () => { if (!hinted) { hinted = true; dirty = true; } };
+const G0 = {
+  tap: () => { touched(); st.on = !st.on; refresh(); },
+  double: () => { touched(); st.on = true; st.scene = (st.scene + 1) % PAGES[st.page].scenes.length; refresh(); },
+  ring: () => { touched(); st.on = true; st.level = st.level >= 90 ? 25 : Math.min(100, st.level + 25); refresh(); },
+  swipe: (d = 1) => { touched(); st.page = (st.page + d + PAGES.length) % PAGES.length; st.scene = 0; st.on = true; refresh(); },
+  level: (lv) => { touched(); st.level = lv; st.on = lv > 0; refresh(); },
+};
+
+const G = new Proxy(G0, { get: (t, k) => t[k] });
+// ---------- Parts (same builders as Round Exploded View) ----------
+const SCREEN_MAT = new THREE.MeshStandardMaterial({ name: 'screen_ui', color: 0x000000, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0, roughness: 0.15, metalness: 0 });
+function buildDisplay() {
+// ---------- Model (built in mm, root scaled to meters) ----------
+const R = 19.5;           // PCB radius
+const H_HDR = 4.3, T_PCB = 1.2, T_LCD = 1.1, T_GLASS = 0.7;
+const Y_PCB = H_HDR, Y_LCD = Y_PCB + T_PCB, Y_GLASS = Y_LCD + T_LCD, Y_TOP = Y_GLASS + T_GLASS;
+const ROW_X = 7.62, PITCH = 2.54, HDR_Z = 1.5;
+
+const M = {
+  soldermask: new THREE.MeshStandardMaterial({ name: 'soldermask_black', color: 0x1a1c1f, roughness: 0.55, metalness: 0.05 }),
+  bezel:      new THREE.MeshStandardMaterial({ name: 'lcd_frame', color: 0x2c3036, roughness: 0.6, metalness: 0.1 }),
+  glass:      new THREE.MeshStandardMaterial({ name: 'cover_glass', color: 0x0b0c10, roughness: 0.08, metalness: 0.1 }),
+  active:     new THREE.MeshStandardMaterial({ name: 'active_area', color: 0x111a2c, roughness: 0.12, metalness: 0.05 }),
+  tin:        new THREE.MeshStandardMaterial({ name: 'tin_plated', color: 0xc4c8cd, roughness: 0.35, metalness: 0.35 }),
+  plastic:    new THREE.MeshStandardMaterial({ name: 'plastic_black', color: 0x1e1e20, roughness: 0.75 }),
+  nylon:      new THREE.MeshStandardMaterial({ name: 'plastic_white', color: 0xe9e5dc, roughness: 0.7 }),
+  ceramic:    new THREE.MeshStandardMaterial({ name: 'ceramic', color: 0xb49a70, roughness: 0.6 }),
+};
+
+const root = new THREE.Group();
+root.name = 'XIAO_Round_Display';
+root.scale.setScalar(0.001);
+const add = (name, geo, mat, x, y, z) => {
+  const m = new THREE.Mesh(geo, mat); m.name = name; m.position.set(x, y, z); root.add(m); return m;
+};
+const cyl = (r, h, seg = 96) => new THREE.CylinderGeometry(r, r, h, seg);
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+
+add('pcb', cyl(R, T_PCB), M.soldermask, 0, Y_PCB + T_PCB / 2, 0);
+add('lcd_module', cyl(18.0, T_LCD), M.bezel, 0, Y_LCD + T_LCD / 2, 0);
+add('touch_cover_glass', cyl(18.2, T_GLASS), M.glass, 0, Y_GLASS + T_GLASS / 2, 0);
+add('screen', new THREE.CircleGeometry(16.2, 128).rotateX(-Math.PI / 2), SCREEN_MAT, 0, Y_TOP + 0.02, 0);
+
+// XIAO female headers (2 × 7, 2.54 pitch, rows 15.24 apart)
+for (const side of [-1, 1]) {
+  const tag = side < 0 ? 'L' : 'R';
+  add(`header_${tag}`, box(2.54, H_HDR, 7 * PITCH), M.plastic, side * ROW_X, H_HDR / 2, HDR_Z);
+  for (let i = 0; i < 7; i++)
+    add(`header_${tag}_socket_${i + 1}`, box(1.0, 0.04, 1.0), M.tin, side * ROW_X, -0.015, HDR_Z + (i - 3) * PITCH);
+}
+// microSD slot (between header rows, opening toward -z edge)
+add('microsd_slot', box(11.4, 1.6, 14), M.tin, 0, Y_PCB - 0.8, -7.2);
+add('microsd_mouth', box(10.6, 0.9, 0.3), M.plastic, 0, Y_PCB - 0.8, -14.1);
+// Power slide switch
+add('power_switch', box(6.7, 1.4, 2.6), M.tin, -13.6, Y_PCB - 0.7, -9.2);
+add('power_switch_lever', box(1.4, 1.0, 1.2), M.plastic, -14.6, Y_PCB - 0.9, -11.0);
+// JST 1.25 battery connector
+add('battery_jst', box(5.4, 3.4, 4.2), M.nylon, 14.0, Y_PCB - 1.7, -8.0);
+add('battery_jst_mouth', box(4.4, 2.2, 0.3), M.plastic, 14.0, Y_PCB - 1.8, -10.2);
+// RTC IC, user button, passives
+add('rtc_ic', box(3.0, 0.9, 3.0), M.plastic, -13.4, Y_PCB - 0.45, 6.2);
+add('user_button', box(3.6, 1.4, 4.2), M.tin, 13.6, Y_PCB - 0.7, 7.4);
+add('user_button_cap', cyl(0.9, 0.5, 32), M.plastic, 13.6, Y_PCB - 1.65, 7.4);
+[[-15.5, 1.2], [-16.2, -1.2], [15.8, 1.0], [16.4, -1.4], [-10.6, 11.6], [10.8, 12.4], [0, 14.8], [-2.6, 14.8]].forEach(([x, z], i) =>
+  add(`passive_${i + 1}`, box(1.0, 0.5, 0.5), M.ceramic, x, Y_PCB - 0.25, z));
+
+return root;
+}
+function buildXiao() {
+// ---------- Model (built in mm, root scaled to meters) ----------
+const W = 17.8, L = 21.0, T_PCB = 1.2, PITCH = 2.54;
+const PAD_X = 7.62, HOLE_R = 0.5, Y_TOP = T_PCB;
+const PAD_ZS = Array.from({ length: 7 }, (_, i) => (i - 3) * PITCH);
+const M = {
+  soldermask: new THREE.MeshStandardMaterial({ name: 'soldermask_black', color: 0x1a1c1f, roughness: 0.55, metalness: 0.05 }),
+  gold:       new THREE.MeshStandardMaterial({ name: 'enig_gold', color: 0xd9b25a, roughness: 0.35, metalness: 0.35 }),
+  tin:        new THREE.MeshStandardMaterial({ name: 'tin_plated', color: 0xc4c8cd, roughness: 0.35, metalness: 0.35 }),
+  plastic:    new THREE.MeshStandardMaterial({ name: 'plastic_black', color: 0x1e1e20, roughness: 0.75 }),
+  ceramic:    new THREE.MeshStandardMaterial({ name: 'ceramic', color: 0xb49a70, roughness: 0.6 }),
+  led:        new THREE.MeshStandardMaterial({ name: 'led_lens', color: 0xf2efe6, roughness: 0.3 }),
+};
+const root = new THREE.Group();
+root.name = 'XIAO_ESP32S3';
+root.scale.setScalar(0.001);
+const add = (name, geo, mat, x, y, z) => {
+  const m = new THREE.Mesh(geo, mat); m.name = name; m.position.set(x, y, z); root.add(m); return m;
+};
+const cyl = (r, h, seg = 48) => new THREE.CylinderGeometry(r, r, h, seg);
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+function roundRect(w, d, r, h, holes = []) {
+  const sh = new THREE.Shape(), x = -w / 2, y = -d / 2;
+  sh.moveTo(x + r, y); sh.lineTo(x + w - r, y); sh.absarc(x + w - r, y + r, r, -Math.PI / 2, 0);
+  sh.lineTo(x + w, y + d - r); sh.absarc(x + w - r, y + d - r, r, 0, Math.PI / 2);
+  sh.lineTo(x + r, y + d); sh.absarc(x + r, y + d - r, r, Math.PI / 2, Math.PI);
+  sh.lineTo(x, y + r); sh.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
+  for (const [hx, hz, hr] of holes) { const p = new THREE.Path(); p.absarc(hx, hz, hr, 0, Math.PI * 2, true); sh.holes.push(p); }
+  return extrudeFlat(sh, h);
+}
+function extrudeFlat(sh, h) {
+  const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 24 });
+  g.rotateX(Math.PI / 2); g.translate(0, h, 0); return g; // shape (x, y) → world (x, z), y 0..h
+}
+function padGeo(side, z) { // pad from just inboard of the hole out to the board edge, with drilled hole
+  const x0 = side * (PAD_X - 0.85), x1 = side * (W / 2), sh = new THREE.Shape();
+  sh.moveTo(Math.min(x0, x1), z - 0.8); sh.lineTo(Math.max(x0, x1), z - 0.8); sh.lineTo(Math.max(x0, x1), z + 0.8); sh.lineTo(Math.min(x0, x1), z + 0.8); sh.closePath();
+  const p = new THREE.Path(); p.absarc(side * PAD_X, z, HOLE_R, 0, Math.PI * 2, true); sh.holes.push(p);
+  return extrudeFlat(sh, 0.04);
+}
+add('pcb', roundRect(W, L, 1.2, T_PCB, [-1, 1].flatMap((sd) => PAD_ZS.map((z) => [sd * PAD_X, z, HOLE_R]))), M.soldermask, 0, 0, 0);
+M.gold.side = THREE.DoubleSide;
+// 2 × 7 castellated pads, top + bottom
+for (const side of [-1, 1]) for (let i = 0; i < 7; i++) {
+  const z = (i - 3) * PITCH, tag = (side < 0 ? 'L' : 'R') + (i + 1);
+  add('pad_top_' + tag, padGeo(side, z), M.gold, 0, T_PCB + 0.001, 0);
+  add('pad_bot_' + tag, padGeo(side, z), M.gold, 0, -0.041, 0);
+  add('via_barrel_' + tag, new THREE.CylinderGeometry(HOLE_R - 0.01, HOLE_R - 0.01, T_PCB + 0.08, 32, 1, true), M.gold, side * PAD_X, T_PCB / 2, z);
+}
+// USB-C receptacle at +z end (slight overhang)
+{ const r = 1.58, hx = 8.94 / 2 - r, sh = new THREE.Shape();
+  sh.moveTo(-hx, -r); sh.lineTo(hx, -r); sh.absarc(hx, 0, r, -Math.PI / 2, Math.PI / 2); sh.lineTo(-hx, r); sh.absarc(-hx, 0, r, Math.PI / 2, Math.PI * 1.5);
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 7.35, bevelEnabled: false, curveSegments: 16 }); g.translate(0, 0, -7.35 / 2);
+  add('usb_c', g, M.tin, 0, T_PCB + 1.58, L / 2 - 3.2); }
+add('usb_c_mouth', box(7.6, 1.9, 0.3), M.plastic, 0, T_PCB + 1.58, L / 2 - 3.2 + 3.55);
+// SoC shield can, antenna connector, buttons, LED, passives
+add('rf_shield', box(12.6, 1.9, 9.6), M.tin, 0, T_PCB + 0.95, -2.4);
+add('ufl_connector', box(2.6, 0.6, 2.6), M.plastic, 3.8, T_PCB + 0.3, -9.0);
+add('ufl_jack', cyl(1.0, 0.65, 32), M.gold, 3.8, T_PCB + 0.6 + 0.325, -9.0);
+add('button_boot', box(2.6, 0.9, 1.6), M.tin, -5.3, T_PCB + 0.45, 4.8);
+add('button_boot_cap', box(1.2, 0.3, 0.8), M.plastic, -5.3, T_PCB + 1.05, 4.8);
+add('button_reset', box(2.6, 0.9, 1.6), M.tin, 5.3, T_PCB + 0.45, 4.8);
+add('button_reset_cap', box(1.2, 0.3, 0.8), M.plastic, 5.3, T_PCB + 1.05, 4.8);
+add('charge_led', box(1.0, 0.5, 0.6), M.led, 5.2, T_PCB + 0.25, 8.9);
+[[-5.2, 8.9], [-6.0, 2.9], [6.0, 2.9], [-2.0, 3.4], [2.0, 3.4], [-6.0, -9.2], [-3.6, -9.2]].forEach(([x, z], i) =>
+  add('passive_' + (i + 1), box(1.0, 0.5, 0.5), M.ceramic, x, T_PCB + 0.25, z));
+// Battery pads (bottom)
+add('bat_pad_pos', box(2.2, 0.04, 1.4), M.gold, -1.8, -0.015, -6.5);
+add('bat_pad_neg', box(2.2, 0.04, 1.4), M.gold, 1.8, -0.015, -6.5);
+const USB_Z1 = L / 2 - 3.2 + 3.675, Y_MAX = T_PCB + 3.16;
+
+return root;
+}
+function buildHeaders() {
+// ---------- Model (built in mm, root scaled to meters) ----------
+const PITCH = 2.54, N = 7, ROW_X = 7.62, BODY = 2.5, PIN = 0.64;
+const SHORT = 3.0, LONG = 6.0, Y_BODY0 = SHORT, Y_BODY1 = SHORT + BODY, Y_MAX = SHORT + BODY + LONG;
+const LEN = N * PITCH, W = 2 * ROW_X + BODY, L = LEN;
+const M = {
+  plastic: new THREE.MeshStandardMaterial({ name: 'pbt_black', color: 0x1e1e20, roughness: 0.7 }),
+  gold:    new THREE.MeshStandardMaterial({ name: 'gold_plated', color: 0xd9b25a, roughness: 0.3, metalness: 0.35 }),
+};
+const root = new THREE.Group();
+root.name = 'Pin_Headers_2x_1x7';
+root.scale.setScalar(0.001);
+const add = (name, geo, mat, x, y, z, parent = root) => {
+  const m = new THREE.Mesh(geo, mat); m.name = name; m.position.set(x, y, z); parent.add(m); return m;
+};
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const CH = 0.35;
+const tip = () => new THREE.CylinderGeometry(0.16, PIN / Math.SQRT2, CH, 4, 1).rotateY(Math.PI / 4);
+for (const side of [-1, 1]) {
+  const tag = side < 0 ? 'A' : 'B', row = new THREE.Group(); row.name = 'header_' + tag; row.position.x = side * ROW_X; root.add(row);
+  for (let i = 0; i < N; i++) {
+    const z = (i - (N - 1) / 2) * PITCH;
+    add(`header_${tag}_body_${i + 1}`, box(BODY, BODY, PITCH - 0.02), M.plastic, 0, (Y_BODY0 + Y_BODY1) / 2, z, row);
+    add(`header_${tag}_pin_${i + 1}`, box(PIN, Y_MAX - 2 * CH, PIN), M.gold, 0, Y_MAX / 2, z, row);
+    add(`header_${tag}_pin_${i + 1}_tip`, tip(), M.gold, 0, Y_MAX - CH / 2, z, row);
+    add(`header_${tag}_pin_${i + 1}_tail`, tip().rotateX(Math.PI), M.gold, 0, CH / 2, z, row);
+  }
+}
+const zEnd = LEN / 2;
+
+return root;
+}
+function buildAntenna() {
+// ---------- Model (built in mm, root scaled to meters) ----------
+const FW = 10.0, FL = 20.0, FT = 0.2;            // FPC radiator
+const CR = 0.565, CL = 45.0;                      // Ø1.13 coax
+const PLUG_R = 1.0, PLUG_H = 1.3;                 // U.FL plug
+const TOTAL = FL + CL + PLUG_R * 2, Z0 = -TOTAL / 2;
+const Z_FPC1 = Z0 + FL, Z_CAB1 = Z_FPC1 + CL - 4, Z_PLUG = Z0 + TOTAL - PLUG_R;
+const CY = FT + CR, Y_MAX = Math.max(CY + CR, 0.1 + PLUG_H + 0.4);
+const M = {
+  polyimide: new THREE.MeshStandardMaterial({ name: 'polyimide_amber', color: 0xc98a2c, roughness: 0.45 }),
+  copper:    new THREE.MeshStandardMaterial({ name: 'copper_trace', color: 0xd58a5a, roughness: 0.35, metalness: 0.35 }),
+  jacket:    new THREE.MeshStandardMaterial({ name: 'coax_jacket', color: 0x8e9196, roughness: 0.6 }),
+  tin:       new THREE.MeshStandardMaterial({ name: 'tin_plated', color: 0xc4c8cd, roughness: 0.35, metalness: 0.35 }),
+  plastic:   new THREE.MeshStandardMaterial({ name: 'plastic_black', color: 0x1e1e20, roughness: 0.75 }),
+};
+const root = new THREE.Group();
+root.name = 'FPC_Antenna_A02';
+root.scale.setScalar(0.001);
+const add = (name, geo, mat, x, y, z) => {
+  const m = new THREE.Mesh(geo, mat); m.name = name; m.position.set(x, y, z); root.add(m); return m;
+};
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const cyl = (r, h, seg = 48) => new THREE.CylinderGeometry(r, r, h, seg);
+add('fpc_substrate', box(FW, FT, FL), M.polyimide, 0, FT / 2, Z0 + FL / 2);
+// meander radiator
+const TY = FT + 0.011, TW = 0.6;
+for (let i = 0; i < 6; i++) add('radiator_run_' + (i + 1), box(7.6, 0.02, TW), M.copper, 0, TY, Z0 + 1.5 + i * 2.2);
+for (let i = 0; i < 5; i++) add('radiator_turn_' + (i + 1), box(TW, 0.02, 2.2), M.copper, (i % 2 ? -1 : 1) * 3.5, TY, Z0 + 1.5 + i * 2.2 + 1.1);
+add('feed_line', box(TW, 0.02, FL - 13.5), M.copper, -3.5, TY, Z0 + 12.5 + (FL - 13.5) / 2 - 0.5);
+add('ground_pad', box(4.0, 0.02, 3.2), M.copper, 1.6, TY, Z_FPC1 - 2.4);
+add('solder_joint', new THREE.SphereGeometry(0.75, 24, 12).scale(1, 0.55, 1.6), M.tin, 0, FT + 0.2, Z_FPC1 - 3.4);
+// coax cable
+const cab = add('coax_cable', cyl(CR, CL + 1.5, 32).rotateX(Math.PI / 2), M.jacket, 0, CY, Z_FPC1 - 3 + (CL + 1.5) / 2);
+// U.FL plug: crimp barrel + round mating body
+add('ufl_crimp', box(1.2, 1.0, 1.8), M.tin, 0, CY, Z_PLUG - PLUG_R - 0.6);
+add('ufl_body', cyl(PLUG_R, PLUG_H, 48), M.tin, 0, 0.1 + PLUG_H / 2, Z_PLUG);
+add('ufl_cap', cyl(PLUG_R * 0.7, 0.4, 48), M.tin, 0, 0.1 + PLUG_H + 0.2, Z_PLUG);
+add('ufl_insulator', cyl(0.45, 0.3, 32), M.plastic, 0, 0.1 - 0.15 + 0.001, Z_PLUG);
+const LS = 2.4;
+
+return root;
+}
+
+
+const mm = 0.001, GAP = 7;
+const Y = {}; Y.aTop = 1.8; Y.xOff = Y.aTop + GAP + 4.36; Y.xTop = Y.xOff + 0.04; Y.xUfl = Y.xOff - 2.45;
+Y.hBase = Y.xTop + GAP; Y.hTop = Y.hBase + 11.5; Y.dBase = Y.hTop + GAP;
+const POSE = {
+  ant:  { a: 0, b: Y.xUfl - Y.aTop + 0.2 },
+  hdr:  { a: Y.hBase, b: Y.xTop - 3.0 },
+  disp: { a: Y.dBase, b: Y.xTop + 2.5 },
+};
+function buildAsm() {
+  const asm = new THREE.Group();
+  const ant = buildAntenna(); ant.rotation.y = Math.PI / 2; ant.position.set(-(3.8 + 32.5) * mm, 0, -7.5 * mm);
+  const xiao = buildXiao(); xiao.rotation.z = Math.PI; xiao.position.set(0, Y.xOff * mm, 1.5 * mm);
+  const hdr = buildHeaders(); hdr.position.set(0, Y.hBase * mm, 1.5 * mm);
+  const disp = buildDisplay(); disp.position.set(0, Y.dBase * mm, 0);
+  asm.add(disp, hdr, xiao, ant);
+  return { asm, ant, xiao, hdr, disp };
+}
+const shade = buildAsm(), line = buildAsm();
+shade.disp.traverse((m) => { if (m.name === 'screen') shade.screen = m; });
+
+// line version: fill in card colour + creases + silhouette
+const fillMat = new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+const edgeMat = new THREE.LineBasicMaterial();
+const outlineMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms: { thickness: { value: 1.0 }, resolution: { value: new THREE.Vector2(1, 1) }, color: { value: new THREE.Color() } },
+  vertexShader: `uniform float thickness; uniform vec2 resolution;
+    void main(){ vec4 c = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      vec3 n = normalize(normalMatrix * normal); vec2 d = n.xy; float l = length(d);
+      if (l > 1e-4) c.xy += (d / l) * thickness * 2.0 / resolution * c.w; gl_Position = c; }`,
+  fragmentShader: `uniform vec3 color; void main(){ gl_FragColor = vec4(color,1.0); }`,
+});
+const meshes = []; line.asm.traverse((m) => { if (m.isMesh) meshes.push(m); });
+for (const m of meshes) {
+  m.material = fillMat;
+  m.add(new THREE.Mesh(m.geometry, outlineMat));
+  m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 20), edgeMat));
+}
+function applyTheme() {
+  const fg = css('--foreground'), cr = css('--cream');
+  fillMat.color.set(cr); edgeMat.color.set(fg); outlineMat.uniforms.color.value.set(fg);
+  document.getElementById('theme').setAttribute('aria-label', html.dataset.theme === 'paper' ? 'Switch to dark' : 'Switch to light');
+  dirty = true;
+}
+
+// ---------- Renderers & scenes ----------
+const draw = document.getElementById('draw');
+const mk = (id) => { const r = new THREE.WebGLRenderer({ canvas: document.getElementById(id), antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setClearColor(0, 0); r.setPixelRatio(Math.min(devicePixelRatio, 2)); return r; };
+const rLine = mk('cLine'), rShade = mk('cShade');
+rShade.outputColorSpace = THREE.SRGBColorSpace;
+const sLine = new THREE.Scene(); sLine.add(line.asm);
+const sShade = new THREE.Scene(); sShade.add(shade.asm);
+sShade.environment = new THREE.PMREMGenerator(rShade).fromScene(new RoomEnvironment(), 0.04).texture;
+sShade.environmentIntensity = 0.9;
+const sun = new THREE.DirectionalLight(0xffffff, 1.4); sun.position.set(0.3, 1, 0.5); sShade.add(sun);
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.001, 2);
+const cShadeEl = document.getElementById('cShade'), cLineEl = document.getElementById('cLine');
+let W = 1, H = 1;
+new ResizeObserver(() => {
+  W = draw.clientWidth; H = draw.clientHeight;
+  rLine.setSize(W, H, false); rShade.setSize(W, H, false);
+  outlineMat.uniforms.resolution.value.set(W, H); dirty = true;
+}).observe(draw);
+
+// ---------- Timeline ----------
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+const DIR_A = new THREE.Vector3(1, 0.78, 1.15).normalize(), DIR_B = new THREE.Vector3(0, 1, 0.55).normalize();
+const box = new THREE.Box3(), focus = new THREE.Box3(), corners = Array.from({ length: 8 }, () => new THREE.Vector3());
+let p = 0, dirty = true, litPhase = false, tryMode = false, litTimer = null;
+
+function pose() {
+  const tA = ss(0.10, 0.40, p), tH = ss(0.22, 0.50, p), tD = ss(0.40, 0.68, p);
+  for (const set of [shade, line]) {
+    set.ant.position.y = lerp(POSE.ant.a, POSE.ant.b, tA) * mm;
+    set.hdr.position.y = lerp(POSE.hdr.a, POSE.hdr.b, tH) * mm;
+    set.disp.position.y = lerp(POSE.disp.a, POSE.disp.b, tD) * mm;
+    set.asm.updateMatrixWorld(true);
+  }
+  // camera: direction eases toward the face, frame refits to the current parts
+  const dir = DIR_A.clone().lerp(DIR_B, ss(0.35, 0.82, p)).normalize();
+  box.setFromObject(shade.asm);
+  const tF = ss(0.55, 0.9, p);
+  if (tF > 0) { focus.makeEmpty().expandByObject(shade.disp).expandByObject(shade.xiao); box.min.lerp(focus.min, tF); box.max.lerp(focus.max, tF); }
+  const c = box.getCenter(new THREE.Vector3());
+  cam.position.copy(c).addScaledVector(dir, 0.5); cam.up.set(0, 1, 0); cam.lookAt(c); cam.updateMatrixWorld();
+  const { min, max } = box; let i = 0;
+  for (const x of [min.x, max.x]) for (const y of [min.y, max.y]) for (const z of [min.z, max.z]) corners[i++].set(x, y, z).applyMatrix4(cam.matrixWorldInverse);
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const v of corners) { x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
+  const pad = lerp(1.28, 1.3, ss(0.5, 0.85, p)), a = W / H;
+  let hw = (x1 - x0) / 2 * pad, hh = (y1 - y0) / 2 * pad;
+  if (hw / hh > a) hh = hw / a; else hw = hh * a;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 - hh * 0.14 * tF;
+  cam.left = cx - hw; cam.right = cx + hw; cam.top = cy + hh; cam.bottom = cy - hh; cam.updateProjectionMatrix();
+  // line → shaded
+  const tS = ss(0.30, 0.72, p);
+  gridEl.style.opacity = (1 - tS).toFixed(3); cShadeEl.style.opacity = tS.toFixed(3); cLineEl.style.opacity = (1 - tS).toFixed(3);
+  SCREEN_MAT.emissiveIntensity = ss(0.80, 0.88, p);
+  document.getElementById('cardTitle').textContent = tryMode ? 'Round · try it' : p < 0.6 ? 'Round · exploded view' : 'Round · assembled';
+  placeHint(); story(); document.getElementById('scrollHint').classList.toggle('on', p < 0.02 && !reduce);
+  drawCallouts(1 - ss(0.12, 0.30, p), 1 - ss(0.30, 0.55, p));
+  // lights: off when the screen wakes, on shortly after it settles
+  if (p >= 0.9 && !litPhase && !litTimer) {
+    litTimer = setTimeout(() => { litTimer = null; litPhase = true; st.on = true; refresh(); setTimeout(() => setTry(true), 450); }, reduce ? 0 : 700);
+  }
+  if (p < 0.86) {
+    if (litTimer) { clearTimeout(litTimer); litTimer = null; }
+    if (litPhase || st.on) { litPhase = false; st.on = false; setTry(false); refresh(); }
+  }
+}
+const stepsEl = document.getElementById('steps'), capEl = document.getElementById('caption');
+const CAPS = { 1: '<b>1</b> · Round Display comes down onto the pins', 2: '<b>2</b> · Pin headers go through the XIAO', 3: '<b>3</b> · Antenna clicks into the U.FL jack', wake: 'Screen wakes up…', try: '<b>→</b> Try it: touch the screen' };
+let lastStep = null;
+function story() {
+  const step = tryMode ? 'try' : p < 0.08 ? null : p < 0.36 ? 3 : p < 0.52 ? 2 : p < 0.78 ? 1 : 'wake';
+  if (step === lastStep) return; lastStep = step;
+  stepsEl.classList.toggle('playing', step !== null);
+  stepsEl.querySelectorAll('li').forEach((li) => li.classList.toggle('on', li.dataset.step === String(step) || (step === 'wake' && li.dataset.step !== 'try')));
+  capEl.innerHTML = step === null ? 'Scroll to put it together' : CAPS[step];
+}
+function setTry(on) { lastStep = undefined; tryMode = on; document.getElementById('try').classList.toggle('on', on); draw.classList.toggle('try', on); refresh(); }
+const gridEl = document.getElementById('grid'), pulseEl = document.getElementById('pulse'), hintEl = document.getElementById('hint');
+function placeHint() {
+  const show = tryMode && !hinted;
+  pulseEl.classList.toggle('on', show); hintEl.classList.toggle('on', show);
+  if (!tryMode) return;
+  const [cx, cy] = toPx(shade.screen, 0, 0, 0), [ex, ey] = toPx(shade.screen, 16.2, 0, 0), r = Math.hypot(ex - cx, ey - cy);
+  Object.assign(pulseEl.style, { left: cx - r + 'px', top: cy - r + 'px', width: 2 * r + 'px', height: 2 * r + 'px' });
+  Object.assign(hintEl.style, { left: cx + 'px', top: Math.max(8, cy - r - 44) + 'px' });
+}
+
+// ---------- Callouts & alignment guides (SVG over the canvas) ----------
+const svg = document.getElementById('calls'), NS = 'http://www.w3.org/2000/svg';
+const toPx = (obj, x, y, z) => { const v = obj.localToWorld(new THREE.Vector3(x, y, z)).project(cam); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
+const CALLS = [
+  { n: 1, obj: 'disp', at: [-15.5, 7.3, 9.1], off: [-54, -40] },
+  { n: 2, obj: 'xiao', at: [-8.9, 0.6, 7.0], off: [64, 34] },
+  { n: 3, obj: 'ant', at: [0, 0.2, -23.5], off: [0, 58] },
+];
+function el(tag, attrs) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function drawCallouts(aCall, aGuide) {
+  svg.replaceChildren();
+  const fg = 'var(--foreground)', mu = 'var(--muted)';
+  if (aGuide > 0.01) {
+    const g = el('g', { opacity: aGuide.toFixed(3), stroke: mu, 'stroke-width': 1, 'stroke-dasharray': '5 4', fill: 'none' });
+    const L = line;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const x = sx * 7.62, z = sz * 7.62;
+      const seg = (a, b) => g.append(el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1] }));
+      seg(toPx(L.disp, x, 0, 1.5 + z), toPx(L.hdr, x, 11.5, z));
+      seg(toPx(L.hdr, x, 0, z), toPx(L.xiao, -x, 0, z));
+    }
+    const pl = toPx(L.ant, 0, 1.4, 32.5), jk = toPx(L.xiao, 3.8, 2.45, -9.0);
+    g.append(el('line', { x1: pl[0], y1: pl[1], x2: jk[0], y2: jk[1] }));
+    svg.append(g);
+  }
+  if (aCall > 0.01) {
+    const g = el('g', { opacity: aCall.toFixed(3) });
+    for (const c of CALLS) {
+      const [ax, ay] = toPx(line[c.obj], ...c.at), bx = ax + c.off[0], by = ay + c.off[1];
+      const d = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / d, uy = (by - ay) / d;
+      g.append(el('line', { x1: ax, y1: ay, x2: bx - ux * 14, y2: by - uy * 14, stroke: fg, 'stroke-width': 1 }));
+      g.append(el('circle', { cx: ax, cy: ay, r: 2, fill: fg }));
+      g.append(el('circle', { cx: bx, cy: by, r: 13.25, fill: 'var(--cream)', stroke: fg, 'stroke-width': 1.5 }));
+      const t = el('text', { x: bx, y: by + 0.5, 'text-anchor': 'middle', 'dominant-baseline': 'middle' }); t.textContent = c.n; g.append(t);
+    }
+    svg.append(g);
+  }
+}
+
+// ---------- Scroll ----------
+const track = document.getElementById('track');
+function onScroll() {
+  // starts once the hero text is half gone; animation uses 70% of what is left, the rest holds the live screen still
+  const r = track.getBoundingClientRect(), heroH = document.getElementById('hero').offsetHeight;
+  const narrow = innerWidth <= 860, start = narrow ? heroH : heroH * 0.5, len = (track.offsetHeight - innerHeight - start) * 0.7;
+  const np = window.__forceP != null ? window.__forceP : reduce ? (-r.top > start ? 1 : 0) : clamp((-r.top - start) / len, 0, 1);
+  if (np !== p) { p = np; dirty = true; }
+}
+addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll);
+
+// ---------- Try-it gestures on the screen ----------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function hit(e) {
+  const r = draw.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, cam);
+  const h = ray.intersectObject(shade.screen)[0];
+  return h && h.uv ? { dx: h.uv.x - 0.5, dy: 0.5 - h.uv.y } : null;
+}
+function levelAt(q) {
+  const a = ((Math.atan2(q.dx, -q.dy) * 180) / Math.PI + 360) % 360;
+  let rel = (a - 225 + 360) % 360; if (rel > 270) rel = rel > 315 ? 0 : 270;
+  return Math.round((rel / 270) * 100);
+}
+let gest = null, tapT = null;
+draw.addEventListener('pointerdown', (e) => {
+  if (!tryMode) return; const q = hit(e); if (!q) return;
+  gest = { x: e.clientX, y: e.clientY, ring: Math.hypot(q.dx, q.dy) > 0.31, moved: false };
+  draw.setPointerCapture(e.pointerId);
+  if (gest.ring) G.level(levelAt(q));
+});
+draw.addEventListener('pointermove', (e) => {
+  if (!tryMode) return;
+  if (!gest) { draw.style.cursor = hit(e) ? 'pointer' : ''; return; }
+  if (Math.abs(e.clientX - gest.x) > 6 || Math.abs(e.clientY - gest.y) > 6) gest.moved = true;
+  if (gest.ring) { const q = hit(e); if (q) G.level(levelAt(q)); }
+});
+draw.addEventListener('pointerup', (e) => {
+  const g = gest; gest = null; if (!g || g.ring) return;
+  const dx = e.clientX - g.x;
+  if (Math.abs(dx) > 30) { G.swipe(dx < 0 ? 1 : -1); return; }
+  if (g.moved) return;
+  if (tapT) { clearTimeout(tapT); tapT = null; G.double(); } else tapT = setTimeout(() => { tapT = null; G.tap(); }, 240);
+});
+document.getElementById('try').addEventListener('click', (e) => { const g = e.target.closest('button')?.dataset.g; if (g && tryMode) G[g](); });
+document.getElementById('theme').addEventListener('click', () => {
+  html.dataset.theme = html.dataset.theme === 'paper' ? 'ember' : 'paper';
+  localStorage.setItem('hsw-theme', html.dataset.theme); applyTheme(); renderSimple();
+});
+
+// ---------- Simple drawing: our XIAO model, pre-soldered, in line style ----------
+const renderSimple = (function simpleDrawing() {
+  const ds = document.getElementById('simpleDs');
+  ds.innerHTML = '<canvas style="position:absolute;inset:0;width:100%;height:100%"></canvas><svg style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;font:400 12px \'Geist Mono\',monospace"></svg>';
+  const cv = ds.querySelector('canvas'), sv = ds.querySelector('svg');
+  const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: true }); r.setClearColor(0, 0); r.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const sc = new THREE.Scene(), grp = new THREE.Group(); sc.add(grp);
+  const board = buildXiao(); grp.add(board);
+  const hd = buildHeaders(); hd.rotation.x = Math.PI; hd.position.set(0, 3 * mm, 0); grp.add(hd);
+  const oMat = outlineMat.clone();
+  grp.traverse((m) => { if (!m.isMesh || m.userData.lined) return; m.userData.lined = true; m.material = fillMat;
+    const o = new THREE.Mesh(m.geometry, oMat); o.userData.lined = true; m.add(o);
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 20), edgeMat)); });
+  grp.updateMatrixWorld(true);
+  const c = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.001, 2), dir = new THREE.Vector3(0.8, 2.2, -1).normalize();
+  const bb = new THREE.Box3().setFromObject(grp), ctr = bb.getCenter(new THREE.Vector3());
+  c.position.copy(ctr).addScaledVector(dir, 0.5); c.lookAt(ctr); c.updateMatrixWorld();
+  let w = 1, hh = 1;
+  const px = (x, y, z) => { const v = board.localToWorld(new THREE.Vector3(x, y, z)).project(c); return [(v.x + 1) / 2 * w, (1 - v.y) / 2 * hh]; };
+  function fit() {
+    const k = Math.min(1, ds.clientWidth / 520); ds.style.height = 440 * k + 'px';
+    w = ds.clientWidth; hh = ds.clientHeight; r.setSize(w, hh, false); oMat.uniforms.resolution.value.set(w, hh);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const x of [bb.min.x, bb.max.x]) for (const y of [bb.min.y, bb.max.y]) for (const z of [bb.min.z, bb.max.z]) {
+      const v = new THREE.Vector3(x, y, z).applyMatrix4(c.matrixWorldInverse); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); }
+    const a = w / hh; let hw = (x1 - x0) / 2 * 2.25, hv = (y1 - y0) / 2 * 1.5; if (hw / hv > a) hv = hw / a; else hw = hv * a;
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    c.left = cx - hw; c.right = cx + hw; c.top = cy + hv; c.bottom = cy - hv; c.updateProjectionMatrix();
+    draw();
+  }
+  function draw() {
+    r.render(sc, c);
+    // XIAO local (x, z); board top y = 1.2. D0..D2 are the three pads nearest USB-C on the +x side.
+    const T = 1.25, fg = 'var(--foreground)', mu = 'var(--muted)';
+    const Z = [7.62, 5.08, 2.54, 0, -2.54, -5.08, -7.62];
+    const io = Z.slice(0, 6).map((z, i) => ['D' + i, 7.62, z]);
+    const pads = io.map(([, x, z]) => px(x, T, z)), boot = px(-5.2, T + 0.5, 8.9), led = px(-5.3, T + 1.2, 4.8);
+    const L = (a, b, col = fg) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${col}" stroke-width="1"/>`;
+    const dot = (p) => `<circle cx="${p[0]}" cy="${p[1]}" r="2" fill="${fg}"/>`;
+    const txt = (x, y, s, anchor = 'end', col = fg) => `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle" fill="${col}">${s}</text>`;
+    const tag = (s, x, z) => { const q = px(x + Math.sign(x) * 2.9, T, z); return `<text x="${q[0]}" y="${q[1]}" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--filament)">${s}</text>`; };
+    // USB-C: its curved sides have no crease edges, so trace its silhouette (convex hull of the projected shell)
+    let usb = null; board.traverse((m) => { if (m.name === 'usb_c') usb = m; });
+    const hull = (() => { const P = [], pos = usb.geometry.attributes.position, v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); usb.localToWorld(v); const q = v.clone().project(c); P.push([(q.x + 1) / 2 * w, (1 - q.y) / 2 * hh]); }
+      P.sort((a, b) => a[0] - b[0] || a[1] - b[1]); const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+      const lo = [], up = []; for (const p of P) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+      for (const p of P.slice().reverse()) { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+      return lo.slice(0, -1).concat(up.slice(0, -1)); })();
+    let out = `<polygon points="${hull.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${fg}" stroke-width="1.5" stroke-linejoin="round"/>`;
+    out += pads.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="var(--filament)"/>`).join('');
+    out += `<circle cx="${led[0]}" cy="${led[1]}" r="3.5" fill="#ff8a1f" style="filter:drop-shadow(0 0 4px rgb(255 138 31 / .8))"/>`;
+    // Two label columns outside the board; each label sits on a short shelf, then one straight leader to its part.
+    const edge = [[8.9, 10.5], [-8.9, 10.5], [8.9, -10.5], [-8.9, -10.5]].flatMap(([x, z]) => [px(x, T, z), px(x, -3, z)]);
+    const bx0 = Math.min(...edge.map((q) => q[0])), bx1 = Math.max(...edge.map((q) => q[0])), by0 = Math.min(...edge.map((q) => q[1]));
+    const LX = Math.max(96, bx0 - 20), RX = Math.min(w - 104, bx1 + 20), SH = 18;
+    // group brackets just outside each pad row
+    const br = (x, z0, z1) => { const s = Math.sign(x), A = px(x + s * 5, T, z0), B = px(x + s * 5, T, z1), a2 = px(x + s * 4, T, z0), b2 = px(x + s * 4, T, z1);
+      out += L(a2, A, mu) + L(A, B, mu) + L(b2, B, mu); return [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2]; };
+    const gL = [(pads[2][0] + pads[3][0]) / 2, (pads[2][1] + pads[3][1]) / 2];
+    const call = (side, y, anchor, s) => {
+      const x = side < 0 ? LX : RX, k = [x - side * (6 + SH), y];
+      out += L([side < 0 ? x + 6 : x - 6, y], k) + L(k, anchor) + dot(anchor) + txt(x, y, s, side < 0 ? 'end' : 'start');
+    };
+    const yTop = by0 + 8;
+    call(-1, Math.max(gL[1], yTop + 34), gL, 'D0–D5 · 1–6');
+    call(1, yTop - 14, boot, 'BOOT · 7');
+    call(1, yTop + 12, led, 'Status LED');
+    { // part balloon, same style as the Round card
+      const an = px(1.5, T + 1.9, -1.0), bx = RX + 14, by = yTop + 62, d = Math.hypot(bx - an[0], by - an[1]);
+      out += L(an, [bx - (bx - an[0]) / d * 14, by - (by - an[1]) / d * 14]) + dot(an)
+        + `<circle cx="${bx}" cy="${by}" r="13.25" fill="var(--cream)" stroke="${fg}" stroke-width="1.5"/>`
+        + `<text x="${bx}" y="${by + 0.5}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="500" fill="${fg}">1</text>`; }
+    // dimensions along the two bottom edges nearest the camera
+    const dim = (a, b, n, s) => { const A = px(a[0] + n[0], 0, a[1] + n[1]), B = px(b[0] + n[0], 0, b[1] + n[1]);
+      const ea = px(...[a[0], 0, a[1]]), eb = px(b[0], 0, b[1]);
+      return L(ea, A, mu) + L(eb, B, mu) + L(A, B, mu) + txt((A[0] + B[0]) / 2 + (n[0] ? 0 : -10), (A[1] + B[1]) / 2 + 12, s, 'middle', mu); };
+    
+    sv.innerHTML = out;
+  }
+  new ResizeObserver(fit).observe(ds); fit();
+  return draw;
+})();
+
+// ---------- Simple demo (mirrors WallPlate in switch-bench.tsx) ----------
+(function simpleDemo() {
+  const SC = ['Bright', 'Tropics', 'Nightlight'];
+  const COL = { Bright: ['255 238 212'], Tropics: ['255 176 0', '255 72 96', '0 200 170'], Nightlight: ['255 120 40'] };
+  const s = { on: true, level: 92, scene: 1, holding: false };
+  const $ = (id) => document.getElementById(id);
+  const rocker = $('rocker'), led = $('sLed'), room = $('sRoom');
+  let dir = 1, ramp = null, holdT = null, tapT = null, held = false;
+  function render() {
+    const L = s.on ? clamp(s.level, 0, 100) / 100 : 0, name = s.scene >= 0 ? SC[s.scene] : null;
+    const pal = (name && COL[name]) || ['255 200 140'];
+    $('sDark').style.opacity = s.on ? 0.42 * (1 - L) : 0.55;
+    const g = $('sGlow'); g.style.opacity = L * 0.95;
+    g.style.background = pal.length === 1
+      ? `radial-gradient(120% 90% at 50% -10%, rgb(${pal[0]} / .75) 0, rgb(${pal[0]} / .32) 38%, rgb(${pal[0]} / .08) 70%, transparent 100%)`
+      : pal.map((c, i) => `radial-gradient(75% 75% at ${SPOTS[i]}, rgb(${c} / .8) 0, rgb(${c} / .3) 45%, transparent 80%)`).join(', ');
+    const lamp = $('sLamp');
+    lamp.style.background = s.on ? (pal.length === 1 ? `rgb(${pal[0]})` : `linear-gradient(90deg, ${pal.map((c) => `rgb(${c})`).join(', ')})`) : 'var(--line)';
+    lamp.style.boxShadow = s.on ? `0 0 ${10 + L * 30}px ${2 + L * 8}px rgb(${pal[0]} / ${0.35 + L * 0.5})` : 'none';
+    rocker.style.transform = `perspective(240px) rotateX(${s.on ? -12 : 12}deg)`;
+    rocker.style.background = s.on ? 'linear-gradient(180deg, #fdfbf7 0%, #f3efe8 55%, #ddd7cd 100%)' : 'linear-gradient(180deg, #ddd7cd 0%, #f3efe8 45%, #fdfbf7 100%)';
+    room.classList.toggle('still', s.holding);
+    led.className = 'led ' + (s.holding ? 'led-fast' : 'led-heart');
+    $('sReadout').textContent = `→ Hallway · ${s.on ? `${name ? name + ' · ' : ''}${s.level}%` : 'off'}`;
+  }
+  function flash() { led.querySelector('.led-event')?.remove(); const e = document.createElement('span'); e.className = 'led-event'; led.append(e); }
+  const event = (fn) => { fn(); flash(); render(); };
+  const click = () => event(() => { s.scene = s.on ? -1 : s.scene; s.on = !s.on; });
+  const dbl = () => event(() => { s.on = true; s.scene = (s.scene + 1) % SC.length; });
+  function holdStart() {
+    dir = s.level >= 100 ? -1 : 1; event(() => { s.on = true; s.holding = true; });
+    clearInterval(ramp);
+    ramp = setInterval(() => { let l = s.level + dir * 3; if (l >= 100 || l <= 5) dir *= -1; s.level = clamp(l, 5, 100); render(); }, 60);
+  }
+  function holdEnd() { clearInterval(ramp); ramp = null; s.holding = false; render(); }
+  rocker.addEventListener('pointerdown', (e) => { rocker.setPointerCapture(e.pointerId); held = false; holdT = setTimeout(() => { held = true; holdStart(); }, 420); });
+  rocker.addEventListener('pointerup', () => {
+    clearTimeout(holdT); if (held) { held = false; holdEnd(); return; }
+    if (tapT) { clearTimeout(tapT); tapT = null; dbl(); } else tapT = setTimeout(() => { tapT = null; click(); }, 240);
+  });
+  const leave = () => { clearTimeout(holdT); if (held) { held = false; holdEnd(); } };
+  rocker.addEventListener('pointercancel', leave); rocker.addEventListener('lostpointercapture', leave);
+  $('sPills').addEventListener('click', (e) => {
+    const g = e.target.closest('button')?.dataset.g; if (!g) return;
+    if (g === 'click') click(); else if (g === 'double') dbl(); else { holdStart(); setTimeout(holdEnd, 1100); }
+  });
+  render();
+})();
+
+// ---------- Loop ----------
+applyTheme(); refresh(); onScroll();
+window.__kick = () => { onScroll(); dirty = true; };
+(function loop() {
+  if (dirty) { dirty = false; pose(); rLine.render(sLine, cam); rShade.render(sShade, cam); }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
