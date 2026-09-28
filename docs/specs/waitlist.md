@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` (referred to below as "accounts spec").
 
-**Status:** in progress. Approved, implemented and deployed (2026-09-27); waiting for the production checks. Open questions 2 to 4 in §5 use the recommended values as defaults until decided.
+**Status:** in progress. Approved, implemented and deployed (2026-09-27); waiting for the production checks. All open questions in §5 are decided.
 
 ## 1. What and why
 
@@ -218,6 +218,6 @@ alter table auth_events add column if not exists detail text;       -- email kin
 ## 5. Open questions
 
 1. **CLOSED: Starting cap.** 50 seats (user, 2026-09-27), set as `USER_CAP`. At about 4 switches per account that is 200 boards, under the roughly 300 the Vercel free tier holds at the 900 s idle poll (accounts spec §2.11). Raise it in `/admin`.
-2. **Waitlist email budget.** Recommendation: **40 a day** out of 90, so sign-in codes always keep at least 50. A cap raise of 100 then takes about 3 days to go out, which is acceptable for a batch release.
-3. **Waitlist invite expiry.** Recommendation: **7 days**, so seats that nobody uses come back quickly. Admin-made invites keep 14.
-4. **Should `/admin` be able to switch to `open`?** Recommendation: **no.** Keep `open` and `closed` env-only, because they change what the product promises publicly; the admin page covers the day-to-day switch between `invite` and `waitlist`.
+2. **CLOSED: Waitlist email budget.** **40 a day** out of 90 (user, 2026-09-27), the `WAITLIST_EMAILS_PER_DAY` default. Sign-in codes always keep at least 50. A cap raise of 100 then takes about 3 days to go out, which is acceptable for a batch release.
+3. **CLOSED: Waitlist invite expiry.** **7 days** (user, 2026-09-27), `WAITLIST_INVITE_DAYS`, so seats that nobody uses come back quickly. Admin-made invites keep 14.
+4. **CLOSED: Should `/admin` be able to switch to `open`?** **No** (user, 2026-09-27); the `console_settings.signup_mode` check allows only `invite` and `waitlist`. Keep `open` and `closed` env-only, because they change what the product promises publicly; the admin page covers the day-to-day switch between `invite` and `waitlist`.
