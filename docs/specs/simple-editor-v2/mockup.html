@@ -523,7 +523,7 @@ function render() {
     </header>
     <div class="cols">${renderLeft()}${S.adding ? renderAdd() : renderSelected()}</div>
     <div class="bar">
-      <button class="btn primary" data-save="1" ${d ? "" : "disabled"}>Save switches</button>
+      <button class="btn primary" data-save="1" ${d ? "" : "disabled"}>Save changes</button>
       <button class="btn ghost" data-discard="1" ${d ? "" : "disabled"}>Discard</button>
       <span class="status ${S.notice ? "" : d ? "accent" : "muted"}" style="${S.notice?.ok ? "color:var(--ok)" : ""}">${esc(S.notice?.text ?? (d ? "Unsaved changes" : "Unused pins do nothing."))}</span>
     </div>`;

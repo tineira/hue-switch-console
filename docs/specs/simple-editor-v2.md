@@ -116,7 +116,7 @@ A board opens on BOOT when it has no D channel; otherwise on the first configure
 | Toggle switch | **Wall switch** |
 | Push button | Push button |
 | Channel (in UI copy) | **Switch** (the thing on the wall); pins are D0–D5 |
-| `Save channels` | **Save switches** |
+| `Save channels` (and Round's `Save pages`) | **Save changes** (both products; "switch" also names the boards in the tabs, and **Save all (n)** saves every board) |
 | "Channels without a room do nothing." | "Unused pins do nothing." |
 | "Not used" (room option) | removed; **Remove switch** |
 | "Missing from snapshot" | **"Not on the Bridge anymore"** |
@@ -162,7 +162,7 @@ All decided by the user on 2026-09-28.
 - [x] `app/landing/simple-render.ts`: take a camera (`"iso"` | `"top"`), return pad and BOOT screen positions; landing overlay moves to its caller, unchanged on screen
 - [x] Top / 3D toggle, remembered in `localStorage` (§3.1)
 - [x] `app/switches/simple-channels-editor.tsx` rewritten per §3 (board drawing with pad overlay, switch list with the BOOT row first, add flow, selected switch, BOOT first-run screen and Hold per §3.4)
-- [x] `app/switches/workspace.tsx`: "Save switches", new status line; drop the `openChannel` accordion state in favour of a selected switch
+- [x] `app/switches/workspace.tsx`: "Save changes", new status line; drop the `openChannel` accordion state in favour of a selected switch
 - [x] Firmware gates removed per §3.6
 - [x] Copy per §3.5 in the editor, `lib/how-to.ts` and `docs/definitions.md` ("How the user assigns (console, Simple)")
 - [x] `docs/changelog.md` entry

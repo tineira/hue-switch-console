@@ -835,7 +835,7 @@ export function SwitchesWorkspace({
               disabled={!dirty || pending}
               className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50"
             >
-              {pending ? "Saving…" : round ? "Save pages" : "Save switches"}
+              {pending ? "Saving…" : "Save changes"}
             </button>
             <button
               type="button"

@@ -131,8 +131,8 @@ export function setupSteps(product: Product): SetupStep[] {
       where: "Open Switches",
       href: "/switches",
       body: round
-        ? "Pick the switch, click **Add page** and choose a room or zone. Tap toggles its lights and double tap turns them off. Click **Save pages**."
-        : "Pick the switch and start with **BOOT**, the button on the board: choose a room or zone, click **Save switches**, and press BOOT to test. Then click **Add a switch** for each switch or button you wired: what it is (**Wall switch** or **Push button**), which pin, which room.",
+        ? "Pick the switch, click **Add page** and choose a room or zone. Tap toggles its lights and double tap turns them off. Click **Save changes**."
+        : "Pick the switch and start with **BOOT**, the button on the board: choose a room or zone, click **Save changes**, and press BOOT to test. Then click **Add a switch** for each switch or button you wired: what it is (**Wall switch** or **Push button**), which pin, which room.",
       shows: round
         ? { caption: "Ready", visual: { face: "ready" } }
         : { caption: "Ready", visual: { led: "heart" } },
@@ -150,7 +150,7 @@ export function tasks(product: Product): Task[] {
             "Open **Switches** and pick the switch from the tabs.",
             "On a page, click **Change** next to Tap or Double tap. Both start on the whole room. Pick another action, one light, or scenes.",
             "Several scenes make a list the press steps through: up to 8, from the page's room or zone.",
-            "Click **Save pages**. The dimmer ring always follows the page's lights.",
+            "Click **Save changes**. The dimmer ring always follows the page's lights.",
           ],
         }
       : {
@@ -159,7 +159,7 @@ export function tasks(product: Product): Task[] {
             "Open **Switches**, pick the switch from the tabs, then pick the switch you want from the list or on the board picture.",
             "**Wall switch**: the lever turns the lights on and off. A quick off-on flick steps through the scenes under **Double-click**.",
             "**Push button**: a click toggles the lights. **Double-click** can step through scenes. **Hold** can dim (it ramps while you hold and stops when you let go) or turn off the whole room.",
-            "Every gesture targets the whole room until you click **Change** to pick one light or scenes. Give it a name so you can tell switches apart. Click **Save switches**.",
+            "Every gesture targets the whole room until you click **Change** to pick one light or scenes. Give it a name so you can tell switches apart. Click **Save changes**.",
           ],
         },
     round
@@ -181,7 +181,7 @@ export function tasks(product: Product): Task[] {
     {
       title: "Make a change apply right away",
       steps: [
-        `Each gesture says in words what it will do. Click **${round ? "Save pages" : "Save switches"}**, and the switch picks the change up the next time it checks in, within an hour.`,
+        `Each gesture says in words what it will do. Click **Save changes**, and the switch picks the change up the next time it checks in, within an hour.`,
         "To apply it now, unplug the board and plug it back in.",
         "Changes on several switches? **Save all** saves them together.",
       ],
