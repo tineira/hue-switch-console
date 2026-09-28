@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent, type React
 import { DOUBLE_MS, PAGES, ringLevel, roundReadout, type RoundState } from "@/app/landing/demo-data";
 import { GesturePills, Room } from "@/app/landing/demo-parts";
 import { RoundDrawing } from "@/app/landing/parts-drawings";
-import { CARD_HEADER, PartRow, PartsList, type Part } from "@/app/landing/parts-list";
+import { CARD_HEADER, PartRow, type Part } from "@/app/landing/parts-list";
 import type { RoundScene, ScreenEllipse } from "@/app/landing/round-scene";
 import { webglAvailable } from "@/app/landing/webgl";
 
@@ -277,133 +277,141 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
   const page = PAGES[r.page];
 
   return (
-    <>
-      <section ref={trackRef} className="lv-track" data-flat={noGL ? "" : undefined}>
-        <div className="min-w-0">
-          <div ref={heroRef} className="lv-hero">
-            {hero}
-          </div>
-          <div className="lv-story-wrap">
-            <div className="lv-story">
-              <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted">Round · 3 parts</span>
-              <h3 className="text-balance text-[clamp(22px,2.2cqi,28px)] font-semibold leading-[1.15] tracking-[-0.02em]">
-                A touch screen that snaps onto a XIAO.
-              </h3>
-              <ol className="flex flex-col border-t border-line">
-                {parts.map((part, i) => (
-                  <PartRow
-                    key={part.name}
-                    n={String(i + 1)}
-                    {...part}
-                    active={step === i + 1 || step === "wake"}
-                  />
-                ))}
-                {noGL ? null : (
-                  <PartRow
-                    n="→"
-                    name="Try it"
-                    text="Tap, double tap, drag the ring or swipe, right on the screen."
-                    active={step === "try"}
-                    dim={!tryMode}
-                  />
-                )}
-              </ol>
-            </div>
-          </div>
+    <section ref={trackRef} className="lv-track" data-flat={noGL ? "" : undefined}>
+      <div className="min-w-0">
+        <div ref={heroRef} className="lv-hero">
+          {hero}
         </div>
-
-        <div className="lv-card-col min-w-0">
-          <div ref={stickyRef} className="lv-sticky">
-            <article className="w-full overflow-hidden rounded-[20px] border border-line bg-cream">
-              <div className={CARD_HEADER}>
-                <span>{noGL ? "Round · exploded view" : label}</span>
-                <span aria-live="polite" className={tryMode ? "normal-case tracking-normal" : undefined}>
-                  {tryMode ? roundReadout(r) : "mm"}
-                </span>
-              </div>
-              {noGL ? (
-                <div className="@container">
-                  <RoundDrawing />
-                </div>
-              ) : (
-                <div ref={areaRef} className="lv-draw bg-cream">
-                  <div ref={gridRef} aria-hidden="true" className="lv-grid absolute inset-0" />
-                  <Room on={r.on} level={r.level} scene={page.scenes[r.scene]} hidden={!lit} lamp={false} />
-                  {ready ? null : (
-                    <div aria-hidden="true">
-                      <Placeholder theme="ember" />
-                      <Placeholder theme="paper" />
-                    </div>
-                  )}
-                  <canvas ref={lineRef} aria-hidden="true" className="absolute inset-0 block h-full w-full" />
-                  <canvas ref={shadeRef} aria-hidden="true" className="absolute inset-0 block h-full w-full" style={{ opacity: 0 }} />
-                  <svg
-                    ref={svgRef}
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 h-full w-full overflow-visible font-mono text-[13px] font-medium [&_text]:fill-foreground"
-                  />
-                  <div ref={pulseRef} aria-hidden="true" className={`lv-pulse ${showHint ? "opacity-100" : "opacity-0"}`} />
-                  <div
-                    ref={hintRef}
-                    aria-hidden="true"
-                    className={`pointer-events-none absolute whitespace-nowrap rounded-full bg-filament px-3 py-[7px] font-mono text-xs font-medium text-filament-ink transition-[opacity,transform] duration-400 ${
-                      showHint ? "-translate-x-1/2 opacity-100" : "-translate-x-1/2 translate-y-1.5 opacity-0"
-                    }`}
-                  >
-                    Touch the screen · it works
-                  </div>
-                  <div
-                    aria-hidden="true"
-                    className={`lv-scroll-hint pointer-events-none absolute bottom-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-cream px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-muted transition-opacity duration-300 ${
-                      p < 0.02 ? "opacity-100" : "opacity-0"
-                    }`}
-                  >
-                    Scroll to put it together ↓
-                  </div>
-                  {/* Always mounted so every frame keeps it on the screen; live only in Try-it mode. */}
-                  <div
-                    ref={hitRef}
-                    aria-hidden="true"
-                    onPointerDown={down}
-                    onPointerMove={move}
-                    onPointerUp={up}
-                    onPointerCancel={() => {
-                      gesture.current = null;
-                    }}
-                    className={`absolute touch-none select-none rounded-full ${tryMode ? "cursor-pointer" : "pointer-events-none"}`}
-                  />
-                  <div
-                    inert={!tryMode}
-                    className={`absolute inset-x-0 bottom-0 p-3 transition-[opacity,transform] duration-400 ${
-                      tryMode ? "opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-                    }`}
-                  >
-                    <GesturePills
-                      className="justify-center"
-                      gestures={[
-                        { gesture: "tap", action: "on / off", run: rTap },
-                        { gesture: "double tap", action: "scenes", run: rScene },
-                        { gesture: "drag the ring", action: "dim", run: rDim },
-                        { gesture: "swipe", action: "next room", run: () => rSwipe(1) },
-                      ]}
-                    />
-                  </div>
-                </div>
+        <div className="lv-story-wrap">
+          <div className="lv-story">
+            <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted">Round · 3 parts</span>
+            <h3 className="text-balance text-[clamp(22px,2.2cqi,28px)] font-semibold leading-[1.15] tracking-[-0.02em]">
+              A touch screen that snaps onto a XIAO.
+            </h3>
+            <ol className="flex flex-col border-t border-line">
+              {parts.map((part, i) => (
+                <PartRow
+                  key={part.name}
+                  n={String(i + 1)}
+                  {...part}
+                  active={step === i + 1 || step === "wake"}
+                />
+              ))}
+              {noGL ? null : (
+                <PartRow
+                  n="→"
+                  name="Try it"
+                  text="Tap, double tap, drag the ring or swipe, right on the screen."
+                  active={step === "try"}
+                  dim={!tryMode}
+                />
               )}
-            </article>
-            <p className="lv-caption min-h-[18px] text-center font-mono text-xs text-muted">
-              {CAPTIONS[step === null ? "none" : String(step)]}
-            </p>
+            </ol>
           </div>
         </div>
-      </section>
+      </div>
 
-      <article className="lv-phone-parts mt-10 overflow-hidden rounded-[20px] border border-line bg-cream">
-        <div className={CARD_HEADER}>
-          <span>Round · 3 parts</span>
+      <div className="lv-card-col min-w-0">
+        <div ref={stickyRef} className="lv-sticky">
+          <article className="w-full overflow-hidden rounded-[20px] border border-line bg-cream">
+            <div className={CARD_HEADER}>
+              <span>{noGL ? "Round · exploded view" : label}</span>
+              <span aria-live="polite" className={tryMode ? "normal-case tracking-normal" : undefined}>
+                {tryMode ? roundReadout(r) : "mm"}
+              </span>
+            </div>
+            {noGL ? (
+              <div className="@container">
+                <RoundDrawing />
+              </div>
+            ) : (
+              <div ref={areaRef} className="lv-draw bg-cream">
+                <div ref={gridRef} aria-hidden="true" className="lv-grid absolute inset-0" />
+                <Room on={r.on} level={r.level} scene={page.scenes[r.scene]} hidden={!lit} lamp={false} />
+                {ready ? null : (
+                  <div aria-hidden="true">
+                    <Placeholder theme="ember" />
+                    <Placeholder theme="paper" />
+                  </div>
+                )}
+                <canvas ref={lineRef} aria-hidden="true" className="absolute inset-0 block h-full w-full" />
+                <canvas ref={shadeRef} aria-hidden="true" className="absolute inset-0 block h-full w-full" style={{ opacity: 0 }} />
+                <svg
+                  ref={svgRef}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 h-full w-full overflow-visible font-mono text-[13px] font-medium [&_text]:fill-foreground"
+                />
+                <div ref={pulseRef} aria-hidden="true" className={`lv-pulse ${showHint ? "opacity-100" : "opacity-0"}`} />
+                <div
+                  ref={hintRef}
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute whitespace-nowrap rounded-full bg-filament px-3 py-[7px] font-mono text-xs font-medium text-filament-ink transition-[opacity,transform] duration-400 ${
+                    showHint ? "-translate-x-1/2 opacity-100" : "-translate-x-1/2 translate-y-1.5 opacity-0"
+                  }`}
+                >
+                  Touch the screen · it works
+                </div>
+                <div
+                  aria-hidden="true"
+                  className={`lv-scroll-hint pointer-events-none absolute bottom-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-cream px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-muted transition-opacity duration-300 ${
+                    p < 0.02 ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  Scroll to put it together ↓
+                </div>
+                {/* Always mounted so every frame keeps it on the screen; live only in Try-it mode. */}
+                <div
+                  ref={hitRef}
+                  aria-hidden="true"
+                  onPointerDown={down}
+                  onPointerMove={move}
+                  onPointerUp={up}
+                  onPointerCancel={() => {
+                    gesture.current = null;
+                  }}
+                  className={`absolute touch-none select-none rounded-full ${tryMode ? "cursor-pointer" : "pointer-events-none"}`}
+                />
+                <div
+                  inert={!tryMode}
+                  className={`absolute inset-x-0 bottom-0 p-3 transition-[opacity,transform] duration-400 ${
+                    tryMode ? "opacity-100" : "pointer-events-none translate-y-2 opacity-0"
+                  }`}
+                >
+                  <GesturePills
+                    className="justify-center"
+                    gestures={[
+                      { gesture: "tap", action: "on / off", run: rTap },
+                      { gesture: "double tap", action: "scenes", run: rScene },
+                      { gesture: "drag the ring", action: "dim", run: rDim },
+                      { gesture: "swipe", action: "next room", run: () => rSwipe(1) },
+                    ]}
+                  />
+                </div>
+              </div>
+            )}
+          </article>
+          <p className="lv-caption min-h-[18px] text-center font-mono text-xs text-muted">
+            {CAPTIONS[step === null ? "none" : String(step)]}
+          </p>
+          {/* Phones: the parts stay pinned under the card, and the one being assembled opens. */}
+          <article className="lv-phone-parts overflow-hidden rounded-[20px] border border-line bg-cream">
+            <div className={CARD_HEADER}>
+              <span>Round · 3 parts</span>
+            </div>
+            <ol className="flex flex-col">
+              {parts.map((part, i) => (
+                <PartRow
+                  key={part.name}
+                  n={String(i + 1)}
+                  {...part}
+                  active={step === i + 1 || step === "wake"}
+                  open={step === i + 1}
+                />
+              ))}
+            </ol>
+          </article>
         </div>
-        <PartsList parts={parts} />
-      </article>
-    </>
+      </div>
+    </section>
   );
 }

@@ -14,7 +14,8 @@ export function PartRow({
   href,
   active = false,
   dim = false,
-}: Part & { n: string; active?: boolean; dim?: boolean }) {
+  open,
+}: Part & { n: string; active?: boolean; dim?: boolean; open?: boolean }) {
   return (
     <li
       className="grid grid-cols-[28px_minmax(0,1fr)] gap-3 border-b border-line px-[18px] py-3 transition-opacity duration-300 last:border-b-0"
@@ -36,7 +37,14 @@ export function PartRow({
             </a>
           ) : null}
         </div>
-        <span className="text-sm leading-normal text-muted">{text}</span>
+        {open === undefined ? (
+          <span className="text-sm leading-normal text-muted">{text}</span>
+        ) : (
+          // Pinned phone list: only the part being assembled shows its text (globals.css, .lv-part-text).
+          <div className="lv-part-text" data-open={open ? "" : undefined}>
+            <span className="text-sm leading-normal text-muted">{text}</span>
+          </div>
+        )}
       </div>
     </li>
   );

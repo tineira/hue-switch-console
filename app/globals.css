@@ -719,6 +719,9 @@ option {
 }
 .lv-caption,
 .lv-phone-parts { display: none; }
+/* Pinned phone parts list: a row's text opens while that part is assembled. */
+.lv-part-text { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 300ms ease; }
+.lv-part-text > * { min-height: 0; overflow: hidden; }
 /* Landing offers Ember and Paper only; any other stored theme shows as Ember. */
 .lv-only-paper { display: none; }
 [data-theme="paper"] .lv-only-paper { display: block; }
@@ -757,6 +760,13 @@ option {
   .lv-draw { max-height: 58svh; }
   .lv-caption,
   .lv-phone-parts { display: block; }
+  .lv-part-text:not([data-open]) { grid-template-rows: 0fr; }
+}
+/* Short phones: a smaller drawing and a names-only list keep card and parts on one screen. */
+@media (max-width: 860px) and (max-height: 700px) {
+  .lv-sticky { padding-bottom: 8px; gap: 8px; }
+  .lv-draw { max-height: 40svh; }
+  .lv-part-text { display: none; }
 }
 
 /* Scrub off (reduced motion, or no WebGL): nothing pinned and no empty scroll. */
@@ -764,6 +774,8 @@ option {
   .lv-story-wrap,
   .lv-card-col { height: auto; }
   .lv-card-col::after { display: none; }
+  .lv-part-text,
+  .lv-part-text:not([data-open]) { display: grid; grid-template-rows: 1fr; }
   .lv-story,
   .lv-sticky { position: static; height: auto; }
   .lv-caption,
@@ -774,6 +786,7 @@ option {
 .lv-track[data-flat] .lv-story-wrap,
 .lv-track[data-flat] .lv-card-col { height: auto; }
 .lv-track[data-flat] .lv-card-col::after { display: none; }
+.lv-track[data-flat] .lv-part-text { display: grid; grid-template-rows: 1fr; }
 .lv-track[data-flat] .lv-story,
 .lv-track[data-flat] .lv-sticky { position: static; height: auto; }
 .lv-track[data-flat] .lv-caption { display: none; }
