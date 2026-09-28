@@ -393,7 +393,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
           <p className="lv-caption min-h-[18px] text-center font-mono text-xs text-muted">
             {CAPTIONS[step === null ? "none" : String(step)]}
           </p>
-          {/* Phones: the parts stay pinned under the card, and the one being assembled opens. */}
+          {/* Phones: the parts stay pinned under the card; the one being assembled gets the ring. */}
           <article className="lv-phone-parts overflow-hidden rounded-[20px] border border-line bg-cream">
             <div className={CARD_HEADER}>
               <span>Round · 3 parts</span>
@@ -405,7 +405,6 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                   n={String(i + 1)}
                   {...part}
                   active={step === i + 1 || step === "wake"}
-                  open={step === i + 1}
                 />
               ))}
             </ol>
