@@ -75,10 +75,34 @@ export async function findUsableInvite(
   return row;
 }
 
-export async function consumeInvite(inviteId: string, userId: string) {
+/**
+ * Marks the invite used for this sign-up, in one statement, before the account is created:
+ * of two sign-ups racing with one code, only the first gets a row back. Same conditions as
+ * findUsableInvite, plus the disposable-address rule of signupDecision.
+ */
+async function claimInvite(
+  code: string | null | undefined,
+  email: string,
+): Promise<InviteRow | null> {
+  if (!code || !code.startsWith("inv_")) return null;
+  const normalized = normalizeEmail(email);
+  const rows = await sql()`
+    update invites set used_at = now()
+    where code_hash = ${hashCode(code)}
+      and used_at is null and revoked_at is null and expires_at > now()
+      and (email = ${normalized} or (email is null and not ${isDisposableEmail(email)}::boolean))
+    returning *
+  `;
+  return (rows[0] as InviteRow | undefined) ?? null;
+}
+
+/** Records who used the invite this sign-up claimed (signupDecision with `claim`). */
+export async function consumeInvite(code: string | null | undefined, userId: string) {
+  if (!code || !code.startsWith("inv_")) return;
   await sql()`
-    update invites set used_at = now(), used_by = ${userId}
-    where id = ${inviteId} and used_at is null
+    update invites set used_by = ${userId}
+    where code_hash = ${hashCode(code)} and used_by is null
+      and used_at > now() - interval '1 hour'
   `;
 }
 
@@ -137,16 +161,23 @@ export async function accountStatus(email: string): Promise<"none" | "active" | 
 }
 
 /**
- * Whether a new account may be created for `email`. Returns the invite to consume
- * (invite and waitlist modes) or null (open mode). Throws nothing; `allowed: false` means refuse.
+ * Whether a new account may be created for `email`. Returns the invite it uses (invite and
+ * waitlist modes) or null (open mode). Throws nothing; `allowed: false` means refuse.
+ * With `claim`, the invite is also marked used in the same statement that checks it; the
+ * account creation hook uses this so one code creates one account.
  */
 export async function signupDecision(
   email: string,
   inviteCode: string | null | undefined,
+  options: { claim?: boolean } = {},
 ): Promise<{ allowed: boolean; invite: InviteRow | null }> {
   const mode = await currentSignupMode();
   if (mode === "closed") return { allowed: false, invite: null };
   if (mode === "open") return { allowed: !isDisposableEmail(email), invite: null };
+  if (options.claim) {
+    const claimed = await claimInvite(inviteCode, email);
+    return { allowed: Boolean(claimed), invite: claimed };
+  }
   const invite = await findUsableInvite(inviteCode, email);
   if (!invite) return { allowed: false, invite: null };
   // An invite the admin tied to this exact address overrides the disposable list.

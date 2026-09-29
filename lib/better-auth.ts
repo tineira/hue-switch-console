@@ -120,9 +120,12 @@ function createAuth() {
     databaseHooks: {
       user: {
         create: {
-          // The sign-up gate for every method (§2.3).
+          // The sign-up gate for every method (§2.3). Claims the invite here, so a second
+          // sign-up with the same code is refused.
           before: async (user, ctx) => {
-            const decision = await signupDecision(user.email, inviteCodeFrom(ctx));
+            const decision = await signupDecision(user.email, inviteCodeFrom(ctx), {
+              claim: true,
+            });
             if (!decision.allowed) {
               throw new APIError("FORBIDDEN", {
                 message: "Sign-up is by invitation for now.",
@@ -130,8 +133,7 @@ function createAuth() {
             }
           },
           after: async (user, ctx) => {
-            const decision = await signupDecision(user.email, inviteCodeFrom(ctx));
-            if (decision.invite) await consumeInvite(decision.invite.id, user.id);
+            await consumeInvite(inviteCodeFrom(ctx), user.id);
           },
         },
       },
