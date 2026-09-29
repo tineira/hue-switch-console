@@ -473,7 +473,7 @@ export async function recordConfigPoll(input: {
   applyFailed: boolean;
   servedRev: number;
   pollSec: number;
-  /** The `firmware` the poll reported; null keeps the stored one (docs/specs/ota.md §2.1). */
+  /** The `firmware` the poll reported; null keeps the stored one (docs/specs/finished/ota.md §2.1). */
   firmware: string | null;
   otaError: string | null;
   /** The switch runs the current release: the offer is done (§3.2). */
@@ -509,7 +509,7 @@ export async function recordConfigPoll(input: {
   `;
 }
 
-/** Offers the current release to these switches, or cancels their offers (docs/specs/ota.md §2.4). */
+/** Offers the current release to these switches, or cancels their offers (docs/specs/finished/ota.md §2.4). */
 export async function setOtaOffer(userId: string, switchIds: string[], offered: boolean) {
   if (switchIds.length === 0) return;
   await sql()`

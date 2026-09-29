@@ -88,4 +88,4 @@ No `FIRMWARE_VERSION` bump: the marker is text in notes the console already stor
 
 ## 6. Open questions
 
-- Devices (`/switches/<mac>`) knows `switches.firmware` too. Showing the same "What changes" there, before the person plugs the board in, is a natural follow-up, and the place OTA (`docs/specs/ota.md`) would use it. Out of scope here.
+- Devices (`/switches/<mac>`) knows `switches.firmware` too. Showing the same "What changes" there, before the person plugs the board in, is a natural follow-up, and the place OTA (`docs/specs/finished/ota.md`) would use it. Out of scope here.

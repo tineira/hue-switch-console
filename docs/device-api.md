@@ -9,7 +9,7 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA: `docs/specs/ota.md` (Simple) and `docs/specs/ota-round.md` (Round). The console side is live; Simple firmware ≥ 0.6.0 and Round firmware ≥ 0.6.0 use it.
+Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA: `docs/specs/finished/ota.md` (Simple) and `docs/specs/finished/ota-round.md` (Round). The console side is live; Simple firmware ≥ 0.6.0 and Round firmware ≥ 0.6.0 use it.
 
 Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
@@ -380,7 +380,7 @@ keeps the rest, so its hold does nothing (BOOT still re-pairs).
 ### `ota` (Simple firmware ≥ 0.6.0, Round firmware ≥ 0.6.0)
 
 Present only when the switch's owner offered an update on Switches
-(`docs/specs/ota.md`):
+(`docs/specs/finished/ota.md`):
 
 ```json
 "ota": {

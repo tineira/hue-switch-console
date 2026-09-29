@@ -66,7 +66,7 @@ type ConsoleRecord = {
   label: string | null;
   // The key this board last used was revoked on API keys.
   keyRevoked: boolean;
-  // Wi-Fi update state (docs/specs/ota.md §3.1); null when the console did not say.
+  // Wi-Fi update state (docs/specs/finished/ota.md §3.1); null when the console did not say.
   otaStatus: string | null;
   otaError: string | null;
 };

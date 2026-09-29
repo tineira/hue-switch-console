@@ -63,7 +63,7 @@ export async function GET(req: Request) {
   if (!mac) return jsonError(400, "mac query parameter is required");
   // Optional: the revision in the switch's NVS (docs/specs/finished/config-sync.md §2.1).
   const reported = parseReportedRev(url.searchParams.get("rev"));
-  // Optional: the running firmware and the last OTA failure (docs/specs/ota.md §2.1).
+  // Optional: the running firmware and the last OTA failure (docs/specs/finished/ota.md §2.1).
   const reportedFirmware = parseReportedFirmware(url.searchParams.get("firmware"));
   const otaError = parseOtaError(url.searchParams.get("ota_error"));
 
@@ -135,7 +135,7 @@ export async function GET(req: Request) {
       };
     }
 
-    // An offer is always the current release, looked up now (docs/specs/ota.md §2.2, §3.2).
+    // An offer is always the current release, looked up now (docs/specs/finished/ota.md §2.2, §3.2).
     const pendingOta = Boolean(sw.ota_offered_at || sw.ota_error);
     const image = pendingOta && otaCapable(sw) ? await currentAppImage(sw.product) : null;
     const otaDone = image !== null && image.version === sw.firmware;

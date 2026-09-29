@@ -11,7 +11,7 @@ Not an implementation guide or a changelog. The console **never** calls the Brid
 
 **Status: closed and deprecated (2026-09-22).** The ritual is already in the Install screen (flash, reconnect COM, Improv, `HUESET`). It is not reopened. Scan and `HUEOK` reliability are handled later, outside this document. The follow-up screen was implemented: `docs/specs/finished/devices.md`. This file remains only as a reference for **how** USB works (bins, Improv, token).
 
-OTA for devices already on Wi‑Fi: `docs/specs/ota.md`.
+OTA for devices already on Wi‑Fi: `docs/specs/finished/ota.md`.
 
 At the time of writing, each XIAO was configured with a compiled `config.h` (`WIFI_SSID`, `WIFI_PASSWORD`, `CONSOLE_URL`, `CONSOLE_TOKEN`) and a PC with Arduino. The Bridge was already mDNS + BOOT + NVS on both. This document unifies **flash + Wi‑Fi + token** in **one** console screen.
 

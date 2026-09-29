@@ -311,7 +311,7 @@ export async function currentCredits(product: ProductId): Promise<CurrentCredits
 
 export type AppImage = { version: string; sha256: string; size: number };
 
-/** The current release's `firmware.bin`, what an OTA offer points at (docs/specs/ota.md §2.2). */
+/** The current release's `firmware.bin`, what an OTA offer points at (docs/specs/finished/ota.md §2.2). */
 export async function currentAppImage(product: ProductId): Promise<AppImage | null> {
   const rows = await sql()`
     select r.version, p.sha256, p.size

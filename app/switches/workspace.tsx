@@ -582,7 +582,7 @@ export function SwitchesWorkspace({
     return latestFirmware[isRoundItem(item) ? "round" : "simple"];
   }
 
-  // Wi-Fi updates (docs/specs/ota.md §3.1). Null when the switch cannot update over Wi-Fi.
+  // Wi-Fi updates (docs/specs/finished/ota.md §3.1). Null when the switch cannot update over Wi-Fi.
   function otaFor(item: WorkspaceSwitch): OtaStatus | null {
     const info = syncFor(item);
     if (!otaCapable({ product: item.product, firmware: info.firmware })) return null;
@@ -1047,7 +1047,7 @@ const SECONDARY_BUTTON =
   "shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-muted hover:border-filament/50 hover:text-filament disabled:opacity-50";
 
 /**
- * The firmware action next to a switch's name (docs/specs/ota.md §3.1). Update opens the
+ * The firmware action next to a switch's name (docs/specs/finished/ota.md §3.1). Update opens the
  * panel that says what changes; a switch without an OTA client gets the same button, and
  * the panel sends it to Setup. Nothing when the switch runs the current release.
  */

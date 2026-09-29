@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Offers the current release to every switch on this Bridge that can update over
- * Wi-Fi and is behind. Never a downgrade (docs/specs/ota.md §2.4, §3.2).
+ * Wi-Fi and is behind. Never a downgrade (docs/specs/finished/ota.md §2.4, §3.2).
  */
 export async function POST(
   _req: Request,

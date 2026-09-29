@@ -2,7 +2,7 @@
 
 **Requirements** document. The product screen is called **Devices**. Install is an action on that screen, not a page of its own.
 
-Covers `hue-switch-console` and the USB side of both firmwares. Flashing, the bins and the command that writes the token already exist; `docs/specs/finished/web-setup.md` is closed and deprecated (reference only). This file sets **the order and which buttons are enabled**. Wi‑Fi OTA stays in `docs/specs/ota.md`. The Simple's orange LED (no PC) is in `hue-simple-switch/docs/specs/finished/led-status.md`.
+Covers `hue-switch-console` and the USB side of both firmwares. Flashing, the bins and the command that writes the token already exist; `docs/specs/finished/web-setup.md` is closed and deprecated (reference only). This file sets **the order and which buttons are enabled**. Wi‑Fi OTA stays in `docs/specs/finished/ota.md`. The Simple's orange LED (no PC) is in `hue-simple-switch/docs/specs/finished/led-status.md`.
 
 **Status:** implemented (console `/devices`, Simple 0.2.8, Round 0.5.22). Spec archived. Not an implementation gap.
 

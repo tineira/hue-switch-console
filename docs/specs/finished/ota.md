@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress
+**Status:** done
 
 **Scope:** v1 is the **Simple** switch (`hue-simple-switch`, XIAO ESP32-C6). Round gets OTA in v2 (§7).
 
@@ -150,7 +150,7 @@ The new app confirms itself only after its first successful console poll (`200` 
 - [x] `/setup`: reported version and latest, read-only
 - [x] `docs/device-api.md` updated in the same commit
 - [x] `docs/changelog.md` entry
-- [ ] Deployed; checked on production
+- [x] Deployed; checked on production (2026-09-29: every switch reports its version on each poll and runs its product's current release, 0.6.3; no runtime errors)
 
 ### Simple (`hue-simple-switch`)
 
@@ -166,11 +166,11 @@ The new app confirms itself only after its first successful console poll (`200` 
 
 ### Round (`hue-round-switch`)
 
-- [ ] Not in v1. See §7.
+- [x] Not in v1. Done in v2: `docs/specs/finished/ota-round.md`.
 
 ### Cleanup
 
-- [ ] None: pre-0.6.0 Simple boards keep working without offers.
+- [x] None: pre-0.6.0 Simple boards keep working without offers.
 
 ## 6. Open questions
 
@@ -189,7 +189,7 @@ The new app confirms itself only after its first successful console poll (`200` 
 
 ## 7. v2: Round
 
-Moved to `docs/specs/ota-round.md`, which reuses this contract and records what the Simple work taught us.
+Moved to `docs/specs/finished/ota-round.md`, which reuses this contract and records what the Simple work taught us.
 
 ## 8. Out of scope
 

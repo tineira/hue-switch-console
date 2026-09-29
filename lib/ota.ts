@@ -1,10 +1,10 @@
-// OTA updates (docs/specs/ota.md; Round: docs/specs/ota-round.md). Pure helpers, safe on the client.
+// OTA updates (docs/specs/finished/ota.md; Round: docs/specs/finished/ota-round.md). Pure helpers, safe on the client.
 
 import { compareVersions } from "@/lib/web-setup/devices";
 
 /** The first Simple release with an OTA client that sends `firmware` on every poll. */
 export const SIMPLE_OTA_MIN_FIRMWARE = "0.6.0";
-/** The first Round release with an OTA client (docs/specs/ota-round.md §4.1). */
+/** The first Round release with an OTA client (docs/specs/finished/ota-round.md §4.1). */
 export const ROUND_OTA_MIN_FIRMWARE = "0.6.0";
 
 export type OtaStatus = "current" | "behind" | "offered" | "failed" | "ahead" | "unknown";
@@ -65,7 +65,7 @@ export function otaErrorText(code: string | null): string {
     case "http":
       return "the console did not serve the image";
     case "size":
-      // Also a power cut or restart mid-download (docs/specs/ota.md §6 item 2).
+      // Also a power cut or restart mid-download (docs/specs/finished/ota.md §6 item 2).
       return "the download was incomplete or the wrong size";
     case "write":
       return "writing the flash failed";

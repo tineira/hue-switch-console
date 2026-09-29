@@ -8,7 +8,7 @@ Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
 A firmware release becomes an **upload** to the console, not a commit to it. A firmware push to `main` builds the four installer bins and posts them to the console. The console stores them in Postgres and serves `/install` and Devices from there at once: no bot commit, no `git pull` conflicts, no Vercel redeploy, and no megabytes of binaries in this repo's history. A rollback is moving a pointer back to an older release.
 
-The same catalog (version, sha256, size, published time per product) is what `docs/specs/ota.md` §5.1 needs, so OTA builds on it later.
+The same catalog (version, sha256, size, published time per product) is what `docs/specs/finished/ota.md` §5.1 needs, so OTA builds on it later.
 
 ## 2. Contract change
 

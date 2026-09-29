@@ -2,9 +2,9 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress
+**Status:** done
 
-v2 of `docs/specs/ota.md`, which shipped for the Simple switch (console #6, #7, #8; Simple 0.6.0–0.6.2, tested on hardware 2026-09-28). This spec reuses its contract unchanged and records what the Simple work taught us. Where this spec says nothing, `ota.md` applies.
+v2 of `docs/specs/finished/ota.md`, which shipped for the Simple switch (console #6, #7, #8; Simple 0.6.0–0.6.2, tested on hardware 2026-09-28). This spec reuses its contract unchanged and records what the Simple work taught us. Where this spec says nothing, `ota.md` applies.
 
 ## 1. What and why
 
@@ -70,7 +70,7 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
 - [x] Product-aware copy on Switches (§4.1)
 - [x] `docs/device-api.md` firmware note updated in the same commit
 - [x] `docs/changelog.md` entry
-- [ ] Deployed; checked on production
+- [x] Deployed; checked on production (2026-09-29: every switch reports its version on each poll and runs its product's current release, 0.6.3; no runtime errors)
 
 ### Round (`hue-round-switch`)
 
@@ -87,11 +87,11 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] Nothing.
+- [x] Nothing.
 
 ### Cleanup
 
-- [ ] None.
+- [x] None.
 
 ## 6. Testing notes
 

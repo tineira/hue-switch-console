@@ -43,7 +43,7 @@ async function reply(userId: string, mac: string, latest: string) {
 
 /**
  * Offers the product's current release to this switch; its next poll carries `ota`
- * (docs/specs/ota.md §2.4). A switch ahead of the release gets a downgrade.
+ * (docs/specs/finished/ota.md §2.4). A switch ahead of the release gets a downgrade.
  */
 export async function POST(_req: Request, context: { params: Promise<{ mac: string }> }) {
   return withSwitch(context, async (userId, sw) => {
