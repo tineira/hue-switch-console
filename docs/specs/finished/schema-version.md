@@ -1,6 +1,6 @@
 # Schema check once per version
 
-Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Tracked in `docs/problems.md` §6a ("`ensureSchema()` in the request path").
+Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Was tracked in the former `docs/problems.md` §6a ("`ensureSchema()` in the request path"), removed 2026-09-29.
 
 **Status:** done (2026-09-27). Deployed; production recorded version `fb6036bc6a16c103` in `schema_meta`.
 
@@ -92,7 +92,7 @@ Nothing to do.
 
 ### Cleanup
 
-- [x] `docs/problems.md` §6a row closed
+- [x] `docs/problems.md` §6a row closed (the file was removed 2026-09-29)
 
 ## 5. Decisions (2026-09-27)
 

@@ -46,7 +46,7 @@ Taken by the user on 2026-09-27, following Claude's recommendations.
 ### Before going public (all repos)
 
 - [x] Run a full-history secret scan with gitleaks on each repo. Done 2026-09-29 with gitleaks 8.30.1 over all branches: no leaks (console 247 commits, Round 60, Simple 52). No `.env`, `config.h` or `hue-lights.md` was ever committed.
-- [ ] Read through committed docs for things not meant to be public. Checked 2026-09-29: IDs, IPs and MACs in the docs are placeholders or private LAN examples, `docs/archive/` is only the old Supabase config, and the firmware docs are clean. Left to decide: `docs/problems.md` is an internal session log (agent pane map, "captain" notes) and lists known open weaknesses (firmware upload token also publishes, invite race).
+- [x] Read through committed docs for things not meant to be public. Checked 2026-09-29: IDs, IPs and MACs in the docs are placeholders or private LAN examples, `docs/archive/` is only the old Supabase config, and the firmware docs are clean. `docs/problems.md` (an internal session log) was removed: most items were already fixed, the open ones became issues (console #18–#23, Round #14–#15, Simple #17), and the known security weak spots moved to the maintainer's private notes. The file stays in git history, as does the closed Round issue #3 until it is deleted.
 - [x] `SECURITY.md` in each repo (2026-09-29): report through GitHub private vulnerability reporting. Supported: the production console and the current firmware release of each product. In scope: device tokens, sign-in, the upload endpoint, the USB installer.
 - [x] `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, contact `conduct@tineira.com`), 2026-09-27.
 - [x] `.github/dependabot.yml`: `npm` in the console, and `github-actions` in all three. Weekly, grouped (npm majors get their own PR). 2026-09-29.
@@ -74,10 +74,14 @@ Taken by the user on 2026-09-27, following Claude's recommendations.
 - [ ] Turn on private vulnerability reporting.
 - [ ] Apply the two §6 rulesets, required check `compile`.
 
+### Settings (all repos)
+
+- [x] Dependabot alerts and automatic security fixes on, 2026-09-29.
+
 ### After launch
 
 - [ ] Firmware: move the `THIRD_PARTY.json` ↔ `sketch.yaml` check out of `firmware.yml` into a script run by both `build.yml` and `firmware.yml`. That way a PR that bumps a library without updating credits fails before merge, not at release.
-- [ ] Label a few `good first issue`s so newcomers have a place to start.
+- [ ] Label a few `good first issue`s so newcomers have a place to start. Console #20 and #21 are labeled so far.
 - [ ] Write `docs/specs/self-hosting.md` (D6).
 
 ## 6. Rulesets for `main` (D2)
