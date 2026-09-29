@@ -31,7 +31,7 @@
   },
   {
     "name": "next",
-    "version": "16.3.5",
+    "version": "16.3.6",
     "license": "MIT",
     "url": "https://nextjs.org"
   },
@@ -43,13 +43,13 @@
   },
   {
     "name": "react",
-    "version": "19.2.8",
+    "version": "19.3.0",
     "license": "MIT",
     "url": "https://react.dev/"
   },
   {
     "name": "react-dom",
-    "version": "19.2.8",
+    "version": "19.3.0",
     "license": "MIT",
     "url": "https://react.dev/"
   },
