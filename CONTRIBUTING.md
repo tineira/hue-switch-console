@@ -58,8 +58,10 @@ Flashing and provisioning (`/setup`) use Web Serial. They need Chrome or Edge an
    ```bash
    npm run lint
    npx tsc --noEmit
+   npm test
    npm run build
    ```
+   `npm test` runs the unit tests in `tests/` (Vitest). They cover pure logic only, with no database or browser; add one when you change parsing or validation.
 4. If you change a device endpoint, update `docs/device-api.md` in the same commit.
 5. User-visible changes get an entry in [`docs/changelog.md`](docs/changelog.md).
 6. Say in the PR how you tested it, especially anything involving a real board or Bridge.
