@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   GesturePicker,
   choiceClass,
@@ -271,6 +272,12 @@ export function RoundPagesEditor({
               >
                 Preview · lights {previewOn ? "on" : "off"}
               </button>
+              <Link
+                href="/how-to?product=round#status"
+                className="text-xs text-filament underline underline-offset-2"
+              >
+                What the screen shows
+              </Link>
             </>
           ) : null}
 

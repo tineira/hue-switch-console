@@ -32,6 +32,10 @@ import type {
   TopologySnapshot,
 } from "@/lib/types";
 import { otaCapable, otaErrorText, otaStatus, type OtaStatus } from "@/lib/ota";
+import { UpdateNotes } from "@/app/update-notes";
+import { firmwareChangelogHref } from "@/lib/changelog-href";
+import type { FirmwareNotes } from "@/lib/firmware";
+import { notesBetween } from "@/lib/firmware-notes";
 import { compareVersions } from "@/lib/web-setup/devices";
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -189,10 +193,12 @@ export function SwitchesWorkspace({
   bridges,
   switches,
   latestFirmware,
+  releaseNotes,
 }: {
   bridges: LoadedBridge[];
   switches: WorkspaceSwitch[];
   latestFirmware: { round: string; simple: string };
+  releaseNotes: { round: FirmwareNotes[]; simple: FirmwareNotes[] };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -217,15 +223,15 @@ export function SwitchesWorkspace({
       switches.filter(isRoundItem).map((item) => [item.mac, roundDraftOf(item)]),
     ),
   );
-  const [revs, setRevs] = useState<Record<string, number>>(() =>
-    Object.fromEntries(switches.map((item) => [item.mac, item.rev])),
-  );
   const [sync, setSync] = useState<Record<string, SyncInfo>>(() =>
     Object.fromEntries(switches.map((item) => [item.mac, syncOf(item)])),
   );
   const [replacing, setReplacing] = useState(false);
   // The switch mac or Bridge id an OTA request is running for.
   const [otaBusy, setOtaBusy] = useState<string | null>(null);
+  // The update panel (what changes) and the details row, for the selected switch.
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [names, setNames] = useState<Record<string, string | null>>(() =>
@@ -245,6 +251,8 @@ export function SwitchesWorkspace({
     setOpenGesture(null);
     setNotice(null);
     setError(null);
+    setUpdateOpen(false);
+    setDetailsOpen(false);
   }
 
   const selected = switches.find((item) => item.mac === selectedMac) ?? null;
@@ -465,11 +473,7 @@ export function SwitchesWorkspace({
   }
 
   async function saveSwitch(item: WorkspaceSwitch): Promise<SaveResult> {
-    const result = isRoundItem(item) ? await saveRound(item.mac) : await saveSimple(item.mac);
-    if (result.ok && typeof result.rev === "number") {
-      setRevs((current) => ({ ...current, [item.mac]: result.rev as number }));
-    }
-    return result;
+    return isRoundItem(item) ? saveRound(item.mac) : saveSimple(item.mac);
   }
 
   async function saveMany(items: WorkspaceSwitch[]) {
@@ -519,9 +523,6 @@ export function SwitchesWorkspace({
         setError(body.details ?? body.error ?? "Could not replace the switch's config");
         return;
       }
-      if (typeof body.rev === "number") {
-        setRevs((current) => ({ ...current, [item.mac]: body.rev as number }));
-      }
       const next = await fetchSync();
       if (next) setSync(next);
     } catch {
@@ -536,7 +537,7 @@ export function SwitchesWorkspace({
     const info = syncFor(item);
     switch (info.config_status) {
       case "current":
-        return { text: "Up to date: the switch runs the saved config.", tone: "ok" };
+        return null;
       case "pending": {
         const saved = info.rev_changed_at ? `Saved ${formatWhen(info.rev_changed_at)}` : "Saved";
         const until = formatUntil(info.next_poll_at);
@@ -562,9 +563,7 @@ export function SwitchesWorkspace({
           tone: "warn",
         };
       default:
-        return updateFor(item)
-          ? { text: "Update the firmware to see whether the switch has the saved config.", tone: "muted" }
-          : null;
+        return null;
     }
   }
 
@@ -588,14 +587,6 @@ export function SwitchesWorkspace({
     const info = syncFor(item);
     if (!otaCapable({ product: item.product, firmware: info.firmware })) return null;
     return otaStatus(info, latestFor(item));
-  }
-
-  // The firmware came from the last register: polls since then did not report one.
-  function firmwareFromRegister(item: WorkspaceSwitch): boolean {
-    const info = syncFor(item);
-    if (!info.firmware || !info.last_seen_at) return false;
-    if (!info.firmware_seen_at) return true;
-    return Date.parse(info.last_seen_at) - Date.parse(info.firmware_seen_at) > 60 * 1000;
   }
 
   async function otaRequest(key: string, url: string, method: "POST" | "DELETE", failed: string) {
@@ -642,14 +633,16 @@ export function SwitchesWorkspace({
       const until = formatUntil(syncFor(item).next_poll_at);
       return {
         text:
-          `Update to ${latest} offered. The switch downloads it when it checks in` +
-          `${until ? ` (${until})` : ""}, then restarts.`,
+          `The switch installs ${latest} when it next checks in` +
+          `${until ? ` (${until})` : ""}, then restarts. Its buttons keep working until then.`,
         tone: "muted",
       };
     }
     if (status === "failed") {
       return {
-        text: `Update to ${latest} failed: ${otaErrorText(syncFor(item).ota_error)}. The switch tries again within an hour, or you can cancel.`,
+        text:
+          `The update to ${latest} didn't finish: ${otaErrorText(syncFor(item).ota_error)}. ` +
+          `The switch still runs ${syncFor(item).firmware ?? "its old firmware"} and tries again within an hour.`,
         tone: "warn",
       };
     }
@@ -660,68 +653,54 @@ export function SwitchesWorkspace({
     return (names[item.mac] || "").trim() || formatMac(item.mac);
   }
 
+  // One short state for a tab, only when something needs attention; null when all is well.
+  function tabState(item: WorkspaceSwitch): { text: string; tone: string } | null {
+    const ota = otaFor(item);
+    if (ota === "failed") return { text: "update failed", tone: "text-danger" };
+    if (ota === "offered") return { text: "updating", tone: "text-filament" };
+    const unseen = notSeenMin(item);
+    if (unseen !== null) return { text: `offline ${notSeenText(unseen)}`, tone: "text-warn" };
+    if (!syncFor(item).last_seen_at) return { text: "never seen", tone: "text-warn" };
+    const status = syncFor(item).config_status;
+    if (status === "not_applied") return { text: "not applied", tone: "text-warn" };
+    if (status === "ahead") return { text: "ahead", tone: "text-warn" };
+    const stale = staleFor(item);
+    if (stale > 0) return { text: `${stale} stale`, tone: "text-warn" };
+    if (status === "pending") return { text: "pending", tone: "text-filament" };
+    return null;
+  }
+
   function renderTab(item: WorkspaceSwitch) {
     const active = item.mac === selectedMac;
-    const unseen = notSeenMin(item);
-    const stale = staleFor(item);
-    const tooOld = !isRoundItem(item) && !supportsChannelTypes(item.firmware);
-    const status = syncFor(item).config_status;
-    const warn =
-      unseen !== null ||
-      stale > 0 ||
-      tooOld ||
-      status === "not_applied" ||
-      status === "ahead" ||
-      otaFor(item) === "failed";
+    const state = tabState(item);
+    const update = updateFor(item);
     return (
       <button
         key={item.mac}
         type="button"
         aria-current={active ? "true" : undefined}
         onClick={() => selectBoard(item)}
-        className={`flex min-w-0 max-w-full flex-col items-start gap-0.5 rounded-xl border px-3.5 py-2 text-left ${
+        className={`flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-xl border px-3.5 py-2 text-left ${
           active
             ? "border-filament/60 bg-filament-soft shadow-[0_0_0_1px_var(--filament)]"
             : "border-line bg-cream hover:border-filament/40"
         }`}
       >
-        <span className="flex max-w-full items-center gap-2">
-          <span className="truncate text-sm font-medium">{boardName(item)}</span>
-          {itemDirty(item) ? (
-            <span
-              className="h-2 w-2 shrink-0 rounded-full bg-filament"
-              aria-label="Unsaved changes"
-              title="Unsaved changes"
-            />
-          ) : null}
-          {warn ? (
-            <span
-              className="h-2 w-2 shrink-0 rounded-full bg-warn"
-              aria-label="Needs attention"
-              title="Needs attention"
-            />
-          ) : null}
-        </span>
-        <span className="text-xs text-muted">
-          {isRoundItem(item) ? "Round" : "Simple"}
-          {unseen !== null ? (
-            <span className="text-warn"> · not seen {notSeenText(unseen)}</span>
-          ) : syncFor(item).last_seen_at ? (
-            ` · seen ${formatWhen(syncFor(item).last_seen_at)}`
-          ) : (
-            " · never seen"
-          )}
-          {status === "pending" ? <span className="text-filament"> · pending</span> : null}
-          {status === "not_applied" ? <span className="text-warn"> · not applied</span> : null}
-          {status === "ahead" ? <span className="text-warn"> · ahead</span> : null}
-          {stale > 0 ? <span className="text-warn"> · {stale} stale</span> : null}
-          {(() => {
-            const ota = otaFor(item);
-            if (ota === "offered") return <span className="text-filament"> · updating</span>;
-            if (ota === "failed") return <span className="text-warn"> · update failed</span>;
-            return updateFor(item) ? <span className="text-filament"> · update</span> : null;
-          })()}
-        </span>
+        <ProductIcon round={isRoundItem(item)} />
+        <span className="truncate text-sm font-medium">{boardName(item)}</span>
+        {itemDirty(item) ? (
+          <span
+            className="h-2 w-2 shrink-0 rounded-full bg-filament"
+            aria-label="Unsaved changes"
+            title="Unsaved changes"
+          />
+        ) : null}
+        {state ? <span className={`shrink-0 text-xs ${state.tone}`}>{state.text}</span> : null}
+        {!state && update ? (
+          <span className="shrink-0 text-filament" title={`Update to ${update} available`}>
+            <UpdateIcon label={`Update to ${update} available`} />
+          </span>
+        ) : null}
       </button>
     );
   }
@@ -786,7 +765,7 @@ export function SwitchesWorkspace({
                     onClick={() => offerOtaToBridge(bridge.bridgeid)}
                     className="rounded-md border border-filament/50 px-2.5 py-1 text-xs font-medium text-filament hover:bg-filament-soft disabled:opacity-50"
                   >
-                    {otaBusy === bridge.bridgeid ? "Offering…" : `Update all behind (${behind})`}
+                    {otaBusy === bridge.bridgeid ? "Offering…" : `Update all (${behind})`}
                   </button>
                 );
               })()}
@@ -813,13 +792,19 @@ export function SwitchesWorkspace({
           aria-label={`${boardName(selected)} settings`}
           className="rounded-xl border border-line bg-cream"
         >
-          <header className="flex items-start gap-2 px-5 py-3.5">
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <h2 className="flex flex-wrap items-center gap-2 text-base font-medium">
+          <header className="flex flex-col gap-3 px-5 py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="flex min-w-0 items-center gap-2 text-base font-medium">
+                <ProductIcon round={round} />
                 <span className="truncate">{boardName(selected)}</span>
-                <span className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-muted">
-                  {round ? "Round" : "Simple"}
-                </span>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-md p-1.5 text-muted hover:bg-filament-soft hover:text-filament"
+                  aria-label={`Rename ${boardName(selected)}`}
+                  onClick={() => setEditingMac(selected.mac)}
+                >
+                  <PencilIcon />
+                </button>
                 {dirty ? (
                   <span className="rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
                     Unsaved
@@ -829,81 +814,128 @@ export function SwitchesWorkspace({
                     Saved
                   </span>
                 ) : null}
-                <OtaControl
+              </h2>
+              <div className="flex items-center gap-2">
+                <UpdateActions
                   status={otaFor(selected)}
                   latest={latestFor(selected)}
                   usbUpdate={updateFor(selected)}
-                  firmware={syncFor(selected).firmware}
-                  mac={selected.mac}
                   busy={otaBusy === selected.mac}
+                  panelOpen={updateOpen}
+                  onTogglePanel={() => setUpdateOpen((open) => !open)}
                   onOffer={() => offerOta(selected)}
                   onCancel={() => cancelOta(selected)}
                 />
-              </h2>
-              <p className="text-xs text-muted">
-                <span className="font-mono">{formatMac(selected.mac)}</span>
-                {syncFor(selected).firmware
-                  ? ` · firmware ${syncFor(selected).firmware}${
-                      firmwareFromRegister(selected) ? " (from last register)" : ""
-                    }`
-                  : ""}
-                {` · rev ${sync[selected.mac]?.rev ?? revs[selected.mac] ?? selected.rev}`}
-                {" · "}
-                <Link
-                  href={`/how-to?product=${round ? "round" : "simple"}#status`}
-                  className="text-filament underline underline-offset-2"
+                <button
+                  type="button"
+                  aria-label="Details"
+                  aria-expanded={detailsOpen}
+                  onClick={() => setDetailsOpen((open) => !open)}
+                  className={`shrink-0 rounded-md border p-1.5 ${
+                    detailsOpen
+                      ? "border-filament/60 bg-filament-soft text-filament"
+                      : "border-line text-muted hover:text-filament"
+                  }`}
                 >
-                  {round ? "What the screen shows" : "What the LED shows"}
-                </Link>
-              </p>
-              {(() => {
-                const line = syncLine(selected);
-                if (!line) return null;
-                const tone =
-                  line.tone === "ok" ? "text-ok" : line.tone === "warn" ? "text-warn" : "text-muted";
-                return (
-                  <p className={`text-xs ${tone}`}>
-                    {line.text}
-                    {syncFor(selected).config_status === "ahead" ? (
-                      <>
-                        {" "}
-                        <button
-                          type="button"
-                          disabled={replacing}
-                          onClick={() => replaceConfig(selected)}
-                          className="font-medium underline underline-offset-2 disabled:opacity-50"
-                        >
-                          {replacing ? "Replacing…" : "Replace the switch's config"}
-                        </button>
-                      </>
-                    ) : null}
-                  </p>
-                );
-              })()}
-              {(() => {
-                const line = otaLine(selected);
-                if (!line) return null;
-                return (
-                  <p className={`text-xs ${line.tone === "warn" ? "text-warn" : "text-muted"}`}>
-                    {line.text}
-                  </p>
-                );
-              })()}
-              {notSeenMin(selected) !== null ? (
-                <p className="text-xs text-warn">
-                  Not seen for {notSeenText(notSeenMin(selected) as number)}. Saved
-                  changes reach it when it checks in again.
-                </p>
-              ) : null}
+                  <InfoIcon />
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              className="mt-0.5 shrink-0 rounded-md p-1.5 text-muted hover:bg-filament-soft hover:text-filament"
-              aria-label={`Rename ${boardName(selected)}`}
-              onClick={() => setEditingMac(selected.mac)}
-            >
-              <PencilIcon />
-            </button>
+            {(() => {
+              const line = syncLine(selected);
+              if (!line) return null;
+              const tone =
+                line.tone === "ok" ? "text-ok" : line.tone === "warn" ? "text-warn" : "text-muted";
+              return (
+                <p className={`text-sm ${tone}`}>
+                  {line.text}
+                  {syncFor(selected).config_status === "ahead" ? (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        disabled={replacing}
+                        onClick={() => replaceConfig(selected)}
+                        className="font-medium underline underline-offset-2 disabled:opacity-50"
+                      >
+                        {replacing ? "Replacing…" : "Replace the switch's config"}
+                      </button>
+                    </>
+                  ) : null}
+                </p>
+              );
+            })()}
+            {(() => {
+              const line = otaLine(selected);
+              if (!line) return null;
+              return (
+                <p className={`text-sm ${line.tone === "warn" ? "text-warn" : "text-muted"}`}>
+                  {line.text}
+                </p>
+              );
+            })()}
+            {notSeenMin(selected) !== null ? (
+              <p className="text-sm text-warn">
+                Offline for {notSeenText(notSeenMin(selected) as number)}. Changes and
+                updates reach it when it checks in again.
+              </p>
+            ) : null}
+            {updateOpen && updateFor(selected) ? (
+              <UpdatePanel
+                firmware={syncFor(selected).firmware ?? ""}
+                latest={latestFor(selected)}
+                notes={notesBetween(
+                  releaseNotes[round ? "round" : "simple"],
+                  syncFor(selected).firmware ?? "",
+                  latestFor(selected),
+                )}
+                wifi={otaFor(selected) === "behind"}
+                mac={selected.mac}
+                busy={otaBusy === selected.mac}
+                onUpdate={async () => {
+                  await offerOta(selected);
+                  setUpdateOpen(false);
+                }}
+                onClose={() => setUpdateOpen(false)}
+              />
+            ) : null}
+            {detailsOpen ? (
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 rounded-lg bg-background px-3.5 py-3 text-xs">
+                <dt className="text-muted">Firmware</dt>
+                <dd>
+                  {syncFor(selected).firmware ?? "Unknown"}
+                  {(() => {
+                    const firmware = syncFor(selected).firmware;
+                    const href = firmware
+                      ? firmwareChangelogHref(round ? "round" : "simple", firmware)
+                      : null;
+                    return href ? (
+                      <>
+                        {" · "}
+                        <Link href={href} className="text-filament underline underline-offset-2">
+                          What changed
+                        </Link>
+                      </>
+                    ) : null;
+                  })()}
+                </dd>
+                <dt className="text-muted">Last check-in</dt>
+                <dd>{syncFor(selected).last_seen_at ? formatWhen(syncFor(selected).last_seen_at) : "Never"}</dd>
+                <dt className="text-muted">Board</dt>
+                <dd>
+                  {round ? "Round" : "Simple"} · <span className="font-mono">{formatMac(selected.mac)}</span>
+                </dd>
+                <dt className="text-muted">{round ? "Screen" : "Status light"}</dt>
+                <dd>
+                  <Link
+                    href={`/how-to?product=${round ? "round" : "simple"}#status`}
+                    className="text-filament underline underline-offset-2"
+                  >
+                    {round ? "What the screen shows" : "What the LED shows"}
+                  </Link>
+                </dd>
+              </dl>
+            ) : null}
           </header>
           {editingMac === selected.mac ? (
             <SwitchRenameForm
@@ -1005,97 +1037,203 @@ export function SwitchesWorkspace({
   );
 }
 
-const PILL =
-  "rounded-full border px-2 py-0.5 text-[11px] font-medium disabled:opacity-50";
+const PRIMARY_BUTTON =
+  "shrink-0 rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink disabled:opacity-50";
+const SECONDARY_BUTTON =
+  "shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-muted hover:border-filament/50 hover:text-filament disabled:opacity-50";
 
 /**
- * The firmware pill next to a switch's name (docs/specs/ota.md §3.1): a Wi-Fi update,
- * downgrade or cancel when the switch has an OTA client, a link to Setup for USB, or
- * "Latest firmware" when the switch runs the current release.
+ * The firmware action next to a switch's name (docs/specs/ota.md §3.1). Update opens the
+ * panel that says what changes; a switch without an OTA client gets the same button, and
+ * the panel sends it to Setup. Nothing when the switch runs the current release.
  */
-function OtaControl({
+function UpdateActions({
   status,
   latest,
   usbUpdate,
-  firmware,
-  mac,
   busy,
+  panelOpen,
+  onTogglePanel,
   onOffer,
   onCancel,
 }: {
   status: OtaStatus | null;
   latest: string;
   usbUpdate: string | null;
-  firmware: string | null;
-  mac: string;
   busy: boolean;
+  panelOpen: boolean;
+  onTogglePanel: () => void;
   onOffer: () => void;
   onCancel: () => void;
 }) {
-  const offerClass = `${PILL} border-filament/50 text-filament hover:bg-filament-soft`;
-  // Any product, OTA or not: it runs the release Setup installs.
-  if (compareVersions(firmware ?? "", latest) === 0) {
+  if (status === "offered" || status === "failed") {
     return (
-      <span title={`Runs ${latest}, the current release`} className={`${PILL} border-ok/40 text-ok`}>
-        Latest firmware
-      </span>
+      <>
+        {status === "offered" ? (
+          <span className="rounded-md bg-filament-soft px-3 py-1.5 text-sm font-medium text-filament">
+            Updating to {latest}…
+          </span>
+        ) : (
+          <button type="button" disabled={busy} onClick={onOffer} className={PRIMARY_BUTTON}>
+            {busy ? "Offering…" : "Try again"}
+          </button>
+        )}
+        <button type="button" disabled={busy} onClick={onCancel} className={SECONDARY_BUTTON}>
+          {busy && status === "offered" ? "Cancelling…" : "Cancel"}
+        </button>
+      </>
     );
   }
-  if (status === null) {
-    return usbUpdate ? (
-      <Link
-        href={`/setup?mac=${mac}`}
-        title="This switch updates over USB. Plug it in and install from Setup."
-        className={`${PILL} border-filament/50 text-filament hover:bg-filament-soft`}
+  if (status === "ahead") {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          if (window.confirm(`Install ${latest}, older than the firmware on this switch?`)) onOffer();
+        }}
+        className={SECONDARY_BUTTON}
       >
-        Update to {usbUpdate} over USB
-      </Link>
-    ) : null;
+        {busy ? "Offering…" : `Downgrade to ${latest}`}
+      </button>
+    );
   }
-  switch (status) {
-    case "behind":
-      return (
-        <button type="button" disabled={busy} onClick={onOffer} className={offerClass}>
-          {busy ? "Offering…" : `Update to ${latest}`}
-        </button>
-      );
-    case "ahead":
-      return (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Install ${latest}, older than the firmware on this switch?`)) onOffer();
-          }}
-          className={`${PILL} border-line text-muted hover:border-filament/50 hover:text-filament`}
-        >
-          {busy ? "Offering…" : `Downgrade to ${latest}`}
-        </button>
-      );
-    case "offered":
-    case "failed":
-      return (
-        <span className="flex items-center gap-1.5">
-          <span
-            className={`${PILL} ${
-              status === "failed" ? "border-warn/50 text-warn" : "border-filament/50 bg-filament-soft text-filament"
-            }`}
-          >
-            {status === "failed" ? `Update to ${latest} failed` : `Updating to ${latest}`}
-          </span>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onCancel}
-            className="text-[11px] font-medium text-muted underline underline-offset-2 hover:text-filament disabled:opacity-50"
-          >
-            {busy ? "Cancelling…" : "Cancel update"}
+  if (status === "behind" || (status === null && usbUpdate)) {
+    return (
+      <button
+        type="button"
+        aria-expanded={panelOpen}
+        onClick={onTogglePanel}
+        className={PRIMARY_BUTTON}
+      >
+        Update to {latest}
+      </button>
+    );
+  }
+  return null;
+}
+
+/** What an update changes, then how it installs: over Wi-Fi now, or once over USB from Setup. */
+function UpdatePanel({
+  firmware,
+  latest,
+  notes,
+  wifi,
+  mac,
+  busy,
+  onUpdate,
+  onClose,
+}: {
+  firmware: string;
+  latest: string;
+  notes: ReturnType<typeof notesBetween>;
+  wifi: boolean;
+  mac: string;
+  busy: boolean;
+  onUpdate: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-filament/40 bg-filament-soft/40 p-2">
+      {notes.length > 0 ? (
+        <UpdateNotes installed={firmware} latest={latest} notes={notes} />
+      ) : (
+        <p className="px-2 pt-1 text-sm text-muted">
+          Update from <span className="font-mono">{firmware}</span> to{" "}
+          <span className="font-mono">{latest}</span>.
+        </p>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-filament/30 px-2 pt-3 pb-1">
+        <p className="max-w-xl text-sm text-muted">
+          {wifi
+            ? "The switch installs it when it next checks in, then restarts. Its buttons, Wi-Fi and Hue pairing stay as they are."
+            : `This switch runs ${firmware}, which needs a USB cable for this one update. After that it updates over Wi-Fi.`}
+        </p>
+        <div className="flex items-center gap-2">
+          {wifi ? (
+            <button type="button" disabled={busy} onClick={onUpdate} className={PRIMARY_BUTTON}>
+              {busy ? "Offering…" : "Update now"}
+            </button>
+          ) : (
+            <Link href={`/setup?mac=${mac}`} className={PRIMARY_BUTTON}>
+              Open Setup
+            </Link>
+          )}
+          <button type="button" onClick={onClose} className={SECONDARY_BUTTON}>
+            Not now
           </button>
-        </span>
-      );
-    default:
-      return null;
-  }
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Round (a dial) or Simple (a board with pins), next to a switch's name. */
+function ProductIcon({ round }: { round: boolean }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      className="h-4 w-4 shrink-0 text-muted"
+      role="img"
+      aria-label={round ? "Round" : "Simple"}
+    >
+      <title>{round ? "Round" : "Simple"}</title>
+      {round ? (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="5" />
+        </>
+      ) : (
+        <>
+          <rect x="6" y="3" width="12" height="18" rx="2" />
+          <path d="M3 7h3M3 12h3M3 17h3M18 7h3M18 12h3M18 17h3" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function UpdateIcon({ label }: { label: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      role="img"
+      aria-label={label}
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 16V8M8.5 11.5 12 8l3.5 3.5" />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </svg>
+  );
 }
 
 function PencilIcon() {
