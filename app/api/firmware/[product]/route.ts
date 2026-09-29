@@ -14,7 +14,8 @@ import { bearerToken, databaseError, jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
-// Firmware CI uploads a release here (docs/specs/finished/firmware-uploads.md §2.2).
+// Firmware CI uploads a release here (docs/specs/finished/firmware-uploads.md §2.2). It is stored,
+// not made current: an admin does that in /admin.
 export async function POST(req: Request, context: { params: Promise<{ product: string }> }) {
   const auth = uploadTokenMatches(bearerToken(req));
   if (auth === null) return jsonError(503, "upload_not_configured");
@@ -66,7 +67,10 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
         details: "This version already has different bins. Notes were updated. Bump FIRMWARE_VERSION to ship new bins.",
       });
     }
-    return jsonOk({ product, version, status: result.status }, result.status === "created" ? 201 : 200);
+    return jsonOk(
+      { product, version, status: result.status, current: result.current },
+      result.status === "created" ? 201 : 200,
+    );
   } catch (err) {
     return databaseError(err);
   }

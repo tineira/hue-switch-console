@@ -391,7 +391,8 @@ Present only when the switch's owner offered an update on Switches
 }
 ```
 
-- The offer is always the product's current release. The console sends it only
+- The offer is always the product's current release: one an admin made current
+  in `/admin`, never an upload still waiting there. The console sends it only
   while the switch reports a different `firmware`, and drops it once the switch
   reports that version.
 - `url` is a path. Resolve it against the console URL in NVS, so the download

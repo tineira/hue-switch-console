@@ -4,6 +4,8 @@ import { secretMatches } from "@/lib/tokens";
 import type { ProductId } from "@/lib/web-setup/products";
 
 // Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
+// An upload is stored but not current: a signed-in admin makes it current from /admin, and
+// only then does it reach /setup, OTA offers and /changelog.
 
 export const PART_NAMES = [
   "bootloader.bin",
@@ -102,7 +104,7 @@ export function parseCredits(raw: string): { credits: CreditEntry[] } | { proble
 }
 
 export type UploadResult =
-  | { status: "created" | "unchanged"; version: string }
+  | { status: "created" | "unchanged"; version: string; current: boolean }
   | { status: "version_exists"; version: string };
 
 function sha256(data: Uint8Array): string {
@@ -129,32 +131,32 @@ export async function uploadRelease(input: {
   const db = sql();
 
   const existing = await db`
-    select r.id, coalesce(json_object_agg(p.name, p.sha256) filter (where p.name is not null), '{}') as shas
+    select r.id, coalesce(json_object_agg(p.name, p.sha256) filter (where p.name is not null), '{}') as shas,
+      exists (select 1 from firmware_current c where c.release_id = r.id) as current
     from firmware_releases r
     left join firmware_parts p on p.release_id = r.id
     where r.product = ${product} and r.version = ${version}
     group by r.id
   `;
-  const row = existing[0] as { id: string; shas: Record<string, string> } | undefined;
+  const row = existing[0] as
+    | { id: string; shas: Record<string, string>; current: boolean }
+    | undefined;
 
   if (row && Object.keys(row.shas).length > 0) {
     // The bins of a released version never change (their URLs are cached forever); its notes can.
+    // Which release is current is never changed by an upload.
     const same = parts.every((part) => row.shas[part.name] === part.sha256);
-    await db.transaction((tx) => [
-      tx`update firmware_releases
-         set notes = ${notes}, credits = coalesce(${credits}::jsonb, credits)
-         where id = ${row.id}`,
-      ...(same
-        ? [
-            tx`insert into firmware_current (product, release_id) values (${product}, ${row.id})
-               on conflict (product) do update set release_id = excluded.release_id`,
-          ]
-        : []),
-    ]);
-    return { status: same ? "unchanged" : "version_exists", version };
+    await db`
+      update firmware_releases
+      set notes = ${notes}, credits = coalesce(${credits}::jsonb, credits)
+      where id = ${row.id}
+    `;
+    return same
+      ? { status: "unchanged", version, current: Boolean(row.current) }
+      : { status: "version_exists", version };
   }
 
-  // A new version, or one imported from the old changelog without bins.
+  // A new version, or one imported from the old changelog without bins. Stored, not current.
   await db.transaction((tx) => [
     tx`insert into firmware_releases (product, version, commit_sha, notes, credits)
        values (${product}, ${version}, ${commit}, ${notes}, ${credits}::jsonb)
@@ -168,15 +170,17 @@ export async function uploadRelease(input: {
         select id, ${part.name}, ${part.sha256}, ${part.size}, decode(${part.base64}, 'base64')
         from firmware_releases where product = ${product} and version = ${version}`,
     ),
-    tx`insert into firmware_current (product, release_id)
-       select product, id from firmware_releases where product = ${product} and version = ${version}
-       on conflict (product) do update set release_id = excluded.release_id`,
   ]);
   await pruneParts(product);
-  return { status: "created", version };
+  const current = await db`
+    select 1 from firmware_current c join firmware_releases r on r.id = c.release_id
+    where r.product = ${product} and r.version = ${version}
+  `;
+  return { status: "created", version, current: current.length > 0 };
 }
 
-// Keeps the bins of the newest releases and the current one. Release rows stay: they are the changelog.
+// Keeps the bins of the newest releases, the current one and any waiting to be made current.
+// Release rows stay: they are the changelog.
 async function pruneParts(product: ProductId) {
   await sql()`
     delete from firmware_parts
@@ -190,19 +194,30 @@ async function pruneParts(product: ProductId) {
       where n > ${KEEP_RELEASES_WITH_PARTS}
     )
     and release_id not in (select release_id from firmware_current where product = ${product})
+    and release_id not in (
+      select id from firmware_releases where product = ${product} and approved_at is null
+    )
   `;
 }
 
+/** Makes a stored release current and marks it released. Only /admin calls this. */
 export async function setCurrentRelease(product: ProductId, version: string): Promise<boolean> {
-  const rows = await sql()`
-    insert into firmware_current (product, release_id)
-    select r.product, r.id from firmware_releases r
-    where r.product = ${product} and r.version = ${version}
-      and (select count(*) from firmware_parts p where p.release_id = r.id) = ${PART_NAMES.length}
-    on conflict (product) do update set release_id = excluded.release_id
-    returning release_id
-  `;
-  return rows.length > 0;
+  const results = await sql().transaction((tx) => [
+    tx`
+      insert into firmware_current (product, release_id)
+      select r.product, r.id from firmware_releases r
+      where r.product = ${product} and r.version = ${version}
+        and (select count(*) from firmware_parts p where p.release_id = r.id) = ${PART_NAMES.length}
+      on conflict (product) do update set release_id = excluded.release_id
+      returning release_id
+    `,
+    tx`
+      update firmware_releases r set approved_at = coalesce(r.approved_at, now())
+      where r.product = ${product} and r.version = ${version}
+        and exists (select 1 from firmware_current c where c.release_id = r.id)
+    `,
+  ]);
+  return (results[0]?.length ?? 0) > 0;
 }
 
 export type StoredRelease = {
@@ -210,6 +225,8 @@ export type StoredRelease = {
   createdAt: string;
   hasBins: boolean;
   current: boolean;
+  /** Uploaded with bins, never made current: waits for an admin in /admin. */
+  waiting: boolean;
 };
 
 /** Every release of a product, newest first, for /admin (docs/specs/finished/admin-tools.md §2.4). */
@@ -217,17 +234,24 @@ export async function listStoredReleases(product: ProductId): Promise<StoredRele
   const rows = await sql()`
     select r.version, r.created_at,
       (select count(*)::int from firmware_parts p where p.release_id = r.id) as parts,
-      exists (select 1 from firmware_current c where c.product = r.product and c.release_id = r.id) as current
+      exists (select 1 from firmware_current c where c.product = r.product and c.release_id = r.id) as current,
+      r.approved_at is not null as approved
     from firmware_releases r
     where r.product = ${product}
     order by string_to_array(r.version, '.')::int[] desc
   `;
-  return (rows as { version: string; created_at: string; parts: number; current: boolean }[]).map((r) => ({
-    version: r.version,
-    createdAt: new Date(r.created_at).toISOString(),
-    hasBins: Number(r.parts) === PART_NAMES.length,
-    current: Boolean(r.current),
-  }));
+  type Row = { version: string; created_at: string; parts: number; current: boolean; approved: boolean };
+  return (rows as Row[]).map((r) => {
+    const hasBins = Number(r.parts) === PART_NAMES.length;
+    const current = Boolean(r.current);
+    return {
+      version: r.version,
+      createdAt: new Date(r.created_at).toISOString(),
+      hasBins,
+      current,
+      waiting: hasBins && !current && !r.approved,
+    };
+  });
 }
 
 export async function currentVersion(product: ProductId): Promise<string | null> {
@@ -256,12 +280,15 @@ export async function currentManifest(product: ProductId) {
   };
 }
 
+/** A part of a released version; bins still waiting in /admin are not served. */
 export async function readPart(product: ProductId, version: string, name: PartName) {
   const rows = await sql()`
     select p.sha256, encode(p.data, 'base64') as data
     from firmware_parts p
     join firmware_releases r on r.id = p.release_id
     where r.product = ${product} and r.version = ${version} and p.name = ${name}
+      and (r.approved_at is not null
+        or exists (select 1 from firmware_current c where c.release_id = r.id))
   `;
   const row = rows[0] as { sha256: string; data: string } | undefined;
   if (!row) return null;
@@ -275,6 +302,8 @@ export async function readPartMeta(product: ProductId, version: string, name: Pa
     from firmware_parts p
     join firmware_releases r on r.id = p.release_id
     where r.product = ${product} and r.version = ${version} and p.name = ${name}
+      and (r.approved_at is not null
+        or exists (select 1 from firmware_current c where c.release_id = r.id))
   `;
   const row = rows[0] as { sha256: string; size: number } | undefined;
   if (!row) return null;
@@ -283,12 +312,15 @@ export async function readPartMeta(product: ProductId, version: string, name: Pa
 
 export type FirmwareNotes = { version: string; date: string; notes: string };
 
+/** Notes of released versions only: an upload still waiting in /admin is left out. */
 export async function listReleaseNotes(product: ProductId): Promise<FirmwareNotes[]> {
   const rows = await sql()`
-    select version, to_char(created_at at time zone 'UTC', 'YYYY-MM-DD') as date, notes
-    from firmware_releases
-    where product = ${product} and notes <> ''
-    order by string_to_array(version, '.')::int[] desc
+    select r.version, to_char(r.created_at at time zone 'UTC', 'YYYY-MM-DD') as date, r.notes
+    from firmware_releases r
+    where r.product = ${product} and r.notes <> ''
+      and (r.approved_at is not null
+        or exists (select 1 from firmware_current c where c.release_id = r.id))
+    order by string_to_array(r.version, '.')::int[] desc
   `;
   return rows.map((row) => {
     const r = row as FirmwareNotes;

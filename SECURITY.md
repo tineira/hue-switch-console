@@ -19,7 +19,7 @@ Self-hosted consoles are supported at the latest `main`.
 
 - **Device tokens** (`hsw_…`): issuing, storing, checking and revoking the keys switches use for the device API.
 - **Sign-in and accounts:** Google, GitHub and emailed codes, sessions, invites, account isolation (one account reading or changing another's switches, Bridges or recipes), and `/admin`.
-- **The firmware upload endpoint** (`POST /api/firmware/<product>`) and what `/firmware/<product>/manifest.json` serves, which decides what `/setup` flashes.
+- **The firmware upload endpoint** (`POST /api/firmware/<product>`), the admin step that makes an upload current, and what `/firmware/<product>/manifest.json` serves, which decides what `/setup` flashes.
 - **The USB installer** (`/setup`): Web Serial flashing and provisioning, including the Wi-Fi and Hue data it sends to the board.
 
 ## Out of scope
