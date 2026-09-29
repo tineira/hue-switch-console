@@ -1,10 +1,10 @@
 import {
   computeDim,
+  decideSwitchProduct,
   DEFAULT_SCREEN_TIMEOUT_SEC,
   dimsEqual,
   groupsEqual,
   inferPageGroup,
-  inferProduct,
   isPlaceholderRoundChannels,
   normalizePageName,
   recipeToC1,
@@ -360,18 +360,12 @@ export async function upsertSwitch(row: {
   product?: SwitchProduct;
 }) {
   const existing = await getSwitchByMac(row.userId, row.mac);
-  const explicitSimple = row.product === "simple";
-  const explicitRound = row.product === "round";
-  const inferred = inferProduct(row.product, row.channels);
-  let product: SwitchProduct;
-  if (explicitSimple) product = "simple";
-  else if (explicitRound) product = "round";
-  else if (existing?.product === "round") product = "round";
-  else product = inferred;
+  const { product, wipeToSimple } = decideSwitchProduct({
+    requested: row.product,
+    channels: row.channels,
+    existing,
+  });
   const bridgeChanged = Boolean(existing && existing.bridgeid !== row.bridgeid);
-  const wipeToSimple = Boolean(
-    existing && existing.product === "round" && explicitSimple,
-  );
   if (existing && (bridgeChanged || wipeToSimple)) {
     await sql()`delete from recipes where switch_id = ${existing.id}`;
     await sql()`delete from pages where switch_id = ${existing.id}`;

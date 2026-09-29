@@ -52,6 +52,26 @@ export function inferProduct(
   return isPlaceholderRoundChannels(channels) ? "round" : "simple";
 }
 
+/**
+ * Which product a register makes a switch, and whether it wipes its Round pages.
+ * An explicit `product` wins. Without one, a switch stored as Round stays Round and a new
+ * or Simple one is inferred from its channels. Only an explicit `"simple"` on a stored
+ * Round wipes it: inference never deletes pages.
+ */
+export function decideSwitchProduct(input: {
+  requested: SwitchProduct | undefined;
+  channels: Channel[];
+  existing: { product: SwitchProduct } | null | undefined;
+}): { product: SwitchProduct; wipeToSimple: boolean } {
+  const { requested, channels, existing } = input;
+  let product: SwitchProduct;
+  if (requested === "simple" || requested === "round") product = requested;
+  else if (existing?.product === "round") product = "round";
+  else product = inferProduct(requested, channels);
+  const wipeToSimple = existing?.product === "round" && requested === "simple";
+  return { product, wipeToSimple };
+}
+
 export function findRoundRecipe(
   recipes: RoundRecipe[],
   pageId: string,

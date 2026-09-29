@@ -12,7 +12,8 @@
     "migrate": "node scripts/migrate.mjs",
     "schema": "node scripts/gen-schema.mjs",
     "seed-user": "node scripts/seed-user.mjs",
-    "prebuild": "node scripts/credits.mjs && node scripts/gen-schema.mjs"
+    "prebuild": "node scripts/credits.mjs && node scripts/gen-schema.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -37,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   }
 }
