@@ -1,5 +1,6 @@
 import { SetupPanel } from "@/app/setup/setup-panel";
 import { Shell } from "@/app/shell";
+import { configuredDeviceConsoleUrl } from "@/lib/account-config";
 import { requireSessionUser } from "@/lib/auth";
 import { getSwitchByMac } from "@/lib/db";
 import { listReleaseNotes } from "@/lib/firmware";
@@ -42,6 +43,7 @@ export default async function SetupPage({
             : null
         }
         releaseNotes={{ round: roundNotes, simple: simpleNotes }}
+        configuredConsoleUrl={configuredDeviceConsoleUrl()}
       />
     </Shell>
   );

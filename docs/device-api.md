@@ -5,17 +5,21 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 
 ## Host and TLS
 
+`CONSOLE_URL` is the URL the installer wrote to the board (`HUESET url`): the `DEVICE_CONSOLE_URL` of the console that ran Setup (docs/specs/self-hosting.md §2.1). When that console does not set it, Setup writes `BETTER_AUTH_URL`, else the origin of the Setup page. Boards set up from the hosted console get:
+
 ```
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA: `docs/specs/finished/ota.md` (Simple) and `docs/specs/finished/ota-round.md` (Round). The console side is live; Simple firmware ≥ 0.6.0 and Round firmware ≥ 0.6.0 use it.
+A self-hosted console writes its own origin, such as `https://hue.example.org` or `http://192.168.1.20:3000`. Setup shows the URL before it writes it, and asks before it moves a board whose stored URL has another host (`HUEGET` `url`). The firmware has no compiled-in console URL; it reads the `console` NVS namespace only.
 
-Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
+History: the console URL and API key used to live in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA: `docs/specs/finished/ota.md` (Simple) and `docs/specs/finished/ota-round.md` (Round). The console side is live; Simple firmware ≥ 0.6.0 and Round firmware ≥ 0.6.0 use it.
+
+Over `https://`, device TLS **must verify** the console certificate (Arduino ESP32 cert bundle, public CAs only; a private CA does not work, see docs/specs/self-hosting.md §2.4).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
 the Hue Bridge (self-signed).
 
-Local dev: `CONSOLE_URL=http://localhost:3000` (no TLS).
+Plain `http://` (a LAN console or local dev) has no TLS. A board cannot reach `localhost`; point it at the machine's LAN address, such as `http://192.168.1.20:3000`, with `DEVICE_CONSOLE_URL`.
 
 The installer writes the console URL over USB (`HUESET url`). Firmware accepts any `http://` or `https://` URL that fits, with no host allowlist. This is on purpose: self-hosted consoles, often plain `http://` on a LAN, must work. Writing it needs physical USB access, which can reflash the board anyway.
 

@@ -38,8 +38,10 @@ and sign in with `USER_EMAIL` / `USER_PASSWORD`. Full walkthrough: [`CONTRIBUTIN
 
 Boards are flashed and provisioned from **Setup** (`/setup`; `/devices` and
 `/install` redirect there) in Chrome or Edge over USB. That screen writes Wi-Fi (Improv)
-and a device token (`HUESET`); it always points the XIAO at
-`https://hue.tineira.com`, not localhost. Nothing is compiled into the firmware:
+and a device token (`HUESET`), and points the XIAO at `DEVICE_CONSOLE_URL`
+(else `BETTER_AUTH_URL`, else the Setup page's own address). The hosted console
+sets `https://hue.tineira.com`. A board cannot reach `localhost`: to test against a
+local console, set `DEVICE_CONSOLE_URL` to your machine's LAN address. Nothing is compiled into the firmware:
 `config.h` holds only `SERIAL_DEBUG`, in dev too. Firmware images are uploaded by
 firmware CI and served from the database (see below).
 
