@@ -73,7 +73,7 @@
   },
   {
     "name": "typescript",
-    "version": "5.9.3",
+    "version": "6.0.3",
     "license": "Apache-2.0",
     "url": "https://www.typescriptlang.org/"
   }

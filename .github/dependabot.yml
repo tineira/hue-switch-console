@@ -14,6 +14,12 @@ updates:
       # can test, so minor bumps are done by hand with a Round and a Simple flash test.
       - dependency-name: esptool-js
         update-types: ["version-update:semver-minor"]
+      # TypeScript 7 has no JavaScript compiler API yet. Next.js 16.3 builds with it (it runs
+      # the tsc CLI), but typescript-eslint, which eslint-config-next loads, refuses TS 7
+      # ("typescript-eslint does not support TS 7.0"; its peer range is <6.1.0). Revisit when a
+      # typescript-eslint release lists TypeScript 7 in its peerDependencies.
+      - dependency-name: typescript
+        versions: [">=7"]
 
   - package-ecosystem: github-actions
     directory: /
