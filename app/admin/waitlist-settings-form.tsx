@@ -6,7 +6,7 @@ import { waitlistSettingsAction, type WaitlistSettingsState } from "@/app/admin/
 const INPUT =
   "rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-filament";
 
-/** Mode and seat cap (docs/specs/waitlist.md §2.7). Saving admits people if seats opened. */
+/** Mode and seat cap (docs/specs/finished/waitlist.md §2.7). Saving admits people if seats opened. */
 export function WaitlistSettingsForm({
   mode,
   cap,

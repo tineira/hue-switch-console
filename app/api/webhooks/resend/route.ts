@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const TAGS = new Set<EmailTag>(["code", "invite", "waitlist", "notice", "alert"]);
 
-// Bounces and complaints from Resend (docs/specs/waitlist.md §2.5). Subscribed events:
+// Bounces and complaints from Resend (docs/specs/finished/waitlist.md §2.5). Subscribed events:
 // email.bounced, email.complained, email.suppressed. Everything else is acknowledged and ignored.
 export async function POST(req: Request) {
   const secret = envValue("RESEND_WEBHOOK_SECRET");

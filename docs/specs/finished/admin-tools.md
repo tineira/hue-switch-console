@@ -1,6 +1,6 @@
 # Admin tools
 
-Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` ("accounts spec") and `docs/specs/waitlist.md`.
+Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` ("accounts spec") and `docs/specs/finished/waitlist.md`.
 
 **Status:** done (2026-09-27). Deployed and checked on production; `users.role` dropped.
 

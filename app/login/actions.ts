@@ -147,7 +147,7 @@ export async function passwordLogin(_prev: SimpleState, formData: FormData): Pro
   redirect("/");
 }
 
-/** "Join the waitlist" (docs/specs/waitlist.md §2.4). */
+/** "Join the waitlist" (docs/specs/finished/waitlist.md §2.4). */
 export async function joinWaitlistAction(_prev: SimpleState, formData: FormData): Promise<SimpleState> {
   const mode = await currentSignupMode();
   if (mode !== "invite" && mode !== "waitlist") return { error: "The waitlist is closed." };

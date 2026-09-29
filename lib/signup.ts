@@ -5,7 +5,7 @@ import { sql } from "@/lib/sql";
 import { isSuspendedRow } from "@/lib/suspension";
 
 // Sign-up gate and invites (docs/specs/finished/multi-user-accounts.md §2.3). The waitlist that
-// hands out invites is lib/waitlist.ts (docs/specs/waitlist.md).
+// hands out invites is lib/waitlist.ts (docs/specs/finished/waitlist.md).
 
 export const INVITE_COOKIE = "hsw_invite";
 /** Invites the admin makes by hand. Waitlist invites expire sooner (lib/waitlist.ts). */

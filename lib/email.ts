@@ -5,7 +5,7 @@ import { sql } from "@/lib/sql";
 // Every message counts toward EMAIL_DAILY_CAP (Resend's free tier is 100 a day). Codes are
 // logged as code_sent, which the per-address and per-IP limits count (lib/auth-limits.ts);
 // waitlist emails as waitlist_email_sent, which also have their own daily budget
-// (docs/specs/waitlist.md §2.6); everything else as email_sent.
+// (docs/specs/finished/waitlist.md §2.6); everything else as email_sent.
 
 type SentKind = "code_sent" | "email_sent" | "waitlist_email_sent";
 

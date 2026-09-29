@@ -112,7 +112,7 @@ export function emailDailyCap(): number {
   return envInt("EMAIL_DAILY_CAP", 90);
 }
 
-/** USER_CAP: default seat cap until the admin saves one (docs/specs/waitlist.md §2.9). Null: no cap. */
+/** USER_CAP: default seat cap until the admin saves one (docs/specs/finished/waitlist.md §2.9). Null: no cap. */
 export function userCapFromEnv(): number | null {
   const raw = envValue("USER_CAP");
   if (raw === undefined) return null;

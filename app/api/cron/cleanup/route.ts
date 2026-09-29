@@ -8,7 +8,7 @@ import { admitFromWaitlist } from "@/lib/waitlist";
 export const dynamic = "force-dynamic";
 
 // Daily housekeeping (docs/specs/finished/multi-user-accounts.md §2.8). Never deletes accounts.
-// Also the waitlist's catch-up admission run (docs/specs/waitlist.md §2.3).
+// Also the waitlist's catch-up admission run (docs/specs/finished/waitlist.md §2.3).
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return jsonError(503, "cron_not_configured");

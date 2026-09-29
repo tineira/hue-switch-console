@@ -28,7 +28,7 @@ Each runs as one agent in its own worktree, following that repo's `AGENTS.md`. T
 2. TypeScript 7 migration (#16) and ESLint 10 migration (#14), one PR each. **Done, held:** neither works with `eslint-config-next` 16.3 yet (typescript-eslint refuses TS 7; eslint-plugin-react crashes on ESLint 10). #45 moved to TypeScript 6; both PRs closed, and Dependabot ignores `typescript >= 7` and `eslint >= 10` until the Next lint stack supports them.
 3. #19 phase 2: `400 product_required` for a register with a `mac` and no valid `product`; remove `inferProduct` and `isPlaceholderRoundChannels`; `docs/device-api.md` in the same commit; tick `docs/specs/require-product-on-register.md` and move it to `finished/`. **Done.**
 4. Good first issues #34, #35, #36. **Done** (#42, #41, #46).
-5. Production checks: a register on production returns `"snapshot": "stored"` (#18 spec; read from Vercel logs or a switch's next register), then move `docs/specs/finished/keep-topology-on-empty-register.md` to `finished/`. The waitlist bounce test; tick it in `docs/specs/waitlist.md`. **Open:** production runtime logs keep about an hour and showed no register in that window, so `"snapshot": "stored"` was not observed (the code path is covered by review); check it on the next register. The bounce test was not run: joining needs a Turnstile pass on the production form and an explicit go from the user in chat to submit it, which the agent could not get.
+5. Production checks: a register on production returns `"snapshot": "stored"` (#18 spec; read from Vercel logs or a switch's next register), then move `docs/specs/finished/keep-topology-on-empty-register.md` to `finished/`. The waitlist bounce test; tick it in `docs/specs/finished/waitlist.md`. **Open:** production runtime logs keep about an hour and showed no register in that window, so `"snapshot": "stored"` was not observed (the code path is covered by review); check it on the next register. The bounce test was not run: joining needs a Turnstile pass on the production form and an explicit go from the user in chat to submit it, which the agent could not get.
 6. CI images: confirm `ci.yml` passes on the Ubuntu 26 runner image before `ubuntu-latest` moves on 2026-10-19; fix what breaks. **Done:** `ci.yml` passed on `ubuntu-26.04` (throwaway PR #49, 2026-09-29); no change needed.
 
 ### B. Self-hosting, console side (`hue-switch-console`)
@@ -64,8 +64,8 @@ Everything in the console part of the `docs/specs/self-hosting.md` checklist, co
 
 ## Stays with the user
 
-- Board tests of Round and Simple 0.6.4, and of the next releases that carry this plan's firmware changes.
-- Waitlist checks in `docs/specs/waitlist.md`, including the bounce test: the join form needs a Cloudflare Turnstile token, which an agent cannot produce.
+- ~~Board tests of Round 0.6.4 and Simple 0.7.1~~ done 2026-09-29: both tested on a board by the user and working.
+- ~~Waitlist checks~~ done 2026-09-29: invite path and bounce checked on production; the cap-full path and the leave link accepted untested.
 - ~~The #18 production check~~ done 2026-09-29 (a Simple switch rebooted; `200` registers, pickers intact).
 - `/setup` on production shows `https://hue.tineira.com` (needs a signed-in session), and one board provisioned from a local console (the last two self-hosting items).
 - Upgrading `esptool-js` past 0.6.1, which Dependabot now skips: it changes the USB code Setup relies on, so it needs a flash test on both boards.

@@ -82,7 +82,7 @@ export async function deleteAccount(_prev: { error?: string } | undefined, formD
   await auth().api.signOut({ headers: await headers() }).catch(() => {});
   // Cascades to sessions, sign-in methods, keys, bridges, switches, pages and recipes.
   await sql()`delete from users where id = ${user.id}`;
-  // The seat is free: offer it to the next person waiting (docs/specs/waitlist.md §2.3).
+  // The seat is free: offer it to the next person waiting (docs/specs/finished/waitlist.md §2.3).
   await admitQuietly();
   redirect("/");
 }

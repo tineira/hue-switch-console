@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` (referred to below as "accounts spec").
 
-**Status:** in progress. Approved, implemented and deployed (2026-09-27); production checks partly done (2026-09-29); the cap-full path and the leave link are left. All open questions in §5 are decided.
+**Status:** done 2026-09-29. Production checks passed for the invite path and bounces; the cap-full path and the leave link were accepted untested.
 
 ## 1. What and why
 
@@ -205,7 +205,7 @@ alter table auth_events add column if not exists detail text;       -- email kin
 - [x] `README.md` env vars (§2.9); `docs/definitions.md` if it describes sign-up; `docs/changelog.md` console entry
 - [x] By Claude: Resend webhook created through the connector; `RESEND_WEBHOOK_SECRET`, `SIGNUP_MODE=waitlist` and `USER_CAP=50` set in Vercel through the connector; deployed (2026-09-27, `fa5ef59`). Webhook answers unsigned calls with 400; schema migrated
 - [x] Checked on production by the user: join with a seat free → invite arrives, and the invite link creates the account (2026-09-29)
-- [ ] Checked on production by the user: with the cap full → "You're on the list" arrives; raise the cap → invite arrives; leave link works
+- [x] ~~Checked on production by the user: with the cap full → "You're on the list" arrives; raise the cap → invite arrives; leave link works~~ Accepted untested by the user on 2026-09-29.
 - [x] Checked on production: a bounce test address (Resend's `bounced@resend.dev`) is marked `bounced`, and re-joining with it shows the "couldn't deliver" reply. Checked by the user on 2026-09-29: with a seat free the join sent an invite, the bounce revoked it (Invites shows "revoked"; the bounce is counted in the "Bounces and complaints" tile, since `/admin` lists only people still waiting), and re-joining showed the reply.
 
 ### Round (`hue-round-switch`)

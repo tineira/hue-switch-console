@@ -294,7 +294,7 @@ create index if not exists auth_events_email_idx on auth_events (kind, email, cr
 
 create index if not exists auth_events_time_idx on auth_events (kind, created_at);
 
--- Waitlist with a user cap (docs/specs/waitlist.md §2.8). invite_requests is the waitlist.
+-- Waitlist with a user cap (docs/specs/finished/waitlist.md §2.8). invite_requests is the waitlist.
 create table if not exists console_settings (
   id boolean primary key default true check (id),                   -- one row
   signup_mode text check (signup_mode in ('invite', 'waitlist')),   -- null: use SIGNUP_MODE

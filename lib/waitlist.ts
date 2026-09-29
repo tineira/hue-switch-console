@@ -12,7 +12,7 @@ import { siteOrigin } from "@/lib/origin";
 import { createInvite, revokeInvite, userExists } from "@/lib/signup";
 import { sql } from "@/lib/sql";
 
-// The waitlist with a user cap (docs/specs/waitlist.md). Entries live in invite_requests.
+// The waitlist with a user cap (docs/specs/finished/waitlist.md). Entries live in invite_requests.
 // In `waitlist` mode, entries are admitted oldest first while seats are free; in `invite` mode
 // they wait for the admin.
 

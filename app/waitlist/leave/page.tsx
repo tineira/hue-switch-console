@@ -11,7 +11,7 @@ export const metadata = {
   robots: { index: false },
 };
 
-// The link in "You're on the list" (docs/specs/waitlist.md §2.4). Opening it changes nothing,
+// The link in "You're on the list" (docs/specs/finished/waitlist.md §2.4). Opening it changes nothing,
 // because mail scanners open links; the button does.
 async function leave(formData: FormData) {
   "use server";

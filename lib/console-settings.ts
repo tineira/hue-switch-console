@@ -2,7 +2,7 @@ import { signupMode, userCapFromEnv, type SignupMode } from "@/lib/account-confi
 import { isDbConfigured } from "@/lib/env";
 import { sql } from "@/lib/sql";
 
-// Settings the admin changes in /admin without a redeploy (docs/specs/waitlist.md §2.2).
+// Settings the admin changes in /admin without a redeploy (docs/specs/finished/waitlist.md §2.2).
 // Env gives the defaults; a saved value wins. Only `invite` and `waitlist` can be chosen here:
 // `closed` and `open` stay env-only.
 
