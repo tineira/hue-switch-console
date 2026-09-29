@@ -14,7 +14,7 @@ import { clientIp } from "@/lib/auth-limits";
 import { sendChangeEmailCode, sendSignInCode } from "@/lib/email";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { consumeInvite, INVITE_COOKIE, readCookie, signupDecision } from "@/lib/signup";
-import { pgConnectionString, sql } from "@/lib/sql";
+import { pgConnectionString, pgPool, sql, usesPgDriver } from "@/lib/sql";
 import { isSuspended } from "@/lib/suspension";
 
 // Better Auth on the console's own Postgres (docs/specs/finished/multi-user-accounts.md §2.2).
@@ -31,6 +31,16 @@ function inviteCodeFrom(ctx: HookContext): string | null {
 }
 
 const stamps = { createdAt: "created_at", updatedAt: "updated_at" } as const;
+
+/**
+ * With DATABASE_DRIVER=pg, Better Auth shares the app's pool (lib/sql.ts). On Neon the app
+ * talks HTTP and has no pool, so Better Auth keeps a small one of its own.
+ */
+function authPool(): Pool {
+  const url = process.env.DATABASE_URL ?? "";
+  if (usesPgDriver()) return pgPool(url);
+  return new Pool({ connectionString: pgConnectionString(url), max: 3 });
+}
 
 function createAuth() {
   const socialProviders: Parameters<typeof betterAuth>[0]["socialProviders"] = {};
@@ -51,10 +61,7 @@ function createAuth() {
     appName: "Hue Switch Console",
     secret: process.env.AUTH_SECRET,
     baseURL: publicUrl() ?? undefined,
-    database: new Pool({
-      connectionString: pgConnectionString(process.env.DATABASE_URL ?? ""),
-      max: 3,
-    }),
+    database: authPool(),
     advanced: {
       cookiePrefix: "hsw",
       database: { generateId: "uuid" },
