@@ -15,6 +15,7 @@ The console has no version number. Each heading is the day the change went live.
 - If your Hue Bridge briefly reports no lights when a switch checks in, the console keeps the rooms, lights and scenes it already had, so the pickers on Switches no longer go empty until the next good check-in.
 - The console starts in the light **Paper** theme. If your phone or computer is set to dark mode it starts in **Ember**, and a theme you picked yourself stays as it was.
 - **New icon and link preview.** The browser tab shows a small Round screen instead of the placeholder icon, and so does the icon on an iPhone home screen. Links shared in WhatsApp, iMessage, Slack or X show the Round with "Build a wall switch for your Hue lights." on the light theme.
+- **For people who run a console: firmware waits for you.** A firmware release uploaded by CI no longer goes live on its own. It waits in `/admin` under **Firmware**, marked **waiting** (with a note at the top of the page), until an admin presses **Make current**. Only then does Setup install it, Switches offer it over Wi-Fi, and `/changelog` list it. Rolling back is also done there; the old rollback endpoint for the upload token is gone.
 
 ### 2026-09-28
 

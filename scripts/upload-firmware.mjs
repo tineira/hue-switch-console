@@ -4,7 +4,8 @@
 //
 // <dir> holds bootloader.bin, partitions.bin, boot_app0.bin and firmware.bin. Without --version,
 // <dir>/manifest.json supplies it. --notes is a markdown file with that version's changelog bullets.
-// Needs FIRMWARE_UPLOAD_TOKEN; CONSOLE_URL defaults to https://hue.tineira.com.
+// Needs FIRMWARE_UPLOAD_TOKEN; CONSOLE_URL defaults to https://hue.tineira.com. The release waits in
+// /admin until an admin makes it current.
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 

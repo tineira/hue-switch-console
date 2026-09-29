@@ -4,6 +4,8 @@ Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `doc
 
 **Status:** done (2026-09-27). Deployed and checked on production; `users.role` dropped.
 
+> **Later change (2026-09-29):** an upload no longer becomes current on its own. It waits in `/admin` until an admin makes it current, and `POST /api/firmware/<product>/current` answers `410`. Current behavior: `README.md`, "Firmware release pipeline".
+
 ## 1. What and why
 
 `/admin` today can suspend, delete and set limits on accounts, and run invites and the waitlist. It stops working well as the console grows, and some jobs still need a terminal. Afterwards the admin can:

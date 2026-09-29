@@ -206,6 +206,10 @@ export default async function AdminPage({
       listStoredReleases("simple"),
       listAdminEvents(50),
     ]);
+  const waitingReleases = [
+    ...roundReleases.filter((r) => r.waiting).map((r) => ({ label: "Round", version: r.version })),
+    ...simpleReleases.filter((r) => r.waiting).map((r) => ({ label: "Simple", version: r.version })),
+  ];
   const waitlistOn = mode === "invite" || mode === "waitlist";
   const envMode = signupMode();
   const defaults = defaultLimits();
@@ -232,6 +236,17 @@ export default async function AdminPage({
           Sign-up mode: <span className="font-medium text-foreground">{mode}</span>.{" "}
           {accounts.total} {accounts.total === 1 ? "account" : "accounts"}. This page shows counts only, never recipes or topology.
         </p>
+        {waitingReleases.length > 0 ? (
+          <p className="rounded-xl border border-warn/40 bg-warn-soft p-3 text-sm">
+            <span className="font-medium text-warn">Firmware waiting:</span>{" "}
+            {waitingReleases.map((r) => `${r.label} ${r.version}`).join(", ")}. Nothing
+            changes for anyone until you make it current under{" "}
+            <a href="#firmware" className="underline">
+              Firmware
+            </a>
+            .
+          </p>
+        ) : null}
       </section>
 
       <section className="flex flex-col gap-5 rounded-xl border border-line bg-cream p-5">
@@ -375,11 +390,14 @@ export default async function AdminPage({
         <Pager page={invitePage} total={invites.total} href={(n) => adminHref({ ipage: String(n) })} />
       </section>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
+      <section id="firmware" className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
         <h2 className="text-lg font-medium">Firmware</h2>
         <p className="text-sm text-muted">
-          What <code>/setup</code> installs. A new upload becomes current on its own; make an
-          older release current to roll back. Releases without bins keep their notes only.
+          What <code>/setup</code> installs and Switches offers over Wi-Fi. A new upload from
+          firmware CI <span className="font-medium text-foreground">waits here</span> until you
+          make it current; until then it is not installed, offered or shown on{" "}
+          <code>/changelog</code>. Make an older release current to roll back. Releases without
+          bins keep their notes only.
         </p>
         <div className="grid gap-5 md:grid-cols-2">
           {(
@@ -395,6 +413,11 @@ export default async function AdminPage({
                   <li key={r.version} className="flex items-center gap-3 py-1.5">
                     <span className="font-mono text-xs">{r.version}</span>
                     <span className="text-xs text-muted">{day(r.createdAt)}</span>
+                    {r.waiting ? (
+                      <span className="rounded-full bg-warn-soft px-2 py-px text-[11px] font-medium text-warn">
+                        waiting
+                      </span>
+                    ) : null}
                     <span className="ml-auto text-xs">
                       {r.current ? (
                         <span className="font-medium">current</span>

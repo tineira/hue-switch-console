@@ -178,6 +178,11 @@ create table if not exists firmware_current (
 -- Config sync (docs/specs/finished/config-sync.md).
 -- Firmware credits (docs/specs/finished/credits.md).
 alter table firmware_releases add column if not exists credits jsonb;
+-- Set when an admin makes the release current (or it was current before uploads needed
+-- approval). Null: uploaded by CI, waiting in /admin, not on /changelog or the manifest.
+-- The default fills rows that exist when the column is added; new uploads start null.
+alter table firmware_releases add column if not exists approved_at timestamptz default now();
+alter table firmware_releases alter column approved_at drop default;
 
 -- Multi-user accounts (docs/specs/finished/multi-user-accounts.md §2.9).
 -- users doubles as Better Auth's user table; the rest are its tables.

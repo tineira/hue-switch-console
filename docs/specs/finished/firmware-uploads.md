@@ -4,6 +4,8 @@ Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
 **Status:** done
 
+> **Later change (2026-09-29):** an upload no longer becomes current on its own. It waits in `/admin` until an admin makes it current, and `POST /api/firmware/<product>/current` answers `410`. Current behavior: `README.md`, "Firmware release pipeline".
+
 ## 1. What and why
 
 A firmware release becomes an **upload** to the console, not a commit to it. A firmware push to `main` builds the four installer bins and posts them to the console. The console stores them in Postgres and serves `/install` and Devices from there at once: no bot commit, no `git pull` conflicts, no Vercel redeploy, and no megabytes of binaries in this repo's history. A rollback is moving a pointer back to an older release.

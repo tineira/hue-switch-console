@@ -102,18 +102,30 @@ Firmware TLS against `https://hue.tineira.com` must **verify** the certificate.
 
 ## Firmware release pipeline
 
-A push to `main` in a firmware repo **is a release**: it is uploaded to the
-console, and Setup offers that build to every board plugged in over USB at
-once. No commit lands in this repo and nothing redeploys.
+A push to `main` in a firmware repo uploads a **release candidate** to the
+console. It is stored, and it waits in `/admin` until a signed-in admin presses
+**Make current**. Only then does Setup offer it to boards plugged in over USB,
+Switches offer it over Wi-Fi, and `/changelog` list it. No commit lands in this
+repo and nothing redeploys.
 
 ```text
 push to main (hue-round-switch / hue-simple-switch)
   → .github/workflows/firmware.yml: build (SERIAL_DEBUG 0), read FIRMWARE_VERSION
   → notes = that version's section of the firmware repo's CHANGELOG.md
   → POST https://hue.tineira.com/api/firmware/<product>      [FIRMWARE_UPLOAD_TOKEN]
-  → Postgres: firmware_releases + firmware_parts, firmware_current = this release
-  → /firmware/<product>/manifest.json and /changelog show it on the next request
+  → Postgres: firmware_releases + firmware_parts (approved_at null: waiting)
+  → /admin → Firmware: the release is marked "waiting"; an admin presses Make current
+  → firmware_current = this release, approved_at set
+  → /firmware/<product>/manifest.json, OTA offers and /changelog use it on the next request
 ```
+
+The upload token can only add releases. Choosing the current release takes an
+admin session (`ADMIN_EMAILS`). This holds for a product's **first** release
+too: until an admin makes it current, the product has no manifest and Setup has
+nothing to install for it. The upload answers `201` (`200` for a re-upload of
+the same bins) with `"current": false` while the release waits. Bins of a
+waiting release are not served, and its notes stay off `/changelog`, Setup and
+Switches. Releases that were current before this rule existed count as released.
 
 `FIRMWARE_VERSION` in the firmware source is the version the wizard shows.
 Bumping it is what makes Setup offer **Update**. A rebuild without a bump is
@@ -124,7 +136,7 @@ forever) and only the notes are updated. Spec:
 The console checks every upload: all four parts, a `major.minor.patch` version,
 non-empty notes, and the chip id inside `bootloader.bin` / `firmware.bin`
 (ESP32-S3 for `round`, ESP32-C6 for `simple`). It keeps the bins of the last 5
-releases per product plus the current one. Release rows and their notes are
+releases per product, plus the current one and any still waiting. Release rows and their notes are
 kept for the changelog.
 
 When Setup offers **Update**, it lists the notes of every version after the
@@ -171,14 +183,14 @@ $t = -join ((1..48) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) }); $
 
 ### Rollback and local builds
 
-Point the installer at an older stored release:
-
-```bash
-curl -X POST https://hue.tineira.com/api/firmware/round/current -H "Authorization: Bearer $FIRMWARE_UPLOAD_TOKEN" -H "Content-Type: application/json" -d '{"version":"0.5.27"}'
-```
+To roll back (or forward), open `/admin` → **Firmware** as an admin and press
+**Make current** on any stored release that still has its bins. Every change is
+in the admin log. `POST /api/firmware/<product>/current`, which used to do this
+with the upload token, now answers `410 gone`.
 
 Upload a local build (a folder with the four bins) with
-`scripts/upload-firmware.mjs <product> <dir> --version x.y.z --notes <file>`.
+`scripts/upload-firmware.mjs <product> <dir> --version x.y.z --notes <file>`. It
+waits in `/admin` like a CI upload.
 
 ### When it breaks
 
@@ -190,6 +202,7 @@ Upload a local build (a folder with the four bins) with
 | Upload answers `400 missing_notes` | No `### <version>` section in that repo's `CHANGELOG.md` |
 | Upload answers `400 invalid_image` | A part is missing, empty, or built for the other chip |
 | Upload answers `409 version_exists` | Same version, new bins: bump `FIRMWARE_VERSION` |
+| Upload succeeded but Setup still offers the old version | The release is waiting: make it current in `/admin` → Firmware |
 
 ### Adding a switch
 
