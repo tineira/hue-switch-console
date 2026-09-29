@@ -2,7 +2,7 @@
 
 Coordination plan across the three repos. Not a feature spec; the features it builds have their own specs.
 
-**Status:** all questions decided by the user on 2026-09-29. **Waiting for the user's go.** The user will ask to update this plan once the separate Simple dim-cycle session (`docs/specs/simple-dim-cycle.md`) finishes. Nothing below starts before the go.
+**Status:** all questions decided by the user on 2026-09-29. **Waiting for the user's go.** The user will ask to update this plan once the separate Simple dim-cycle session (`docs/specs/finished/simple-dim-cycle.md`) finishes. Nothing below starts before the go.
 
 ## Decisions (2026-09-29)
 

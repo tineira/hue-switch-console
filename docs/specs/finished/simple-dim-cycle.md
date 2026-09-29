@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Replaces the ramp rules in `docs/specs/finished/simple-hold-dim.md` §2.3. The recipe, the target and the release `stop` stay the same.
 
-**Status:** in progress (Simple 0.7.0 released, 0.7.1 with a 250 ms pause in tineira/hue-simple-switch#23; waiting for the user's board test)
+**Status:** done. Simple 0.7.0 released, 0.7.1 (250 ms pause) tested on the wall by the user. Only the cleanup item is open: on 2026-09-29 two Simple switches still reported 0.6.3.
 
 ## 1. What and why
 
@@ -93,7 +93,7 @@ No change.
 - [x] `FIRMWARE_VERSION` → `0.7.0`.
 - [x] `CHANGELOG.md` entry (user-facing wording, e.g. "Hold to dim now goes down and up in a loop until you let go, and moves at the same speed from any level").
 - [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.7.0.
-- [ ] Tested on a board by the user: hold at 70 % (goes down, then up, then down); release mid-leg stops there; release during the pause at full stays at full; hold from off (turns on at 1 %, goes up); hold at 20 % (goes up first); hold at 40 % (goes down first); whole room and one light; a hold longer than 30 s stops by itself.
+- [x] Tested on a board by the user: hold at 70 % (goes down, then up, then down); release mid-leg stops there; release during the pause at full stays at full; hold from off (turns on at 1 %, goes up); hold at 20 % (goes up first); hold at 40 % (goes down first); whole room and one light; a hold longer than 30 s stops by itself.
 
 ### Cleanup
 
