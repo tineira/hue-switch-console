@@ -2,7 +2,7 @@
 
 Coordination plan across the three repos. Not a feature spec; the features it builds have their own specs.
 
-**Status:** all questions decided by the user on 2026-09-29. **Waiting for the user's go.** The user will ask to update this plan once the separate Simple dim-cycle session (`docs/specs/finished/simple-dim-cycle.md`) finishes. Nothing below starts before the go.
+**Status:** in progress. All questions decided by the user on 2026-09-29. The Simple dim cycle (`docs/specs/finished/simple-dim-cycle.md`) has landed, and the user gave the go the same day; workstreams A–D run in parallel.
 
 ## Decisions (2026-09-29)
 
@@ -15,8 +15,8 @@ Coordination plan across the three repos. Not a feature spec; the features it bu
 | #19 phase 2 (`400 product_required`) | Ship now. The user confirmed no board runs firmware that omits `product`, so no log or database check is needed. It affects only register; first flashing through `/setup` and OTA are unchanged. |
 | Waitlist production checks | An agent runs the bounce test on production (Resend's `bounced@resend.dev`). The checks that need an invite in the user's inbox stay with the user. |
 | Firmware releases | None in this plan. Firmware code changes merge without a `FIRMWARE_VERSION` bump and ship with the next real release; Round #19 gets its CHANGELOG entry under an "Unreleased" heading. Self-hosting needs only firmware CI changes. |
-| Simple dim cycle | Out of this plan; another session is building it. Simple work in this plan waits for the user's update after it lands. |
-| Merging | Agents squash-merge their own PRs once the required check is green. This needs a rule the user adds first (see "Before the go"). |
+| Simple dim cycle | Out of this plan; built by another session and landed before the go. Simple work in this plan builds on it. |
+| Merging | Agents squash-merge their own PRs once the required check is green. The user added the rule to the auto-mode environment on 2026-09-29. |
 
 ## Workstreams
 
@@ -42,11 +42,11 @@ Everything in the console part of the `docs/specs/self-hosting.md` checklist, co
 3. Good first issues #19 (fold Latin Extended-A on the screen) and #20 (shared JSON array walker). No version bump; #19 goes under "Unreleased" in `CHANGELOG.md`.
 4. CI image check, as in A.6.
 
-### D. Simple (`hue-simple-switch`), after the dim cycle lands
+### D. Simple (`hue-simple-switch`), on top of the dim cycle
 
 1. Merge Dependabot #15 (actions).
 2. Self-hosting: the same `firmware.yml` change and README section as C.2.
-3. Good first issues #21 (tests for `otaParseOffer`) and #20 (keep the overflow flag), rebased on the dim-cycle work. No version bump.
+3. Good first issues #21 (tests for `otaParseOffer`) and #20 (keep the overflow flag), on the latest `main`. No version bump; a user-visible change goes under "Unreleased" in `CHANGELOG.md`.
 4. CI image check, as in A.6.
 
 ### Housekeeping (coordinating session)
@@ -54,11 +54,11 @@ Everything in the console part of the `docs/specs/self-hosting.md` checklist, co
 - `docs/specs/open-source-launch.md`: tick the credits-check and good-first-issue items; move the spec to `finished/` once the self-hosting line is done.
 - Remove worktrees and branches once merged.
 
-## Before the go (user)
+## Before the go (user) — done 2026-09-29
 
-- **Merge rule.** Let agents squash-merge their own green PRs in `tineira/*` repos, knowing that a console merge deploys production. For example, add this to the auto-mode environment in `/auto-mode-setup`: "Agents may squash-merge their own pull requests in tineira/* repos once required checks pass; merging to main deploys hue.tineira.com and is authorized." Claude does not change its own permissions.
-- **Neon connector:** reconnect it if an agent should read the production database (not required by this plan any more).
-- **Dim cycle:** tell the coordinating session when it has landed, so workstream D can start.
+- **Merge rule:** added to the auto-mode environment in `~/.claude/settings.json`, with the source-control line naming all three repos.
+- **Dim cycle:** landed.
+- **Neon connector:** not needed by this plan.
 
 ## Stays with the user
 
