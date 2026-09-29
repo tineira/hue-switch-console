@@ -393,8 +393,7 @@ A wall switch's and a push button's `double_click` are always a scene list.
 A push button's `hold` is `off` on the group's `grouped_light` (only when the
 click target is one light) or `dim`: ramp the target with Clip v2
 `dimming_delta` up and down in a cycle while held, `stop` on release
-(`docs/specs/finished/simple-dim-cycle.md` §2.2; Simple 0.4.0–0.6.x ramps one way per
-hold, alternating, per `docs/specs/finished/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
+(`docs/specs/finished/simple-dim-cycle.md` §2.2). Simple 0.3.x drops a `dim` recipe and
 keeps the rest, so its hold does nothing (BOOT still re-pairs).
 
 ### `ota` (Simple firmware ≥ 0.6.0, Round firmware ≥ 0.6.0)

@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Replaces the ramp rules in `docs/specs/finished/simple-hold-dim.md` §2.3. The recipe, the target and the release `stop` stay the same.
 
-**Status:** done. Simple 0.7.0 released, 0.7.1 (250 ms pause) tested on the wall by the user. Only the cleanup item is open: on 2026-09-29 two Simple switches still reported 0.6.3.
+**Status:** done. Simple 0.7.1 (250 ms pause) tested on the wall by the user; every registered Simple on 0.7.1 and the old-firmware note removed on 2026-09-29.
 
 ## 1. What and why
 
@@ -97,7 +97,7 @@ No change.
 
 ### Cleanup
 
-- [ ] Drop the "Simple < 0.7.0" note from the docs (user OK, no switch on an older `firmware`).
+- [x] Drop the "Simple < 0.7.0" note from the docs (user OK, no switch on an older `firmware`).
 
 ## 5. Open questions
 
