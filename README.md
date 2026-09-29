@@ -56,6 +56,23 @@ $env:CONSOLE_URL="http://localhost:3000"
 npm run push-from-bridge
 ```
 
+## Self-hosting
+
+You can run your own console (on Vercel, a home server or a Raspberry Pi) and set up
+switches that talk to it instead of `hue.tineira.com`. In short:
+
+- Postgres, `AUTH_SECRET`, `USER_EMAIL` and `USER_PASSWORD` (below), plus
+  `DEVICE_CONSOLE_URL`: the address switches use to reach your console. Setup writes
+  it to each board and shows it first.
+- Switches need either a public name with a real certificate (`https://`) or plain
+  `http://` on your LAN, with Setup opened at `http://localhost:3000` on the server.
+  Private CAs do not work.
+- Firmware: `node scripts/import-firmware.mjs <round|simple>` copies the hosted
+  console's current release, or your fork of a firmware repo uploads its own builds
+  once you set the `CONSOLE_UPLOAD_URL` variable and `FIRMWARE_UPLOAD_TOKEN` secret.
+
+Step by step: [`docs/self-hosting.md`](docs/self-hosting.md).
+
 ## Accounts and sign-in
 
 Sign-in is [Better Auth](https://www.better-auth.com) running inside the console on the
@@ -194,6 +211,13 @@ Upload a local build (a folder with the four bins) with
 `scripts/upload-firmware.mjs <product> <dir> --version x.y.z --notes <file> [--credits <file>]`,
 where `--credits` is the firmware repo's `THIRD_PARTY.json`. It waits in `/admin` like a CI
 upload.
+
+A self-hosted console copies a released version from another console with
+`scripts/import-firmware.mjs <product> [--from https://hue.tineira.com] [--version x.y.z]`
+(`FIRMWARE_UPLOAD_TOKEN` and `CONSOLE_URL` of the console receiving it). It reads the
+public manifest, the parts (checked against their SHA-256 ETags) and
+`GET /firmware/<product>/<version>/notes`, which returns a released version's
+`{ product, version, date, notes, credits }` (`404` for unknown or waiting versions).
 
 ### When it breaks
 
