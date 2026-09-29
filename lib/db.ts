@@ -1,10 +1,10 @@
 import {
   computeDim,
+  decideSwitchProduct,
   DEFAULT_SCREEN_TIMEOUT_SEC,
   dimsEqual,
   groupsEqual,
   inferPageGroup,
-  inferProduct,
   isPlaceholderRoundChannels,
   normalizePageName,
   recipeToC1,
@@ -12,6 +12,7 @@ import {
   withSceneNames,
 } from "@/lib/pages";
 import { configStatus } from "@/lib/config-sync";
+import { accountLimitLockKey } from "@/lib/limits";
 import { otaCapable } from "@/lib/ota";
 import { snapshotFromJson } from "@/lib/recipes";
 import { sql } from "@/lib/sql";
@@ -259,18 +260,31 @@ export async function listApiKeys(userId: string) {
   return rows.map((row) => mapKey(row as Record<string, unknown>));
 }
 
+/**
+ * A new key, or null when the account already has `limit` active keys. The count and the
+ * insert run in one transaction under the account lock, so parallel requests cannot pass it.
+ */
 export async function insertApiKey(row: {
   userId: string;
   name: string;
   prefix: string;
   hash: string;
+  limit: number;
 }) {
-  const rows = await sql()`
-    insert into device_api_keys (user_id, name, key_prefix, key_hash)
-    values (${row.userId}, ${row.name}, ${row.prefix}, ${row.hash})
-    returning id, user_id, name, key_prefix, created_at, revoked_at, last_used_at
-  `;
-  return mapKey(rows[0] as Record<string, unknown>);
+  const lockKey = accountLimitLockKey(row.userId);
+  const results = await sql().transaction((tx) => [
+    tx`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+    tx`
+      insert into device_api_keys (user_id, name, key_prefix, key_hash)
+      select ${row.userId}, ${row.name}, ${row.prefix}, ${row.hash}
+      where (
+        select count(*) from device_api_keys where user_id = ${row.userId} and revoked_at is null
+      ) < ${row.limit}
+      returning id, user_id, name, key_prefix, created_at, revoked_at, last_used_at
+    `,
+  ]);
+  const inserted = results[1]?.[0];
+  return inserted ? mapKey(inserted as Record<string, unknown>) : null;
 }
 
 export async function revokeApiKey(userId: string, id: string) {
@@ -283,21 +297,36 @@ export async function revokeApiKey(userId: string, id: string) {
   return rows.length > 0;
 }
 
+/**
+ * Stores the register's snapshot for (user, bridgeid). A snapshot with no lights never
+ * replaces a stored one that has lights (a Bridge that answered 200 with empty data):
+ * the stored tree is kept and `kept` is true. The check runs inside the upsert, so two
+ * registers racing cannot interleave between a read and a write.
+ */
 export async function upsertBridge(row: {
   userId: string;
   snapshot: TopologySnapshot;
-}) {
+}): Promise<BridgeRow & { kept: boolean }> {
   const payload = JSON.stringify(row.snapshot);
   const rows = await sql()`
     insert into bridges (user_id, bridgeid, bridge_ip, snapshot, updated_at)
     values (${row.userId}, ${row.snapshot.bridgeid}, ${row.snapshot.bridgeIp ?? null}, ${payload}::jsonb, now())
     on conflict (user_id, bridgeid) do update set
       bridge_ip = excluded.bridge_ip,
-      snapshot = excluded.snapshot,
+      snapshot = case
+        when jsonb_typeof(excluded.snapshot->'lights') = 'array'
+          and jsonb_array_length(excluded.snapshot->'lights') = 0
+          and jsonb_typeof(bridges.snapshot->'lights') = 'array'
+          and jsonb_array_length(bridges.snapshot->'lights') > 0
+        then bridges.snapshot
+        else excluded.snapshot
+      end,
       updated_at = now()
-    returning id, user_id, bridgeid, bridge_ip, snapshot, updated_at
+    returning id, user_id, bridgeid, bridge_ip, snapshot, updated_at,
+      (snapshot->>'receivedAt') is distinct from ${row.snapshot.receivedAt} as kept
   `;
-  return mapBridge(rows[0] as Record<string, unknown>);
+  const r = rows[0] as Record<string, unknown>;
+  return { ...mapBridge(r), kept: r.kept === true };
 }
 
 export async function getBridge(userId: string, bridgeid: string) {
@@ -360,18 +389,12 @@ export async function upsertSwitch(row: {
   product?: SwitchProduct;
 }) {
   const existing = await getSwitchByMac(row.userId, row.mac);
-  const explicitSimple = row.product === "simple";
-  const explicitRound = row.product === "round";
-  const inferred = inferProduct(row.product, row.channels);
-  let product: SwitchProduct;
-  if (explicitSimple) product = "simple";
-  else if (explicitRound) product = "round";
-  else if (existing?.product === "round") product = "round";
-  else product = inferred;
+  const { product, wipeToSimple } = decideSwitchProduct({
+    requested: row.product,
+    channels: row.channels,
+    existing,
+  });
   const bridgeChanged = Boolean(existing && existing.bridgeid !== row.bridgeid);
-  const wipeToSimple = Boolean(
-    existing && existing.product === "round" && explicitSimple,
-  );
   if (existing && (bridgeChanged || wipeToSimple)) {
     await sql()`delete from recipes where switch_id = ${existing.id}`;
     await sql()`delete from pages where switch_id = ${existing.id}`;

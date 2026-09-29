@@ -96,12 +96,20 @@ export async function POST(req: Request) {
   };
 
   try {
-    const hit = await registerLimitHit({ userId: device.userId, limits, mac: mac ?? null, bridgeid });
+    const hit = await registerLimitHit({
+      userId: device.userId,
+      limits,
+      mac: mac ?? null,
+      bridgeid,
+      snapshot,
+      label: asString(raw.label),
+    });
     if (hit) {
       await recordRegisterRefused(device.userId, `limit_reached:${hit}`);
       return jsonError(403, "limit_reached", { details: hit });
     }
-    await upsertBridge({ userId: device.userId, snapshot });
+    const bridge = await upsertBridge({ userId: device.userId, snapshot });
+    const snapshotStatus = bridge.kept ? "kept" : "stored";
     if (!mac) {
       return jsonOk({
         ok: true,
@@ -109,9 +117,17 @@ export async function POST(req: Request) {
         lights: lights.length,
         rooms: rooms.length,
         scenes: scenes.length,
+        snapshot: snapshotStatus,
       });
     }
 
+    if (!product) {
+      // Deprecated path (docs/specs/require-product-on-register.md, phase 1): the product is
+      // still inferred from the channels. Logged so the remaining boards show up in the logs.
+      console.warn(
+        `register without product (deprecated): mac=${mac} firmware=${asString(raw.firmware) ?? "unknown"}`,
+      );
+    }
     const sw = await upsertSwitch({
       userId: device.userId,
       mac,
@@ -134,6 +150,7 @@ export async function POST(req: Request) {
       lights: lights.length,
       rooms: rooms.length,
       scenes: scenes.length,
+      snapshot: snapshotStatus,
     });
   } catch (err) {
     return databaseError(err);

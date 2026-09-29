@@ -26,8 +26,8 @@ A Bridge that answers `200` with an empty `data` array makes a board register `l
 
 ### Console (`hue-switch-console`)
 
-- [ ] Register keeps the stored snapshot on an empty `lights` (§2); `snapshot` field in the response
-- [ ] `docs/device-api.md` updated in the same commit
+- [x] Register keeps the stored snapshot on an empty `lights` (§2); `snapshot` field in the response
+- [x] `docs/device-api.md` updated in the same commit
 - [ ] Deployed; checked on production (a normal register still returns `"snapshot": "stored"`)
 
 ### Round, Simple

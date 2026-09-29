@@ -1,5 +1,6 @@
 import { effectiveLimits, type AccountLimits } from "@/lib/account-config";
 import { sql } from "@/lib/sql";
+import type { TopologySnapshot } from "@/lib/types";
 
 // Per-account limits (docs/specs/finished/multi-user-accounts.md §2.4).
 
@@ -8,31 +9,72 @@ export async function accountLimits(userId: string): Promise<AccountLimits> {
   return effectiveLimits((rows[0] as { limits?: unknown } | undefined)?.limits);
 }
 
-/** "switches" / "bridges" when this register would create one past the limit, else null. */
+/**
+ * Key for pg_advisory_xact_lock: one per account. Every check-and-insert against a per-account
+ * limit takes it first in its transaction, so parallel requests are counted one at a time.
+ */
+export function accountLimitLockKey(userId: string): string {
+  return `account-limits:${userId}`;
+}
+
+/**
+ * "switches" / "bridges" when this register would create one past the limit, else null.
+ * Counting and creating happen in one transaction under the account lock: a new Bridge is
+ * stored with the request's snapshot and a new switch as a bare row (mac, bridgeid, label),
+ * both or neither, so parallel registers cannot exceed a limit. upsertBridge and
+ * upsertSwitch then fill them in as for any existing row. Updates are never refused.
+ */
 export async function registerLimitHit(input: {
   userId: string;
   limits: AccountLimits;
   mac: string | null;
   bridgeid: string;
+  snapshot: TopologySnapshot;
+  label?: string;
 }): Promise<"switches" | "bridges" | null> {
-  const db = sql();
-  const bridge = await db`
-    select 1 from bridges where user_id = ${input.userId} and bridgeid = ${input.bridgeid}
-  `;
-  if (bridge.length === 0) {
-    const count = await db`select count(*)::int as n from bridges where user_id = ${input.userId}`;
-    if ((count[0] as { n: number }).n >= input.limits.bridges) return "bridges";
-  }
-  if (input.mac) {
-    const sw = await db`
-      select 1 from switches where user_id = ${input.userId} and mac = ${input.mac}
-    `;
-    if (sw.length === 0) {
-      const count = await db`select count(*)::int as n from switches where user_id = ${input.userId}`;
-      if ((count[0] as { n: number }).n >= input.limits.switches) return "switches";
-    }
-  }
-  return null;
+  const { userId, limits, mac, bridgeid, snapshot } = input;
+  const lockKey = accountLimitLockKey(userId);
+  const payload = JSON.stringify(snapshot);
+  const results = await sql().transaction((tx) => [
+    tx`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+    // A new Bridge only when both it and, for a switch register, the switch fit.
+    tx`
+      insert into bridges (user_id, bridgeid, bridge_ip, snapshot, updated_at)
+      select ${userId}, ${bridgeid}, ${snapshot.bridgeIp ?? null}, ${payload}::jsonb, now()
+      where (select count(*) from bridges where user_id = ${userId}) < ${limits.bridges}
+        and (
+          ${mac}::text is null
+          or exists (select 1 from switches where user_id = ${userId} and mac = ${mac})
+          or (select count(*) from switches where user_id = ${userId}) < ${limits.switches}
+        )
+      on conflict (user_id, bridgeid) do nothing
+    `,
+    tx`
+      insert into switches (user_id, mac, label, bridgeid)
+      select ${userId}, ${mac}, ${input.label ?? null}, ${bridgeid}
+      where ${mac}::text is not null
+        and exists (select 1 from bridges where user_id = ${userId} and bridgeid = ${bridgeid})
+        and (select count(*) from switches where user_id = ${userId}) < ${limits.switches}
+      on conflict (user_id, mac) do nothing
+    `,
+    tx`
+      select
+        exists (select 1 from bridges where user_id = ${userId} and bridgeid = ${bridgeid})
+          as has_bridge,
+        (${mac}::text is null
+          or exists (select 1 from switches where user_id = ${userId} and mac = ${mac}))
+          as has_switch,
+        (select count(*) from bridges where user_id = ${userId})::int as bridge_count
+    `,
+  ]);
+  const row = results[results.length - 1]?.[0] as
+    | { has_bridge: boolean; has_switch: boolean; bridge_count: number }
+    | undefined;
+  if (!row) return "bridges";
+  if (row.has_bridge && row.has_switch) return null;
+  // A new Bridge held back only because the switch did not fit is a switch refusal.
+  if (!row.has_bridge && row.bridge_count >= limits.bridges) return "bridges";
+  return "switches";
 }
 
 export async function recordRegisterRefused(userId: string, reason: string) {
@@ -57,11 +99,4 @@ export async function lastRegisterRefusal(
     at: new Date(row.register_refused_at).toISOString(),
     reason: row.register_refused_reason ?? "unknown",
   };
-}
-
-export async function activeKeyCount(userId: string): Promise<number> {
-  const rows = await sql()`
-    select count(*)::int as n from device_api_keys where user_id = ${userId} and revoked_at is null
-  `;
-  return (rows[0] as { n: number }).n;
 }

@@ -30,9 +30,29 @@ export function pgConnectionString(url: string): string {
 
 let pool: Pool | null = null;
 
+/**
+ * The one node-postgres pool per instance for DATABASE_DRIVER=pg. The app's queries and
+ * Better Auth (lib/better-auth.ts) both use it, so an instance holds at most 5 connections.
+ * Better Auth's sign-up hooks query through sql() while its own transaction holds a
+ * connection; the checkout timeout turns a full pool into an error instead of a hang.
+ */
+export function pgPool(url: string): Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: pgConnectionString(url),
+      max: 5,
+      connectionTimeoutMillis: 10_000,
+    });
+  }
+  return pool;
+}
+
+export function usesPgDriver(): boolean {
+  return process.env.DATABASE_DRIVER === "pg";
+}
+
 function pgClient(url: string): SqlClient {
-  if (!pool) pool = new Pool({ connectionString: pgConnectionString(url), max: 5 });
-  const db = pool;
+  const db = pgPool(url);
   const run = async (text: string, values: unknown[] = []) => (await db.query(text, values)).rows;
   const client = ((strings: TemplateStringsArray, ...values: unknown[]) => {
     const q = toQuery(strings, values);
@@ -63,6 +83,6 @@ export function sql(): SqlClient {
   if (!url) {
     throw new Error("DATABASE_URL is not set");
   }
-  if (process.env.DATABASE_DRIVER === "pg") return pgClient(url);
+  if (usesPgDriver()) return pgClient(url);
   return neon(url) as unknown as SqlClient;
 }

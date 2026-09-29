@@ -14,7 +14,7 @@ import { clientIp } from "@/lib/auth-limits";
 import { sendChangeEmailCode, sendSignInCode } from "@/lib/email";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { consumeInvite, INVITE_COOKIE, readCookie, signupDecision } from "@/lib/signup";
-import { pgConnectionString, sql } from "@/lib/sql";
+import { pgConnectionString, pgPool, sql, usesPgDriver } from "@/lib/sql";
 import { isSuspended } from "@/lib/suspension";
 
 // Better Auth on the console's own Postgres (docs/specs/finished/multi-user-accounts.md §2.2).
@@ -31,6 +31,16 @@ function inviteCodeFrom(ctx: HookContext): string | null {
 }
 
 const stamps = { createdAt: "created_at", updatedAt: "updated_at" } as const;
+
+/**
+ * With DATABASE_DRIVER=pg, Better Auth shares the app's pool (lib/sql.ts). On Neon the app
+ * talks HTTP and has no pool, so Better Auth keeps a small one of its own.
+ */
+function authPool(): Pool {
+  const url = process.env.DATABASE_URL ?? "";
+  if (usesPgDriver()) return pgPool(url);
+  return new Pool({ connectionString: pgConnectionString(url), max: 3 });
+}
 
 function createAuth() {
   const socialProviders: Parameters<typeof betterAuth>[0]["socialProviders"] = {};
@@ -51,10 +61,7 @@ function createAuth() {
     appName: "Hue Switch Console",
     secret: process.env.AUTH_SECRET,
     baseURL: publicUrl() ?? undefined,
-    database: new Pool({
-      connectionString: pgConnectionString(process.env.DATABASE_URL ?? ""),
-      max: 3,
-    }),
+    database: authPool(),
     advanced: {
       cookiePrefix: "hsw",
       database: { generateId: "uuid" },
@@ -120,9 +127,12 @@ function createAuth() {
     databaseHooks: {
       user: {
         create: {
-          // The sign-up gate for every method (§2.3).
+          // The sign-up gate for every method (§2.3). Claims the invite here, so a second
+          // sign-up with the same code is refused.
           before: async (user, ctx) => {
-            const decision = await signupDecision(user.email, inviteCodeFrom(ctx));
+            const decision = await signupDecision(user.email, inviteCodeFrom(ctx), {
+              claim: true,
+            });
             if (!decision.allowed) {
               throw new APIError("FORBIDDEN", {
                 message: "Sign-up is by invitation for now.",
@@ -130,8 +140,7 @@ function createAuth() {
             }
           },
           after: async (user, ctx) => {
-            const decision = await signupDecision(user.email, inviteCodeFrom(ctx));
-            if (decision.invite) await consumeInvite(decision.invite.id, user.id);
+            await consumeInvite(inviteCodeFrom(ctx), user.id);
           },
         },
       },

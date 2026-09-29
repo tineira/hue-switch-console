@@ -51,10 +51,17 @@ Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
 | 410 | `gone` (`/api/ingest` only) |
 | 413 | `payload_too_large` (`register` only): body over the account's snapshot limit (512 KB by default) |
 | 429 | `rate_limited`: too many requests from one IP (Vercel Firewall rule on `/api/device/*`). `Retry-After` in seconds. |
+| 500 | `database_error`: a database query failed. No `details`; the cause is only in the server log. Retry later. |
 | 503 | `database_not_configured` |
 
+Field messages on `400` are plain sentences in `error`, such as
+`mac must be 12 hex digits` (`register`) or `mac query parameter is required`
+(`config`). `validation_error` comes from the console's own endpoints (below),
+not from `/api/device/*`. `/api/ingest` answers `410` with `message` instead of
+`details`.
+
 Firmware treats every non-200 except `401` as a failed call and retries on its
-normal schedule, so `403`, `413` and `429` need no firmware change.
+normal schedule, so `403`, `413`, `429`, `500` and `503` need no firmware change.
 
 MAC is 12 hex digits, case-insensitive, `:` / `-` allowed on input. Stored and
 returned lowercase without separators (`aabbccddeeff`).
@@ -66,6 +73,13 @@ returned lowercase without separators (`aabbccddeeff`).
 Register this switch (if `mac` is present) and replace the topology snapshot
 for `bridgeid`. Last snapshot for that `bridgeid` wins. Several XIAOs paired
 to the same bridge share one tree.
+
+Exception: a register with `lights: []` never replaces a stored snapshot for that
+`bridgeid` that has at least one light (a Bridge that answered `200` with empty
+data). The stored `lights`, `rooms`, `scenes` and `receivedAt` are kept; the rest
+of the request (switch row, `firmware`, `bridge_ip`, `channels`, `product`) is
+applied as usual. A first register with `lights: []` is stored, since there is
+nothing to keep.
 
 If the switch was already registered and `bridgeid` changes, stored recipes,
 pages and Simple channel settings for that MAC are deleted and `rev` is **incremented** (never reset to
@@ -85,7 +99,7 @@ Content-Type: application/json
 {
   "mac": "aabbccddeeff",
   "firmware": "0.3.0",
-  "bridgeid": "C42996FFFECA6703",
+  "bridgeid": "001788FFFE123456",
   "bridge_ip": "192.168.100.12",
   "source": "xiao",
   "channels": [
@@ -124,7 +138,7 @@ Content-Type: application/json
 | `rooms` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
 | `scenes` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
 | `channels` | yes when registering a GPIO board | `{ id, gpio, label }`: the pins the board has. Empty array allowed. Round Display may send `[]`. Simple firmware < 0.3.0 also sends `kind` (`maintained` \| `momentary`); it is accepted and ignored, because the user picks each channel's type in the console. Simple firmware ≥ 0.5.0 sends `boot` and `d0`–`d5` (seven channels); older Simple firmware sends `boot`, `d0`–`d2` |
-| `product` | current firmware: yes | `"round"` or `"simple"`. Current boards **send** it. If omitted (old boards), inferred from empty/`c1` channels (round) vs GPIO (simple). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
+| `product` | yes (with `mac`) | `"round"` or `"simple"`. Every current firmware sends it. **Omitting it is deprecated**: the console still infers it from empty/`c1` channels (round) vs GPIO (simple) and logs a warning; a later release will answer `400 product_required` (`docs/specs/require-product-on-register.md`). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string. Stored as the switch's firmware; the config poll also reports it (below) |
 | `label` | no | Console display name on **first** insert only. Later registers do not overwrite a name set in the UI. Not sent to the board |
@@ -140,14 +154,19 @@ the snapshot.
 {
   "ok": true,
   "mac": "aabbccddeeff",
-  "bridgeid": "C42996FFFECA6703",
+  "bridgeid": "001788FFFE123456",
   "rev": 12,
   "product": "simple",
   "lights": 1,
   "rooms": 1,
-  "scenes": 1
+  "scenes": 1,
+  "snapshot": "stored"
 }
 ```
+
+`lights`, `rooms` and `scenes` count what the request carried. `snapshot` is
+`"stored"` when the request's tree was saved, or `"kept"` when it had no lights
+and the stored tree was kept (above). Older firmware ignores it.
 
 `product` is included when `mac` is present. Without `mac`, `mac`, `rev`, and
 `product` are omitted.
@@ -156,8 +175,8 @@ the snapshot.
 
 Round Display firmware sends `"product": "round"` and `channels: []`.
 Placeholder `c1` (gpio 0) is still accepted and treated as round. Simple-switch
-boards send `"simple"` with GPIO channels. Omitted `product` is inferred only
-for old boards.
+boards send `"simple"` with GPIO channels. Omitted `product` is deprecated and
+inferred only for old boards (above).
 
 ---
 
