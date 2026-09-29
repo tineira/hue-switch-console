@@ -13,6 +13,7 @@ import { ensureSeedUser } from "@/lib/auth";
 import { currentSignupMode } from "@/lib/console-settings";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
+import { safeReturnPath } from "@/lib/return-path";
 import { INVITE_COOKIE } from "@/lib/signup";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,8 @@ export default async function LoginPage({
   const siteKey = turnstileSiteKey();
   const hasInvite = Boolean((await cookies()).get(INVITE_COOKIE)?.value);
   const error = errorText(typeof params.error === "string" ? params.error : undefined);
+  // Where sign-in returns to (lib/return-path.ts); the actions check it again.
+  const next = safeReturnPath(typeof params.next === "string" ? params.next : null);
   // The console's own /privacy page unless the operator links elsewhere.
   const privacy = process.env.PRIVACY_URL || "/privacy";
   const terms = process.env.TERMS_URL;
@@ -121,6 +124,7 @@ export default async function LoginPage({
               {google ? (
                 <form action={signInWithProvider}>
                   <input type="hidden" name="provider" value="google" />
+                  {next !== "/" ? <input type="hidden" name="next" value={next} /> : null}
                   <button type="submit" className={PROVIDER_BUTTON}>
                     <GoogleLogo />
                     Continue with Google
@@ -130,6 +134,7 @@ export default async function LoginPage({
               {github ? (
                 <form action={signInWithProvider}>
                   <input type="hidden" name="provider" value="github" />
+                  {next !== "/" ? <input type="hidden" name="next" value={next} /> : null}
                   <button type="submit" className={PROVIDER_BUTTON}>
                     <GitHubLogo />
                     Continue with GitHub
@@ -143,7 +148,7 @@ export default async function LoginPage({
               </div>
             </div>
           ) : null}
-          {email ? <CodeForm turnstileSiteKey={siteKey} /> : <PasswordForm />}
+          {email ? <CodeForm turnstileSiteKey={siteKey} next={next} /> : <PasswordForm next={next} />}
         </div>
       )}
 

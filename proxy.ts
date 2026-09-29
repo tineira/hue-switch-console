@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { PATH_HEADER } from "@/lib/return-path";
 
 const INVITE_COOKIE = "hsw_invite";
 
@@ -19,7 +20,11 @@ export function proxy(request: NextRequest) {
     });
     return response;
   }
-  return NextResponse.next();
+  // The page's own path, so a sign-in redirect can come back to it (lib/return-path.ts).
+  // Always overwritten here, so a browser can't supply its own.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(PATH_HEADER, `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

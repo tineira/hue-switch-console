@@ -9,6 +9,7 @@ import {
   type CodeState,
   type SimpleState,
 } from "@/app/login/actions";
+import { loginHref } from "@/lib/return-path";
 
 const INPUT =
   "rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-filament";
@@ -75,7 +76,18 @@ function ErrorText({ text }: { text?: string }) {
   );
 }
 
-export function CodeForm({ turnstileSiteKey }: { turnstileSiteKey: string | null }) {
+/** Where sign-in returns to; the server action checks it again (lib/return-path.ts). */
+function NextInput({ next }: { next: string }) {
+  return next === "/" ? null : <input type="hidden" name="next" value={next} />;
+}
+
+export function CodeForm({
+  turnstileSiteKey,
+  next = "/",
+}: {
+  turnstileSiteKey: string | null;
+  next?: string;
+}) {
   const [state, action, pending] = useActionState<CodeState, FormData>(
     async (prev, formData) =>
       formData.get("intent") === "verify" ? verifyCode(prev, formData) : sendCode(prev, formData),
@@ -87,6 +99,7 @@ export function CodeForm({ turnstileSiteKey }: { turnstileSiteKey: string | null
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="intent" value="verify" />
         <input type="hidden" name="email" value={state.email} />
+        <NextInput next={next} />
         <p className="text-sm text-muted">
           If <span className="font-medium text-foreground">{state.email}</span> can sign in, we
           sent it a 6-digit code. It expires in 10 minutes.
@@ -108,7 +121,10 @@ export function CodeForm({ turnstileSiteKey }: { turnstileSiteKey: string | null
         <button type="submit" disabled={pending} className={BUTTON}>
           {pending ? "Checking…" : "Sign in"}
         </button>
-        <a href="/login" className="text-center text-sm text-muted underline-offset-4 hover:underline">
+        <a
+          href={loginHref(next)}
+          className="text-center text-sm text-muted underline-offset-4 hover:underline"
+        >
           Use a different email
         </a>
       </form>
@@ -118,6 +134,7 @@ export function CodeForm({ turnstileSiteKey }: { turnstileSiteKey: string | null
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="intent" value="send" />
+      <NextInput next={next} />
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">Email</span>
         <input
@@ -138,10 +155,11 @@ export function CodeForm({ turnstileSiteKey }: { turnstileSiteKey: string | null
   );
 }
 
-export function PasswordForm() {
+export function PasswordForm({ next = "/" }: { next?: string }) {
   const [state, action, pending] = useActionState<SimpleState, FormData>(passwordLogin, undefined);
   return (
     <form action={action} className="flex flex-col gap-4">
+      <NextInput next={next} />
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">Email</span>
         <input name="email" type="email" autoComplete="username" required className={INPUT} />
