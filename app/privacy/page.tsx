@@ -1,5 +1,6 @@
 import { PublicFrame } from "@/app/public-frame";
 import { Shell } from "@/app/shell";
+import { isHostedConsole } from "@/lib/account-config";
 import { getSessionUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -177,21 +178,79 @@ function PrivacyContent() {
   );
 }
 
+// A self-hosted console: the hosted text would name the wrong operator and services
+// (docs/specs/self-hosting.md §5 decision 5).
+function SelfHostedPrivacy() {
+  const email = process.env.CONTACT_EMAIL?.trim();
+  const policy = process.env.PRIVACY_URL?.trim();
+  return (
+    <article className="flex max-w-3xl flex-col gap-6">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Privacy</h1>
+        <p className="text-sm text-muted">
+          This console is run by its owner, not by the Hue Switch Console project. Their privacy
+          policy applies; ask them what they keep and for how long.
+          {policy ? (
+            <>
+              {" "}
+              <a href={policy} className="underline underline-offset-4">
+                Read their policy
+              </a>
+              .
+            </>
+          ) : null}
+          {email ? (
+            <>
+              {" "}
+              Contact:{" "}
+              <a href={`mailto:${email}`} className="underline underline-offset-4">
+                {email}
+              </a>
+              .
+            </>
+          ) : null}
+        </p>
+      </header>
+      <Section title="What the software stores">
+        <p>
+          The console software keeps your account (email address, sign-in method and sessions),
+          your API keys, and what your switches send when they check in: each switch&apos;s
+          hardware address, firmware version and settings, and your Hue Bridge&apos;s rooms,
+          zones, lights and scenes. It has no ads, analytics or tracking built in.
+        </p>
+        <p>
+          It is free software; the{" "}
+          <a
+            href="https://github.com/tineira/hue-switch-console"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+          >
+            source
+          </a>{" "}
+          shows exactly what it stores. The owner of this console may have changed it.
+        </p>
+      </Section>
+    </article>
+  );
+}
+
 // Public: no sign-in needed. Linked from /login and the footer (docs/specs/finished/multi-user-accounts.md §2.12).
 export default async function PrivacyPage() {
   const user = await getSessionUser().catch(() => null);
+  const content = isHostedConsole() ? <PrivacyContent /> : <SelfHostedPrivacy />;
 
   if (user) {
     return (
       <Shell email={user.email}>
-        <PrivacyContent />
+        {content}
       </Shell>
     );
   }
 
   return (
     <PublicFrame>
-      <PrivacyContent />
+      {content}
     </PublicFrame>
   );
 }

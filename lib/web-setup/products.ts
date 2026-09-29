@@ -1,7 +1,5 @@
 import { formatMac } from "@/lib/mac";
 
-export const PRODUCT_CONSOLE_URL = "https://hue.tineira.com";
-
 export type ProductId = "round" | "simple";
 
 export type ProductSpec = {
