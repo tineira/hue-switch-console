@@ -119,9 +119,8 @@ push to main (hue-round-switch / hue-simple-switch)
   → /firmware/<product>/manifest.json, OTA offers and /changelog use it on the next request
 ```
 
-The upload token can only add releases. It cannot change which release is
-current: that takes an admin session (`ADMIN_EMAILS`), so a leaked token alone
-never changes what boards install. This holds for a product's **first** release
+The upload token can only add releases. Choosing the current release takes an
+admin session (`ADMIN_EMAILS`). This holds for a product's **first** release
 too: until an admin makes it current, the product has no manifest and Setup has
 nothing to install for it. The upload answers `201` (`200` for a re-upload of
 the same bins) with `"current": false` while the release waits. Bins of a
