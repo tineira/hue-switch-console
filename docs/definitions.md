@@ -151,7 +151,7 @@ The app **writes** recipes / pages. The switch **executes** them on the LAN. The
 
 The UI does not invent pins. If a channel is not sent, it cannot be assigned. The type the user picks decides which **events** the channel has (`on`/`off`/`double_click` vs `short`/`double_click`/`hold`).
 
-Wipe round→simple **only** if the body carries an explicit `"product": "simple"`. Inferring from channels does not delete pages.
+`product` is required with a `mac` (`400 product_required` otherwise); the console never guesses it from `channels`. A stored Round loses its pages only when it registers with `"product": "simple"`.
 
 ### How the user assigns (console, Simple)
 

@@ -8,7 +8,6 @@ import {
 } from "@/lib/round-themes";
 import { isTargetStale } from "@/lib/recipes";
 import type {
-  Channel,
   DimSet,
   PageGroup,
   PageSwipeAxis,
@@ -37,39 +36,18 @@ export const DEFAULT_SCREEN_TIMEOUT_SEC = 30;
 export const MIN_SCREEN_TIMEOUT_SEC = 10;
 export const MAX_SCREEN_TIMEOUT_SEC = 600;
 
-export function isPlaceholderRoundChannels(channels: Channel[]): boolean {
-  if (channels.length === 0) return true;
-  if (channels.length !== 1) return false;
-  const channel = channels[0];
-  return channel.id === "c1";
-}
-
-export function inferProduct(
-  product: SwitchProduct | undefined,
-  channels: Channel[],
-): SwitchProduct {
-  if (product === "round" || product === "simple") return product;
-  return isPlaceholderRoundChannels(channels) ? "round" : "simple";
-}
-
 /**
  * Which product a register makes a switch, and whether it wipes its Round pages.
- * An explicit `product` wins. Without one, a switch stored as Round stays Round and a new
- * or Simple one is inferred from its channels. Only an explicit `"simple"` on a stored
- * Round wipes it: inference never deletes pages.
+ * The register's `product` wins (it is required with a `mac`). Only an explicit `"simple"`
+ * on a stored Round wipes its pages; a stored Simple that says `"round"` keeps its rows.
  */
 export function decideSwitchProduct(input: {
-  requested: SwitchProduct | undefined;
-  channels: Channel[];
+  requested: SwitchProduct;
   existing: { product: SwitchProduct } | null | undefined;
 }): { product: SwitchProduct; wipeToSimple: boolean } {
-  const { requested, channels, existing } = input;
-  let product: SwitchProduct;
-  if (requested === "simple" || requested === "round") product = requested;
-  else if (existing?.product === "round") product = "round";
-  else product = inferProduct(requested, channels);
+  const { requested, existing } = input;
   const wipeToSimple = existing?.product === "round" && requested === "simple";
-  return { product, wipeToSimple };
+  return { product: requested, wipeToSimple };
 }
 
 export function findRoundRecipe(

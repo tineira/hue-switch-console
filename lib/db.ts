@@ -5,7 +5,6 @@ import {
   dimsEqual,
   groupsEqual,
   inferPageGroup,
-  isPlaceholderRoundChannels,
   normalizePageName,
   recipeToC1,
   resolvePageGroup,
@@ -386,12 +385,11 @@ export async function upsertSwitch(row: {
   bridgeIp?: string;
   channels: Channel[];
   apiKeyId: string;
-  product?: SwitchProduct;
+  product: SwitchProduct;
 }) {
   const existing = await getSwitchByMac(row.userId, row.mac);
   const { product, wipeToSimple } = decideSwitchProduct({
     requested: row.product,
-    channels: row.channels,
     existing,
   });
   const bridgeChanged = Boolean(existing && existing.bridgeid !== row.bridgeid);
@@ -1113,9 +1111,6 @@ async function migratePageGroupsForSwitch(
   }
 }
 
-export function isRoundSwitch(row: {
-  product: SwitchProduct;
-  channels: Channel[];
-}): boolean {
-  return row.product === "round" || isPlaceholderRoundChannels(row.channels);
+export function isRoundSwitch(row: { product: SwitchProduct }): boolean {
+  return row.product === "round";
 }

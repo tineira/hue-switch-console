@@ -439,7 +439,7 @@ product: "round"
 
 No need to invent a `c1` / gpio `0` channel to satisfy the console. `channels` can be `[]`. The console does not assign recipes to pins for this product.
 
-`hue-simple-switch` sends `"product": "simple"` (current firmwares send `product`). If an old device omits the field, it is inferred from channels (`[]` / `c1` → round; GPIO → simple). Wipe round→simple **only** with an explicit `"product": "simple"`; inference does not delete pages.
+`hue-simple-switch` sends `"product": "simple"`. `product` is required with a `mac`: a register without it gets `400 product_required`, and the console never infers it from `channels`. A stored Round is wiped to Simple **only** when it registers with `"product": "simple"`.
 
 ### 11.2 Config sent to the Round
 
