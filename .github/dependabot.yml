@@ -8,6 +8,12 @@ updates:
       # Minor and patch bumps arrive as one PR; each major bump gets its own.
       npm-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # esptool-js is 0.x, so a minor release can break (0.7.0 changed connect, signals and
+      # detectFlashSize). It flashes boards in /setup, which only a person with a board on USB
+      # can test, so minor bumps are done by hand with a Round and a Simple flash test.
+      - dependency-name: esptool-js
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: github-actions
     directory: /
