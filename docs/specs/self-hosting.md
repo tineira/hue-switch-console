@@ -78,8 +78,8 @@ The README gets a "Self-hosting" section with options A and B, `DEVICE_CONSOLE_U
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `firmware.yml` reads `vars.CONSOLE_UPLOAD_URL` (default hosted) and skips the upload without a token (§2.2)
-- [ ] README: how a fork uploads to its own console
+- [x] `firmware.yml` reads `vars.CONSOLE_UPLOAD_URL` (default hosted) and skips the upload without a token (§2.2) (hue-simple-switch #24)
+- [x] README: how a fork uploads to its own console ("Build and upload from a fork", hue-simple-switch #24)
 
 ### Cleanup
 
