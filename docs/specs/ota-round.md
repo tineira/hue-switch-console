@@ -81,9 +81,9 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
 - [x] `FIRMWARE_VERSION` → 0.6.0; `CHANGELOG.md` entry (user-facing wording)
 - [x] Release uploaded; `/firmware/round/manifest.json` shows 0.6.0
 - [x] User flashes 0.6.0 by USB
-- [ ] 0.6.1 released; user presses **Update now**: the update screen shows, the Round restarts on 0.6.1, and Switches shows it current with a fresh check-in
-- [ ] Cancel before the next check-in: nothing downloads
-- [ ] Power cut during a download: the Round comes back on the old firmware, Switches shows the update failed, and the retry after an hour (or after a restart) succeeds
+- [x] 0.6.1 released; user presses **Update now**: the update screen shows, the Round restarts on 0.6.1, and Switches shows it current with a fresh check-in
+- [x] Cancel before the next check-in: nothing downloads
+- [x] Power cut during a download: the Round comes back on the old firmware, Switches shows the update failed, and the retry after an hour (or after a restart) succeeds
 
 ### Simple (`hue-simple-switch`)
 
@@ -108,4 +108,8 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
    | TLS connected | 86.7 KB | 38.9 KB | 8.34 MB |
    | Lowest during the download | 77.3 KB | 31.7 KB | 8.32 MB |
 
-   mbedtls allocates internal RAM on this core (`CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC`), so the internal numbers are the ones that count; PSRAM barely moves. The firmware starts only with a largest internal block of 48 KB or more. The 0.5.32 `firmware.bin` (1,227,296 bytes) downloaded and was written in 8.4 s; the Round restarted into 0.5.32 with its pages, Wi-Fi and pairing kept, and Switches showed it with a fresh check-in.
+   mbedtls allocates internal RAM on this core (`CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC`), so the internal numbers are the ones that count; PSRAM barely moves. 0.6.0 and 0.6.1 started only with a largest internal block of 48 KB or more (see question 2). The 0.5.32 `firmware.bin` (1,227,296 bytes) downloaded and was written in 8.4 s; the Round restarted into 0.5.32 with its pages, Wi-Fi and pairing kept, and Switches showed it with a fresh check-in.
+
+2. **Heap check too strict after a restart** (found 2026-09-28, fixed in Round 0.6.2). In the power-cut test the retry at the first check-ins after the restart failed with `ota_error=heap`: 134 KB internal free, but a largest block of 47,092 bytes, under 0.6.0's 48 KB minimum. The heap is fragmented right after a restart (register snapshot, Bridge and console TLS), and the check asked for one large block the download does not need: TLS plus the write buffer take ~57 KB in all and ~17 KB in one piece. 0.6.2 starts with 80 KB internal free and a 24 KB block. Tested with that code reporting 0.6.0: the download started at a largest block of 45,044 bytes and finished in 10.3 s. A Round on 0.6.0 or 0.6.1 still updates when the heap is less fragmented; Switches then shows "not enough memory" and the switch tries again within an hour.
+
+   Round tests, 2026-09-28: **Cancel** right after **Update now** — nothing downloaded, the Round stayed on 0.6.0. **Power cut** at about a third of the ring — back on 0.6.0, Switches showed the update failed; the retry after a restart went to 0.6.1 once the heap check passed. **Update now** 0.6.0 → 0.6.1 — Updating screen, restart on 0.6.1, Switches current with a fresh check-in.
