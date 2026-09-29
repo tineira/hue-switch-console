@@ -101,7 +101,8 @@ export async function POST(req: Request) {
       await recordRegisterRefused(device.userId, `limit_reached:${hit}`);
       return jsonError(403, "limit_reached", { details: hit });
     }
-    await upsertBridge({ userId: device.userId, snapshot });
+    const bridge = await upsertBridge({ userId: device.userId, snapshot });
+    const snapshotStatus = bridge.kept ? "kept" : "stored";
     if (!mac) {
       return jsonOk({
         ok: true,
@@ -109,6 +110,7 @@ export async function POST(req: Request) {
         lights: lights.length,
         rooms: rooms.length,
         scenes: scenes.length,
+        snapshot: snapshotStatus,
       });
     }
 
@@ -134,6 +136,7 @@ export async function POST(req: Request) {
       lights: lights.length,
       rooms: rooms.length,
       scenes: scenes.length,
+      snapshot: snapshotStatus,
     });
   } catch (err) {
     return databaseError(err);
