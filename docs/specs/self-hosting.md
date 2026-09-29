@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Decision D6 in `docs/specs/open-source-launch.md`.
 
-**Status:** draft (not approved). Open questions in §5 need the user's answers before any code.
+**Status:** approved 2026-09-29 by the user (all §5 questions decided). Implementation waits for the user's go (`docs/specs/open-items-plan.md`).
 
 ## 1. What and why
 
@@ -63,7 +63,9 @@ The README gets a "Self-hosting" section with options A and B, `DEVICE_CONSOLE_U
 - [ ] `docs/device-api.md` "Host and TLS" updated in the same commit
 - [ ] Metadata, sitemap and robots use `publicUrl()` (§2.5)
 - [ ] Release notes endpoint and `scripts/import-firmware.mjs` (§2.3)
-- [ ] README "Self-hosting" section: options A and B, env vars, import, fork CI (§2.4)
+- [ ] `docs/self-hosting.md` step-by-step guide (Postgres, env vars, deploy, options A and B, pointing boards at the console, firmware import, fork CI); the README keeps a short "Self-hosting" section that links to it (§2.4)
+- [ ] Setup compares the board's stored console host (`HUEGET` `url`) with this console and asks before moving it (§5 decision 2)
+- [ ] Privacy page: hosted text only on `https://hue.tineira.com`, a short generic page elsewhere; no hosted host name in the Open Graph image (§5 decision 5)
 - [ ] `.env.example` lists `DEVICE_CONSOLE_URL`
 - [ ] Hosted console: `DEVICE_CONSOLE_URL` set on Vercel (Claude does it through the Vercel connector)
 - [ ] Deployed; checked on production (Setup shows `https://hue.tineira.com`)
@@ -83,13 +85,13 @@ The README gets a "Self-hosting" section with options A and B, `DEVICE_CONSOLE_U
 
 - [ ] `PRODUCT_CONSOLE_URL` removed once unused
 
-## 5. Open questions
+## 5. Decisions
 
-Each has Claude's recommendation. None is decided.
+Decided by the user on 2026-09-29. Each one took Claude's recommendation; the reasoning is kept below.
 
-1. **Which console URLs should the firmware accept over `HUESET url`?** Today it accepts any `http://` or `https://` URL. Choices: (a) keep both, (b) `https://` only, (c) `https://`, plus `http://` only for private LAN addresses (RFC 1918, `.local`, `localhost`). *Recommendation: (a), unchanged.* Writing the URL already needs physical USB access, which could reflash the board anyway, so (b) or (c) would not stop anyone. (b) would rule out option B, the easiest self-hosting setup. (c) adds parsing on the C6 for little gain, and it breaks plain-HTTP consoles addressed by hostname.
-2. **Should a board warn when its console host changes?** For example, a `HUESET url` whose host differs from the stored one could get `HUEOK url changed <old-host>` so Setup can ask "This board was set up for hue.tineira.com. Move it to this console?". A `HUEGET` line already reports `url`. *Recommendation: yes, but in the console, not the firmware.* Setup already reads `HUEGET` before provisioning; it can compare hosts and ask for confirmation, with no firmware change. A firmware-side warning (LED pattern or screen notice at boot) is not worth the flash and RAM on the C6.
-3. **Support private CAs (option C)?** It would need a `HUESET ca` key, PEM storage in NVS (a few KB, tight on the C6) and a trust-store switch in both firmwares. *Recommendation: not now.* Options A and B cover most homes. Revisit if self-hosters ask.
-4. **Fork CI without a token: skip or fail?** *Recommendation: skip with a `::notice::`* so forks build green by default. The hosted repos keep failing loudly when the secret is missing, by checking that `github.repository` is the upstream repo.
-5. **Privacy page and hosted branding on a self-hosted console.** *Recommendation:* show the hosted Privacy text only when `publicUrl()` is `https://hue.tineira.com`. Otherwise show a short generic page ("This console is run by its owner; see their policy"), and drop the "hue.tineira.com" line from the Open Graph image.
-6. **Import notes endpoint vs. bundling notes in the manifest.** A `notes` field in `manifest.json` would avoid a new endpoint, but esp-web-tools-style manifests are read by the installer and should stay minimal. *Recommendation: the separate notes endpoint in §2.3.*
+1. **Which console URLs should the firmware accept over `HUESET url`?** Today it accepts any `http://` or `https://` URL. Choices: (a) keep both, (b) `https://` only, (c) `https://`, plus `http://` only for private LAN addresses (RFC 1918, `.local`, `localhost`). **Decided: (a), unchanged.** Writing the URL already needs physical USB access, which could reflash the board anyway, so (b) or (c) would not stop anyone. (b) would rule out option B, the easiest self-hosting setup. (c) adds parsing on the C6 for little gain, and it breaks plain-HTTP consoles addressed by hostname.
+2. **Should a board warn when its console host changes?** For example, a `HUESET url` whose host differs from the stored one could get `HUEOK url changed <old-host>` so Setup can ask "This board was set up for hue.tineira.com. Move it to this console?". A `HUEGET` line already reports `url`. **Decided: yes, in the console (Setup), not the firmware.** Setup already reads `HUEGET` before provisioning; it can compare hosts and ask for confirmation, with no firmware change. A firmware-side warning (LED pattern or screen notice at boot) is not worth the flash and RAM on the C6.
+3. **Support private CAs (option C)?** It would need a `HUESET ca` key, PEM storage in NVS (a few KB, tight on the C6) and a trust-store switch in both firmwares. **Decided: not now.** Options A and B cover most homes. Revisit if self-hosters ask.
+4. **Fork CI without a token: skip or fail?** **Decided: skip with a `::notice::`,** so forks build green by default. The hosted repos keep failing loudly when the secret is missing, by checking that `github.repository` is the upstream repo.
+5. **Privacy page and hosted branding on a self-hosted console.** **Decided:** show the hosted Privacy text only when `publicUrl()` is `https://hue.tineira.com`. Otherwise show a short generic page ("This console is run by its owner; see their policy"), and drop the "hue.tineira.com" line from the Open Graph image.
+6. **Import notes endpoint vs. bundling notes in the manifest.** A `notes` field in `manifest.json` would avoid a new endpoint, but esp-web-tools-style manifests are read by the installer and should stay minimal. **Decided: the separate notes endpoint in §2.3.**

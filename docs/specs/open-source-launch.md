@@ -80,8 +80,8 @@ Taken by the user on 2026-09-27, following Claude's recommendations.
 
 ### After launch
 
-- [ ] Firmware: move the `THIRD_PARTY.json` ↔ `sketch.yaml` check out of `firmware.yml` into a script run by both `build.yml` and `firmware.yml`. That way a PR that bumps a library without updating credits fails before merge, not at release.
-- [ ] Label a few `good first issue`s so newcomers have a place to start. Console #20 and #21 are labeled so far.
+- [x] Firmware: move the `THIRD_PARTY.json` ↔ `sketch.yaml` check out of `firmware.yml` into a script run by both `build.yml` and `firmware.yml`. That way a PR that bumps a library without updating credits fails before merge, not at release.
+- [x] Label a few `good first issue`s so newcomers have a place to start. 2026-09-29: console #34–#36, Round #19–#20, Simple #20–#21.
 - [x] Write `docs/specs/self-hosting.md` (D6). Draft written 2026-09-29; waiting for the user's answers to its open questions.
 
 ## 6. Rulesets for `main` (D2)
