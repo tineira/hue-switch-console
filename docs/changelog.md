@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-29
 
+- **Signing in takes you back.** If a page such as Setup or Switches (for example from a How-to link) sends you to sign in, you land back on that page afterwards instead of the home page. This works with Google, GitHub, an emailed code and a password.
 - **Setup shows which console a board will talk to** before **Link to console** saves the key ("This board will talk to https://hue.tineira.com"). If the board was set up for a different console, Setup says so and asks before moving it here with **Move to this console**.
 - **For people who run a console: self-hosting.** Setup now points boards at your own console instead of hue.tineira.com. It uses `DEVICE_CONSOLE_URL`, else `BETTER_AUTH_URL`, else the address of the Setup page. A console other than hue.tineira.com shows a short Privacy page saying its owner runs it, and its link preview, sitemap and robots.txt use its own address. `scripts/import-firmware.mjs` copies a released firmware from hue.tineira.com (or any console) into yours, so Setup has something to install without building it. The step-by-step guide is `docs/self-hosting.md`.
 - If your Hue Bridge briefly reports no lights when a switch checks in, the console keeps the rooms, lights and scenes it already had, so the pickers on Switches no longer go empty until the next good check-in.

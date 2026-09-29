@@ -16,6 +16,7 @@ import { currentSignupMode } from "@/lib/console-settings";
 import { emailCapReached } from "@/lib/email";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
+import { loginHref, safeReturnPath } from "@/lib/return-path";
 import {
   accountStatus,
   INVITE_COOKIE,
@@ -41,6 +42,12 @@ function apiMessage(err: unknown): string | null {
     if (message) return message;
   }
   return null;
+}
+
+/** Where to go after signing in: the form's `next`, if it is a path on this site. */
+function nextPath(formData: FormData): string {
+  const raw = formData.get("next");
+  return safeReturnPath(typeof raw === "string" ? raw : null);
 }
 
 async function prepare(): Promise<{ ip: string | null; h: Headers }> {
@@ -113,18 +120,22 @@ export async function verifyCode(_prev: CodeState, formData: FormData): Promise<
     return { step: "code", email, error: "That code is wrong or has expired." };
   }
   (await cookies()).delete(INVITE_COOKIE);
-  redirect("/");
+  redirect(nextPath(formData));
 }
 
 export async function signInWithProvider(formData: FormData) {
   const provider = String(formData.get("provider") ?? "");
-  if (provider !== "google" && provider !== "github") redirect("/login");
+  const next = nextPath(formData);
+  if (provider !== "google" && provider !== "github") redirect(loginHref(next));
   await ensureSchema();
   const res = await auth().api.signInSocial({
-    body: { provider, callbackURL: "/", errorCallbackURL: "/login" },
+    body: { provider, callbackURL: next, errorCallbackURL: loginHref(next) },
     headers: await headers(),
   });
-  if (!res?.url) redirect("/login?error=provider_unavailable");
+  if (!res?.url) {
+    const back = loginHref(next);
+    redirect(`${back}${back.includes("?") ? "&" : "?"}error=provider_unavailable`);
+  }
   redirect(res.url);
 }
 
@@ -144,7 +155,7 @@ export async function passwordLogin(_prev: SimpleState, formData: FormData): Pro
     if (message && /suspended/i.test(message)) return { error: message };
     return { error: "Invalid email or password." };
   }
-  redirect("/");
+  redirect(nextPath(formData));
 }
 
 /** "Join the waitlist" (docs/specs/finished/waitlist.md §2.4). */

@@ -5,6 +5,7 @@ import { auth } from "@/lib/better-auth";
 import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { loginHref, PATH_HEADER } from "@/lib/return-path";
 import { sql } from "@/lib/sql";
 import { isSuspended } from "@/lib/suspension";
 
@@ -27,9 +28,11 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 }
 
 export async function requireSessionUser(): Promise<SessionUser> {
-  if (!isDbConfigured()) redirect("/login");
+  // Sign-in comes back to this page (proxy.ts sets the header).
+  const login = async () => loginHref((await headers()).get(PATH_HEADER));
+  if (!isDbConfigured()) redirect(await login());
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(await login());
   return user;
 }
 

@@ -261,6 +261,7 @@ function StatusTiles({
               key={item.key}
               type="button"
               aria-pressed={on}
+              aria-controls={`status-${item.key}`}
               onClick={() => onSelect(item.key)}
               className={`flex touch-manipulation flex-col items-center gap-2.5 rounded-xl border bg-cream px-2.5 pt-3.5 pb-3 ${
                 on ? SELECTED : "border-line"
@@ -281,6 +282,54 @@ function StatusTiles({
   );
 }
 
+function StatusDetail({
+  item,
+  hidden,
+  version,
+}: {
+  item: Status;
+  hidden: boolean;
+  version: string | null;
+}) {
+  const tone = item.group === "ok" ? "text-ok" : item.group === "bad" ? "text-danger" : "text-foreground";
+  return (
+    <div
+      id={`status-${item.key}`}
+      hidden={hidden}
+      className="flex flex-wrap gap-5 rounded-xl border border-line bg-cream p-5 text-sm"
+    >
+      <div className="flex h-[152px] flex-[0_0_152px] items-center justify-center rounded-[10px] bg-background">
+        <StateVisual visual={item.visual} label={item.see} size={112} version={version} />
+      </div>
+      <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-2.5">
+        <div className="flex flex-col gap-0.5">
+          <span className={`text-base font-semibold ${tone}`}>{item.state}</span>
+          <span className="text-xs text-muted">{item.see}</span>
+        </div>
+        <p className="text-muted">
+          <Rich text={item.means} />
+        </p>
+        {item.fix ? (
+          <div className="flex flex-col gap-2.5 border-t border-line pt-3">
+            <p>
+              <span className="font-semibold">What to do: </span>
+              <Rich text={item.fix} />
+            </p>
+            {item.href && item.cta ? (
+              <Link
+                href={item.href}
+                className="self-start rounded-md bg-filament px-3 py-1.5 font-medium text-filament-ink"
+              >
+                {item.cta}
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function StatusSection({ product, version }: { product: Product; version: string | null }) {
   const items = statuses(product);
   const round = product === "round";
@@ -289,7 +338,6 @@ function StatusSection({ product, version }: { product: Product; version: string
   // People usually arrive here when something is wrong.
   const [pick, setPick] = useState(badItems[0]?.key ?? items[0].key);
   const sel = items.find((item) => item.key === pick) ?? items[0];
-  const tone = sel.group === "ok" ? "text-ok" : sel.group === "bad" ? "text-danger" : "text-foreground";
 
   return (
     <section id="status" className="flex scroll-mt-6 flex-col gap-4">
@@ -317,38 +365,12 @@ function StatusSection({ product, version }: { product: Product; version: string
         version={version}
       />
 
-      <div
-        aria-live="polite"
-        className="flex flex-wrap gap-5 rounded-xl border border-line bg-cream p-5 text-sm"
-      >
-        <div className="flex h-[152px] flex-[0_0_152px] items-center justify-center rounded-[10px] bg-background">
-          <StateVisual visual={sel.visual} label={sel.see} size={112} version={version} />
-        </div>
-        <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-2.5">
-          <div className="flex flex-col gap-0.5">
-            <span className={`text-base font-semibold ${tone}`}>{sel.state}</span>
-            <span className="text-xs text-muted">{sel.see}</span>
-          </div>
-          <p className="text-muted">
-            <Rich text={sel.means} />
-          </p>
-          {sel.fix ? (
-            <div className="flex flex-col gap-2.5 border-t border-line pt-3">
-              <p>
-                <span className="font-semibold">What to do: </span>
-                <Rich text={sel.fix} />
-              </p>
-              {sel.href && sel.cta ? (
-                <Link
-                  href={sel.href}
-                  className="self-start rounded-md bg-filament px-3 py-1.5 font-medium text-filament-ink"
-                >
-                  {sel.cta}
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+      {/* Every state's details are in the HTML, so search finds them; only the selected
+          one is shown. */}
+      <div aria-live="polite">
+        {items.map((item) => (
+          <StatusDetail key={item.key} item={item} hidden={item.key !== sel.key} version={version} />
+        ))}
       </div>
     </section>
   );
