@@ -2,7 +2,7 @@
 
 Coordination plan across the three repos. Not a feature spec; the features it builds have their own specs.
 
-**Status:** in progress. All questions decided by the user on 2026-09-29. The Simple dim cycle (`docs/specs/finished/simple-dim-cycle.md`) has landed, and the user gave the go the same day; workstreams A–D run in parallel.
+**Status:** done 2026-09-29. All four workstreams merged. What only the user can do is listed under "Stays with the user"; each item is also unticked in its own spec.
 
 ## Decisions (2026-09-29)
 
@@ -53,8 +53,8 @@ Everything in the console part of the `docs/specs/self-hosting.md` checklist, co
 
 ### Housekeeping (coordinating session)
 
-- `docs/specs/open-source-launch.md`: tick the credits-check and good-first-issue items; move the spec to `finished/` once the self-hosting line is done.
-- Remove worktrees and branches once merged.
+- [x] `docs/specs/open-source-launch.md`: items ticked; moved to `finished/`.
+- [x] Worktrees and branches removed once merged.
 
 ## Before the go (user) — done 2026-09-29
 
@@ -65,5 +65,8 @@ Everything in the console part of the `docs/specs/self-hosting.md` checklist, co
 ## Stays with the user
 
 - Board tests of Round and Simple 0.6.4, and of the next releases that carry this plan's firmware changes.
-- Waitlist checks that need an invite in the user's inbox.
-- One board provisioned from a local console (the last self-hosting checklist item).
+- Waitlist checks in `docs/specs/waitlist.md`, including the bounce test: the join form needs a Cloudflare Turnstile token, which an agent cannot produce.
+- The #18 production check in `docs/specs/keep-topology-on-empty-register.md`: watch the Vercel logs while a switch registers (reboot one) for `"snapshot": "stored"`. Runtime logs only reach back about an hour.
+- `/setup` on production shows `https://hue.tineira.com` (needs a signed-in session), and one board provisioned from a local console (the last two self-hosting items).
+- Upgrading `esptool-js` past 0.6.1, which Dependabot now skips: it changes the USB code Setup relies on, so it needs a flash test on both boards.
+- TypeScript 7 and ESLint 10, which Dependabot now skips until typescript-eslint and eslint-config-next support them.

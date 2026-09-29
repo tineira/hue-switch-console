@@ -1,8 +1,8 @@
 # Self-hosting
 
-Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Decision D6 in `docs/specs/open-source-launch.md`.
+Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Decision D6 in `docs/specs/finished/open-source-launch.md`.
 
-**Status:** approved 2026-09-29 by the user (all §5 questions decided); console implementation in progress (`docs/specs/open-items-plan.md` workstream B).
+**Status:** approved 2026-09-29 by the user (all §5 questions decided); implemented in all three repos on 2026-09-29 (`docs/specs/finished/open-items-plan.md`). Open: the production check of `/setup` (needs a signed-in session) and the user's board test over option B.
 
 ## 1. What and why
 

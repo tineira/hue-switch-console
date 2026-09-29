@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved (decisions D1–D6 taken 2026-09-27); launched 2026-09-29, after-launch items open
+**Status:** done. Launched 2026-09-29; after-launch items done the same day. Self-hosting (D6) continues in `docs/specs/self-hosting.md`.
 
 ## 1. What and why
 
