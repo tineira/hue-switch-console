@@ -35,7 +35,7 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.186.0",
     "@types/w3c-web-serial": "^1.0.8",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
     "typescript": "^5",
