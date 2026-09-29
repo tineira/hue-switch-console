@@ -35,7 +35,7 @@ Each runs as one agent in its own worktree, following that repo's `AGENTS.md`. T
 
 Everything in the console part of the `docs/specs/self-hosting.md` checklist, console first and backward compatible, including `docs/self-hosting.md`, the Setup host-change question and the generic Privacy page. `DEVICE_CONSOLE_URL` on Vercel is set by Claude through the Vercel connector. Runs in parallel with A; each rebases on `main` before merging.
 
-**Done 2026-09-29** (console #39, #44 and the import/guide PR). `DEVICE_CONSOLE_URL=https://hue.tineira.com` is set on Vercel Production. Left for the user: check Setup on production shows `https://hue.tineira.com` (Setup needs a signed-in session), and provision one board from a local console over option B.
+**Done 2026-09-29** (console #39, #44, #47). `DEVICE_CONSOLE_URL=https://hue.tineira.com` is set on Vercel Production. Left for the user: check Setup on production shows `https://hue.tineira.com` (Setup needs a signed-in session), and provision one board from a local console over option B.
 
 ### C. Round (`hue-round-switch`)
 
