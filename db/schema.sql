@@ -87,9 +87,6 @@ create table if not exists pages (
   group_rid text,
   grouped_light_rid text,
   dim jsonb,
-  -- leftover from pre-§8.2 dimTarget; unused. Do not read. DROP later if safe.
-  dim_target_rtype text,
-  dim_target_rid text,
   primary key (switch_id, id)
 );
 
@@ -97,6 +94,9 @@ alter table pages add column if not exists group_rtype text;
 alter table pages add column if not exists group_rid text;
 alter table pages add column if not exists grouped_light_rid text;
 alter table pages add column if not exists dim jsonb;
+-- Leftover from the old dimTarget (the ring target lives in dim); never read.
+alter table pages drop column if exists dim_target_rtype;
+alter table pages drop column if exists dim_target_rid;
 
 create index if not exists pages_switch_sort_idx
   on pages (switch_id, sort_order);
