@@ -47,7 +47,7 @@ Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
 
 | Status | error |
 | --- | --- |
-| 400 | `invalid_json`, `invalid_payload`, `validation_error`, or a field message |
+| 400 | `invalid_json`, `invalid_payload`, `validation_error`, `product_required` (`register` only: `mac` without a valid `product`), or a field message |
 | 401 | `unauthorized` |
 | 403 | `account_suspended`: the key's owner is suspended. NVS recipes keep running, as with a revoked key. |
 | 403 | `limit_reached` (`register` only): it would create a **new** switch or Bridge past the account's limit. `details`: `"switches"` or `"bridges"`. Updates to existing ones are never refused. |
@@ -142,7 +142,7 @@ Content-Type: application/json
 | `rooms` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
 | `scenes` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
 | `channels` | yes when registering a GPIO board | `{ id, gpio, label }`: the pins the board has. Empty array allowed. Round Display may send `[]`. Simple firmware < 0.3.0 also sends `kind` (`maintained` \| `momentary`); it is accepted and ignored, because the user picks each channel's type in the console. Simple firmware ≥ 0.5.0 sends `boot` and `d0`–`d5` (seven channels); older Simple firmware sends `boot`, `d0`–`d2` |
-| `product` | yes (with `mac`) | `"round"` or `"simple"`. Every current firmware sends it. **Omitting it is deprecated**: the console still infers it from empty/`c1` channels (round) vs GPIO (simple) and logs a warning; a later release will answer `400 product_required` (`docs/specs/require-product-on-register.md`). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
+| `product` | yes (with `mac`) | `"round"` or `"simple"`. A register with `mac` and no valid `product` is refused with `400 product_required`; the console no longer guesses the product from `channels`. Wipe round→simple **only** when a stored Round registers with `"product": "simple"` |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string. Stored as the switch's firmware; the config poll also reports it (below) |
 | `label` | no | Console display name on **first** insert only. Later registers do not overwrite a name set in the UI. Not sent to the board |
@@ -177,10 +177,10 @@ and the stored tree was kept (above). Older firmware ignores it.
 
 ---
 
-Round Display firmware sends `"product": "round"` and `channels: []`.
-Placeholder `c1` (gpio 0) is still accepted and treated as round. Simple-switch
-boards send `"simple"` with GPIO channels. Omitted `product` is deprecated and
-inferred only for old boards (above).
+Round Display firmware sends `"product": "round"` and `channels: []` (the first
+builds sent a placeholder `c1`; it is accepted and ignored). Simple-switch boards
+send `"simple"` with GPIO channels. The product comes only from `product`, never
+from `channels`.
 
 ---
 

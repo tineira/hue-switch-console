@@ -75,6 +75,10 @@ export async function POST(req: Request) {
   if (mac === null) {
     return jsonError(400, "mac must be 12 hex digits");
   }
+  if (mac && !product) {
+    // A switch must say what it is (docs/specs/finished/require-product-on-register.md).
+    return jsonError(400, "product_required", { details: 'product must be "round" or "simple"' });
+  }
   if (!bridgeid || !lights || !rooms || !scenes) {
     return jsonError(
       400,
@@ -110,7 +114,8 @@ export async function POST(req: Request) {
     }
     const bridge = await upsertBridge({ userId: device.userId, snapshot });
     const snapshotStatus = bridge.kept ? "kept" : "stored";
-    if (!mac) {
+    // A mac always comes with a product (checked above); no mac is push-from-bridge.
+    if (!mac || !product) {
       return jsonOk({
         ok: true,
         bridgeid,
@@ -121,13 +126,6 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!product) {
-      // Deprecated path (docs/specs/require-product-on-register.md, phase 1): the product is
-      // still inferred from the channels. Logged so the remaining boards show up in the logs.
-      console.warn(
-        `register without product (deprecated): mac=${mac} firmware=${asString(raw.firmware) ?? "unknown"}`,
-      );
-    }
     const sw = await upsertSwitch({
       userId: device.userId,
       mac,

@@ -26,7 +26,7 @@ Each runs as one agent in its own worktree, following that repo's `AGENTS.md`. T
 
 1. Merge the green Dependabot PRs (#12 actions, #13 minor/patch, #15 `@types/node`), checking the combined `main` stays green.
 2. TypeScript 7 migration (#16) and ESLint 10 migration (#14), one PR each.
-3. #19 phase 2: `400 product_required` for a register with a `mac` and no valid `product`; remove `inferProduct` and `isPlaceholderRoundChannels`; `docs/device-api.md` in the same commit; tick `docs/specs/require-product-on-register.md` and move it to `finished/`.
+3. #19 phase 2: `400 product_required` for a register with a `mac` and no valid `product`; remove `inferProduct` and `isPlaceholderRoundChannels`; `docs/device-api.md` in the same commit; tick `docs/specs/require-product-on-register.md` and move it to `finished/`. **Done.**
 4. Good first issues #34, #35, #36.
 5. Production checks: a register on production returns `"snapshot": "stored"` (#18 spec; read from Vercel logs or a switch's next register), then move `docs/specs/keep-topology-on-empty-register.md` to `finished/`. The waitlist bounce test; tick it in `docs/specs/waitlist.md`.
 6. CI images: confirm `ci.yml` passes on the Ubuntu 26 runner image before `ubuntu-latest` moves on 2026-10-19; fix what breaks.

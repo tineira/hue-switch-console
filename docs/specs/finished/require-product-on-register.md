@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Issue: [#19](https://github.com/tineira/hue-switch-console/issues/19).
 
-**Status:** approved 2026-09-29 (by the coordinating session, with the user's standing OK for this run). Phase 1 in progress; phase 2 waits for the check in §3 and the user's OK.
+**Status:** done 2026-09-29. Phase 1 shipped first; phase 2 shipped the same day with the user's OK, after the user confirmed no board runs firmware that omits `product` (so the log and database check in §3 was waived).
 
 ## 1. What and why
 
@@ -29,7 +29,7 @@ Both firmwares send `product` (`"simple"` or `"round"`) on every register. The c
 
 - [x] Phase 1: `docs/device-api.md` marks omitted `product` deprecated; register logs it
 - [x] Minimum firmware versions filled in §3
-- [ ] Phase 2 (user OK): `400 product_required`, inference removed, `docs/device-api.md` updated in the same commit
+- [x] Phase 2 (user OK): `400 product_required`, inference removed, `docs/device-api.md` updated in the same commit
 
 ### Round, Simple
 
