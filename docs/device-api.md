@@ -9,7 +9,7 @@ Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 CONSOLE_URL=https://hue.tineira.com
 ```
 
-Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA (Simple first): `docs/specs/ota.md`. The console side is live; Simple firmware ≥ 0.6.0 uses it.
+Dev: that URL and a console API key in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA: `docs/specs/ota.md` (Simple) and `docs/specs/ota-round.md` (Round). The console side is live; Simple firmware ≥ 0.6.0 and Round firmware ≥ 0.6.0 use it.
 
 Device TLS **must verify** the console certificate (Arduino ESP32 cert bundle).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
@@ -377,7 +377,7 @@ click target is one light) or `dim`: ramp the target with Clip v2
 (`docs/specs/finished/simple-hold-dim.md` §2.3). Simple 0.3.x drops a `dim` recipe and
 keeps the rest, so its hold does nothing (BOOT still re-pairs).
 
-### `ota` (Simple firmware ≥ 0.6.0)
+### `ota` (Simple firmware ≥ 0.6.0, Round firmware ≥ 0.6.0)
 
 Present only when the switch's owner offered an update on Switches
 (`docs/specs/ota.md`):
@@ -436,7 +436,7 @@ Used by the console UI. Firmware does not call these.
 | `GET` | `/api/switches` | registered boards; each has `applied_rev` (or `null`), `config_status` (`current` \| `pending` \| `not_applied` \| `ahead` \| `unknown`), `rev_changed_at`, `next_poll_at`, and for OTA `firmware_seen_at`, `latest_firmware`, `ota_capable`, `ota_status` (`current` \| `behind` \| `offered` \| `failed` \| `ahead` \| `unknown`), `ota_offered_at`, `ota_error`, `ota_error_at` |
 | `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, label, key_revoked, applied_rev, config_status, next_poll_at, firmware_seen_at, latest_firmware, ota_capable, ota_status, ota_offered_at, ota_error }` (Setup reads it after Detect) |
 | `POST` | `/api/switches/sync` | the Switches page calls it every 30 s while visible: every switch polls fast for 15 min; returns `{ switches: [{ mac, rev, applied_rev, config_status, rev_changed_at, next_poll_at, last_seen_at }] }` |
-| `POST` | `/api/switches/{mac}/ota` | offer the product's current release to this switch (a downgrade when the switch is ahead). `409 not_ota_capable` (not Simple ≥ 0.6.0), `409 no_release`, `409 already_current` |
+| `POST` | `/api/switches/{mac}/ota` | offer the product's current release to this switch (a downgrade when the switch is ahead). `409 not_ota_capable` (not Simple ≥ 0.6.0 or Round ≥ 0.6.0), `409 no_release`, `409 already_current` |
 | `DELETE` | `/api/switches/{mac}/ota` | cancel the offer |
 | `POST` | `/api/bridges/{bridgeid}/ota` | offer the current release to every switch on that Bridge that can update over Wi-Fi and is behind (never a downgrade); returns `{ offered: [mac…] }` |
 | `POST` | `/api/switches/{mac}/replace-config` | switch `ahead`: moves `rev` past the switch's so its next poll takes the console's config. `409 not_ahead` otherwise |

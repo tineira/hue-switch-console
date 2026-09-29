@@ -189,11 +189,7 @@ The new app confirms itself only after its first successful console poll (`200` 
 
 ## 7. v2: Round
 
-Same contract. Round-specific work, for its own spec update when v2 starts:
-
-- Download in the console worker, never in the touch loop (`hue-round-switch/docs/specs/finished/input-during-hue.md`); don't start while the ring is dragged or a recipe is in flight. Preferably while the screen is asleep.
-- App slot `default_8MB` (~3.2 MB); PSRAM makes heap much less of a concern.
-- Console: add `round` to OTA-capable with its own minimum version.
+Moved to `docs/specs/ota-round.md`, which reuses this contract and records what the Simple work taught us.
 
 ## 8. Out of scope
 

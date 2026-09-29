@@ -1,9 +1,11 @@
-// OTA updates (docs/specs/ota.md). Pure helpers, safe on the client.
+// OTA updates (docs/specs/ota.md; Round: docs/specs/ota-round.md). Pure helpers, safe on the client.
 
 import { compareVersions } from "@/lib/web-setup/devices";
 
 /** The first Simple release with an OTA client that sends `firmware` on every poll. */
 export const SIMPLE_OTA_MIN_FIRMWARE = "0.6.0";
+/** The first Round release with an OTA client (docs/specs/ota-round.md §4.1). */
+export const ROUND_OTA_MIN_FIRMWARE = "0.6.0";
 
 export type OtaStatus = "current" | "behind" | "offered" | "failed" | "ahead" | "unknown";
 
@@ -22,8 +24,14 @@ export function parseOtaError(raw: string | null): string | null {
 }
 
 export function otaCapable(row: { product: string; firmware: string | null }): boolean {
-  if (row.product !== "simple") return false;
-  const cmp = compareVersions(row.firmware ?? "", SIMPLE_OTA_MIN_FIRMWARE);
+  const min =
+    row.product === "simple"
+      ? SIMPLE_OTA_MIN_FIRMWARE
+      : row.product === "round"
+        ? ROUND_OTA_MIN_FIRMWARE
+        : null;
+  if (!min) return false;
+  const cmp = compareVersions(row.firmware ?? "", min);
   return cmp === 0 || cmp === 1;
 }
 
