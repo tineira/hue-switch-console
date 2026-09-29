@@ -67,6 +67,13 @@ Register this switch (if `mac` is present) and replace the topology snapshot
 for `bridgeid`. Last snapshot for that `bridgeid` wins. Several XIAOs paired
 to the same bridge share one tree.
 
+Exception: a register with `lights: []` never replaces a stored snapshot for that
+`bridgeid` that has at least one light (a Bridge that answered `200` with empty
+data). The stored `lights`, `rooms`, `scenes` and `receivedAt` are kept; the rest
+of the request (switch row, `firmware`, `bridge_ip`, `channels`, `product`) is
+applied as usual. A first register with `lights: []` is stored, since there is
+nothing to keep.
+
 If the switch was already registered and `bridgeid` changes, stored recipes,
 pages and Simple channel settings for that MAC are deleted and `rev` is **incremented** (never reset to
 `0` as an “empty” signal). Firmware writes NVS only when remote `rev` is
@@ -145,9 +152,14 @@ the snapshot.
   "product": "simple",
   "lights": 1,
   "rooms": 1,
-  "scenes": 1
+  "scenes": 1,
+  "snapshot": "stored"
 }
 ```
+
+`lights`, `rooms` and `scenes` count what the request carried. `snapshot` is
+`"stored"` when the request's tree was saved, or `"kept"` when it had no lights
+and the stored tree was kept (above). Older firmware ignores it.
 
 `product` is included when `mac` is present. Without `mac`, `mac`, `rev`, and
 `product` are omitted.
