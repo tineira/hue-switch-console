@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Issue: [#18](https://github.com/tineira/hue-switch-console/issues/18).
 
-**Status:** approved 2026-09-29 (by the coordinating session, with the user's standing OK for this run)
+**Status:** done 2026-09-29.
 
 ## 1. What and why
 
@@ -28,7 +28,7 @@ A Bridge that answers `200` with an empty `data` array makes a board register `l
 
 - [x] Register keeps the stored snapshot on an empty `lights` (§2); `snapshot` field in the response
 - [x] `docs/device-api.md` updated in the same commit
-- [ ] Deployed; checked on production (a normal register still returns `"snapshot": "stored"`)
+- [x] Deployed; checked on production (a normal register still returns `"snapshot": "stored"`). 2026-09-29: after a Simple switch rebooted, two registers returned `200` on the deployment with this change and the switch's light, room and scene pickers still showed the Bridge (checked by the user). Vercel logs only the status line, so the `snapshot` field itself was not seen; a `200` with lights always stores.
 
 ### Round, Simple
 
