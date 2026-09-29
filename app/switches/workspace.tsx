@@ -634,7 +634,10 @@ export function SwitchesWorkspace({
       return {
         text:
           `The switch installs ${latest} when it next checks in` +
-          `${until ? ` (${until})` : ""}, then restarts. Its buttons keep working until then.`,
+          `${until ? ` (${until})` : ""}, then restarts. ` +
+          (isRoundItem(item)
+            ? "It shows the update on its screen while it installs."
+            : "Its buttons keep working until then."),
         tone: "muted",
       };
     }
@@ -890,6 +893,7 @@ export function SwitchesWorkspace({
                   latestFor(selected),
                 )}
                 wifi={otaFor(selected) === "behind"}
+                round={round}
                 mac={selected.mac}
                 busy={otaBusy === selected.mac}
                 onUpdate={async () => {
@@ -1119,6 +1123,7 @@ function UpdatePanel({
   latest,
   notes,
   wifi,
+  round,
   mac,
   busy,
   onUpdate,
@@ -1128,6 +1133,7 @@ function UpdatePanel({
   latest: string;
   notes: ReturnType<typeof notesBetween>;
   wifi: boolean;
+  round: boolean;
   mac: string;
   busy: boolean;
   onUpdate: () => void;
@@ -1146,7 +1152,9 @@ function UpdatePanel({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-filament/30 px-2 pt-3 pb-1">
         <p className="max-w-xl text-sm text-muted">
           {wifi
-            ? "The switch installs it when it next checks in, then restarts. Its buttons, Wi-Fi and Hue pairing stay as they are."
+            ? `The switch installs it when it next checks in, then restarts. Its ${
+                round ? "pages" : "buttons"
+              }, Wi-Fi and Hue pairing stay as they are.`
             : `This switch runs ${firmware}, which needs a USB cable for this one update. After that it updates over Wi-Fi.`}
         </p>
         <div className="flex items-center gap-2">

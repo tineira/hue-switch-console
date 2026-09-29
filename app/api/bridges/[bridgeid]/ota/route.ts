@@ -23,7 +23,8 @@ export async function POST(
   const { bridgeid } = await context.params;
   try {
     const onBridge = (await listSwitches(user.id)).filter((sw) => sw.bridgeid === bridgeid);
-    const latest = { round: "", simple: (await currentVersion("simple")) ?? "" };
+    const [round, simple] = await Promise.all([currentVersion("round"), currentVersion("simple")]);
+    const latest = { round: round ?? "", simple: simple ?? "" };
     const behind = onBridge.filter(
       (sw) => otaCapable(sw) && otaStatus(sw, latest[sw.product]) === "behind",
     );

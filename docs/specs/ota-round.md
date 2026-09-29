@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved
+**Status:** in progress
 
 v2 of `docs/specs/ota.md`, which shipped for the Simple switch (console #6, #7, #8; Simple 0.6.0–0.6.2, tested on hardware 2026-09-28). This spec reuses its contract unchanged and records what the Simple work taught us. Where this spec says nothing, `ota.md` applies.
 
@@ -66,10 +66,10 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
 
 ### Console (`hue-switch-console`)
 
-- [ ] `otaCapable` accepts Round ≥ 0.6.0; per-Bridge route reads the Round's latest
-- [ ] Product-aware copy on Switches (§4.1)
-- [ ] `docs/device-api.md` firmware note updated in the same commit
-- [ ] `docs/changelog.md` entry
+- [x] `otaCapable` accepts Round ≥ 0.6.0; per-Bridge route reads the Round's latest
+- [x] Product-aware copy on Switches (§4.1)
+- [x] `docs/device-api.md` firmware note updated in the same commit
+- [x] `docs/changelog.md` entry
 - [ ] Deployed; checked on production
 
 ### Round (`hue-round-switch`)
