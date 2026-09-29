@@ -96,7 +96,14 @@ export async function POST(req: Request) {
   };
 
   try {
-    const hit = await registerLimitHit({ userId: device.userId, limits, mac: mac ?? null, bridgeid });
+    const hit = await registerLimitHit({
+      userId: device.userId,
+      limits,
+      mac: mac ?? null,
+      bridgeid,
+      snapshot,
+      label: asString(raw.label),
+    });
     if (hit) {
       await recordRegisterRefused(device.userId, `limit_reached:${hit}`);
       return jsonError(403, "limit_reached", { details: hit });
