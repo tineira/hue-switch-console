@@ -62,8 +62,8 @@ The README gets a "Self-hosting" section with options A and B, `DEVICE_CONSOLE_U
 - [x] `DEVICE_CONSOLE_URL` with its fallback chain; `/setup` writes it and shows it before provisioning (§2.1)
 - [x] `docs/device-api.md` "Host and TLS" updated in the same commit
 - [x] Metadata, sitemap and robots use `publicUrl()` (§2.5)
-- [ ] Release notes endpoint and `scripts/import-firmware.mjs` (§2.3)
-- [ ] `docs/self-hosting.md` step-by-step guide (Postgres, env vars, deploy, options A and B, pointing boards at the console, firmware import, fork CI); the README keeps a short "Self-hosting" section that links to it (§2.4)
+- [x] Release notes endpoint and `scripts/import-firmware.mjs` (§2.3)
+- [x] `docs/self-hosting.md` step-by-step guide (Postgres, env vars, deploy, options A and B, pointing boards at the console, firmware import, fork CI); the README keeps a short "Self-hosting" section that links to it (§2.4)
 - [x] Setup compares the board's stored console host (`HUEGET` `url`) with this console and asks before moving it (§5 decision 2)
 - [x] Privacy page: hosted text only on `https://hue.tineira.com`, a short generic page elsewhere; no hosted host name in the Open Graph image (§5 decision 5)
 - [x] `.env.example` lists `DEVICE_CONSOLE_URL`
@@ -78,8 +78,8 @@ The README gets a "Self-hosting" section with options A and B, `DEVICE_CONSOLE_U
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `firmware.yml` reads `vars.CONSOLE_UPLOAD_URL` (default hosted) and skips the upload without a token (§2.2)
-- [ ] README: how a fork uploads to its own console
+- [x] `firmware.yml` reads `vars.CONSOLE_UPLOAD_URL` (default hosted) and skips the upload without a token (§2.2) (hue-simple-switch #24)
+- [x] README: how a fork uploads to its own console ("Build and upload from a fork", hue-simple-switch #24)
 
 ### Cleanup
 

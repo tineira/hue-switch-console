@@ -328,6 +328,32 @@ export async function listReleaseNotes(product: ProductId): Promise<FirmwareNote
   });
 }
 
+export type ReleaseNotes = FirmwareNotes & { credits: CreditEntry[] | null };
+
+/**
+ * One released version's notes and credits, for `scripts/import-firmware.mjs` on another console
+ * (docs/specs/self-hosting.md §2.3). An upload still waiting in /admin is not released: null.
+ */
+export async function releaseNotes(product: ProductId, version: string): Promise<ReleaseNotes | null> {
+  const rows = await sql()`
+    select r.version, to_char(r.created_at at time zone 'UTC', 'YYYY-MM-DD') as date, r.notes, r.credits
+    from firmware_releases r
+    where r.product = ${product} and r.version = ${version} and r.notes <> ''
+      and (r.approved_at is not null
+        or exists (select 1 from firmware_current c where c.release_id = r.id))
+  `;
+  const row = rows[0] as
+    | { version: string; date: string; notes: string; credits: CreditEntry[] | null }
+    | undefined;
+  if (!row) return null;
+  return {
+    version: String(row.version),
+    date: String(row.date),
+    notes: String(row.notes),
+    credits: Array.isArray(row.credits) ? row.credits : null,
+  };
+}
+
 export type CurrentCredits = { version: string; credits: CreditEntry[] | null };
 
 export async function currentCredits(product: ProductId): Promise<CurrentCredits | null> {
