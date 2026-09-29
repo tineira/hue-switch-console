@@ -124,7 +124,17 @@ export const THEMES = [
 
 export type ThemeId = (typeof THEMES)[number]["id"];
 
-export const DEFAULT_THEME: ThemeId = "ember";
+// No stored choice: follow the system setting. Paper is what the server renders (and what shows without JS).
+export const DEFAULT_THEME: ThemeId = "paper";
+export const DEFAULT_DARK_THEME: ThemeId = "ember";
+
+export function systemTheme(): ThemeId {
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? DEFAULT_DARK_THEME : DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
 
 export function isThemeId(value: string | null): value is ThemeId {
   return THEMES.some((theme) => theme.id === value);

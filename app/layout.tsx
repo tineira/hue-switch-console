@@ -35,13 +35,14 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-const themeBoot = `(function(){try{var t=localStorage.getItem("hsw-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+// Before first paint: the stored theme, else Ember on a dark system and Paper (the server default) on a light one.
+const themeBoot = `(function(){var d=document.documentElement,t=null;try{t=localStorage.getItem("hsw-theme");}catch(e){}if(!t&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)t="ember";if(t)d.setAttribute("data-theme",t);})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      data-theme="ember"
+      data-theme="paper"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
