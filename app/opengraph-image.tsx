@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { isHostedConsole } from "@/lib/account-config";
 
 // Link preview for every page (GitHub, X, chat apps). Paper theme colors from globals.css; the
 // switch is the landing page's Round demo (Living, Sunset) in its Ember screen theme.
@@ -108,7 +109,7 @@ export default async function OpengraphImage() {
           </div>
           <div style={{ marginTop: 36, height: 2, width: 520, background: PAPER.line }} />
           <div style={{ marginTop: 28, fontFamily: "Geist Mono", fontSize: 24, color: PAPER.filament }}>
-            hue.tineira.com · free and open source
+            {isHostedConsole() ? "hue.tineira.com · free and open source" : "Free and open source"}
           </div>
         </div>
         <RoundSwitch />

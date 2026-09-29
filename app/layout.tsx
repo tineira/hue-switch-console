@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteFooter } from "@/app/site-footer";
-import { PRODUCT_CONSOLE_URL } from "@/lib/web-setup/products";
+import { publicUrl } from "@/lib/account-config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,8 +17,11 @@ const geistMono = Geist_Mono({
 const DESCRIPTION =
   "Set up Wi-Fi wall switches for Philips Hue from your browser and choose what each button does. Free.";
 
+// Absolute URLs in link previews use BETTER_AUTH_URL; unset, Next.js falls back to the Vercel URL or localhost.
+const siteUrl = publicUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL(PRODUCT_CONSOLE_URL),
+  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
   title: {
     template: "%s · Hue switch console",
     default: "Hue switch console",

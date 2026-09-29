@@ -1,14 +1,16 @@
 import type { MetadataRoute } from "next";
-import { PRODUCT_CONSOLE_URL } from "@/lib/web-setup/products";
+import { siteOrigin } from "@/lib/origin";
 
 // Pages a signed-out visitor can read. How-to has one URL per product (docs/specs/finished/public-how-to-changelog.md D3).
-export default function sitemap(): MetadataRoute.Sitemap {
+// This console's own address (BETTER_AUTH_URL, else the request), so a self-hosted one lists its own pages.
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const origin = await siteOrigin();
   return [
-    { url: PRODUCT_CONSOLE_URL, priority: 1 },
-    { url: `${PRODUCT_CONSOLE_URL}/how-to?product=round`, priority: 0.8 },
-    { url: `${PRODUCT_CONSOLE_URL}/how-to?product=simple`, priority: 0.8 },
-    { url: `${PRODUCT_CONSOLE_URL}/changelog`, priority: 0.5 },
-    { url: `${PRODUCT_CONSOLE_URL}/credits`, priority: 0.5 },
-    { url: `${PRODUCT_CONSOLE_URL}/privacy`, priority: 0.3 },
+    { url: origin, priority: 1 },
+    { url: `${origin}/how-to?product=round`, priority: 0.8 },
+    { url: `${origin}/how-to?product=simple`, priority: 0.8 },
+    { url: `${origin}/changelog`, priority: 0.5 },
+    { url: `${origin}/credits`, priority: 0.5 },
+    { url: `${origin}/privacy`, priority: 0.3 },
   ];
 }

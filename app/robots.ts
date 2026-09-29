@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { PRODUCT_CONSOLE_URL } from "@/lib/web-setup/products";
+import { siteOrigin } from "@/lib/origin";
 
 // Signed-in pages only redirect crawlers to /login, and the API and firmware routes are for switches.
 const PRIVATE = [
@@ -16,9 +16,10 @@ const PRIVATE = [
   "/switches",
 ];
 
-export default function robots(): MetadataRoute.Robots {
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const origin = await siteOrigin();
   return {
     rules: { userAgent: "*", allow: "/", disallow: PRIVATE },
-    sitemap: `${PRODUCT_CONSOLE_URL}/sitemap.xml`,
+    sitemap: `${origin}/sitemap.xml`,
   };
 }
