@@ -51,10 +51,17 @@ Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
 | 410 | `gone` (`/api/ingest` only) |
 | 413 | `payload_too_large` (`register` only): body over the account's snapshot limit (512 KB by default) |
 | 429 | `rate_limited`: too many requests from one IP (Vercel Firewall rule on `/api/device/*`). `Retry-After` in seconds. |
+| 500 | `database_error`: a database query failed. No `details`; the cause is only in the server log. Retry later. |
 | 503 | `database_not_configured` |
 
+Field messages on `400` are plain sentences in `error`, such as
+`mac must be 12 hex digits` (`register`) or `mac query parameter is required`
+(`config`). `validation_error` comes from the console's own endpoints (below),
+not from `/api/device/*`. `/api/ingest` answers `410` with `message` instead of
+`details`.
+
 Firmware treats every non-200 except `401` as a failed call and retries on its
-normal schedule, so `403`, `413` and `429` need no firmware change.
+normal schedule, so `403`, `413`, `429`, `500` and `503` need no firmware change.
 
 MAC is 12 hex digits, case-insensitive, `:` / `-` allowed on input. Stored and
 returned lowercase without separators (`aabbccddeeff`).
@@ -85,7 +92,7 @@ Content-Type: application/json
 {
   "mac": "aabbccddeeff",
   "firmware": "0.3.0",
-  "bridgeid": "C42996FFFECA6703",
+  "bridgeid": "001788FFFE123456",
   "bridge_ip": "192.168.100.12",
   "source": "xiao",
   "channels": [
@@ -140,7 +147,7 @@ the snapshot.
 {
   "ok": true,
   "mac": "aabbccddeeff",
-  "bridgeid": "C42996FFFECA6703",
+  "bridgeid": "001788FFFE123456",
   "rev": 12,
   "product": "simple",
   "lights": 1,

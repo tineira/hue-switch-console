@@ -61,7 +61,7 @@ The v2 editor (`app/switches/workspace.tsx` and the editors in `app/switches/`),
 
 - A **context line** (text-sm muted), with the bridge id and IP in mono:
 
-  `Bridge C42996FFFECA6703 · 192.168.1.20 · 44 lights · 10 rooms · 9 zones · 123 scenes · Snapshot 5 min ago`
+  `Bridge 001788FFFE123456 · 192.168.1.20 · 44 lights · 10 rooms · 9 zones · 123 scenes · Snapshot 5 min ago`
 
   **Fix:** the old header counted zones as rooms ("19 rooms"). They are counted separately.
 - "No lights yet. A switch paired with this Bridge sends its rooms, lights, and scenes when it checks in." when its snapshot is empty.
