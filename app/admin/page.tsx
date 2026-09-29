@@ -25,7 +25,7 @@ import { requireAdmin } from "@/lib/auth";
 import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
 import { emailsSentToday, waitlistEmailsSentToday } from "@/lib/email";
 import { listStoredReleases } from "@/lib/firmware";
-import { INVITE_STATES, listInvites, type InviteRow, type InviteState } from "@/lib/signup";
+import { INVITE_STATES, inviteState, listInvites, type InviteState } from "@/lib/signup";
 import {
   deliveryProblems,
   listPendingEntries,
@@ -65,12 +65,6 @@ const INPUT = "rounded-md border border-line bg-background px-2 py-1 text-xs";
 
 function day(value: string | Date | null): string {
   return value ? new Date(value).toISOString().slice(0, 10) : "—";
-}
-
-function inviteState(i: InviteRow): "used" | "revoked" | "expired" | "open" {
-  if (i.used_at) return "used";
-  if (i.revoked_at) return "revoked";
-  return new Date(i.expires_at).getTime() < Date.now() ? "expired" : "open";
 }
 
 const EVENT_LABELS: Record<AdminEvent["action"], string> = {

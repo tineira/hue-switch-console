@@ -39,7 +39,19 @@ export type InviteRow = {
   used_by: string | null;
   revoked_at: string | null;
   created_at: string;
+  /** Set by `listInvites` when the invite's email bounced or was marked spam (lib/waitlist.ts). */
+  undeliverable?: "bounced" | "complained" | null;
 };
+
+/** What `/admin` shows for an invite. An invite revoked by a bounce says so. */
+export function inviteState(
+  i: Pick<InviteRow, "used_at" | "revoked_at" | "expires_at" | "undeliverable">,
+  now = Date.now(),
+): "used" | "revoked" | "bounced" | "complained" | "expired" | "open" {
+  if (i.used_at) return "used";
+  if (i.revoked_at) return i.undeliverable ?? "revoked";
+  return new Date(i.expires_at).getTime() < now ? "expired" : "open";
+}
 
 export async function createInvite(input: {
   email?: string | null;
@@ -119,6 +131,9 @@ export async function listInvites(input: {
   const offset = (input.page - 1) * pageSize;
   const rows = await sql()`
     select id, code_prefix, email, expires_at, used_at, used_by, revoked_at, created_at,
+      (select r.status from invite_requests r
+        where r.invite_id = invites.id and r.status in ('bounced', 'complained')
+        limit 1) as undeliverable,
       count(*) over ()::int as total
     from invites
     where ${state} = 'all'
