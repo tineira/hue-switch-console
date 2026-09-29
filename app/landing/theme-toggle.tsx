@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { THEME_STORAGE_KEY } from "@/app/themes";
+import { THEME_STORAGE_KEY, systemTheme } from "@/app/themes";
 
 type LandingTheme = "ember" | "paper";
 
@@ -32,9 +32,9 @@ export function ThemeToggle() {
     // localStorage exists only after hydration; reading it in the initial state would mismatch the server render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(initial);
-    // Other pages keep the stored theme (or the layout's Ember default).
+    // Other pages keep the stored theme, or follow the system setting.
     return () => {
-      document.documentElement.dataset.theme = readStored() ?? "ember";
+      document.documentElement.dataset.theme = readStored() ?? systemTheme();
     };
   }, []);
 

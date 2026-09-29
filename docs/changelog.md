@@ -10,6 +10,11 @@ What changed in the console, the Round switch, and the Simple switch. Newest fir
 
 The console has no version number. Each heading is the day the change went live.
 
+### 2026-09-29
+
+- The console starts in the light **Paper** theme. If your phone or computer is set to dark mode it starts in **Ember**, and a theme you picked yourself stays as it was.
+- **New icon and link preview.** The browser tab shows a small Round screen instead of the placeholder icon, and so does the icon on an iPhone home screen. Links shared in WhatsApp, iMessage, Slack or X show the Round with "Build a wall switch for your Hue lights." on the light theme.
+
 ### 2026-09-28
 
 - **Update over Wi-Fi (Round).** A Round Display on firmware 0.6.0 or newer can be updated from Switches like a Simple switch: press **Update to …**, read what changes and press **Update now**. Older Rounds update over USB from Setup; the first update to 0.6.0 has to be over USB.

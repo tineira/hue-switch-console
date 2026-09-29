@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   DEFAULT_THEME,
+  systemTheme,
   THEME_STORAGE_KEY,
   THEMES,
   isThemeId,
@@ -70,7 +71,7 @@ export function ThemePicker() {
 
   useEffect(() => {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    const id = isThemeId(stored) ? stored : DEFAULT_THEME;
+    const id = isThemeId(stored) ? stored : systemTheme();
     // localStorage exists only after hydration; reading it in the initial state would mismatch the server render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(id);

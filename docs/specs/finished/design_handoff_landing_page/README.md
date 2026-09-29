@@ -24,7 +24,7 @@ The files in this folder are **design references built in HTML**. They are proto
 **High fidelity.** Colours, type, spacing, copy and interactions are final. Every colour is a theme token, except the physical-device colours listed in "Device colours" below.
 
 ## Themes on the landing page
-- Only two themes here: **Ember** (dark, default) and **Paper** (light). The 17 themes remain for signed-in users.
+- Only two themes here: **Ember** (dark) and **Paper** (light), following the system setting until the visitor picks one; Paper is the server default. The 17 themes remain for signed-in users.
 - Default: follow `prefers-color-scheme` (light → Paper, otherwise Ember).
 - The header has a 40×40 toggle that switches between the two.
   - Recommended: also write the choice to `localStorage["hsw-theme"]` (`ember` or `paper`), so it carries over after sign-in.
