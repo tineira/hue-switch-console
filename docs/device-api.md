@@ -124,7 +124,7 @@ Content-Type: application/json
 | `rooms` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `grouped_light_id` is the room-wide target. `light_ids[]` are light resource ids in that room/zone. `rtype` is optional (`room` \| `zone`) |
 | `scenes` | yes | **Required array** (omit or non-array → 400). May be empty `[]`. `id`, `name` required. `group_rtype` / `group_rid` locate the scene under a room or zone |
 | `channels` | yes when registering a GPIO board | `{ id, gpio, label }`: the pins the board has. Empty array allowed. Round Display may send `[]`. Simple firmware < 0.3.0 also sends `kind` (`maintained` \| `momentary`); it is accepted and ignored, because the user picks each channel's type in the console. Simple firmware ≥ 0.5.0 sends `boot` and `d0`–`d5` (seven channels); older Simple firmware sends `boot`, `d0`–`d2` |
-| `product` | current firmware: yes | `"round"` or `"simple"`. Current boards **send** it. If omitted (old boards), inferred from empty/`c1` channels (round) vs GPIO (simple). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
+| `product` | yes (with `mac`) | `"round"` or `"simple"`. Every current firmware sends it. **Omitting it is deprecated**: the console still infers it from empty/`c1` channels (round) vs GPIO (simple) and logs a warning; a later release will answer `400 product_required` (`docs/specs/require-product-on-register.md`). Wipe round→simple **only** when the body has `"product": "simple"` explicitly — inference never deletes pages |
 | `mac` | firmware: yes | Omit for `push-from-bridge` topology-only upload |
 | `firmware` | no | Free string. Stored as the switch's firmware; the config poll also reports it (below) |
 | `label` | no | Console display name on **first** insert only. Later registers do not overwrite a name set in the UI. Not sent to the board |
@@ -156,8 +156,8 @@ the snapshot.
 
 Round Display firmware sends `"product": "round"` and `channels: []`.
 Placeholder `c1` (gpio 0) is still accepted and treated as round. Simple-switch
-boards send `"simple"` with GPIO channels. Omitted `product` is inferred only
-for old boards.
+boards send `"simple"` with GPIO channels. Omitted `product` is deprecated and
+inferred only for old boards (above).
 
 ---
 
