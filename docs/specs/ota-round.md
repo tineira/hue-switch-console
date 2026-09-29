@@ -74,10 +74,10 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
 
 ### Round (`hue-round-switch`)
 
-- [ ] `ota.h` ported and adapted (§4.2); `firmware=` on every poll, `ota_error=` once after a failure
-- [ ] Update screen with progress ring (§4.2 step 4)
-- [ ] Heap logged during a download; numbers recorded in §7
-- [ ] Before merging: debug build ahead of 0.5.32 → **Downgrade** on Switches downloads, writes and restarts into 0.5.32 with settings kept
+- [x] `ota.h` ported and adapted (§4.2); `firmware=` on every poll, `ota_error=` once after a failure
+- [x] Update screen with progress ring (§4.2 step 4)
+- [x] Heap logged during a download; numbers recorded in §7
+- [x] Before merging: debug build ahead of 0.5.32 → **Downgrade** on Switches downloads, writes and restarts into 0.5.32 with settings kept
 - [ ] `FIRMWARE_VERSION` → 0.6.0; `CHANGELOG.md` entry (user-facing wording)
 - [ ] Release uploaded; `/firmware/round/manifest.json` shows 0.6.0
 - [ ] User flashes 0.6.0 by USB
@@ -100,4 +100,12 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
 
 ## 7. Open questions
 
-1. **Heap numbers** — to be filled in from the first build's log.
+1. **Heap numbers** (answered 2026-09-28, Round debug build reporting 0.6.0, **Downgrade** to 0.5.32 against production, console `https://hue.tineira.com`). The console task sampled the heap after every chunk and logged it once a second:
+
+   | Phase | Internal free | Largest internal block | PSRAM free |
+   | --- | --- | --- | --- |
+   | Before the download (poll closed) | 134.5 KB | 90.1 KB | 8.34 MB |
+   | TLS connected | 86.7 KB | 38.9 KB | 8.34 MB |
+   | Lowest during the download | 77.3 KB | 31.7 KB | 8.32 MB |
+
+   mbedtls allocates internal RAM on this core (`CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC`), so the internal numbers are the ones that count; PSRAM barely moves. The firmware starts only with a largest internal block of 48 KB or more. The 0.5.32 `firmware.bin` (1,227,296 bytes) downloaded and was written in 8.4 s; the Round restarted into 0.5.32 with its pages, Wi-Fi and pairing kept, and Switches showed it with a fresh check-in.
