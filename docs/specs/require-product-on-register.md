@@ -17,15 +17,18 @@ Both firmwares send `product` (`"simple"` or `"round"`) on every register. The c
 
 ## 3. Compatibility
 
-- Firmware versions that need the old path: those before the first release that sends `product`. The console session that implements phase 1 finds those versions in each firmware's `CHANGELOG.md` and writes them here.
+- Firmware versions that need the old path: those before the first release that sends `product`. Neither firmware `CHANGELOG.md` mentions `product` (they are user-facing notes), so the versions below come from each repo's commit history of `console.h`, the file that builds the register body:
+  - **Simple:** none. `product: "simple"` has been in the register body since the first firmware that registers at all (`d256757`, `FIRMWARE_VERSION` `0.1.1`, 2026-09-21). The earlier "before 0.1.1" build had no console code.
+  - **Round:** only the very first build (`1879448`, 2026-09-20) omits it. `product: "round"` was added in `3c2de1d` (Pages, the release the changelog calls 0.4.0). Both builds still reported `FIRMWARE_VERSION` `"0.1.0"`, because the in-code version was bumped only later (to `0.5.x`). So a Round reporting `0.1.0` may or may not send `product`; any Round reporting a higher version sends it.
+  - In practice, a board is on the old path only if it reports Round `0.1.0` (or no `firmware`). The phase 1 warning names those boards by MAC.
 - When phase 2 can ship: when `select product, firmware, count(*) from switches group by 1, 2` on production shows no switch below those versions, no deprecation warning has been logged for 30 days, and the user says OK.
 
 ## 4. Checklist
 
 ### Console (`hue-switch-console`)
 
-- [ ] Phase 1: `docs/device-api.md` marks omitted `product` deprecated; register logs it
-- [ ] Minimum firmware versions filled in §3
+- [x] Phase 1: `docs/device-api.md` marks omitted `product` deprecated; register logs it
+- [x] Minimum firmware versions filled in §3
 - [ ] Phase 2 (user OK): `400 product_required`, inference removed, `docs/device-api.md` updated in the same commit
 
 ### Round, Simple

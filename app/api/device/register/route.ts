@@ -114,6 +114,13 @@ export async function POST(req: Request) {
       });
     }
 
+    if (!product) {
+      // Deprecated path (docs/specs/require-product-on-register.md, phase 1): the product is
+      // still inferred from the channels. Logged so the remaining boards show up in the logs.
+      console.warn(
+        `register without product (deprecated): mac=${mac} firmware=${asString(raw.firmware) ?? "unknown"}`,
+      );
+    }
     const sw = await upsertSwitch({
       userId: device.userId,
       mac,
