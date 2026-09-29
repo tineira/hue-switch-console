@@ -121,7 +121,8 @@ export function SimpleCard({ parts }: { parts: Part[] }) {
   const click = () => event((v) => ({ on: !v.on, scene: v.on ? -1 : v.scene }));
   const scene = () => event((v) => ({ on: true, scene: (v.scene + 1) % SIMPLE_SCENES.length }));
   function holdStart() {
-    dir.current = level.current >= 100 ? -1 : 1;
+    // Like the switch: up first when the light is low, down otherwise.
+    dir.current = level.current < 30 ? 1 : -1;
     event(() => ({ on: true, holding: true }));
     if (ramp.current) clearInterval(ramp.current);
     ramp.current = setInterval(() => {

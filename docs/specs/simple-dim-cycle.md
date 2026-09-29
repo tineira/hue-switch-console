@@ -76,6 +76,7 @@ Rate: one command every 3.4 s at most while held, well under the Bridge's limit 
 ### Console (`hue-switch-console`)
 
 - [x] No code change. `docs/definitions.md` and `docs/device-api.md` updated per §2.3, noting that Simple < 0.7.0 ramps one way.
+- [ ] Editor note for Hold → Dim and the landing demo describe the cycle (PR `dim-cycle-copy`, merged once 0.7.0 is released).
 - [ ] No console changelog entry (the change reaches `/changelog` through the Simple firmware notes).
 
 ### Round (`hue-round-switch`)
