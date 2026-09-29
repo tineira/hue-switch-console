@@ -1,7 +1,8 @@
 # Device API
 
-Contract for the XIAO firmware (`hue-simple-switch`) and `push-from-bridge`.
-Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
+Contract for both switch firmwares, [`hue-round-switch`](https://github.com/tineira/hue-round-switch)
+(`product: "round"`) and [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch)
+(`product: "simple"`), and for `push-from-bridge`. Postgres is the source of truth. There is no server-side `INGEST_TOKEN`.
 
 ## Host and TLS
 
