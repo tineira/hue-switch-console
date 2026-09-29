@@ -82,8 +82,8 @@ No firmware change.
 
 ### Follow-up (separate change)
 
-- [ ] Status section: render every screen and LED state's details in the HTML (collapsed), not only the selected one (see §6)
-- [ ] D2 (c): sign-in returns to the page that sent the reader to `/login`, limited to same-site paths
+- [x] Status section: render every screen and LED state's details in the HTML (collapsed), not only the selected one (see §6). Done 2026-09-29 (console #51): every panel is rendered, hidden unless selected.
+- [x] D2 (c): sign-in returns to the page that sent the reader to `/login`, limited to same-site paths. Done 2026-09-29 (console #51): `/login?next=`, checked by `lib/return-path.ts`.
 
 ## 6. Open questions
 
