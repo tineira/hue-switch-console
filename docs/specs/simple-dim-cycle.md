@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Replaces the ramp rules in `docs/specs/finished/simple-hold-dim.md` §2.3. The recipe, the target and the release `stop` stay the same.
 
-**Status:** in progress (Simple 0.7.0 released; waiting for the user's board test)
+**Status:** in progress (Simple 0.7.0 released, 0.7.1 with a 250 ms pause in tineira/hue-simple-switch#23; waiting for the user's board test)
 
 ## 1. What and why
 
@@ -26,7 +26,7 @@ Constants (firmware, tunable after testing on the wall):
 | Constant | Value | Meaning |
 | --- | --- | --- |
 | `kDimSweepMs` | 3000 | Full sweep, minimum → 100 % |
-| `kDimDwellMs` | 400 | Pause at each end before turning around |
+| `kDimDwellMs` | 250 | Pause at each end before turning around |
 | `kDimMaxHoldMs` | 30000 | Hold time after which the cycle stops by itself |
 | `kDimMinBrightness` | 1 | Level when the target starts off (unchanged) |
 | `kDimUpBelow` | 30 | Below this brightness (%), the first leg goes up |
@@ -57,7 +57,7 @@ Unchanged rules from `simple-hold-dim.md` §2.3:
 
 Removed: the per-channel "last direction" in RAM. Every hold starts by the rule in step 2, so the button behaves the same every time.
 
-Rate: one command every 3.4 s at most while held, well under the Bridge's limit for `grouped_light` (about 1 per second).
+Rate: one command every 3.25 s at most while held, well under the Bridge's limit for `grouped_light` (about 1 per second).
 
 ### 2.3 Docs
 
@@ -102,7 +102,7 @@ No change.
 ## 5. Open questions
 
 - **Full sweep time:** **3 s**, approved with the spec. 2 s is faster but harder to stop at low levels. Tune on the wall.
-- **Pause at the ends:** **400 ms**, approved with the spec. Long enough to see "it reached full" and let go there.
+- **Pause at the ends:** **250 ms**. Approved at 400 ms; the user found that too long on the wall with 0.7.0, and 0.7.1 uses 250 ms. Still long enough to see "it reached full" and let go there.
 - **First direction:** decided by the user: **up below 30 %** (and from off), **down** otherwise, dropping the alternation between holds. Cost: from 25 % to the minimum takes one full leg up and back (about 5.7 s). The threshold is a constant and can be tuned on the wall.
 - **Cap:** **30 s** of continuous hold, approved with the spec.
 - **Verify on the Bridge during implementation:** a `dimming_delta` sent while another is running replaces it cleanly (no jump); a room with mixed lamp models reaches the ends close enough together that the pause hides the difference.

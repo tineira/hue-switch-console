@@ -224,7 +224,7 @@ Channels come from `channels[]` in the config; a pin not listed is ignored. For 
 | `off` | same with `false` |
 | `recall_scene` | `PUT …/scene/{rid}` `{ "recall": { "action": "active" } }`, next `rid` of `targets[]` (Round §8.1; an `off` on the channel restarts the cycle) |
 | `toggle` | GET `on` + inverse PUT (mostly `momentary` / `short`) |
-| `dim` (`hold` only) | GET `on` + `dimming`; if off, turn on at 1 %. Then cycle while held: first leg **up** below 30 % (or from off), **down** otherwise; each leg `{ "dimming_delta": { "action": "up" \| "down", "brightness_delta": 100 }, "dynamics": { "duration": <ms> } }` timed from the distance left (3 s for a full sweep), a 400 ms pause at each end, then the other way; stops by itself after 30 s. On release `{ "dimming_delta": { "action": "stop" } }`. Never turns the light off. Simple < 0.7.0 ramps one way per hold over 5 s, alternating direction. Spec: `docs/specs/simple-dim-cycle.md` |
+| `dim` (`hold` only) | GET `on` + `dimming`; if off, turn on at 1 %. Then cycle while held: first leg **up** below 30 % (or from off), **down** otherwise; each leg `{ "dimming_delta": { "action": "up" \| "down", "brightness_delta": 100 }, "dynamics": { "duration": <ms> } }` timed from the distance left (3 s for a full sweep), a 250 ms pause at each end, then the other way; stops by itself after 30 s. On release `{ "dimming_delta": { "action": "stop" } }`. Never turns the light off. Simple < 0.7.0 ramps one way per hold over 5 s, alternating direction. Spec: `docs/specs/simple-dim-cycle.md` |
 
 5. The contact path does **not** use the console URL. If the PUT fails, log and move on; do not block other channels.
 
