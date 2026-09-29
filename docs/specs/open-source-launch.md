@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved (decisions D1–D6 taken 2026-09-27); in progress
+**Status:** approved (decisions D1–D6 taken 2026-09-27); launched 2026-09-29, after-launch items open
 
 ## 1. What and why
 
@@ -56,23 +56,23 @@ Taken by the user on 2026-09-27, following Claude's recommendations.
 
 ### Console (`hue-switch-console`)
 
-- [ ] Make the repo public (user's OK).
-- [ ] Turn on private vulnerability reporting.
-- [ ] Apply the two §6 rulesets, required check `check`.
-- [ ] Check on production that the footer "Source (AGPL-3.0)" link opens the repo.
-- [ ] Actions settings: keep "Require approval for first-time contributors" for fork pull requests.
+- [x] Make the repo public (user's OK). 2026-09-29.
+- [x] Turn on private vulnerability reporting.
+- [x] Apply the two §6 rulesets, required check `check`.
+- [x] Check on production that the footer "Source (AGPL-3.0)" link opens the repo.
+- [x] Actions settings: keep "Require approval for first-time contributors" for fork pull requests.
 
 ### Round (`hue-round-switch`)
 
-- [ ] Make the repo public (user's OK).
-- [ ] Turn on private vulnerability reporting.
-- [ ] Apply the two §6 rulesets, required check `compile`.
+- [x] Make the repo public (user's OK). 2026-09-29.
+- [x] Turn on private vulnerability reporting.
+- [x] Apply the two §6 rulesets, required check `compile`.
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] Make the repo public (user's OK).
-- [ ] Turn on private vulnerability reporting.
-- [ ] Apply the two §6 rulesets, required check `compile`.
+- [x] Make the repo public (user's OK). 2026-09-29.
+- [x] Turn on private vulnerability reporting.
+- [x] Apply the two §6 rulesets, required check `compile`.
 
 ### Settings (all repos)
 
