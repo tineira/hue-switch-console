@@ -816,7 +816,7 @@ function SwitchEditor({
     }
     if (config.hold?.action === "dim") {
       notes.push({
-        text: "Hold dims whatever Click controls, up or down, alternating each time. Let go to stop.",
+        text: "Hold dims whatever Click controls: it goes down and up in a loop (up first when the light is low) until you let go.",
       });
     }
     if (!boot && !holdOffAvailable(config) && !config.hold) {

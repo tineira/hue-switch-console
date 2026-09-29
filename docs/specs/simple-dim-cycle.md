@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Replaces the ramp rules in `docs/specs/finished/simple-hold-dim.md` §2.3. The recipe, the target and the release `stop` stay the same.
 
-**Status:** approved
+**Status:** in progress (Simple 0.7.0 released; waiting for the user's board test)
 
 ## 1. What and why
 
@@ -76,7 +76,8 @@ Rate: one command every 3.4 s at most while held, well under the Bridge's limit 
 ### Console (`hue-switch-console`)
 
 - [x] No code change. `docs/definitions.md` and `docs/device-api.md` updated per §2.3, noting that Simple < 0.7.0 ramps one way.
-- [ ] No console changelog entry (the change reaches `/changelog` through the Simple firmware notes).
+- [x] Editor note for Hold → Dim and the landing demo describe the cycle (PR `dim-cycle-copy`, merged once 0.7.0 is released).
+- [x] No console changelog entry (the change reaches `/changelog` through the Simple firmware notes).
 
 ### Round (`hue-round-switch`)
 
@@ -84,14 +85,14 @@ No change.
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `kDimSweepMs` → 3000; add `kDimDwellMs`, `kDimMaxHoldMs`, `kDimUpBelow`.
-- [ ] `channelDimStart`: first direction per §2.2 step 2; leg duration from the distance (`hueDimStart` takes the duration).
-- [ ] Turn-around legs scheduled while held, without blocking other channels or the Hue worker; cancelled on release.
-- [ ] 30 s cap.
-- [ ] Remove `DimRuntime.lastUp`.
-- [ ] `FIRMWARE_VERSION` → `0.7.0`.
-- [ ] `CHANGELOG.md` entry (user-facing wording, e.g. "Hold to dim now goes down and up in a loop until you let go, and moves at the same speed from any level").
-- [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.7.0.
+- [x] `kDimSweepMs` → 3000; add `kDimDwellMs`, `kDimMaxHoldMs`, `kDimUpBelow`.
+- [x] `channelDimStart`: first direction per §2.2 step 2; leg duration from the distance (`hueDimStart` takes the duration).
+- [x] Turn-around legs scheduled while held, without blocking other channels or the Hue worker; cancelled on release.
+- [x] 30 s cap.
+- [x] Remove `DimRuntime.lastUp`.
+- [x] `FIRMWARE_VERSION` → `0.7.0`.
+- [x] `CHANGELOG.md` entry (user-facing wording, e.g. "Hold to dim now goes down and up in a loop until you let go, and moves at the same speed from any level").
+- [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.7.0.
 - [ ] Tested on a board by the user: hold at 70 % (goes down, then up, then down); release mid-leg stops there; release during the pause at full stays at full; hold from off (turns on at 1 %, goes up); hold at 20 % (goes up first); hold at 40 % (goes down first); whole room and one light; a hold longer than 30 s stops by itself.
 
 ### Cleanup
