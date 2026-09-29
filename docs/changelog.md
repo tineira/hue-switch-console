@@ -12,6 +12,8 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-29
 
+- **Setup shows which console a board will talk to** before **Link to console** saves the key ("This board will talk to https://hue.tineira.com"). If the board was set up for a different console, Setup says so and asks before moving it here with **Move to this console**.
+- **For people who run a console: self-hosting.** Setup now points boards at your own console instead of hue.tineira.com. It uses `DEVICE_CONSOLE_URL`, else `BETTER_AUTH_URL`, else the address of the Setup page.
 - If your Hue Bridge briefly reports no lights when a switch checks in, the console keeps the rooms, lights and scenes it already had, so the pickers on Switches no longer go empty until the next good check-in.
 - The console starts in the light **Paper** theme. If your phone or computer is set to dark mode it starts in **Ember**, and a theme you picked yourself stays as it was.
 - **New icon and link preview.** The browser tab shows a small Round screen instead of the placeholder icon, and so does the icon on an iPhone home screen. Links shared in WhatsApp, iMessage, Slack or X show the Round with "Build a wall switch for your Hue lights." on the light theme.

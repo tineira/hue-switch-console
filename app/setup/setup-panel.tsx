@@ -37,7 +37,12 @@ import {
   type ManifestStatus,
 } from "@/lib/web-setup/manifest";
 import {
-  PRODUCT_CONSOLE_URL,
+  consoleMove,
+  isLoopbackConsole,
+  moveConfirmText,
+  resolveDeviceConsoleUrl,
+} from "@/lib/console-url";
+import {
   PRODUCTS,
   usbKeyName,
   type ProductId,
@@ -45,6 +50,7 @@ import {
 } from "@/lib/web-setup/products";
 import { BytePort, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
 import {
+  type ReactNode,
   useEffect,
   useEffectEvent,
   useRef,
@@ -212,7 +218,7 @@ function ActionRow({
   primary,
 }: {
   label: string;
-  hint: string;
+  hint: ReactNode;
   onClick: () => void;
   disabled: boolean;
   primary?: boolean;
@@ -248,8 +254,9 @@ const CHECK_ICON: Record<CheckState, { mark: string; className: string; sr: stri
 };
 
 // revoked: the board's last key was revoked. replacing: a new key was saved here and the
-// board has not checked in with it yet.
-type ConsoleLookup = "found" | "missing" | "error" | "revoked" | "replacing";
+// board has not checked in with it yet. elsewhere: the board talks to another console's host
+// (docs/specs/self-hosting.md §5 decision 2).
+type ConsoleLookup = "found" | "missing" | "error" | "revoked" | "replacing" | "elsewhere";
 
 // Automatic rereads after Detect, on the already-open port (reopening resets the Round).
 const RECHECK_TRIES = 3;
@@ -283,9 +290,11 @@ function liveChecks(
       : consoleLookup === "found" && !consoleQuiet
         ? "done"
         : "warn";
-  // Waiting can fix these; the todo rows need the user.
+  // Waiting can fix these; the todo rows need the user. Waiting does not bring back a board
+  // that talks to another console.
   const settling =
-    (wifiSaved && wifiState !== "done") || (linked && consoleState === "warn");
+    (wifiSaved && wifiState !== "done") ||
+    (linked && consoleState === "warn" && consoleLookup !== "elsewhere");
   return { seenMin, wifiSaved, wifiState, linked, consoleQuiet, consoleState, settling };
 }
 
@@ -307,6 +316,7 @@ function SetupChecklist({
   importantCount,
   lastSeenAt,
   consoleLookup,
+  otherConsole,
   switchHref,
   recheck,
 }: {
@@ -318,6 +328,8 @@ function SetupChecklist({
   importantCount: number;
   lastSeenAt: string | null;
   consoleLookup: ConsoleLookup;
+  // Host of the other console this board talks to, when consoleLookup is "elsewhere".
+  otherConsole: string | null;
   switchHref: string | null;
   recheck: Recheck;
 }) {
@@ -367,7 +379,9 @@ function SetupChecklist({
       state: consoleState,
       text: !linked
         ? "Not linked"
-        : consoleLookup === "revoked"
+        : consoleLookup === "elsewhere"
+          ? `Linked to another console · ${otherConsole ?? huesta.url}`
+          : consoleLookup === "revoked"
           ? "Key revoked · the console rejects this board"
           : consoleLookup === "replacing"
             ? "New key saved · waiting for the board to check in with it"
@@ -394,6 +408,8 @@ function SetupChecklist({
           : "Wi-Fi is still not connected. Check the network name and password with Change Wi-Fi below."
         : !linked
           ? "Link the board to the console with Link to console below."
+          : consoleLookup === "elsewhere"
+            ? `This board talks to ${otherConsole ?? "another console"}. To manage it here, use Move to this console below.`
           : consoleState === "error"
             ? "This board's key was revoked on API keys. Give it a new one with Replace console key below."
           : !huesta.key
@@ -510,19 +526,32 @@ function SetupChecklist({
   );
 }
 
+function pageOriginSnapshot() {
+  return window.location.origin;
+}
+
 export function SetupPanel({
   expected,
   releaseNotes,
+  configuredConsoleUrl,
 }: {
   // The switch a "Update to x" link came from (`/setup?mac=`), when this account has it.
   expected: { mac: string; name: string } | null;
   releaseNotes: Record<ProductId, FirmwareNotes[]>;
+  // DEVICE_CONSOLE_URL, else BETTER_AUTH_URL; null means "the origin of this page".
+  configuredConsoleUrl: string | null;
 }) {
   const blocked = useSyncExternalStore(
     subscribeNoop,
     webSerialBlockedReason,
     () => null,
   );
+  const pageOrigin = useSyncExternalStore(subscribeNoop, pageOriginSnapshot, () => null);
+  // What Link to console writes with HUESET url (docs/specs/self-hosting.md §2.1).
+  const deviceConsoleUrl = resolveDeviceConsoleUrl({
+    deviceConsoleUrl: configuredConsoleUrl,
+    pageOrigin,
+  });
   const [detected, setDetected] = useState<Detected | null>(null);
   const [panel, setPanel] = useState<Panel>("none");
   const [busy, setBusy] = useState(false);
@@ -969,6 +998,14 @@ export function SetupPanel({
       setError("Detect the device again.");
       return;
     }
+    const target = deviceConsoleUrl;
+    if (!target) {
+      setError("This console does not know its own address. Set DEVICE_CONSOLE_URL.");
+      return;
+    }
+    // A board set up for another console is only moved after the person says so (§5 decision 2).
+    const move = consoleMove(detected?.huesta?.url, target);
+    if (move.kind === "move" && !window.confirm(moveConfirmText(move.from, target))) return;
     setBusy(true);
     setError(null);
     setStatus("Saving device token…");
@@ -977,7 +1014,7 @@ export function SetupPanel({
         usbKeyName({ mac: detected?.huesta?.mac, productId }),
       );
       try {
-        await writeConsoleNvs(session, token, PRODUCT_CONSOLE_URL);
+        await writeConsoleNvs(session, token, target);
       } catch (err) {
         throw new Error(
           `${errorMessage(err)} The key was created; revoke it on API keys if this device did not save it.`,
@@ -1125,7 +1162,14 @@ export function SetupPanel({
     (count, release) => count + release.items.filter((item) => item.important).length,
     0,
   );
-  const consoleLookup: ConsoleLookup = detected?.consoleRecord
+  const boardMove =
+    detected?.huesta?.token && deviceConsoleUrl
+      ? consoleMove(detected.huesta.url, deviceConsoleUrl)
+      : null;
+  const otherConsole = boardMove?.kind === "move" ? boardMove.from : null;
+  const consoleLookup: ConsoleLookup = otherConsole
+    ? "elsewhere"
+    : detected?.consoleRecord
     ? detected.consoleRecord.keyRevoked
       ? replacedKeyMac === detected.huesta?.mac
         ? "replacing"
@@ -1276,6 +1320,7 @@ export function SetupPanel({
               importantCount={importantCount}
               lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
               consoleLookup={consoleLookup}
+              otherConsole={otherConsole}
               switchHref={
                 detected.consoleRecord && detected.huesta.mac
                   ? `/switches/${detected.huesta.mac}`
@@ -1476,16 +1521,35 @@ export function SetupPanel({
                   label={
                     busy && status === "Saving device token…"
                       ? "Saving…"
-                      : detected.huesta?.token
-                        ? "Replace console key"
-                        : "Link to console"
+                      : otherConsole
+                        ? "Move to this console"
+                        : detected.huesta?.token
+                          ? "Replace console key"
+                          : "Link to console"
                   }
-                  disabled={Boolean(blocked) || busy}
+                  disabled={Boolean(blocked) || busy || !deviceConsoleUrl}
                   onClick={() => void runToken()}
                   hint={
-                    detected.huesta?.token
-                      ? "Make a new key for this board. Only needed if the old one was revoked."
-                      : "Make a key for this board and save it, so it can talk to the console."
+                    <>
+                      {otherConsole
+                        ? `It talks to ${otherConsole} now. Make a key here and point it at this console.`
+                        : detected.huesta?.token
+                          ? "Make a new key for this board. Only needed if the old one was revoked."
+                          : "Make a key for this board and save it, so it can talk to the console."}{" "}
+                      {deviceConsoleUrl ? (
+                        <>
+                          This board will talk to{" "}
+                          <span className="font-mono text-xs text-foreground">{deviceConsoleUrl}</span>.
+                          {isLoopbackConsole(deviceConsoleUrl) ? (
+                            <span className="text-warn">
+                              {" "}
+                              A board can&apos;t reach this address. Set DEVICE_CONSOLE_URL to this
+                              computer&apos;s LAN address first.
+                            </span>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </>
                   }
                 />
               ) : null}

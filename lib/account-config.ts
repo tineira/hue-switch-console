@@ -1,5 +1,7 @@
 // Env-driven settings for accounts (docs/specs/finished/multi-user-accounts.md §2.10).
 
+import { HOSTED_CONSOLE_URL, normalizeOrigin, resolveDeviceConsoleUrl } from "@/lib/console-url";
+
 /**
  * An env var with surrounding whitespace removed, or undefined when empty. Values pasted or
  * piped into a dashboard often end with a newline, which breaks keys sent to other services
@@ -125,4 +127,21 @@ export function waitlistEmailsPerDay(): number {
 
 export function publicUrl(): string | null {
   return envValue("BETTER_AUTH_URL")?.replace(/\/$/, "") || null;
+}
+
+/**
+ * The console URL Setup writes to boards, as far as the server knows it: DEVICE_CONSOLE_URL, else
+ * BETTER_AUTH_URL. Null when neither is set; Setup then uses the origin of its own page
+ * (docs/specs/self-hosting.md §2.1).
+ */
+export function configuredDeviceConsoleUrl(): string | null {
+  return resolveDeviceConsoleUrl({
+    deviceConsoleUrl: envValue("DEVICE_CONSOLE_URL"),
+    publicUrl: publicUrl(),
+  });
+}
+
+/** True on the hosted console (hue.tineira.com), which shows its own Privacy text and branding. */
+export function isHostedConsole(): boolean {
+  return normalizeOrigin(publicUrl()) === HOSTED_CONSOLE_URL;
 }

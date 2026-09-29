@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes". Decision D6 in `docs/specs/open-source-launch.md`.
 
-**Status:** approved 2026-09-29 by the user (all §5 questions decided). Implementation waits for the user's go (`docs/specs/open-items-plan.md`).
+**Status:** approved 2026-09-29 by the user (all §5 questions decided); console implementation in progress (`docs/specs/open-items-plan.md` workstream B).
 
 ## 1. What and why
 
@@ -59,15 +59,15 @@ The README gets a "Self-hosting" section with options A and B, `DEVICE_CONSOLE_U
 
 ### Console (`hue-switch-console`)
 
-- [ ] `DEVICE_CONSOLE_URL` with its fallback chain; `/setup` writes it and shows it before provisioning (§2.1)
-- [ ] `docs/device-api.md` "Host and TLS" updated in the same commit
+- [x] `DEVICE_CONSOLE_URL` with its fallback chain; `/setup` writes it and shows it before provisioning (§2.1)
+- [x] `docs/device-api.md` "Host and TLS" updated in the same commit
 - [ ] Metadata, sitemap and robots use `publicUrl()` (§2.5)
 - [ ] Release notes endpoint and `scripts/import-firmware.mjs` (§2.3)
 - [ ] `docs/self-hosting.md` step-by-step guide (Postgres, env vars, deploy, options A and B, pointing boards at the console, firmware import, fork CI); the README keeps a short "Self-hosting" section that links to it (§2.4)
-- [ ] Setup compares the board's stored console host (`HUEGET` `url`) with this console and asks before moving it (§5 decision 2)
+- [x] Setup compares the board's stored console host (`HUEGET` `url`) with this console and asks before moving it (§5 decision 2)
 - [ ] Privacy page: hosted text only on `https://hue.tineira.com`, a short generic page elsewhere; no hosted host name in the Open Graph image (§5 decision 5)
-- [ ] `.env.example` lists `DEVICE_CONSOLE_URL`
-- [ ] Hosted console: `DEVICE_CONSOLE_URL` set on Vercel (Claude does it through the Vercel connector)
+- [x] `.env.example` lists `DEVICE_CONSOLE_URL`
+- [x] Hosted console: `DEVICE_CONSOLE_URL` set on Vercel (Production, 2026-09-29, by Claude)
 - [ ] Deployed; checked on production (Setup shows `https://hue.tineira.com`)
 - [ ] Tested by the user: one board provisioned from a local console over option B
 
