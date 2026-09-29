@@ -45,14 +45,14 @@ Taken by the user on 2026-09-27, following Claude's recommendations.
 
 ### Before going public (all repos)
 
-- [ ] Run a full-history secret scan with `gitleaks detect` on each repo. The 2026-09-26 check was pattern-based only.
-- [ ] Read through committed docs for things not meant to be public. Candidates: `docs/problems.md` (internal session notes), `docs/archive/`, and the house-specific examples in `docs/specs/finished/`.
-- [ ] `SECURITY.md` in each repo: report through GitHub private vulnerability reporting. Supported: the production console and the current firmware release of each product. In scope: device tokens, sign-in, the upload endpoint, the USB installer.
+- [x] Run a full-history secret scan with gitleaks on each repo. Done 2026-09-29 with gitleaks 8.30.1 over all branches: no leaks (console 247 commits, Round 60, Simple 52). No `.env`, `config.h` or `hue-lights.md` was ever committed.
+- [ ] Read through committed docs for things not meant to be public. Checked 2026-09-29: IDs, IPs and MACs in the docs are placeholders or private LAN examples, `docs/archive/` is only the old Supabase config, and the firmware docs are clean. Left to decide: `docs/problems.md` is an internal session log (agent pane map, "captain" notes) and lists known open weaknesses (firmware upload token also publishes, invite race).
+- [x] `SECURITY.md` in each repo (2026-09-29): report through GitHub private vulnerability reporting. Supported: the production console and the current firmware release of each product. In scope: device tokens, sign-in, the upload endpoint, the USB installer.
 - [x] `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, contact `conduct@tineira.com`), 2026-09-27.
-- [ ] `.github/dependabot.yml`: `npm` in the console, and `github-actions` in all three. Weekly, grouped.
+- [x] `.github/dependabot.yml`: `npm` in the console, and `github-actions` in all three. Weekly, grouped (npm majors get their own PR). 2026-09-29.
 - [x] D1 settled: no CLA or sign-off; `CONTRIBUTING.md` says so.
-- [ ] Vercel: confirm Git fork protection is on, so a fork's pull request does not get a preview deployment with production env vars without approval.
-- [ ] Repo descriptions and topics (`philips-hue`, `esp32`, `arduino`, `nextjs`, `home-automation`).
+- [x] Vercel: confirm Git fork protection is on, so a fork's pull request does not get a preview deployment with production env vars without approval. Confirmed on 2026-09-29.
+- [x] Repo descriptions and topics (`philips-hue`, `esp32`, `arduino`, `nextjs`, `home-automation`).
 
 ### Console (`hue-switch-console`)
 
