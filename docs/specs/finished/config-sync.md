@@ -262,7 +262,7 @@ Status, in this order:
 
 ### Cleanup
 
-- [ ] None required; `rev` stays optional (§3)
+- [x] None required; `rev` stays optional (§3)
 
 ## 6. Open questions
 

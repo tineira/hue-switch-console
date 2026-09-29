@@ -206,7 +206,7 @@ No change.
 
 ### Cleanup
 
-- [ ] Simple firmware drops the old-payload fallback (after the console deploy).
+- [ ] Simple firmware drops the old-payload fallback (after the console deploy). Tracked in https://github.com/tineira/hue-simple-switch/issues/28; do it with the next Simple change that ships a release.
 
 ## 5. Open questions
 
