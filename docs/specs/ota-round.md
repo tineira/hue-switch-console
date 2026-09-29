@@ -78,9 +78,9 @@ Port Simple's `ota.h` into the Round tree (shared per chip family, never across 
 - [x] Update screen with progress ring (§4.2 step 4)
 - [x] Heap logged during a download; numbers recorded in §7
 - [x] Before merging: debug build ahead of 0.5.32 → **Downgrade** on Switches downloads, writes and restarts into 0.5.32 with settings kept
-- [ ] `FIRMWARE_VERSION` → 0.6.0; `CHANGELOG.md` entry (user-facing wording)
-- [ ] Release uploaded; `/firmware/round/manifest.json` shows 0.6.0
-- [ ] User flashes 0.6.0 by USB
+- [x] `FIRMWARE_VERSION` → 0.6.0; `CHANGELOG.md` entry (user-facing wording)
+- [x] Release uploaded; `/firmware/round/manifest.json` shows 0.6.0
+- [x] User flashes 0.6.0 by USB
 - [ ] 0.6.1 released; user presses **Update now**: the update screen shows, the Round restarts on 0.6.1, and Switches shows it current with a fresh check-in
 - [ ] Cancel before the next check-in: nothing downloads
 - [ ] Power cut during a download: the Round comes back on the old firmware, Switches shows the update failed, and the retry after an hour (or after a restart) succeeds
