@@ -191,8 +191,9 @@ in the admin log. `POST /api/firmware/<product>/current`, which used to do this
 with the upload token, now answers `410 gone`.
 
 Upload a local build (a folder with the four bins) with
-`scripts/upload-firmware.mjs <product> <dir> --version x.y.z --notes <file>`. It
-waits in `/admin` like a CI upload.
+`scripts/upload-firmware.mjs <product> <dir> --version x.y.z --notes <file> [--credits <file>]`,
+where `--credits` is the firmware repo's `THIRD_PARTY.json`. It waits in `/admin` like a CI
+upload.
 
 ### When it breaks
 
