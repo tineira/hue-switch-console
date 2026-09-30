@@ -1,18 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  DEFAULT_THEME,
-  systemTheme,
-  THEME_STORAGE_KEY,
-  THEMES,
-  isThemeId,
-  type ThemeId,
-} from "@/app/themes";
-
-function applyTheme(id: ThemeId) {
-  document.documentElement.setAttribute("data-theme", id);
-}
+import { DEFAULT_THEME, THEMES, applyTheme, chooseTheme, currentTheme, type ThemeId } from "@/app/themes";
 
 function SwatchGrid({
   title,
@@ -70,8 +59,7 @@ export function ThemePicker() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    const id = isThemeId(stored) ? stored : systemTheme();
+    const id = currentTheme();
     // localStorage exists only after hydration; reading it in the initial state would mismatch the server render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(id);
@@ -102,8 +90,7 @@ export function ThemePicker() {
 
   function choose(id: ThemeId) {
     setTheme(id);
-    applyTheme(id);
-    localStorage.setItem(THEME_STORAGE_KEY, id);
+    chooseTheme(id);
   }
 
   const current = THEMES.find((item) => item.id === theme) ?? THEMES[0];

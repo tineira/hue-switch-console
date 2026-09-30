@@ -2,6 +2,13 @@ export const THEME_STORAGE_KEY = "hsw-theme";
 
 export const THEMES = [
   {
+    id: "slate",
+    name: "Slate",
+    blurb: "Blue-gray, orange · default",
+    group: "dark",
+    colors: ["#0b0e13", "#131820", "#ff9f1c", "#e9edf3"],
+  },
+  {
     id: "ember",
     name: "Ember",
     blurb: "Charcoal, copper",
@@ -65,6 +72,13 @@ export const THEMES = [
     colors: ["#071018", "#0d1b28", "#38bdf8", "#dceef8"],
   },
   {
+    id: "slate-light",
+    name: "Slate Light",
+    blurb: "Cool white, orange · default",
+    group: "light",
+    colors: ["#f3f5f8", "#ffffff", "#b85209", "#141a24"],
+  },
+  {
     id: "paper",
     name: "Paper",
     blurb: "Cream, filament",
@@ -123,10 +137,22 @@ export const THEMES = [
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]["id"];
+export type Scheme = "dark" | "light";
 
-// No stored choice: follow the system setting. Paper is what the server renders (and what shows without JS).
-export const DEFAULT_THEME: ThemeId = "paper";
-export const DEFAULT_DARK_THEME: ThemeId = "ember";
+// No stored choice: follow the system setting. Slate Light is what the server renders (and what shows without JS).
+export const DEFAULT_THEME: ThemeId = "slate-light";
+export const DEFAULT_DARK_THEME: ThemeId = "slate";
+
+export const DARK_THEME_IDS: string[] = THEMES.filter((theme) => theme.group === "dark").map((theme) => theme.id);
+
+// The last theme chosen in each scheme, so a dark/light toggle returns to it.
+export function schemeStorageKey(scheme: Scheme) {
+  return `${THEME_STORAGE_KEY}-${scheme}`;
+}
+
+export function schemeOf(id: ThemeId): Scheme {
+  return DARK_THEME_IDS.includes(id) ? "dark" : "light";
+}
 
 export function systemTheme(): ThemeId {
   try {
@@ -138,4 +164,47 @@ export function systemTheme(): ThemeId {
 
 export function isThemeId(value: string | null): value is ThemeId {
   return THEMES.some((theme) => theme.id === value);
+}
+
+function read(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+// The stored theme, else the system default.
+export function currentTheme(): ThemeId {
+  const stored = read(THEME_STORAGE_KEY);
+  return isThemeId(stored) ? stored : systemTheme();
+}
+
+// The theme a dark/light toggle switches to: the last one used in the other scheme, else its default.
+export function oppositeTheme(id: ThemeId): ThemeId {
+  const scheme: Scheme = schemeOf(id) === "dark" ? "light" : "dark";
+  const stored = read(schemeStorageKey(scheme));
+  return isThemeId(stored) && schemeOf(stored) === scheme
+    ? stored
+    : scheme === "dark"
+      ? DEFAULT_DARK_THEME
+      : DEFAULT_THEME;
+}
+
+// data-scheme lets CSS style every dark or every light theme without listing them.
+export function applyTheme(id: ThemeId) {
+  const root = document.documentElement;
+  root.setAttribute("data-theme", id);
+  root.setAttribute("data-scheme", schemeOf(id));
+}
+
+export function chooseTheme(id: ThemeId) {
+  // Remember the theme being left too, so a choice made before per-scheme keys existed survives a toggle.
+  const previous = document.documentElement.getAttribute("data-theme");
+  applyTheme(id);
+  try {
+    if (isThemeId(previous)) localStorage.setItem(schemeStorageKey(schemeOf(previous)), previous);
+    localStorage.setItem(THEME_STORAGE_KEY, id);
+    localStorage.setItem(schemeStorageKey(schemeOf(id)), id);
+  } catch {}
 }

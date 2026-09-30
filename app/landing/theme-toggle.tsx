@@ -1,53 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { THEME_STORAGE_KEY, systemTheme } from "@/app/themes";
+import { applyTheme, chooseTheme, currentTheme, oppositeTheme, schemeOf, type ThemeId } from "@/app/themes";
 
-type LandingTheme = "ember" | "paper";
-
-function readStored(): string | null {
-  try {
-    return localStorage.getItem(THEME_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-// The signed-out home page offers only Ember and Paper. A stored theme that is not Paper
-// shows as Ember here; storage changes only when the visitor clicks the toggle.
+// The signed-out home page shows whichever theme is stored (any of them), else the system default.
+// The toggle flips dark/light: to the last theme used in the other scheme, else Slate or Slate Light.
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<LandingTheme>("ember");
+  const [theme, setTheme] = useState<ThemeId | null>(null);
 
   useEffect(() => {
-    const stored = readStored();
-    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-    const initial: LandingTheme = stored
-      ? stored === "paper"
-        ? "paper"
-        : "ember"
-      : prefersLight
-        ? "paper"
-        : "ember";
-    document.documentElement.dataset.theme = initial;
+    const id = currentTheme();
+    applyTheme(id);
     // localStorage exists only after hydration; reading it in the initial state would mismatch the server render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTheme(initial);
-    // Other pages keep the stored theme, or follow the system setting.
-    return () => {
-      document.documentElement.dataset.theme = readStored() ?? systemTheme();
-    };
+    setTheme(id);
   }, []);
 
   function toggle() {
-    const next: LandingTheme = theme === "paper" ? "ember" : "paper";
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, next);
-    } catch {}
+    const next = oppositeTheme(theme ?? currentTheme());
+    chooseTheme(next);
     setTheme(next);
   }
 
-  const label = theme === "paper" ? "Switch to dark" : "Switch to light";
+  const label = theme && schemeOf(theme) === "light" ? "Switch to dark" : "Switch to light";
   return (
     <button
       type="button"

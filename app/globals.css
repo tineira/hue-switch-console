@@ -1,6 +1,42 @@
 @import "tailwindcss";
 
 :root,
+html[data-theme="slate-light"] {
+  color-scheme: light;
+  --background: #f3f5f8;
+  --foreground: #141a24;
+  --cream: #ffffff;
+  --muted: #56627a;
+  --line: #d6dce5;
+  --filament: #b85209;
+  --filament-ink: #ffffff;
+  --filament-soft: #fbe6d4;
+  --ok: #157a3a;
+  --ok-soft: #ddf5e4;
+  --warn: #92400e;
+  --warn-soft: #fbeccf;
+  --danger: #b42318;
+  --danger-soft: #fbe3de;
+}
+
+html[data-theme="slate"] {
+  color-scheme: dark;
+  --background: #0b0e13;
+  --foreground: #e9edf3;
+  --cream: #131820;
+  --muted: #8a96a8;
+  --line: #242c38;
+  --filament: #ff9f1c;
+  --filament-ink: #1a1206;
+  --filament-soft: #2e2210;
+  --ok: #6fd3a0;
+  --ok-soft: #10241c;
+  --warn: #f5c451;
+  --warn-soft: #2a2410;
+  --danger: #f47a72;
+  --danger-soft: #2e1a1c;
+}
+
 html[data-theme="paper"] {
   color-scheme: light;
   --background: #f3eee4;
@@ -308,22 +344,14 @@ html[data-theme="phosphor"] {
 }
 
 /* Switch colours on Lights: oklch(var(--switch-l) var(--switch-c) <hue by switch index>)
-   (docs/specs/finished/design_handoff_lights_map/README.md). Lighter on dark themes; keep this
-   list in step with the dark group in app/themes.ts. */
+   (docs/specs/finished/design_handoff_lights_map/README.md). Lighter on dark themes; data-scheme
+   comes from the theme's group in app/themes.ts. */
 :root {
   --switch-l: 0.56;
   --switch-c: 0.15;
 }
 
-html[data-theme="ember"],
-html[data-theme="graphite"],
-html[data-theme="night"],
-html[data-theme="ink"],
-html[data-theme="plum"],
-html[data-theme="matrix"],
-html[data-theme="nord"],
-html[data-theme="dracula"],
-html[data-theme="ocean"] {
+html[data-scheme="dark"] {
   --switch-l: 0.76;
   --switch-c: 0.13;
 }
@@ -726,10 +754,10 @@ option {
 .lv-part-text { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms ease; }
 .lv-part-text[data-open] { grid-template-rows: 1fr; }
 .lv-part-text > * { min-height: 0; overflow: hidden; }
-/* Landing offers Ember and Paper only; any other stored theme shows as Ember. */
-.lv-only-paper { display: none; }
-[data-theme="paper"] .lv-only-paper { display: block; }
-[data-theme="paper"] .lv-only-ember { display: none; }
+/* Pre-rendered Round placeholders: one per scheme, whatever the theme. */
+.lv-only-dark { display: none; }
+[data-scheme="dark"] .lv-only-dark { display: block; }
+[data-scheme="dark"] .lv-only-light { display: none; }
 
 /* "It's live" hint: two rings on the screen outline. */
 .lv-pulse {

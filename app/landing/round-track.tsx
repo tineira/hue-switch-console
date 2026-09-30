@@ -51,12 +51,12 @@ function stepAt(p: number, tryMode: boolean): Step {
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Pre-rendered first frame (reduced motion: the finished frame) shown until WebGL draws.
-function Placeholder({ theme }: { theme: "ember" | "paper" }) {
+function Placeholder({ scheme }: { scheme: "dark" | "light" }) {
   return (
-    <picture className={`lv-only-${theme}`}>
-      <source media="(prefers-reduced-motion: reduce)" srcSet={`/landing/round-final-${theme}.png`} />
+    <picture className={`lv-only-${scheme}`}>
+      <source media="(prefers-reduced-motion: reduce)" srcSet={`/landing/round-final-${scheme}.png`} />
       <img
-        src={`/landing/round-first-${theme}.png`}
+        src={`/landing/round-first-${scheme}.png`}
         alt=""
         fetchPriority="high"
         className="absolute inset-0 h-full w-full object-contain"
@@ -337,8 +337,8 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                 <Room on={r.on} level={r.level} scene={page.scenes[r.scene]} hidden={!lit} lamp={false} />
                 {ready ? null : (
                   <div aria-hidden="true">
-                    <Placeholder theme="ember" />
-                    <Placeholder theme="paper" />
+                    <Placeholder scheme="dark" />
+                    <Placeholder scheme="light" />
                   </div>
                 )}
                 <canvas ref={lineRef} aria-hidden="true" className="absolute inset-0 block h-full w-full" />

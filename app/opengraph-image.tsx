@@ -3,13 +3,13 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { isHostedConsole } from "@/lib/account-config";
 
-// Link preview for every page (GitHub, X, chat apps). Paper theme colors from globals.css; the
+// Link preview for every page (GitHub, X, chat apps). Slate Light theme colors from globals.css; the
 // switch is the landing page's Round demo (Living, Sunset) in its Ember screen theme.
 export const alt = "Hue Switch Console: build a Wi-Fi wall switch for your Philips Hue lights";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const PAPER = { bg: "#f3eee4", ink: "#1c1814", muted: "#6e675c", line: "#e0d4c4", filament: "#c45c26" };
+const SLATE_LIGHT = { bg: "#f3f5f8", ink: "#141a24", muted: "#56627a", line: "#d6dce5", filament: "#b85209" };
 const SCREEN = { ink: "#eee8e0", fill: "#a54a00", accent: "#ff9e00", track: "#313131" };
 
 // Switch drawn in a 400 × 400 box. Angles run clockwise from 12 o'clock.
@@ -87,12 +87,12 @@ export default async function OpengraphImage() {
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 72px 0 80px",
-          background: PAPER.bg,
-          color: PAPER.ink,
+          background: SLATE_LIGHT.bg,
+          color: SLATE_LIGHT.ink,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", width: 600 }}>
-          <div style={{ fontFamily: "Geist Mono", fontSize: 22, letterSpacing: 3, color: PAPER.muted }}>
+          <div style={{ fontFamily: "Geist Mono", fontSize: 22, letterSpacing: 3, color: SLATE_LIGHT.muted }}>
             HUE SWITCH CONSOLE
           </div>
           <div
@@ -107,8 +107,8 @@ export default async function OpengraphImage() {
           >
             Build a wall switch for your Hue lights.
           </div>
-          <div style={{ marginTop: 36, height: 2, width: 520, background: PAPER.line }} />
-          <div style={{ marginTop: 28, fontFamily: "Geist Mono", fontSize: 24, color: PAPER.filament }}>
+          <div style={{ marginTop: 36, height: 2, width: 520, background: SLATE_LIGHT.line }} />
+          <div style={{ marginTop: 28, fontFamily: "Geist Mono", fontSize: 24, color: SLATE_LIGHT.filament }}>
             {isHostedConsole() ? "hue.tineira.com · free and open source" : "Free and open source"}
           </div>
         </div>
