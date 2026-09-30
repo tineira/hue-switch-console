@@ -136,7 +136,9 @@ const SIMPLE_PARTS: Part[] = [
   },
   {
     name: "The switches already in your wall",
-    text: "Toggle switches or push buttons, plus a few wires. The setup guide shows the wiring.",
+    text: "Toggle switches or push buttons, plus a few wires. The build guide shows what to buy and how to wire them.",
+    href: "/how-to?product=simple#build",
+    linkLabel: "Build guide →",
   },
 ];
 

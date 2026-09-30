@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { BuildSection } from "@/app/how-to/build-section";
 import { StateVisual } from "@/app/how-to/visuals";
 import { Rich } from "@/app/rich-text";
 import {
@@ -418,8 +419,8 @@ export function HowToGuide({
       <section className="flex max-w-2xl flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">How-to</h1>
         <p className="text-sm text-muted">
-          Set up a switch, change what it does, and read what it&apos;s telling you. Pick your
-          switch and the guide shows only what applies to it.
+          Build a switch, set it up, change what it does, and read what it&apos;s telling you.
+          Pick your switch and the guide shows only what applies to it.
         </p>
       </section>
 
@@ -432,6 +433,7 @@ export function HowToGuide({
         >
           <p className={`mb-1.5 ${GROUP_LABEL}`}>On this page</p>
           {[
+            ["#build", "Build it"],
             ["#setup", "Set up a switch"],
             ["#tasks", "Everyday tasks"],
             ["#status", round ? "Reading the screen" : "Reading the LED"],
@@ -449,6 +451,7 @@ export function HowToGuide({
 
         {/* Keyed by product so the task list and status selection reset on a switch. */}
         <div key={product} className="flex min-w-0 max-w-2xl flex-1 flex-col gap-14">
+          <BuildSection product={product} />
           <SetupSection product={product} version={version} />
           <TasksSection product={product} />
           <StatusSection product={product} version={version} />

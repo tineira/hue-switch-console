@@ -2,7 +2,7 @@
 
 Console spec. No device contract change. Process: `AGENTS.md` → "Cross-repo changes" (only the checklist part applies: the Simple firmware repo gets a README link).
 
-**Status:** draft
+**Status:** in progress
 
 ## 1. What and why
 

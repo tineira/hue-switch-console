@@ -304,6 +304,14 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                   active={step === i + 1 || step === "wake"}
                 />
               ))}
+              <PartRow
+                n="→"
+                name="Put it together"
+                text="What to buy and how the three parts plug together, no soldering."
+                href="/how-to?product=round#assemble"
+                linkLabel="Build guide →"
+                dim={tryMode}
+              />
               {noGL ? null : (
                 <PartRow
                   n="→"

@@ -1,7 +1,8 @@
 // Numbered parts list used by the Round story, the Round list on phones and the Simple card.
 // No hooks, so server and client components can both render it.
 
-export type Part = { name: string; text: string; href?: string };
+// `href` is a shop by default; a site path ("/…") opens here, labelled by `linkLabel`.
+export type Part = { name: string; text: string; href?: string; linkLabel?: string };
 
 export const CARD_LABEL =
   "flex justify-between gap-3 px-[18px] py-3.5 font-mono text-[11px] uppercase tracking-[0.06em] text-muted";
@@ -12,6 +13,7 @@ export function PartRow({
   name,
   text,
   href,
+  linkLabel,
   active = false,
   dim = false,
   open = false,
@@ -46,9 +48,13 @@ export function PartRow({
           ) : (
             <span className="text-[15px] font-semibold">{name}</span>
           )}
-          {href ? (
+          {href?.startsWith("/") ? (
+            <a href={href} className="text-sm text-filament hover:underline">
+              {linkLabel ?? "Guide →"}
+            </a>
+          ) : href ? (
             <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm text-filament hover:underline">
-              seeedstudio.com ↗
+              {linkLabel ?? "seeedstudio.com ↗"}
             </a>
           ) : null}
         </div>

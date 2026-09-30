@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-30
 
+- **Build guides.** How-to now starts with **Build it**: what to buy and how it goes together. The Round gets a shopping list and three assembly steps, no soldering. The Simple has three ways to build it: try it with BOOT alone, a button box on USB-C (wired one input at a time, with drawings, what never to connect, and whether you need resistors), or our board inside the wall behind your existing switch (what your wall box needs, what changes in the wiring, and the installation order for your electrician). The home page links to it.
 - **Remove a switch or a Bridge.** A switch's details (the ⓘ button on Switches) have **Remove from console**: its settings leave the console, its key is revoked, and it stops counting toward your 25 switches. The board keeps working on the LAN with what it saved; Link to console on Setup adds it back. A Bridge with no switches left has **Remove this Bridge**. How-to's "Retire a lost or given-away board" uses it.
 - For people who run a console: the Overview's **Needs you** section only appears when something does.
 - For people who run a console: Overview notices about bounced emails and refused boards have **Dismiss**. They stay hidden until a new bounce or refusal comes in; the Emails number still counts every bounce in 30 days.
