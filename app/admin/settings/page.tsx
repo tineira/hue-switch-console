@@ -12,7 +12,7 @@ export const metadata = {
   title: "Settings · Admin",
 };
 
-// What an admin sets rarely, and the numbers behind it (docs/specs/admin-tabs.md §2).
+// What an admin sets rarely, and the numbers behind it (docs/specs/finished/admin-tabs.md §2).
 export default async function AdminSettingsPage() {
   const admin = await requireAdmin();
   const settings = await readSettings();

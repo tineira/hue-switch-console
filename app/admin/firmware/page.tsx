@@ -10,7 +10,7 @@ export const metadata = {
   title: "Firmware · Admin",
 };
 
-// What /setup installs and Switches offers, and what the switches run (docs/specs/admin-tabs.md §2).
+// What /setup installs and Switches offers, and what the switches run (docs/specs/finished/admin-tabs.md §2).
 export default async function AdminFirmwarePage() {
   const admin = await requireAdmin();
   const [roundReleases, simpleReleases, fleet, waiting] = await Promise.all([

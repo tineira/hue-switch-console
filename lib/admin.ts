@@ -205,7 +205,7 @@ export async function deleteAccountById(userId: string): Promise<string | null> 
   return email;
 }
 
-/** Counts for the admin tab row (docs/specs/admin-tabs.md §2). */
+/** Counts for the admin tab row (docs/specs/finished/admin-tabs.md §2). */
 export async function adminTabCounts(): Promise<{ accounts: number; waiting: number }> {
   const rows = await sql()`
     select (select count(*)::int from users) as accounts,

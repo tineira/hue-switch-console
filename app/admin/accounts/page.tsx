@@ -29,7 +29,7 @@ export const metadata = {
 const BASE = "/admin/accounts";
 
 // Who gets in and who is in: the waitlist queue, the accounts, and invites
-// (docs/specs/admin-tabs.md §2).
+// (docs/specs/finished/admin-tabs.md §2).
 export default async function AdminAccountsPage({
   searchParams,
 }: {

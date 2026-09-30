@@ -18,7 +18,7 @@ const FILTERS = [
 
 type Filter = (typeof FILTERS)[number][0];
 
-// Who did what, newest first (docs/specs/admin-tabs.md §2).
+// Who did what, newest first (docs/specs/finished/admin-tabs.md §2).
 export default async function AdminActivityPage({
   searchParams,
 }: {

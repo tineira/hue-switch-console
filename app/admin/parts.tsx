@@ -8,7 +8,7 @@ import { listStoredReleases, type StoredRelease } from "@/lib/firmware";
 import type { FleetRow } from "@/lib/fleet";
 import type { ProductId } from "@/lib/web-setup/products";
 
-// What the admin tabs share (docs/specs/admin-tabs.md).
+// What the admin tabs share (docs/specs/finished/admin-tabs.md).
 
 // Free-tier yardsticks (docs/specs/finished/multi-user-accounts.md §2.11): one board at the
 // 900 s idle poll makes about 2,900 calls a month; Vercel Hobby allows 1,000,000; Neon Free 0.5 GB.
