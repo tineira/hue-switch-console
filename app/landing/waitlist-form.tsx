@@ -1,18 +1,13 @@
 "use client";
 
-import Script from "next/script";
-import { useActionState, useState, type FormEvent, type MouseEvent } from "react";
+import { useActionState, type MouseEvent } from "react";
 import { joinWaitlistAction, type SimpleState } from "@/app/login/actions";
-import { Turnstile } from "@/app/login/login-form";
+import { Turnstile, useTurnstileOnDemand } from "@/app/login/login-form";
 
 const FORM_ID = "waitlist";
 const EMAIL_ID = "waitlist-email";
-const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
-/**
- * "Join the waitlist" in the landing hero. The Turnstile script and widget load only once someone
- * starts filling it in, so visitors who only read the page never load Cloudflare's check.
- */
+/** "Join the waitlist" in the landing hero; the bot check loads once someone starts filling it in. */
 export function LandingWaitlistForm({
   turnstileSiteKey,
   inputClassName,
@@ -23,8 +18,7 @@ export function LandingWaitlistForm({
   buttonClassName: string;
 }) {
   const [state, action, pending] = useActionState<SimpleState, FormData>(joinWaitlistAction, undefined);
-  const [armed, setArmed] = useState(false);
-  const [hint, setHint] = useState<string | null>(null);
+  const check = useTurnstileOnDemand(turnstileSiteKey, "Join the waitlist");
 
   if (state?.done) {
     return (
@@ -34,29 +28,13 @@ export function LandingWaitlistForm({
     );
   }
 
-  // A submit before the check has produced a token (autofill, then a click) would only fail on
-  // the server; show the check instead and let them press again.
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    if (!turnstileSiteKey) return;
-    if (new FormData(event.currentTarget).get("cf-turnstile-response")) {
-      setHint(null);
-      return;
-    }
-    event.preventDefault();
-    setArmed(true);
-    setHint("Finish the check below, then press Join the waitlist again.");
-  };
-
   return (
     <form
       id={FORM_ID}
       action={action}
-      onSubmit={onSubmit}
-      onFocus={() => setArmed(true)}
-      onPointerDown={() => setArmed(true)}
+      {...check.formProps}
       className="flex w-full max-w-[460px] scroll-mt-24 flex-col gap-3"
     >
-      {armed && turnstileSiteKey ? <Script src={TURNSTILE_SRC} strategy="afterInteractive" /> : null}
       <div className="flex flex-wrap gap-2.5">
         <label htmlFor={EMAIL_ID} className="sr-only">
           Email
@@ -74,10 +52,10 @@ export function LandingWaitlistForm({
           {pending ? "Sending…" : "Join the waitlist"}
         </button>
       </div>
-      {armed ? <Turnstile siteKey={turnstileSiteKey} resetOn={state} /> : null}
-      {state?.error || hint ? (
+      {check.armed ? <Turnstile siteKey={turnstileSiteKey} resetOn={state} /> : null}
+      {check.hint || state?.error ? (
         <p className="text-sm text-danger" role="alert">
-          {state?.error ?? hint}
+          {check.hint ?? state?.error}
         </p>
       ) : null}
     </form>

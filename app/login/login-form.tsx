@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import Script from "next/script";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   joinWaitlistAction,
   passwordLogin,
@@ -28,10 +29,13 @@ declare global {
   }
 }
 
+const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+
 /**
  * Cloudflare Turnstile, rendered explicitly once this form is on screen (a widget drawn inside
- * a closed <details> never produces a token). It adds cf-turnstile-response to the form, and
- * resets whenever `resetOn` changes, because a token works only once.
+ * a closed <details> never produces a token). It loads Cloudflare's script itself, adds
+ * cf-turnstile-response to the form, and resets whenever `resetOn` changes, because a token
+ * works only once.
  */
 export function Turnstile({ siteKey, resetOn }: { siteKey: string | null; resetOn?: unknown }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -64,7 +68,35 @@ export function Turnstile({ siteKey, resetOn }: { siteKey: string | null; resetO
   }, [resetOn]);
 
   if (!siteKey) return null;
-  return <div ref={ref} />;
+  return (
+    <>
+      <Script src={TURNSTILE_SRC} strategy="afterInteractive" />
+      <div ref={ref} />
+    </>
+  );
+}
+
+/**
+ * Turnstile on demand: the check loads only once someone starts filling in the form, so people
+ * who sign in with Google or GitHub, or only read the page, never load it. A submit before the
+ * check has produced a token (autofill, then a click) would only fail on the server, so it shows
+ * the check instead and asks for another press.
+ */
+export function useTurnstileOnDemand(siteKey: string | null, buttonLabel: string) {
+  const [armed, setArmed] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
+  const arm = () => setArmed(true);
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    if (!siteKey) return;
+    if (new FormData(event.currentTarget).get("cf-turnstile-response")) {
+      setHint(null);
+      return;
+    }
+    event.preventDefault();
+    setArmed(true);
+    setHint(`Finish the check below, then press ${buttonLabel} again.`);
+  };
+  return { armed, hint, formProps: { onFocus: arm, onPointerDown: arm, onSubmit } };
 }
 
 function ErrorText({ text }: { text?: string }) {
@@ -93,6 +125,7 @@ export function CodeForm({
       formData.get("intent") === "verify" ? verifyCode(prev, formData) : sendCode(prev, formData),
     { step: "email" },
   );
+  const check = useTurnstileOnDemand(turnstileSiteKey, "Email me a code");
 
   if (state.step === "code") {
     return (
@@ -132,7 +165,7 @@ export function CodeForm({
   }
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} {...check.formProps} className="flex flex-col gap-4">
       <input type="hidden" name="intent" value="send" />
       <NextInput next={next} />
       <label className="flex flex-col gap-1 text-sm">
@@ -146,8 +179,8 @@ export function CodeForm({
           className={INPUT}
         />
       </label>
-      <Turnstile siteKey={turnstileSiteKey} resetOn={state} />
-      <ErrorText text={state.error} />
+      {check.armed ? <Turnstile siteKey={turnstileSiteKey} resetOn={state} /> : null}
+      <ErrorText text={check.hint ?? state.error} />
       <button type="submit" disabled={pending} className={BUTTON}>
         {pending ? "Sending…" : "Email me a code"}
       </button>
@@ -184,17 +217,18 @@ export function PasswordForm({ next = "/" }: { next?: string }) {
 
 export function WaitlistForm({ turnstileSiteKey }: { turnstileSiteKey: string | null }) {
   const [state, action, pending] = useActionState<SimpleState, FormData>(joinWaitlistAction, undefined);
+  const check = useTurnstileOnDemand(turnstileSiteKey, "Join the waitlist");
   if (state?.done) {
     return <p className="text-sm text-muted">{state.done}</p>;
   }
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} {...check.formProps} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">Email</span>
         <input name="email" type="email" autoComplete="email" required className={INPUT} />
       </label>
-      <Turnstile siteKey={turnstileSiteKey} resetOn={state} />
-      <ErrorText text={state?.error} />
+      {check.armed ? <Turnstile siteKey={turnstileSiteKey} resetOn={state} /> : null}
+      <ErrorText text={check.hint ?? state?.error} />
       <button type="submit" disabled={pending} className={BUTTON}>
         {pending ? "Sending…" : "Join the waitlist"}
       </button>

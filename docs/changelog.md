@@ -13,6 +13,7 @@ The console has no version number. Each heading is the day the change went live.
 ### 2026-09-30
 
 - **Join the waitlist from the home page.** The home page takes your email address right under the headline instead of sending you to the sign-in page, and says you're on the list without leaving the page. The bot check appears only once you start typing. The **Join the waitlist** button at the bottom of the page brings you back to that form.
+- **No bot check for Google or GitHub.** The sign-in page no longer shows Cloudflare's "Verify you are human" box to everyone. It appears only once you start typing in the email sign-in or waitlist form, so signing in with Google or GitHub never loads it.
 
 ### 2026-09-29
 

@@ -1,5 +1,4 @@
 import { cookies } from "next/headers";
-import Script from "next/script";
 import { signInWithProvider } from "@/app/login/actions";
 import { CodeForm, PasswordForm, WaitlistPanel } from "@/app/login/login-form";
 import { ThemePicker } from "@/app/theme-picker";
@@ -73,12 +72,6 @@ export default async function LoginPage({
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-16">
-      {siteKey ? (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          strategy="afterInteractive"
-        />
-      ) : null}
       <div className="flex justify-end">
         <ThemePicker />
       </div>
