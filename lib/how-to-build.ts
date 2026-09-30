@@ -453,7 +453,7 @@ export const WALL_INSTALL: InstallStep[] = [
     body: "Permanent live to **L** on J1, neutral to **N**. Earth stays joined to the box's other earth wires, not to the board.",
     who: "electrician",
     more: "#wire-it",
-    pic: { illo: "wall-mains", alt: "Live from the joined lever connector to L on the board, and neutral from the neutral connector to N." },
+    pic: { illo: "wall-mains", alt: "Live from the joined lever connector to L on the board, and neutral from the neutral connector to N; the two violet switch wires already on D0 and GND lead out toward the switch." },
   },
   {
     title: "Fit the enclosure",
@@ -465,7 +465,7 @@ export const WALL_INSTALL: InstallStep[] = [
     title: "Check before power",
     body: "Confirm that no switch wire touches mains anywhere, with a continuity tester if needed. If one does, the board and its USB port would be at mains voltage.",
     who: "electrician",
-    pic: { illo: "wall-check", alt: "The finished wiring with a Checked badge on the switch wires." },
+    pic: { illo: "wall-check", alt: "The finished wiring in the box, with a Checked badge on the violet switch wires leading out toward the switch." },
   },
   {
     title: "Breaker on, and test",
@@ -487,7 +487,7 @@ export const WALL_BEFORE: Pic = {
 
 export const WALL_AFTER: Pic = {
   illo: "wall-mains",
-  alt: "After: the lamp's live joined to the permanent live, the board at the back of the box on live and neutral, and the switch wired to the board with low-voltage wires.",
+  alt: "After: the lamp's live joined to the permanent live, the board at the back of the box on live and neutral, and two violet low-voltage wires from the board out to the switch.",
 };
 
 export function buildSummary(product: Product): string {
