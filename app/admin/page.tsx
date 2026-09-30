@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   decideRequestAction,
   deleteAccountAction,
@@ -20,7 +21,15 @@ import {
   signupMode,
   waitlistEmailsPerDay,
 } from "@/lib/account-config";
-import { fleetCounts, LIMIT_KEYS, listAccounts, PAGE_SIZE, SORTS, type SortKey } from "@/lib/admin";
+import {
+  fleetCounts,
+  LIMIT_KEYS,
+  listAccounts,
+  PAGE_SIZE,
+  SORTS,
+  type AdminAccountRow,
+  type SortKey,
+} from "@/lib/admin";
 import { CONSOLE_ACTOR, FIRMWARE_CI_ACTOR, listAdminEvents, type AdminEvent } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth";
 import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
@@ -194,6 +203,84 @@ function FleetTable({ rows }: { rows: FleetRow[] }) {
   );
 }
 
+const PANEL_TITLE = "text-[10px] font-medium uppercase tracking-[0.14em] text-muted";
+
+// The detail row under an account: suspend, limits and delete side by side. Admin accounts get
+// limits only; suspend and delete are refused for them on the server too (admin-tools §2.2).
+function ManagePanel({
+  account: a,
+  isAdmin,
+  isSelf,
+  defaults,
+}: {
+  account: AdminAccountRow;
+  isAdmin: boolean;
+  isSelf: boolean;
+  defaults: Record<(typeof LIMIT_KEYS)[number], number>;
+}) {
+  return (
+    <div className="grid gap-5 rounded-lg border border-line bg-background p-4 md:grid-cols-3">
+      {isAdmin ? null : (
+        <div className="flex flex-col gap-2">
+          <h3 className={PANEL_TITLE}>{a.suspended ? "Suspended" : "Suspend"}</h3>
+          <SuspendForm id={a.id} suspended={a.suspended} />
+        </div>
+      )}
+      <form action={limitsAction} className="flex flex-col gap-2 text-xs">
+        <h3 className={PANEL_TITLE}>Limits</h3>
+        <input type="hidden" name="id" value={a.id} />
+        <input type="hidden" name="email" value={a.email} />
+        <div className="grid grid-cols-2 gap-2">
+          {LIMIT_KEYS.map((key) => (
+            <label key={key} className="flex flex-col gap-1">
+              <span>
+                {LIMIT_LABELS[key]}
+                {key === "snapshotKb" ? null : <span className="text-muted"> · uses {a[key]}</span>}
+              </span>
+              <input
+                name={key}
+                type="number"
+                min={1}
+                defaultValue={a.limits[key] ?? ""}
+                placeholder={String(defaults[key])}
+                className={INPUT}
+              />
+            </label>
+          ))}
+        </div>
+        <span className="text-muted">Empty means the console default.</span>
+        <button className={`${SMALL_BUTTON} self-start`}>Save limits</button>
+      </form>
+      {isAdmin ? (
+        <div className="flex flex-col gap-2 text-xs md:col-span-2">
+          <h3 className={PANEL_TITLE}>Suspend and delete</h3>
+          <p className="text-muted">
+            {isSelf ? "This is your account, an admin account." : "This is an admin account."} Admin
+            accounts can&apos;t be suspended or deleted here. Remove the address from{" "}
+            <code>ADMIN_EMAILS</code> first.
+          </p>
+        </div>
+      ) : (
+        <form
+          action={deleteAccountAction}
+          className="flex flex-col gap-2 text-xs md:border-l md:border-line md:pl-5"
+        >
+          <h3 className={`${PANEL_TITLE} text-danger`}>Delete account</h3>
+          <p className="text-muted">
+            Removes the account with its switches, Bridges, keys and settings. It can&apos;t be undone.
+          </p>
+          <input type="hidden" name="id" value={a.id} />
+          <input type="hidden" name="email" value={a.email} />
+          <input name="confirm" placeholder="Type the email to delete" className={INPUT} />
+          <button className="self-start rounded-md border border-danger px-2 py-1 text-xs text-danger">
+            Delete account
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function pageNumber(value: string | string[] | undefined): number {
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : 1;
@@ -241,6 +328,8 @@ export default async function AdminPage({
       : "all"
   ) as InviteState;
   const invitePage = pageNumber(params.ipage);
+  // The account whose Manage row is open (an id from the list, never trusted beyond matching it).
+  const manage = typeof params.manage === "string" ? params.manage.slice(0, 64) : "";
 
   // Every link keeps the rest of the page's state (search, sort, filters, pages).
   function adminHref(changes: Record<string, string | null>) {
@@ -253,6 +342,7 @@ export default async function AdminPage({
       page: String(page),
       invites: inviteFilter,
       ipage: String(invitePage),
+      manage,
     };
     for (const [key, value] of Object.entries({ ...current, ...changes })) {
       const isDefault =
@@ -598,84 +688,68 @@ export default async function AdminPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {accounts.rows.map((a) => (
-                <tr key={a.id} className="align-top">
-                  <td className="px-2 py-2">{a.email}</td>
-                  <td className="px-2 py-2 text-muted">{signInMethodLabels(a.methods).join(", ") || "none"}</td>
-                  <td className="px-2 py-2">{day(a.created_at)}</td>
-                  <td className="px-2 py-2">{day(a.last_login_at)}</td>
-                  <td className="px-2 py-2">{a.switches}</td>
-                  <td className="px-2 py-2">{a.bridges}</td>
-                  <td className="px-2 py-2">{day(a.last_board_seen)}</td>
-                  <td className="px-2 py-2">
-                    {a.suspended ? (
-                      <span className="text-danger">suspended</span>
-                    ) : a.dormant ? (
-                      "dormant"
-                    ) : (
-                      "active"
-                    )}
-                    {a.suspended && (a.ban_reason || a.ban_expires) ? (
-                      <p className="text-xs text-muted">
-                        {[a.ban_reason, a.ban_expires ? `until ${day(a.ban_expires)}` : null]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
+              {accounts.rows.map((a) => {
+                const open = manage === a.id;
+                const isAdmin = isAdminEmail(a.email);
+                return (
+                  <Fragment key={a.id}>
+                    <tr id={`account-${a.id}`} className={`scroll-mt-6 align-top ${open ? "bg-cream" : ""}`}>
+                    <td className="px-2 py-2">{a.email}</td>
+                    <td className="px-2 py-2 text-muted">{signInMethodLabels(a.methods).join(", ") || "none"}</td>
+                    <td className="px-2 py-2">{day(a.created_at)}</td>
+                    <td className="px-2 py-2">{day(a.last_login_at)}</td>
+                    <td className="px-2 py-2">{a.switches}</td>
+                    <td className="px-2 py-2">{a.bridges}</td>
+                    <td className="px-2 py-2">{day(a.last_board_seen)}</td>
+                    <td className="px-2 py-2">
+                      {a.suspended ? (
+                        <span className="text-danger">suspended</span>
+                      ) : a.dormant ? (
+                        "dormant"
+                      ) : (
+                        "active"
+                      )}
+                      {a.suspended && (a.ban_reason || a.ban_expires) ? (
+                        <p className="text-xs text-muted">
+                          {[a.ban_reason, a.ban_expires ? `until ${day(a.ban_expires)}` : null]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      ) : null}
+                      {a.refused ? (
+                        <p className="text-xs text-danger">
+                          Register refused {day(a.refused.at)}: {a.refused.reason}
+                        </p>
+                      ) : null}
+                    </td>
+                      <td className="whitespace-nowrap px-2 py-2 text-xs">
+                        {a.id === admin.id ? <span className="mr-2 text-muted">you</span> : null}
+                        {a.id !== admin.id && isAdmin ? <span className="mr-2 text-muted">admin</span> : null}
+                        <Link
+                          href={`${adminHref({ manage: open ? null : a.id })}#account-${a.id}`}
+                          scroll={false}
+                          aria-expanded={open}
+                          className="hover:underline"
+                        >
+                          {open ? "▾ Close" : "▸ Manage"}
+                        </Link>
+                      </td>
+                    </tr>
+                    {open ? (
+                      <tr className="bg-cream">
+                        <td colSpan={9} className="px-2 pb-4">
+                          <ManagePanel
+                            account={a}
+                            isAdmin={isAdmin}
+                            isSelf={a.id === admin.id}
+                            defaults={defaults}
+                          />
+                        </td>
+                      </tr>
                     ) : null}
-                    {a.refused ? (
-                      <p className="text-xs text-danger">
-                        Register refused {day(a.refused.at)}: {a.refused.reason}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td className="px-2 py-2">
-                    {a.id === admin.id ? (
-                      <span className="text-xs text-muted">you</span>
-                    ) : isAdminEmail(a.email) ? (
-                      <span className="text-xs text-muted">admin</span>
-                    ) : (
-                      <details>
-                        <summary className="cursor-pointer text-xs">Manage</summary>
-                        <div className="mt-2 flex w-64 flex-col gap-3">
-                          <SuspendForm id={a.id} suspended={a.suspended} />
-                          <form action={limitsAction} className="grid grid-cols-2 gap-1 text-xs">
-                            <input type="hidden" name="id" value={a.id} />
-                            <input type="hidden" name="email" value={a.email} />
-                            {LIMIT_KEYS.map((key) => (
-                              <label key={key} className="flex flex-col">
-                                <span>
-                                  {LIMIT_LABELS[key]}
-                                  {key === "snapshotKb" ? null : (
-                                    <span className="text-muted"> · uses {a[key]}</span>
-                                  )}
-                                </span>
-                                <input
-                                  name={key}
-                                  type="number"
-                                  min={1}
-                                  defaultValue={a.limits[key] ?? ""}
-                                  placeholder={String(defaults[key])}
-                                  className={INPUT}
-                                />
-                              </label>
-                            ))}
-                            <span className="col-span-2 text-muted">Empty means the console default.</span>
-                            <button className={`${SMALL_BUTTON} col-span-2`}>Save limits</button>
-                          </form>
-                          <form action={deleteAccountAction} className="flex flex-col gap-1 text-xs">
-                            <input type="hidden" name="id" value={a.id} />
-                            <input type="hidden" name="email" value={a.email} />
-                            <input name="confirm" placeholder="Type the email to delete" className={INPUT} />
-                            <button className="rounded-md border border-danger px-2 py-1 text-xs text-danger">
-                              Delete account
-                            </button>
-                          </form>
-                        </div>
-                      </details>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
