@@ -52,6 +52,23 @@ export async function revokeInviteAction(formData: FormData) {
 }
 
 /**
+ * A new link for an open invite without an address: only a hash of the old link is stored, so
+ * the old one cannot be shown again. The replacement is shown once, and the old one revoked.
+ */
+export async function replaceInviteAction(_prev: InviteState, formData: FormData): Promise<InviteState> {
+  const admin = await requireAdmin();
+  const old = await getInvite(String(formData.get("id")));
+  if (!old || old.email || old.used_at || old.revoked_at) return { error: "This invite is no longer open." };
+  if (new Date(old.expires_at).getTime() < Date.now()) return { error: "This invite has expired." };
+  const { code } = await createInvite({ email: null, createdBy: admin.id });
+  await revokeInvite(old.id);
+  await recordAdminEvent({ adminEmail: admin.email, action: "invite_create", target: code.slice(0, 8) });
+  await recordAdminEvent({ adminEmail: admin.email, action: "invite_revoke", target: old.code_prefix });
+  revalidatePath("/admin");
+  return { link: `${await origin()}/login?invite=${code}` };
+}
+
+/**
  * Emails an open invite that is tied to an address. Only a hash of the old link is stored, so
  * a new invite is created and sent, and the old one revoked once the email is out.
  */

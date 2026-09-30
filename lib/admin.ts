@@ -1,4 +1,5 @@
 import { isAdminEmail } from "@/lib/account-config";
+import type { FleetCount } from "@/lib/fleet";
 import { sql } from "@/lib/sql";
 
 // /admin queries (docs/specs/finished/multi-user-accounts.md §2.7, docs/specs/finished/admin-tools.md).
@@ -14,6 +15,8 @@ export type AdminAccountRow = {
   last_login_at: string | null;
   switches: number;
   bridges: number;
+  /** Active (not revoked) device API keys. */
+  keys: number;
   last_board_seen: string | null;
   /** Suspended now: set, and no end date or one still ahead. */
   suspended: boolean;
@@ -46,6 +49,8 @@ const ACCOUNTS = `
     select user_id, count(*)::int as n, max(last_seen_at) as seen from switches group by user_id
   ), br as (
     select user_id, count(*)::int as n from bridges group by user_id
+  ), ks as (
+    select user_id, count(*)::int as n from device_api_keys where revoked_at is null group by user_id
   ), am as (
     select user_id, array_agg(provider_id order by provider_id) as methods from accounts group by user_id
   ), base as (
@@ -54,12 +59,14 @@ const ACCOUNTS = `
       coalesce(am.methods, '{}') as methods,
       coalesce(sw.n, 0) as switches,
       coalesce(br.n, 0) as bridges,
+      coalesce(ks.n, 0) as keys,
       sw.seen as last_board_seen,
       (u.banned and (u.ban_expires is null or u.ban_expires > now())) as suspended,
       (coalesce(sw.n, 0) = 0 and coalesce(u.last_login_at, u.created_at) < now() - interval '60 days') as dormant
     from users u
     left join sw on sw.user_id = u.id
     left join br on br.user_id = u.id
+    left join ks on ks.user_id = u.id
     left join am on am.user_id = u.id
     where $1 = '' or u.email ilike '%' || $1 || '%'
   )`;
@@ -110,6 +117,7 @@ export async function listAccounts(input: {
         last_login_at: iso(r.last_login_at),
         switches: Number(r.switches),
         bridges: Number(r.bridges),
+        keys: Number(r.keys),
         last_board_seen: seen,
         suspended: Boolean(r.suspended),
         ban_reason: (r.ban_reason as string | null) ?? null,
@@ -126,6 +134,28 @@ export async function listAccounts(input: {
     dormant: c.dormant,
     total: c.total,
   };
+}
+
+/** Switches per product and reported firmware, across every account (B1 in the review plan). */
+export async function fleetCounts(): Promise<Record<"round" | "simple", FleetCount[]>> {
+  const rows = await sql()`
+    select product, firmware, count(*)::int as switches,
+      count(*) filter (where last_seen_at is null or last_seen_at < now() - interval '24 hours')::int as quiet,
+      count(*) filter (where ota_error is not null and ota_error_at > now() - interval '7 days')::int as ota_failed
+    from switches
+    group by product, firmware
+  `;
+  const out: Record<"round" | "simple", FleetCount[]> = { round: [], simple: [] };
+  for (const r of rows as Record<string, unknown>[]) {
+    const product = r.product === "round" ? "round" : "simple";
+    out[product].push({
+      firmware: (r.firmware as string | null) || null,
+      switches: Number(r.switches),
+      quiet: Number(r.quiet),
+      otaFailed: Number(r.ota_failed),
+    });
+  }
+  return out;
 }
 
 async function emailOf(userId: string): Promise<string | null> {

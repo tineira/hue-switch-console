@@ -8,6 +8,7 @@ import {
   revokeInviteAction,
 } from "@/app/admin/actions";
 import { CreateInviteForm } from "@/app/admin/create-invite-form";
+import { ReplaceInviteForm } from "@/app/admin/replace-invite-form";
 import { SuspendForm } from "@/app/admin/suspend-form";
 import { WaitlistSettingsForm } from "@/app/admin/waitlist-settings-form";
 import { Shell } from "@/app/shell";
@@ -19,12 +20,14 @@ import {
   signupMode,
   waitlistEmailsPerDay,
 } from "@/lib/account-config";
-import { LIMIT_KEYS, listAccounts, PAGE_SIZE, SORTS, type SortKey } from "@/lib/admin";
-import { listAdminEvents, type AdminEvent } from "@/lib/audit";
+import { fleetCounts, LIMIT_KEYS, listAccounts, PAGE_SIZE, SORTS, type SortKey } from "@/lib/admin";
+import { CONSOLE_ACTOR, FIRMWARE_CI_ACTOR, listAdminEvents, type AdminEvent } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth";
 import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
 import { emailsSentToday, waitlistEmailsSentToday } from "@/lib/email";
-import { listStoredReleases } from "@/lib/firmware";
+import { listStoredReleases, type StoredRelease } from "@/lib/firmware";
+import { fleetRows, type FleetRow } from "@/lib/fleet";
+import type { ProductId } from "@/lib/web-setup/products";
 import { INVITE_STATES, inviteState, listInvites, type InviteState } from "@/lib/signup";
 import {
   deliveryProblems,
@@ -60,6 +63,21 @@ function percent(part: number, whole: number): string {
   return `${Math.round((part / whole) * 100)}%`;
 }
 
+const LIMIT_LABELS: Record<(typeof LIMIT_KEYS)[number], string> = {
+  switches: "Switches",
+  bridges: "Bridges",
+  keys: "API keys",
+  snapshotKb: "Snapshot KB",
+};
+
+const SECTIONS = [
+  ["waitlist", "Waitlist"],
+  ["invites", "Invites"],
+  ["firmware", "Firmware"],
+  ["accounts", "Accounts"],
+  ["activity", "Activity"],
+] as const;
+
 const SMALL_BUTTON = "rounded-md border border-line px-2 py-1 text-xs hover:border-filament";
 const INPUT = "rounded-md border border-line bg-background px-2 py-1 text-xs";
 
@@ -79,6 +97,13 @@ const EVENT_LABELS: Record<AdminEvent["action"], string> = {
   waitlist_remove: "removed from the waitlist",
   settings: "changed the waitlist settings",
   firmware_current: "made current",
+  waitlist_auto_admit: "admitted from the waitlist",
+  firmware_upload: "uploaded",
+};
+
+const ACTORS: Record<string, string> = {
+  [CONSOLE_ACTOR]: "The console",
+  [FIRMWARE_CI_ACTOR]: "Firmware CI",
 };
 
 function eventDetails(e: AdminEvent): string {
@@ -92,7 +117,81 @@ function eventDetails(e: AdminEvent): string {
     return entries.length ? entries.map(([k, v]) => `${k} ${v}`).join(", ") : "defaults";
   }
   if (e.action === "settings") return `${d.mode}, cap ${d.cap ?? "none"}`;
+  if (e.action === "firmware_upload") return d.current ? "current, first release" : "waiting";
   return "";
+}
+
+function ReleaseRow({ product, release: r }: { product: ProductId; release: StoredRelease }) {
+  return (
+    <li className="flex items-center gap-3 py-1.5">
+      <span className="font-mono text-xs">{r.version}</span>
+      <span className="text-xs text-muted">{day(r.createdAt)}</span>
+      {r.waiting ? (
+        <span className="rounded-full bg-warn-soft px-2 py-px text-[11px] font-medium text-warn">
+          waiting
+        </span>
+      ) : null}
+      <span className="ml-auto text-xs">
+        {r.current ? (
+          <span className="font-medium">current</span>
+        ) : r.hasBins ? (
+          <form action={makeCurrentAction}>
+            <input type="hidden" name="product" value={product} />
+            <input type="hidden" name="version" value={r.version} />
+            <button className={SMALL_BUTTON}>Make current</button>
+          </form>
+        ) : (
+          <span className="text-muted">notes only</span>
+        )}
+      </span>
+    </li>
+  );
+}
+
+const RELATION_TEXT: Record<FleetRow["relation"], string> = {
+  current: "current",
+  older: "older",
+  newer: "newer than current",
+  unknown: "",
+};
+
+// Which firmware the switches run, across every account. An old path in the device API goes only
+// once no switch runs an older version (AGENTS.md, "Cross-repo changes").
+function FleetTable({ rows }: { rows: FleetRow[] }) {
+  if (rows.length === 0) return <p className="text-xs text-muted">No switches yet.</p>;
+  return (
+    <table className="w-full text-xs">
+      <thead className="text-muted">
+        <tr>
+          <th className="py-1 text-left font-medium">Running</th>
+          <th className="py-1 text-right font-medium">Switches</th>
+          <th className="py-1 text-right font-medium" title="Not seen for 24 hours, or never">
+            Quiet 24 h
+          </th>
+          <th className="py-1 text-right font-medium" title="An update failed in the last 7 days">
+            Update failed
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-line">
+        {rows.map((row) => (
+          <tr key={row.firmware ?? "none"} className={row.relation === "older" ? "text-warn" : undefined}>
+            <td className="py-1">
+              <span className="font-mono">{row.firmware ?? "not reported"}</span>
+              {RELATION_TEXT[row.relation] ? (
+                <span className="ml-2 text-muted">{RELATION_TEXT[row.relation]}</span>
+              ) : null}
+            </td>
+            <td className="py-1 text-right">{row.switches}</td>
+            <td className="py-1 text-right">{row.quiet || "—"}</td>
+            <td className={`py-1 text-right ${row.otaFailed ? "text-danger" : ""}`}>
+              {row.otaFailed || "—"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 function pageNumber(value: string | string[] | undefined): number {
@@ -184,6 +283,7 @@ export default async function AdminPage({
     roundReleases,
     simpleReleases,
     events,
+    fleet,
   ] = await Promise.all([
       listAccounts({ q, sort, desc, dormantOnly, page }),
       listPendingEntries(),
@@ -199,6 +299,7 @@ export default async function AdminPage({
       listStoredReleases("round"),
       listStoredReleases("simple"),
       listAdminEvents(50),
+      fleetCounts(),
     ]);
   const waitingReleases = [
     ...roundReleases.filter((r) => r.waiting).map((r) => ({ label: "Round", version: r.version })),
@@ -230,6 +331,13 @@ export default async function AdminPage({
           Sign-up mode: <span className="font-medium text-foreground">{mode}</span>.{" "}
           {accounts.total} {accounts.total === 1 ? "account" : "accounts"}. This page shows counts only, never recipes or topology.
         </p>
+        <nav aria-label="Sections" className="flex flex-wrap gap-2 text-xs">
+          {SECTIONS.map(([id, label]) => (
+            <a key={id} href={`#${id}`} className={SMALL_BUTTON}>
+              {label}
+            </a>
+          ))}
+        </nav>
         {waitingReleases.length > 0 ? (
           <p className="rounded-xl border border-warn/40 bg-warn-soft p-3 text-sm">
             <span className="font-medium text-warn">Firmware waiting:</span>{" "}
@@ -243,7 +351,7 @@ export default async function AdminPage({
         ) : null}
       </section>
 
-      <section className="flex flex-col gap-5 rounded-xl border border-line bg-cream p-5">
+      <section id="waitlist" className="flex scroll-mt-6 flex-col gap-5 rounded-xl border border-line bg-cream p-5">
         <h2 className="text-lg font-medium">Waitlist</h2>
         {envMode === "invite" || envMode === "waitlist" ? (
           <WaitlistSettingsForm mode={mode === "waitlist" ? "waitlist" : "invite"} cap={cap} />
@@ -332,7 +440,7 @@ export default async function AdminPage({
         ) : null}
       </section>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
+      <section id="invites" className="flex scroll-mt-6 flex-col gap-3 rounded-xl border border-line bg-cream p-5">
         <h2 className="text-lg font-medium">Invites</h2>
         {!waitlistOn ? (
           <p className="text-sm text-muted">
@@ -373,12 +481,19 @@ export default async function AdminPage({
                           <input type="hidden" name="id" value={i.id} />
                           <button className={SMALL_BUTTON}>Email invite</button>
                         </form>
-                      ) : null}
+                      ) : (
+                        <ReplaceInviteForm id={i.id} />
+                      )}
                       <form action={revokeInviteAction}>
                         <input type="hidden" name="id" value={i.id} />
                         <button className={SMALL_BUTTON}>Revoke</button>
                       </form>
                     </div>
+                  ) : state === "bounced" || state === "complained" ? (
+                    <span className="ml-auto text-xs text-muted">
+                      {state === "bounced" ? "The address bounced" : "Marked as spam"}; create a new
+                      invite if you have a corrected address.
+                    </span>
                   ) : null}
                 </li>
               );
@@ -388,56 +503,53 @@ export default async function AdminPage({
         <Pager page={invitePage} total={invites.total} href={(n) => adminHref({ ipage: String(n) })} />
       </section>
 
-      <section id="firmware" className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
+      <section id="firmware" className="flex scroll-mt-6 flex-col gap-3 rounded-xl border border-line bg-cream p-5">
         <h2 className="text-lg font-medium">Firmware</h2>
         <p className="text-sm text-muted">
           What <code>/setup</code> installs and Switches offers over Wi-Fi. A new upload from
           firmware CI <span className="font-medium text-foreground">waits here</span> until you
           make it current; until then it is not installed, offered or shown on{" "}
           <code>/changelog</code>. Make an older release current to roll back. Releases without
-          bins keep their notes only.
+          bins keep their notes only. Above each list: which firmware the switches run.
         </p>
         <div className="grid gap-5 md:grid-cols-2">
           {(
             [
-              ["round", "Round", roundReleases],
-              ["simple", "Simple", simpleReleases],
+              ["round", "Round", roundReleases, fleet.round],
+              ["simple", "Simple", simpleReleases, fleet.simple],
             ] as const
-          ).map(([product, label, releases]) => (
-            <div key={product} className="flex flex-col gap-2">
-              <h3 className="text-sm font-medium">{label}</h3>
-              <ul className="flex max-h-72 flex-col divide-y divide-line overflow-y-auto text-sm">
-                {releases.map((r) => (
-                  <li key={r.version} className="flex items-center gap-3 py-1.5">
-                    <span className="font-mono text-xs">{r.version}</span>
-                    <span className="text-xs text-muted">{day(r.createdAt)}</span>
-                    {r.waiting ? (
-                      <span className="rounded-full bg-warn-soft px-2 py-px text-[11px] font-medium text-warn">
-                        waiting
-                      </span>
-                    ) : null}
-                    <span className="ml-auto text-xs">
-                      {r.current ? (
-                        <span className="font-medium">current</span>
-                      ) : r.hasBins ? (
-                        <form action={makeCurrentAction}>
-                          <input type="hidden" name="product" value={product} />
-                          <input type="hidden" name="version" value={r.version} />
-                          <button className={SMALL_BUTTON}>Make current</button>
-                        </form>
-                      ) : (
-                        <span className="text-muted">notes only</span>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          ).map(([product, label, releases, counts]) => {
+            const shipped = releases.filter((r) => r.hasBins || r.current);
+            const notesOnly = releases.filter((r) => !r.hasBins && !r.current);
+            const current = releases.find((r) => r.current)?.version ?? null;
+            return (
+              <div key={product} className="flex flex-col gap-3">
+                <h3 className="text-sm font-medium">{label}</h3>
+                <FleetTable rows={fleetRows(counts, current)} />
+                <ul className="flex flex-col divide-y divide-line text-sm">
+                  {shipped.map((r) => (
+                    <ReleaseRow key={r.version} product={product} release={r} />
+                  ))}
+                </ul>
+                {notesOnly.length > 0 ? (
+                  <details className="text-sm">
+                    <summary className="cursor-pointer text-xs text-muted">
+                      Older releases, notes only ({notesOnly.length})
+                    </summary>
+                    <ul className="mt-1 flex max-h-72 flex-col divide-y divide-line overflow-y-auto">
+                      {notesOnly.map((r) => (
+                        <ReleaseRow key={r.version} product={product} release={r} />
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section id="accounts" className="flex scroll-mt-6 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-medium">Accounts</h2>
           <form action="/admin" className="flex gap-2">
@@ -531,7 +643,12 @@ export default async function AdminPage({
                             <input type="hidden" name="email" value={a.email} />
                             {LIMIT_KEYS.map((key) => (
                               <label key={key} className="flex flex-col">
-                                {key === "snapshotKb" ? "Snapshot KB" : key}
+                                <span>
+                                  {LIMIT_LABELS[key]}
+                                  {key === "snapshotKb" ? null : (
+                                    <span className="text-muted"> · uses {a[key]}</span>
+                                  )}
+                                </span>
                                 <input
                                   name={key}
                                   type="number"
@@ -565,8 +682,8 @@ export default async function AdminPage({
         <Pager page={page} total={accounts.matching} href={(n) => adminHref({ page: String(n) })} />
       </section>
 
-      <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-5">
-        <h2 className="text-lg font-medium">Admin activity</h2>
+      <section id="activity" className="flex scroll-mt-6 flex-col gap-3 rounded-xl border border-line bg-cream p-5">
+        <h2 className="text-lg font-medium">Activity</h2>
         {events.length === 0 ? (
           <p className="text-sm text-muted">Nothing yet.</p>
         ) : (
@@ -577,7 +694,7 @@ export default async function AdminPage({
                 <li key={e.id} className="flex flex-wrap items-baseline gap-2 py-1.5">
                   <span className="text-xs text-muted">{new Date(e.created_at).toISOString().slice(0, 16).replace("T", " ")}</span>
                   <span>
-                    {e.admin_email} {EVENT_LABELS[e.action] ?? e.action}
+                    {ACTORS[e.admin_email] ?? e.admin_email} {EVENT_LABELS[e.action] ?? e.action}
                     {e.target ? <> <span className="font-medium">{e.target}</span></> : null}
                     {details ? <span className="text-muted"> ({details})</span> : null}
                   </span>
@@ -586,7 +703,9 @@ export default async function AdminPage({
             })}
           </ul>
         )}
-        <p className="text-xs text-muted">The newest 50. Kept for a year.</p>
+        <p className="text-xs text-muted">
+          The newest 50, by admins and by the console itself. Kept for a year.
+        </p>
       </section>
     </Shell>
   );
