@@ -67,6 +67,8 @@ Four PRs, each from its own worktree off `origin/main` (AGENTS.md, "Parallel ses
 
 **Cause:** `.round-dial-name` in [app/switches/round-dial.tsx](../../app/switches/round-dial.tsx) uses CSS ellipsis at a fixed size. The limit is `PAGE_NAME_MAX = 12` ([lib/round-themes.ts:306](../../lib/round-themes.ts)), which `lib/pages.ts` validates.
 
+**Found (2026-09-30):** the board draws the name at GFX text size 2 (12 px a character) within the disc chord at `kNameY` minus 16 px, about 150 px, so 12 characters fit and only longer text would end in "." (`ui.h`, `displayTextEllipsis`). The preview's 11 px font in a 56 px box fit about 8. PR 4 sizes the preview name like the board: a 65/104 box and 8.8/104 mono.
+
 **Fix:** first, read how `hue-round-switch` draws the name (font, size, whether it shrinks, wraps or cuts off). This is read-only in its checkout, with no edits. Then make the preview do the same thing, most likely by stepping the font down so 12 characters fit, as the board does. Only if the board itself cuts names off: raise it as a Round firmware issue. Do not lower `PAGE_NAME_MAX`, which would reject names already saved (§F4).
 
 ---
