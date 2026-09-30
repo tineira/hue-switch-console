@@ -273,9 +273,9 @@ export const BOX_BUY: BuyItem[] = [
     have: true,
   },
   {
-    name: "Per input, for long wires: 10 kΩ, 1 kΩ, 10 nF",
+    name: "10 kΩ, 1 kΩ, 10 nF per input",
     pic: 4,
-    why: "Two resistors (1/4 W through-hole, any tolerance) and one ceramic capacitor. See **Do I need resistors?**",
+    why: "Only for long wires. Two resistors (1/4 W through-hole, any tolerance) and one ceramic capacitor for each input. See **Do I need resistors?**",
     optional: true,
   },
   {

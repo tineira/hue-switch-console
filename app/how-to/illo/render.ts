@@ -32,6 +32,8 @@ export type SceneDef = {
   fit?: THREE.Object3D[];
   /** Margin around the framed parts, 1 = tight. */
   pad?: number;
+  /** Callout lines wrap at this many characters (default WRAP); fewer leaves the parts more width. */
+  wrap?: number;
   notes?: Note[];
   marks?: Mark[];
 };
@@ -78,11 +80,11 @@ const BALLOON = 2 * BALLOON_R + 8;
 const WRAP = 20;
 
 // Callout text in lines of at most WRAP characters.
-function wrap(text: string): string[] {
+function wrap(text: string, max = WRAP): string[] {
   const lines: string[] = [];
   let cur = "";
   for (const word of text.split(" ")) {
-    if (cur && (cur + " " + word).length > WRAP) {
+    if (cur && (cur + " " + word).length > max) {
       lines.push(cur);
       cur = word;
     } else cur = cur ? `${cur} ${word}` : word;
@@ -181,7 +183,7 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
   const notes = (def.notes ?? []).map((n) => {
     const v = world3(n.at).applyMatrix4(cam.matrixWorldInverse);
     const side = n.side ?? (v.x < (x0 + x1) / 2 ? "left" : "right");
-    const lines = wrap(n.text);
+    const lines = wrap(n.text, def.wrap);
     return { ...n, side, lines, width: Math.max(...lines.map((l) => l.length)) * CHAR_W + 22 + (n.n ? BALLOON : 0) };
   });
   const margin = (side: string) => Math.max(0, ...notes.filter((n) => n.side === side).map((n) => n.width)) + (notes.some((n) => n.side === side) ? 14 : 0);

@@ -374,18 +374,18 @@ function hotSolder(p: V3) {
 }
 
 function simpleKitBox(): SceneDef {
-  const x = at(xiao(), 44, 0, -8);
-  const b1 = lyingButton(16, 8);
-  const b2 = lyingButton(-6, 8);
-  // One row of the list: the two resistors and the capacitor, together.
-  const r10 = at(resistor("10k"), -34, 1.2, 8);
-  const r1 = at(resistor("1k"), -34, 1.2, 2);
+  // Compact: the XIAO on the left, the buttons beside it, the per-input parts under them.
+  const x = at(xiao(), 34, 0, 0);
+  const b1 = lyingButton(10, 8);
+  const b2 = lyingButton(-10, 8);
+  const r10 = at(resistor("10k"), -2, 1.2, -18);
+  const r1 = at(resistor("1k"), -2, 1.2, -24);
   const cap = ceramicCap(5);
   cap.rotation.x = -Math.PI / 2;
-  cap.position.set(-34, 1.3, -9);
+  cap.position.set(-20, 1.3, -24);
   const wires = group(
-    wire([[56, 0.6, -26], [30, 0.6, -29], [0, 0.6, -33], [-44, 0.6, -31]], "hot", 0.6),
-    wire([[56, 0.6, -32], [28, 0.6, -35], [-2, 0.6, -39], [-44, 0.6, -37]], "switched", 0.6),
+    wire([[44, 0.6, -32], [20, 0.6, -35], [0, 0.6, -36], [-26, 0.6, -34]], "hot", 0.6),
+    wire([[44, 0.6, -38], [18, 0.6, -41], [-2, 0.6, -42], [-28, 0.6, -40]], "switched", 0.6),
   );
   const root = group(x, b1.g, b2.g, r10, r1, cap, wires);
   return {
@@ -394,9 +394,9 @@ function simpleKitBox(): SceneDef {
     pad: 1.04,
     notes: [
       balloon(1, "XIAO ESP32-C6", x, [8.9, T, 0], "left"),
-      balloon(2, "Switches or push buttons", b1.g, [0, 5.5, -4.5], "left"),
-      balloon(3, "Hook-up wire", wires, [56, 0.6, -29], "left"),
-      balloon(4, "10 kΩ, 1 kΩ, 10 nF", root, [-34, 1.2, 0], "right"),
+      balloon(2, "Switches or push buttons", b2.g, [0, 5.5, -4.5], "right"),
+      balloon(3, "Hook-up wire", wires, [44, 0.6, -35], "left"),
+      balloon(4, "10 kΩ, 1 kΩ, 10 nF per input", root, [-14, 1.2, -21], "right"),
     ],
   };
 }
@@ -929,6 +929,8 @@ function wallScene(o: WallOpts) {
 }
 
 const WALL_DIR: V3 = [0.85, 0.8, 1.0];
+// Narrow callout columns, so the box gets the width.
+const WALL_WRAP = 12;
 // Where the switch wires leave the picture when the switch isn't drawn.
 const SW_D0: V3 = [-24, 20, 18];
 const SW_GND: V3 = [-20, -16, 20];
@@ -937,17 +939,17 @@ function wallBefore(labels: boolean): SceneDef {
   const s = wallScene({ before: true, lamp: !labels });
   const notes: Note[] = labels
     ? [
-        note("Permanent live (L), from the supply", s.root, [-30, 8, 0], "left"),
-        note("Switched live, to the lamp", s.root, [-10, 6, 6], "left"),
+        note("Permanent live (L)", s.root, [-30, 8, 0], "left"),
+        note("Switched live, to lamp", s.root, [-10, 6, 6], "left"),
         note("Neutrals (N), joined", s.nConn, [0, 8, 0], "right"),
         note("Earths, joined", s.eConn, [0, 8, 0], "right"),
-        note("The wall switch, pulled out", s.mech, [0, -22, -10], "left"),
+        note("Switch, pulled out", s.mech, [0, -22, -10], "left"),
       ]
     : [
-        note("Live runs through the switch to the lamp", s.mech, [0, -22, -10], "left"),
-        note("The lamp is off when the switch is", s.lampBulb, [14, 36, 0], "right"),
+        note("Live runs through the switch", s.mech, [0, -22, -10], "left"),
+        note("Switch off, lamp off", s.lampBulb, [14, 36, 0], "right"),
       ];
-  return { root: s.root, dir: WALL_DIR, pad: 1.03, notes };
+  return { root: s.root, dir: WALL_DIR, wrap: WALL_WRAP, pad: 1.03, notes };
 }
 
 function wallLamp(): SceneDef {
@@ -955,11 +957,12 @@ function wallLamp(): SceneDef {
   return {
     root: s.root,
     dir: WALL_DIR,
+    wrap: WALL_WRAP,
     pad: 1.03,
     notes: [
-      note("Lamp's live joined to the permanent live", s.lConn!, [0, 10, 0], "right", "hot"),
+      note("Lamp's live joined to L", s.lConn!, [0, 10, 0], "right", "hot"),
       note("The lamp stays powered", s.lampBulb, [14, 36, 0], "right"),
-      note("Nothing on the switch now", s.mech, [0, 14, -24], "left"),
+      note("Switch now free", s.mech, [0, 14, -24], "left"),
     ],
     marks: [
       { kind: "cross", at: A(s.mech, MECH.l) },
@@ -973,10 +976,11 @@ function wallOffMains(): SceneDef {
   return {
     root: s.root,
     dir: WALL_DIR,
+    wrap: WALL_WRAP,
     pad: 1.03,
     notes: [
-      note("Switch wires: off mains at both ends", s.mech, [0, 14, -24], "left", "danger"),
-      note("The board goes at the back of the box", s.board!.root, [-18, 2, 0], "right"),
+      note("Off mains at both ends", s.mech, [0, 14, -24], "left", "danger"),
+      note("Board at the back", s.board!.root, [-18, 2, 0], "right"),
     ],
     marks: [{ kind: "badge", at: A(s.mech, [0, 28, -24]), text: "No L, no N", tone: "danger" }],
   };
@@ -987,11 +991,12 @@ function wallSwitches(): SceneDef {
   return {
     root: s.root,
     dir: WALL_DIR,
+    wrap: WALL_WRAP,
     pad: 1.03,
     notes: [
-      note("One switch terminal to D0", s.root, s.bw(s.board!.pts.D0), "right"),
+      note("One terminal to D0", s.root, s.bw(s.board!.pts.D0), "right"),
       note("The other to GND", s.root, s.bw(s.board!.pts.GND), "right"),
-      note("Violet: 3.3 V switch wires only", s.mech, [0, 14, -24], "left"),
+      note("Violet: 3.300a0V only", s.mech, [0, 14, -24], "left"),
     ],
   };
 }
@@ -1006,26 +1011,26 @@ function wallMains(check: boolean): SceneDef {
     : [
         note("Permanent live to L", s.root, s.bw(s.board!.pts.L), "right", "hot"),
         note("Neutral to N", s.root, s.bw(s.board!.pts.N), "right", "hot"),
-        note("Earth stays with the box's earth wires", s.eConn, [0, 8, 0], "left"),
+        note("Earth stays with earths", s.eConn, [0, 8, 0], "left"),
         note("To the switch", s.root, SW_GND, "left"),
       ];
   const marks: Mark[] = check ? [{ kind: "badge", at: A(s.root, [SW_GND[0], SW_GND[1] - 8, SW_GND[2]]), text: "Checked", tone: "ok" }] : [];
-  return { root: s.root, dir: WALL_DIR, pad: 1.03, notes, marks };
+  return { root: s.root, dir: WALL_DIR, wrap: WALL_WRAP, pad: 1.03, notes, marks };
 }
 
 function wallFit(on: boolean): SceneDef {
   const s = wallScene({ lampJoined: true, board: true, switchWires: true, mains: true, inEnclosure: true, mounted: on, lit: on, lamp: on });
   const notes: Note[] = on
     ? [
-        note("Switch back in the box, plate on", s.mech, [30, 30, 3], "left"),
-        note("Breaker on: press the switch, the lamp reacts", s.lampBulb, [14, 36, 0], "right", "ok"),
+        note("Switch back in", s.mech, [30, 30, 3], "left"),
+        note("Press: the lamp reacts", s.lampBulb, [14, 36, 0], "right", "ok"),
       ]
     : [
-        note("Enclosure at the back of the box", s.root, s.bw([-10, 8.8, -12]), "right", "hot"),
-        note("Switch goes back in front of it", s.mech, [0, -22, -10], "left"),
+        note("Enclosure at the back", s.root, s.bw([-10, 8.8, -12]), "right", "hot"),
+        note("Switch goes in front", s.mech, [0, -22, -10], "left"),
       ];
   const marks: Mark[] = on ? [{ kind: "glow", at: A(s.lampBulb, [0, 34, 0]), r: 40 }] : [];
-  return { root: s.root, dir: WALL_DIR, pad: 1.03, notes, marks };
+  return { root: s.root, dir: WALL_DIR, wrap: WALL_WRAP, pad: 1.03, notes, marks };
 }
 
 export function buildScene(id: IlloId): SceneDef {
