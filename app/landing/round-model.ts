@@ -110,11 +110,11 @@ export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolea
   add("screen_flex", box(4.2, 0.3, 8.5), std("polyimide_amber", 0xc98a2c, 0.45), -15.4, Y_PCB - 0.15, 3.0);
   add("screen_fpc_connector", box(2.6, 1.2, 8.0), M.plastic, -11.6, Y_PCB - 0.6, -4.0);
   // Brass mounting inserts.
-  for (const [x, z] of [[-15.7, 13.0], [16.4, 1.7], [-15.7, -8.6]]) {
+  for (const [x, z] of [[-12.7, 10.5], [16.4, 1.7], [-15.7, -8.6]]) {
     add("mount_insert", cyl(1.7, 1.2, 32), M.brass, x, Y_PCB - 0.6, z);
     add("mount_hole", cyl(0.9, 1.25, 32), M.plastic, x, Y_PCB - 0.6, z);
   }
-  [[4.5, 17.2], [-4.5, 17.2], [11.0, 13.5], [-11.0, 12.0], [9.5, -13.5], [-12.4, 6.8], [3.6, -2.5], [-4.0, -5.0]].forEach(
+  [[4.5, 17.2], [-4.5, 17.2], [11.0, 13.5], [-9.8, 14.0], [9.5, -13.5], [-12.4, 6.8], [3.6, -2.5], [-4.0, -5.0]].forEach(
     ([x, z], i) => add(`passive_${i + 1}`, box(1.0, 0.5, 0.5), M.ceramic, x, Y_PCB - 0.25, z),
   );
   return { root, screen };
