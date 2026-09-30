@@ -533,7 +533,7 @@ function simpleRc(): SceneDef {
   );
   root.add(r1, r10, cap);
   // Switch wire from N; GND wire from its pad, over the USB end, to G and on to the switch.
-  const END = -30;
+  const END = -14;
   root.add(wire([N, [N[0] - 0.5, Y - 0.2, pz - 3], [N[0] - 0.5, 0.8, END]], "hot", 0.6));
   root.add(
     fromPad(GND, -1, [[-11.5, 1.5, GND[2] + 3], [-11.5, 2, 15], [-8, 2.5, 25], [G[0] + 4, 2.5, 25], [G[0] + 6, 2, 22], [G[0] + 6, Y, pz + 2], [G[0] + 3, Y, pz], G], "switched", 0.6),
@@ -714,6 +714,8 @@ type WallOpts = {
   /** Switch mounted in the box instead of pulled out in front. */
   mounted?: boolean;
   lit?: boolean;
+  /** Draw the lamp at the end of its cable. */
+  lamp?: boolean;
 };
 
 // Relative position of `p` (local to `o`, a direct child of the scene root) in scene mm.
@@ -738,9 +740,11 @@ function wallScene(o: WallOpts) {
   }
   root.add(mech);
   // The lamp only where the step is about it; elsewhere its cable just leaves the picture.
-  const withLamp = Boolean(o.before || o.lit || !o.board);
-  const lampBulb = at(bulb(Boolean(o.lit)), 72, 44, -28);
+  const withLamp = Boolean(o.lamp);
+  // A pendant lamp: hanging from its cable, cap up.
+  const lampBulb = at(bulb(Boolean(o.lit)), 70, 44, -30);
   lampBulb.scale.setScalar(0.85);
+  lampBulb.rotation.z = Math.PI;
   if (withLamp) root.add(lampBulb);
 
   const w = (pts: V3[], tone: Tone, r = 0.9) => root.add(wire(pts, tone, r));
@@ -748,8 +752,8 @@ function wallScene(o: WallOpts) {
   // from this camera they don't hide the board's terminals.
   const CZ = -8;
   const sup: V3 = [-26, 30, CZ], lamp: V3 = [-12, 30, CZ];
-  root.add(wire([[sup[0], 70, CZ], [sup[0], 32.5, CZ]], "switched", 3));
-  const lampUp: V3[] = withLamp ? [[lamp[0], 58, CZ], [20, 72, CZ - 6], [72, 66, -28], [72, 48, -28]] : [[lamp[0], 70, CZ]];
+  root.add(wire([[sup[0], 52, CZ], [sup[0], 32.5, CZ]], "switched", 3));
+  const lampUp: V3[] = withLamp ? [[lamp[0], 50, CZ], [14, 62, CZ - 6], [62, 60, -28], [70, 52, -30], [70, 45, -30]] : [[lamp[0], 52, CZ]];
   root.add(wire([[lamp[0], 32.5, CZ], ...lampUp], "switched", 3));
 
   // Into a mechanism terminal (from outside), or out of it.
@@ -845,7 +849,7 @@ function wallScene(o: WallOpts) {
 const WALL_DIR: V3 = [0.85, 0.8, 1.0];
 
 function wallBefore(labels: boolean): SceneDef {
-  const s = wallScene({ before: true });
+  const s = wallScene({ before: true, lamp: !labels });
   const notes: Note[] = labels
     ? [
         note("Permanent live (L), from the supply", s.root, [-30, 8, 0], "left"),
@@ -862,7 +866,7 @@ function wallBefore(labels: boolean): SceneDef {
 }
 
 function wallLamp(): SceneDef {
-  const s = wallScene({ lampJoined: true });
+  const s = wallScene({ lampJoined: true, lamp: true });
   return {
     root: s.root,
     dir: WALL_DIR,
@@ -924,7 +928,7 @@ function wallMains(check: boolean): SceneDef {
 }
 
 function wallFit(on: boolean): SceneDef {
-  const s = wallScene({ lampJoined: true, board: true, switchWires: true, mains: true, inEnclosure: true, mounted: on, lit: on });
+  const s = wallScene({ lampJoined: true, board: true, switchWires: true, mains: true, inEnclosure: true, mounted: on, lit: on, lamp: on });
   const notes: Note[] = on
     ? [
         note("Switch back in the box, plate on", s.mech, [30, 30, 3], "left"),
