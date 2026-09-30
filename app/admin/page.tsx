@@ -159,16 +159,12 @@ export default async function AdminOverviewPage({
 
   return (
     <AdminFrame email={admin.email} active="overview">
-      <section className="flex flex-col gap-2" aria-labelledby="needs-you">
-        <h2 id="needs-you" className="text-sm font-medium text-muted">
-          Needs you
-        </h2>
-        {attention.some((a) => a.tone === "warn") ? null : (
-          <p className="rounded-xl border border-line px-4 py-3 text-sm text-muted">
-            Nothing needs you. No release waiting, nobody in line, no failed updates.
-          </p>
-        )}
-        {attention.length > 0 ? (
+      {/* Shown only when something needs the admin: an empty section is noise. */}
+      {attention.length > 0 ? (
+        <section className="flex flex-col gap-2" aria-labelledby="needs-you">
+          <h2 id="needs-you" className="text-sm font-medium text-muted">
+            Needs you
+          </h2>
           <ul className="flex flex-col gap-2">
             {attention.map((a) => (
               <li
@@ -200,8 +196,8 @@ export default async function AdminOverviewPage({
               </li>
             ))}
           </ul>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Key numbers">
         <Number_
