@@ -204,3 +204,33 @@ export async function deleteAccountById(userId: string): Promise<string | null> 
   await sql()`delete from users where id = ${userId}`;
   return email;
 }
+
+/** Counts for the admin tab row (docs/specs/admin-tabs.md §2). */
+export async function adminTabCounts(): Promise<{ accounts: number; waiting: number }> {
+  const rows = await sql()`
+    select (select count(*)::int from users) as accounts,
+      (select count(*)::int from invite_requests where status = 'pending') as waiting
+  `;
+  const r = rows[0] as { accounts: number; waiting: number };
+  return { accounts: Number(r.accounts), waiting: Number(r.waiting) };
+}
+
+/** Accounts whose last register was refused after their last board check-in, newest first. */
+export async function refusedRegisters(limit = 5): Promise<{ id: string; email: string; at: string; reason: string }[]> {
+  const rows = await sql()`
+    select u.id, u.email, u.register_refused_at as at, u.register_refused_reason as reason
+    from users u
+    left join (select user_id, max(last_seen_at) as seen from switches group by user_id) sw
+      on sw.user_id = u.id
+    where u.register_refused_at is not null
+      and (sw.seen is null or u.register_refused_at > sw.seen)
+    order by u.register_refused_at desc
+    limit ${limit}
+  `;
+  return (rows as Record<string, unknown>[]).map((r) => ({
+    id: String(r.id),
+    email: String(r.email),
+    at: new Date(r.at as string).toISOString(),
+    reason: String(r.reason ?? ""),
+  }));
+}

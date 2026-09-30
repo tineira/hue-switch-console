@@ -1,50 +1,21 @@
 import Link from "next/link";
-import { Fragment } from "react";
+import { redirect } from "next/navigation";
 import {
-  decideRequestAction,
-  deleteAccountAction,
-  emailInviteAction,
-  limitsAction,
-  makeCurrentAction,
-  revokeInviteAction,
-} from "@/app/admin/actions";
-import { CreateInviteForm } from "@/app/admin/create-invite-form";
-import { ReplaceInviteForm } from "@/app/admin/replace-invite-form";
-import { SuspendForm } from "@/app/admin/suspend-form";
-import { WaitlistSettingsForm } from "@/app/admin/waitlist-settings-form";
-import { Shell } from "@/app/shell";
-import {
-  defaultLimits,
-  emailDailyCap,
-  isAdminEmail,
-  signInMethodLabels,
-  signupMode,
-  waitlistEmailsPerDay,
-} from "@/lib/account-config";
-import {
-  fleetCounts,
-  LIMIT_KEYS,
-  listAccounts,
-  PAGE_SIZE,
-  SORTS,
-  type AdminAccountRow,
-  type SortKey,
-} from "@/lib/admin";
-import { CONSOLE_ACTOR, FIRMWARE_CI_ACTOR, listAdminEvents, type AdminEvent } from "@/lib/audit";
+  AdminFrame,
+  CALLS_PER_SWITCH_MONTH,
+  CARD,
+  EventList,
+  NEON_BYTES,
+  VERCEL_CALLS_MONTH,
+  waitingReleases,
+} from "@/app/admin/parts";
+import { emailDailyCap } from "@/lib/account-config";
+import { fleetCounts, refusedRegisters } from "@/lib/admin";
+import { listAdminEvents } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth";
 import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
-import { emailsSentToday, waitlistEmailsSentToday } from "@/lib/email";
-import { listStoredReleases, type StoredRelease } from "@/lib/firmware";
-import { fleetRows, type FleetRow } from "@/lib/fleet";
-import type { ProductId } from "@/lib/web-setup/products";
-import { INVITE_STATES, inviteState, listInvites, type InviteState } from "@/lib/signup";
-import {
-  deliveryProblems,
-  listPendingEntries,
-  loadStats,
-  seatsUsed,
-  waitlistStats,
-} from "@/lib/waitlist";
+import { emailsSentToday } from "@/lib/email";
+import { deliveryProblems, loadStats, seatsUsed, waitlistStats } from "@/lib/waitlist";
 
 export const dynamic = "force-dynamic";
 
@@ -52,735 +23,190 @@ export const metadata = {
   title: "Admin",
 };
 
-// Free-tier yardsticks (docs/specs/finished/multi-user-accounts.md §2.11): one board at the
-// 900 s idle poll makes about 2,900 calls a month; Vercel Hobby allows 1,000,000; Neon Free 0.5 GB.
-const CALLS_PER_SWITCH_MONTH = 2900;
-const VERCEL_CALLS_MONTH = 1_000_000;
-const NEON_BYTES = 512 * 1024 * 1024;
+// Links from before the tabs (/admin?q=…, ?manage=…, ?invites=…) belong to Accounts now.
+const ACCOUNT_PARAMS = ["q", "sort", "dir", "filter", "page", "manage", "invites", "ipage"];
 
-function Stat({ label, value, note }: { label: string; value: string | number; note?: string }) {
+type Attention = { text: string; href: string; action: string; tone: "warn" | "info" };
+
+function pct(part: number, whole: number): number {
+  return whole > 0 ? Math.round((part / whole) * 100) : 0;
+}
+
+function Number_({ label, value, note }: { label: string; value: string | number; note: string }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-0.5 rounded-xl border border-line bg-cream px-4 py-3">
       <span className="text-xs text-muted">{label}</span>
-      <span className="text-lg font-medium">{value}</span>
-      {note ? <span className="text-xs text-muted">{note}</span> : null}
+      <span className="text-xl font-medium">{value}</span>
+      <span className="text-xs text-muted">{note}</span>
     </div>
   );
 }
 
-function percent(part: number, whole: number): string {
-  return `${Math.round((part / whole) * 100)}%`;
-}
-
-const LIMIT_LABELS: Record<(typeof LIMIT_KEYS)[number], string> = {
-  switches: "Switches",
-  bridges: "Bridges",
-  keys: "API keys",
-  snapshotKb: "Snapshot KB",
-};
-
-const SECTIONS = [
-  ["waitlist", "Waitlist"],
-  ["invites", "Invites"],
-  ["firmware", "Firmware"],
-  ["accounts", "Accounts"],
-  ["activity", "Activity"],
-] as const;
-
-const SMALL_BUTTON = "rounded-md border border-line px-2 py-1 text-xs hover:border-filament";
-const INPUT = "rounded-md border border-line bg-background px-2 py-1 text-xs";
-
-function day(value: string | Date | null): string {
-  return value ? new Date(value).toISOString().slice(0, 10) : "—";
-}
-
-const EVENT_LABELS: Record<AdminEvent["action"], string> = {
-  suspend: "suspended",
-  unsuspend: "lifted the suspension of",
-  delete_account: "deleted",
-  limits: "set limits for",
-  invite_create: "created an invite for",
-  invite_email: "emailed an invite to",
-  invite_revoke: "revoked the invite for",
-  waitlist_admit: "admitted",
-  waitlist_remove: "removed from the waitlist",
-  settings: "changed the waitlist settings",
-  firmware_current: "made current",
-  waitlist_auto_admit: "admitted from the waitlist",
-  firmware_upload: "uploaded",
-};
-
-const ACTORS: Record<string, string> = {
-  [CONSOLE_ACTOR]: "The console",
-  [FIRMWARE_CI_ACTOR]: "Firmware CI",
-};
-
-function eventDetails(e: AdminEvent): string {
-  const d = e.details ?? {};
-  if (e.action === "suspend") {
-    const parts = [d.reason ? `“${d.reason}”` : null, d.until ? `until ${day(String(d.until))}` : null];
-    return parts.filter(Boolean).join(", ");
-  }
-  if (e.action === "limits") {
-    const entries = Object.entries(d);
-    return entries.length ? entries.map(([k, v]) => `${k} ${v}`).join(", ") : "defaults";
-  }
-  if (e.action === "settings") return `${d.mode}, cap ${d.cap ?? "none"}`;
-  if (e.action === "firmware_upload") return d.current ? "current, first release" : "waiting";
-  return "";
-}
-
-function ReleaseRow({ product, release: r }: { product: ProductId; release: StoredRelease }) {
-  return (
-    <li className="flex items-center gap-3 py-1.5">
-      <span className="font-mono text-xs">{r.version}</span>
-      <span className="text-xs text-muted">{day(r.createdAt)}</span>
-      {r.waiting ? (
-        <span className="rounded-full bg-warn-soft px-2 py-px text-[11px] font-medium text-warn">
-          waiting
-        </span>
-      ) : null}
-      <span className="ml-auto text-xs">
-        {r.current ? (
-          <span className="font-medium">current</span>
-        ) : r.hasBins ? (
-          <form action={makeCurrentAction}>
-            <input type="hidden" name="product" value={product} />
-            <input type="hidden" name="version" value={r.version} />
-            <button className={SMALL_BUTTON}>Make current</button>
-          </form>
-        ) : (
-          <span className="text-muted">notes only</span>
-        )}
-      </span>
-    </li>
-  );
-}
-
-const RELATION_TEXT: Record<FleetRow["relation"], string> = {
-  current: "current",
-  older: "older",
-  newer: "newer than current",
-  unknown: "",
-};
-
-// Which firmware the switches run, across every account. An old path in the device API goes only
-// once no switch runs an older version (AGENTS.md, "Cross-repo changes").
-function FleetTable({ rows }: { rows: FleetRow[] }) {
-  if (rows.length === 0) return <p className="text-xs text-muted">No switches yet.</p>;
-  return (
-    <table className="w-full text-xs">
-      <thead className="text-muted">
-        <tr>
-          <th className="py-1 text-left font-medium">Running</th>
-          <th className="py-1 text-right font-medium">Switches</th>
-          <th className="py-1 text-right font-medium" title="Not seen for 24 hours, or never">
-            Quiet 24 h
-          </th>
-          <th className="py-1 text-right font-medium" title="An update failed in the last 7 days">
-            Update failed
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-line">
-        {rows.map((row) => (
-          <tr key={row.firmware ?? "none"} className={row.relation === "older" ? "text-warn" : undefined}>
-            <td className="py-1">
-              <span className="font-mono">{row.firmware ?? "not reported"}</span>
-              {RELATION_TEXT[row.relation] ? (
-                <span className="ml-2 text-muted">{RELATION_TEXT[row.relation]}</span>
-              ) : null}
-            </td>
-            <td className="py-1 text-right">{row.switches}</td>
-            <td className="py-1 text-right">{row.quiet || "—"}</td>
-            <td className={`py-1 text-right ${row.otaFailed ? "text-danger" : ""}`}>
-              {row.otaFailed || "—"}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-const PANEL_TITLE = "text-[10px] font-medium uppercase tracking-[0.14em] text-muted";
-
-// The detail row under an account: suspend, limits and delete side by side. Admin accounts get
-// limits only; suspend and delete are refused for them on the server too (admin-tools §2.2).
-function ManagePanel({
-  account: a,
-  isAdmin,
-  isSelf,
-  defaults,
-}: {
-  account: AdminAccountRow;
-  isAdmin: boolean;
-  isSelf: boolean;
-  defaults: Record<(typeof LIMIT_KEYS)[number], number>;
-}) {
-  return (
-    <div className="grid gap-5 rounded-lg border border-line bg-background p-4 md:grid-cols-3">
-      {isAdmin ? null : (
-        <div className="flex flex-col gap-2">
-          <h3 className={PANEL_TITLE}>{a.suspended ? "Suspended" : "Suspend"}</h3>
-          <SuspendForm id={a.id} suspended={a.suspended} />
-        </div>
-      )}
-      <form action={limitsAction} className="flex flex-col gap-2 text-xs">
-        <h3 className={PANEL_TITLE}>Limits</h3>
-        <input type="hidden" name="id" value={a.id} />
-        <input type="hidden" name="email" value={a.email} />
-        <div className="grid grid-cols-2 gap-2">
-          {LIMIT_KEYS.map((key) => (
-            <label key={key} className="flex flex-col gap-1">
-              <span>
-                {LIMIT_LABELS[key]}
-                {key === "snapshotKb" ? null : <span className="text-muted"> · uses {a[key]}</span>}
-              </span>
-              <input
-                name={key}
-                type="number"
-                min={1}
-                defaultValue={a.limits[key] ?? ""}
-                placeholder={String(defaults[key])}
-                className={INPUT}
-              />
-            </label>
-          ))}
-        </div>
-        <span className="text-muted">Empty means the console default.</span>
-        <button className={`${SMALL_BUTTON} self-start`}>Save limits</button>
-      </form>
-      {isAdmin ? (
-        <div className="flex flex-col gap-2 text-xs md:col-span-2">
-          <h3 className={PANEL_TITLE}>Suspend and delete</h3>
-          <p className="text-muted">
-            {isSelf ? "This is your account, an admin account." : "This is an admin account."} Admin
-            accounts can&apos;t be suspended or deleted here. Remove the address from{" "}
-            <code>ADMIN_EMAILS</code> first.
-          </p>
-        </div>
-      ) : (
-        <form
-          action={deleteAccountAction}
-          className="flex flex-col gap-2 text-xs md:border-l md:border-line md:pl-5"
-        >
-          <h3 className={`${PANEL_TITLE} text-danger`}>Delete account</h3>
-          <p className="text-muted">
-            Removes the account with its switches, Bridges, keys and settings. It can&apos;t be undone.
-          </p>
-          <input type="hidden" name="id" value={a.id} />
-          <input type="hidden" name="email" value={a.email} />
-          <input name="confirm" placeholder="Type the email to delete" className={INPUT} />
-          <button className="self-start rounded-md border border-danger px-2 py-1 text-xs text-danger">
-            Delete account
-          </button>
-        </form>
-      )}
-    </div>
-  );
-}
-
-function pageNumber(value: string | string[] | undefined): number {
-  const n = Number(value);
-  return Number.isInteger(n) && n > 0 ? n : 1;
-}
-
-function Pager({ page, total, href }: { page: number; total: number; href: (page: number) => string }) {
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  if (pages <= 1) return null;
-  return (
-    <div className="flex items-center gap-3 text-xs">
-      {page > 1 ? (
-        <Link href={href(page - 1)} className={SMALL_BUTTON}>
-          Previous
-        </Link>
-      ) : null}
-      <span className="text-muted">
-        Page {page} of {pages}
-      </span>
-      {page < pages ? (
-        <Link href={href(page + 1)} className={SMALL_BUTTON}>
-          Next
-        </Link>
-      ) : null}
-    </div>
-  );
-}
-
-export default async function AdminPage({
+// What needs the admin first, then four numbers, then the latest activity (docs/specs/admin-tabs.md §2).
+export default async function AdminOverviewPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const admin = await requireAdmin();
   const params = await searchParams;
-  const sort = (
-    typeof params.sort === "string" && params.sort in SORTS ? params.sort : "created"
-  ) as SortKey;
-  const desc = params.dir !== "asc";
-  const dormantOnly = params.filter === "dormant";
-  const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
-  const page = pageNumber(params.page);
-  const inviteFilter = (
-    typeof params.invites === "string" && (INVITE_STATES as readonly string[]).includes(params.invites)
-      ? params.invites
-      : "all"
-  ) as InviteState;
-  const invitePage = pageNumber(params.ipage);
-  // The account whose Manage row is open (an id from the list, never trusted beyond matching it).
-  const manage = typeof params.manage === "string" ? params.manage.slice(0, 64) : "";
-
-  // Every link keeps the rest of the page's state (search, sort, filters, pages).
-  function adminHref(changes: Record<string, string | null>) {
-    const next = new URLSearchParams();
-    const current: Record<string, string> = {
-      q,
-      sort,
-      dir: desc ? "desc" : "asc",
-      filter: dormantOnly ? "dormant" : "",
-      page: String(page),
-      invites: inviteFilter,
-      ipage: String(invitePage),
-      manage,
-    };
-    for (const [key, value] of Object.entries({ ...current, ...changes })) {
-      const isDefault =
-        !value ||
-        (key === "sort" && value === "created") ||
-        (key === "dir" && value === "desc") ||
-        (key === "invites" && value === "all") ||
-        ((key === "page" || key === "ipage") && value === "1");
-      if (!isDefault) next.set(key, value);
+  if (ACCOUNT_PARAMS.some((key) => key in params)) {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (typeof value === "string") query.set(key, value);
     }
-    const text = next.toString();
-    return text ? `/admin?${text}` : "/admin";
+    redirect(`/admin/accounts?${query.toString()}`);
   }
 
+  const admin = await requireAdmin();
   const settings = await readSettings();
-  const [
-    accounts,
-    requests,
-    invites,
-    mode,
-    cap,
-    seats,
-    stats,
-    problems,
-    load,
-    sent,
-    waitlistSent,
-    roundReleases,
-    simpleReleases,
-    events,
-    fleet,
-  ] = await Promise.all([
-      listAccounts({ q, sort, desc, dormantOnly, page }),
-      listPendingEntries(),
-      listInvites({ state: inviteFilter, page: invitePage, pageSize: PAGE_SIZE }),
-      currentSignupMode(settings),
-      currentUserCap(settings),
-      seatsUsed(),
-      waitlistStats(),
-      deliveryProblems(),
-      loadStats(),
-      emailsSentToday(),
-      waitlistEmailsSentToday(),
-      listStoredReleases("round"),
-      listStoredReleases("simple"),
-      listAdminEvents(50),
-      fleetCounts(),
-    ]);
-  const waitingReleases = [
-    ...roundReleases.filter((r) => r.waiting).map((r) => ({ label: "Round", version: r.version })),
-    ...simpleReleases.filter((r) => r.waiting).map((r) => ({ label: "Simple", version: r.version })),
-  ];
-  const waitlistOn = mode === "invite" || mode === "waitlist";
-  const envMode = signupMode();
-  const defaults = defaultLimits();
+  const [mode, cap, seats, stats, problems, load, sent, fleet, waiting, refused, events] = await Promise.all([
+    currentSignupMode(settings),
+    currentUserCap(settings),
+    seatsUsed(),
+    waitlistStats(),
+    deliveryProblems(),
+    loadStats(),
+    emailsSentToday(),
+    fleetCounts(),
+    waitingReleases(),
+    refusedRegisters(),
+    listAdminEvents(5),
+  ]);
 
-  function sortHref(key: SortKey) {
-    const dir = key === sort && desc ? "asc" : "desc";
-    return adminHref({ sort: key, dir, page: null });
+  const emailCap = emailDailyCap();
+  const allCounts = [...fleet.round, ...fleet.simple];
+  const quiet = allCounts.reduce((sum, c) => sum + c.quiet, 0);
+  const otaFailed = allCounts.reduce((sum, c) => sum + c.otaFailed, 0);
+  const bounces = problems.reduce((sum, p) => sum + p.n, 0);
+  const seatsFull = cap !== null && seats.total >= cap;
+  const dbPct = pct(load.dbBytes, NEON_BYTES);
+  const callsPct = pct(load.switches * CALLS_PER_SWITCH_MONTH, VERCEL_CALLS_MONTH);
+
+  const attention: Attention[] = [];
+  for (const r of waiting) {
+    attention.push({
+      text: `${r.label} ${r.version} is waiting to go live`,
+      href: "/admin/firmware",
+      action: "Review",
+      tone: "warn",
+    });
   }
-
-  const header = (key: SortKey, label: string) => (
-    <th className="px-2 py-2 text-left font-medium">
-      <Link href={sortHref(key)} className="hover:underline">
-        {label}
-        {key === sort ? (desc ? " ↓" : " ↑") : ""}
-      </Link>
-    </th>
-  );
+  if (mode === "waitlist" || mode === "invite") {
+    if (stats.pending > 0) {
+      attention.push({
+        text: `${stats.pending} ${stats.pending === 1 ? "person is" : "people are"} waiting${
+          seatsFull ? ", and every seat is taken" : ""
+        }`,
+        href: "/admin/accounts#in-line",
+        action: seatsFull ? "Admit or raise the cap" : "See who",
+        tone: "warn",
+      });
+    } else if (cap !== null && seats.total >= Math.ceil(cap * 0.8)) {
+      attention.push({
+        text: `${seats.total} of ${cap} seats are used`,
+        href: "/admin/settings",
+        action: "Raise the cap",
+        tone: "warn",
+      });
+    }
+  }
+  if (otaFailed > 0) {
+    attention.push({
+      text: `${otaFailed} ${otaFailed === 1 ? "switch" : "switches"} failed an update in the last 7 days`,
+      href: "/admin/firmware",
+      action: "See which version",
+      tone: "warn",
+    });
+  }
+  for (const r of refused) {
+    attention.push({
+      text: `${r.email}: a board was refused (${r.reason})`,
+      href: `/admin/accounts?q=${encodeURIComponent(r.email)}`,
+      action: "Open account",
+      tone: "warn",
+    });
+  }
+  if (sent >= Math.ceil(emailCap * 0.8)) {
+    attention.push({
+      text: `${sent} of ${emailCap} emails sent in the last 24 hours`,
+      href: "/admin/settings",
+      action: "See budgets",
+      tone: "warn",
+    });
+  }
+  if (bounces > 0) {
+    attention.push({
+      text: `${bounces} ${bounces === 1 ? "email" : "emails"} bounced or marked as spam in 30 days (${problems
+        .map((p) => p.tag)
+        .join(", ")})`,
+      href: "/admin/accounts?invites=all#invites",
+      action: "See invites",
+      tone: "info",
+    });
+  }
 
   return (
-    <Shell email={admin.email} wide>
-      <section className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
-        <p className="text-sm text-muted">
-          Sign-up mode: <span className="font-medium text-foreground">{mode}</span>.{" "}
-          {accounts.total} {accounts.total === 1 ? "account" : "accounts"}. This page shows counts only, never recipes or topology.
-        </p>
-        <nav aria-label="Sections" className="flex flex-wrap gap-2 text-xs">
-          {SECTIONS.map(([id, label]) => (
-            <a key={id} href={`#${id}`} className={SMALL_BUTTON}>
-              {label}
-            </a>
-          ))}
-        </nav>
-        {waitingReleases.length > 0 ? (
-          <p className="rounded-xl border border-warn/40 bg-warn-soft p-3 text-sm">
-            <span className="font-medium text-warn">Firmware waiting:</span>{" "}
-            {waitingReleases.map((r) => `${r.label} ${r.version}`).join(", ")}. Nothing
-            changes for anyone until you make it current under{" "}
-            <a href="#firmware" className="underline">
-              Firmware
-            </a>
-            .
-          </p>
-        ) : null}
-      </section>
-
-      <section id="waitlist" className="flex scroll-mt-6 flex-col gap-5 rounded-xl border border-line bg-cream p-5">
-        <h2 className="text-lg font-medium">Waitlist</h2>
-        {envMode === "invite" || envMode === "waitlist" ? (
-          <WaitlistSettingsForm mode={mode === "waitlist" ? "waitlist" : "invite"} cap={cap} />
-        ) : (
-          <p className="text-sm text-muted">
-            SIGNUP_MODE is <code>{envMode}</code>. Set it to <code>waitlist</code> or{" "}
-            <code>invite</code> to use the waitlist.
+    <AdminFrame email={admin.email} active="overview">
+      <section className="flex flex-col gap-2" aria-labelledby="needs-you">
+        <h2 id="needs-you" className="text-sm font-medium text-muted">
+          Needs you
+        </h2>
+        {attention.some((a) => a.tone === "warn") ? null : (
+          <p className="rounded-xl border border-line px-4 py-3 text-sm text-muted">
+            Nothing needs you. No release waiting, nobody in line, no failed updates.
           </p>
         )}
-
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
-          <Stat
-            label="Seats used"
-            value={cap === null ? seats.total : `${seats.total} / ${cap}`}
-            note={`${seats.accounts} accounts, ${seats.invites} unused invites${
-              cap !== null && seats.total > cap ? " (over cap)" : ""
-            }`}
-          />
-          <Stat label="Waiting" value={stats.pending} />
-          <Stat label="Joined, last 7 days" value={stats.joined7} note={`${stats.joined30} in 30 days`} />
-          <Stat
-            label="Joined, total"
-            value={Math.max(stats.joinsTotal, stats.joined30)}
-            note="Since the waitlist started"
-          />
-          <Stat
-            label="Last 90 days"
-            value={`${stats.admitted} admitted`}
-            note={`${stats.left} left, ${stats.expired} expired, ${stats.dismissed} removed`}
-          />
-        </div>
-
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4">
-          <Stat label="Emails, last 24 h" value={`${sent} / ${emailDailyCap()}`} />
-          <Stat label="Waitlist emails, last 24 h" value={`${waitlistSent} / ${waitlistEmailsPerDay()}`} />
-          <Stat
-            label="Bounces and complaints, 30 days"
-            value={problems.reduce((sum, p) => sum + p.n, 0)}
-            note={
-              problems.length > 0
-                ? problems
-                    .map((p) => `${p.n} ${p.kind === "email_bounced" ? "bounced" : "complaint"} (${p.tag})`)
-                    .join(", ")
-                : "None"
-            }
-          />
-          <Stat
-            label="Switches"
-            value={load.switches}
-            note={`About ${percent(load.switches * CALLS_PER_SWITCH_MONTH, VERCEL_CALLS_MONTH)} of Vercel's free calls`}
-          />
-          <Stat
-            label="Database"
-            value={`${(load.dbBytes / (1024 * 1024)).toFixed(0)} MB`}
-            note={`${percent(load.dbBytes, NEON_BYTES)} of Neon's free 0.5 GB`}
-          />
-        </div>
-
-        {waitlistOn && requests.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-medium">In line ({requests.length}, oldest first)</h3>
-            <ul className="flex flex-col divide-y divide-line text-sm">
-              {requests.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-3 py-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{r.email}</p>
-                    <p className="text-xs text-muted">
-                      Joined {day(r.created_at)}
-                      {r.confirmation_sent_at ? "" : ", no confirmation email"}
-                    </p>
-                  </div>
-                  <form action={decideRequestAction} className="flex gap-2">
-                    <input type="hidden" name="id" value={r.id} />
-                    <input type="hidden" name="email" value={r.email} />
-                    <button name="decision" value="approve" className={SMALL_BUTTON}>
-                      Admit now
-                    </button>
-                    <button name="decision" value="dismiss" className={SMALL_BUTTON}>
-                      Remove
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </section>
-
-      <section id="invites" className="flex scroll-mt-6 flex-col gap-3 rounded-xl border border-line bg-cream p-5">
-        <h2 className="text-lg font-medium">Invites</h2>
-        {!waitlistOn ? (
-          <p className="text-sm text-muted">
-            Invite links only create accounts in the <code>invite</code> and <code>waitlist</code>{" "}
-            modes.
-          </p>
-        ) : null}
-        <CreateInviteForm />
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {INVITE_STATES.map((state) => (
-            <Link
-              key={state}
-              href={adminHref({ invites: state, ipage: null })}
-              className={`${SMALL_BUTTON} ${state === inviteFilter ? "border-filament" : ""}`}
-            >
-              {state}
-            </Link>
-          ))}
-          <span className="text-muted">
-            {invites.total} {invites.total === 1 ? "invite" : "invites"}
-          </span>
-        </div>
-        {invites.rows.length > 0 ? (
-          <ul className="flex flex-col divide-y divide-line text-sm">
-            {invites.rows.map((i) => {
-              const state = inviteState(i);
-              return (
-                <li key={i.id} className="flex flex-wrap items-center gap-3 py-2">
-                  <span className="font-mono text-xs">{i.code_prefix}…</span>
-                  <span className="text-muted">{i.email ?? "any email"}</span>
-                  <span className="text-xs text-muted">
-                    {state}, created {day(i.created_at)}
+        {attention.length > 0 ? (
+          <ul className="flex flex-col gap-2">
+            {attention.map((a) => (
+              <li key={a.text}>
+                <Link
+                  href={a.href}
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm ${
+                    a.tone === "warn"
+                      ? "border-warn/40 bg-warn-soft hover:border-warn"
+                      : "border-line hover:border-filament"
+                  }`}
+                >
+                  <span className={a.tone === "warn" ? "text-foreground" : "text-muted"}>{a.text}</span>
+                  <span className={`text-xs font-medium ${a.tone === "warn" ? "text-warn" : "text-filament"}`}>
+                    {a.action} →
                   </span>
-                  {state === "open" ? (
-                    <div className="ml-auto flex gap-2">
-                      {i.email ? (
-                        <form action={emailInviteAction}>
-                          <input type="hidden" name="id" value={i.id} />
-                          <button className={SMALL_BUTTON}>Email invite</button>
-                        </form>
-                      ) : (
-                        <ReplaceInviteForm id={i.id} />
-                      )}
-                      <form action={revokeInviteAction}>
-                        <input type="hidden" name="id" value={i.id} />
-                        <button className={SMALL_BUTTON}>Revoke</button>
-                      </form>
-                    </div>
-                  ) : state === "bounced" || state === "complained" ? (
-                    <span className="ml-auto text-xs text-muted">
-                      {state === "bounced" ? "The address bounced" : "Marked as spam"}; create a new
-                      invite if you have a corrected address.
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
+                </Link>
+              </li>
+            ))}
           </ul>
         ) : null}
-        <Pager page={invitePage} total={invites.total} href={(n) => adminHref({ ipage: String(n) })} />
       </section>
 
-      <section id="firmware" className="flex scroll-mt-6 flex-col gap-3 rounded-xl border border-line bg-cream p-5">
-        <h2 className="text-lg font-medium">Firmware</h2>
-        <p className="text-sm text-muted">
-          What <code>/setup</code> installs and Switches offers over Wi-Fi. A new upload from
-          firmware CI <span className="font-medium text-foreground">waits here</span> until you
-          make it current; until then it is not installed, offered or shown on{" "}
-          <code>/changelog</code>. Make an older release current to roll back. Releases without
-          bins keep their notes only. Above each list: which firmware the switches run.
-        </p>
-        <div className="grid gap-5 md:grid-cols-2">
-          {(
-            [
-              ["round", "Round", roundReleases, fleet.round],
-              ["simple", "Simple", simpleReleases, fleet.simple],
-            ] as const
-          ).map(([product, label, releases, counts]) => {
-            const shipped = releases.filter((r) => r.hasBins || r.current);
-            const notesOnly = releases.filter((r) => !r.hasBins && !r.current);
-            const current = releases.find((r) => r.current)?.version ?? null;
-            return (
-              <div key={product} className="flex flex-col gap-3">
-                <h3 className="text-sm font-medium">{label}</h3>
-                <FleetTable rows={fleetRows(counts, current)} />
-                <ul className="flex flex-col divide-y divide-line text-sm">
-                  {shipped.map((r) => (
-                    <ReleaseRow key={r.version} product={product} release={r} />
-                  ))}
-                </ul>
-                {notesOnly.length > 0 ? (
-                  <details className="text-sm">
-                    <summary className="cursor-pointer text-xs text-muted">
-                      Older releases, notes only ({notesOnly.length})
-                    </summary>
-                    <ul className="mt-1 flex max-h-72 flex-col divide-y divide-line overflow-y-auto">
-                      {notesOnly.map((r) => (
-                        <ReleaseRow key={r.version} product={product} release={r} />
-                      ))}
-                    </ul>
-                  </details>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Key numbers">
+        <Number_
+          label="Accounts"
+          value={cap === null ? seats.accounts : `${seats.total} / ${cap}`}
+          note={`${stats.pending} waiting · ${seats.invites} unused ${seats.invites === 1 ? "invite" : "invites"}`}
+        />
+        <Number_ label="Switches" value={load.switches} note={`${quiet} quiet for 24 h`} />
+        <Number_
+          label="Emails today"
+          value={`${sent} / ${emailCap}`}
+          note={`${bounces} ${bounces === 1 ? "bounce" : "bounces"} in 30 days`}
+        />
+        <Number_
+          label="Free tier used"
+          value={`${Math.max(dbPct, callsPct)}%`}
+          note={`Database ${(load.dbBytes / (1024 * 1024)).toFixed(0)} MB (${dbPct}%) · calls ${callsPct}%`}
+        />
       </section>
 
-      <section id="accounts" className="flex scroll-mt-6 flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-lg font-medium">Accounts</h2>
-          <form action="/admin" className="flex gap-2">
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Search by email"
-              className={INPUT}
-            />
-            {sort !== "created" ? <input type="hidden" name="sort" value={sort} /> : null}
-            {!desc ? <input type="hidden" name="dir" value="asc" /> : null}
-            {dormantOnly ? <input type="hidden" name="filter" value="dormant" /> : null}
-            <button className={SMALL_BUTTON}>Search</button>
-          </form>
-          <Link
-            href={adminHref({ filter: dormantOnly ? null : "dormant", page: null })}
-            className={SMALL_BUTTON}
-          >
-            {dormantOnly ? "Show all" : `Dormant (${accounts.dormant})`}
+      <section className={CARD}>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-medium">Recent activity</h2>
+          <Link href="/admin/activity" className="text-sm text-filament hover:underline">
+            All activity
           </Link>
-          <span className="text-xs text-muted">
-            Dormant: no switch and no sign-in for 60 days. Nothing is deleted automatically.
-          </span>
         </div>
-        {q ? (
-          <p className="text-xs text-muted">
-            {accounts.matching} {accounts.matching === 1 ? "match" : "matches"} for “{q}”.{" "}
-            <Link href={adminHref({ q: null, page: null })} className="underline">
-              Clear
-            </Link>
-          </p>
-        ) : null}
-        <div className="overflow-x-auto rounded-xl border border-line">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead className="bg-cream">
-              <tr>
-                {header("email", "Email")}
-                <th className="px-2 py-2 text-left font-medium">Sign-in</th>
-                {header("created", "Created")}
-                {header("login", "Last sign-in")}
-                {header("switches", "Switches")}
-                {header("bridges", "Bridges")}
-                {header("seen", "Last board seen")}
-                {header("status", "Status")}
-                <th className="px-2 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {accounts.rows.map((a) => {
-                const open = manage === a.id;
-                const isAdmin = isAdminEmail(a.email);
-                return (
-                  <Fragment key={a.id}>
-                    <tr id={`account-${a.id}`} className={`scroll-mt-6 align-top ${open ? "bg-cream" : ""}`}>
-                    <td className="px-2 py-2">{a.email}</td>
-                    <td className="px-2 py-2 text-muted">{signInMethodLabels(a.methods).join(", ") || "none"}</td>
-                    <td className="px-2 py-2">{day(a.created_at)}</td>
-                    <td className="px-2 py-2">{day(a.last_login_at)}</td>
-                    <td className="px-2 py-2">{a.switches}</td>
-                    <td className="px-2 py-2">{a.bridges}</td>
-                    <td className="px-2 py-2">{day(a.last_board_seen)}</td>
-                    <td className="px-2 py-2">
-                      {a.suspended ? (
-                        <span className="text-danger">suspended</span>
-                      ) : a.dormant ? (
-                        "dormant"
-                      ) : (
-                        "active"
-                      )}
-                      {a.suspended && (a.ban_reason || a.ban_expires) ? (
-                        <p className="text-xs text-muted">
-                          {[a.ban_reason, a.ban_expires ? `until ${day(a.ban_expires)}` : null]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      ) : null}
-                      {a.refused ? (
-                        <p className="text-xs text-danger">
-                          Register refused {day(a.refused.at)}: {a.refused.reason}
-                        </p>
-                      ) : null}
-                    </td>
-                      <td className="whitespace-nowrap px-2 py-2 text-xs">
-                        {a.id === admin.id ? <span className="mr-2 text-muted">you</span> : null}
-                        {a.id !== admin.id && isAdmin ? <span className="mr-2 text-muted">admin</span> : null}
-                        <Link
-                          href={`${adminHref({ manage: open ? null : a.id })}#account-${a.id}`}
-                          scroll={false}
-                          aria-expanded={open}
-                          className="hover:underline"
-                        >
-                          {open ? "▾ Close" : "▸ Manage"}
-                        </Link>
-                      </td>
-                    </tr>
-                    {open ? (
-                      <tr className="bg-cream">
-                        <td colSpan={9} className="px-2 pb-4">
-                          <ManagePanel
-                            account={a}
-                            isAdmin={isAdmin}
-                            isSelf={a.id === admin.id}
-                            defaults={defaults}
-                          />
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <Pager page={page} total={accounts.matching} href={(n) => adminHref({ page: String(n) })} />
+        <EventList events={events} />
       </section>
-
-      <section id="activity" className="flex scroll-mt-6 flex-col gap-3 rounded-xl border border-line bg-cream p-5">
-        <h2 className="text-lg font-medium">Activity</h2>
-        {events.length === 0 ? (
-          <p className="text-sm text-muted">Nothing yet.</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-line text-sm">
-            {events.map((e) => {
-              const details = eventDetails(e);
-              return (
-                <li key={e.id} className="flex flex-wrap items-baseline gap-2 py-1.5">
-                  <span className="text-xs text-muted">{new Date(e.created_at).toISOString().slice(0, 16).replace("T", " ")}</span>
-                  <span>
-                    {ACTORS[e.admin_email] ?? e.admin_email} {EVENT_LABELS[e.action] ?? e.action}
-                    {e.target ? <> <span className="font-medium">{e.target}</span></> : null}
-                    {details ? <span className="text-muted"> ({details})</span> : null}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="text-xs text-muted">
-          The newest 50, by admins and by the console itself. Kept for a year.
-        </p>
-      </section>
-    </Shell>
+    </AdminFrame>
   );
 }
