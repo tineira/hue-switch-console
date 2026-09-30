@@ -264,15 +264,16 @@ function roundSwitch(): SceneDef {
 }
 
 // Turn the finished Round so USB-C leaves to the right of the upright screen.
-const DONE_TURN = 1.93;
+const DONE_TURN = 2.2;
 
 function roundDone(): SceneDef {
-  const d = display({ on: true, dipOn: true, dialTurn: DONE_TURN - Math.PI });
+  // The dial texture turned back so its text reads level from this camera.
+  const d = display({ on: true, dipOn: true, dialTurn: -1.74 });
   const { g: xa } = xiaoWithHeaders();
   xa.rotation.z = Math.PI;
   xa.position.set(0, -2.5, 1.5);
   // USB-C cable in the port: the port mouth is at XIAO z ≈ 11, y = T + 1.58 (flipped: down).
-  const cable = usbAt(0, -2.5 - (T + 1.58), 1.5 + USB_MOUTH_Z - 6.6, [[0, -2, 30], [0, -5, 40]]);
+  const cable = usbAt(0, -2.5 - (T + 1.58), 1.5 + USB_MOUTH_Z - 6.6, [[0, -1.5, 34], [0, -3.5, 46]]);
   const turned = group(d, xa, cable);
   turned.rotation.y = DONE_TURN;
   return {

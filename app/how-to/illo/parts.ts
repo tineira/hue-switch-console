@@ -66,7 +66,7 @@ export function solder(x: number, y: number, z: number, r = 0.95): THREE.Mesh {
 
 // ---------------------------------------------------------------------------- small parts
 
-/** USB-C cable: metal tongue at z 0..6.6 (the part that goes in), overmould, then the cable. */
+/** A slim USB-C cable: metal tongue at z 0..6.6 (the part that goes in), overmould, then the cable. */
 export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE.Group {
   const g = new THREE.Group();
   const shell = new THREE.Shape();
@@ -79,15 +79,15 @@ export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE
   const tongue = new THREE.ExtrudeGeometry(shell, { depth: 6.6, bevelEnabled: false, curveSegments: 12 });
   g.add(mesh(tongue));
   const body = new THREE.Shape();
-  const R = 3.2, HX = 6.2 - R;
+  const R = 2.3, HX = 4.5 - R;
   body.moveTo(-HX, -R);
   body.lineTo(HX, -R);
   body.absarc(HX, 0, R, -Math.PI / 2, Math.PI / 2, false);
   body.lineTo(-HX, R);
   body.absarc(-HX, 0, R, Math.PI / 2, Math.PI * 1.5, false);
-  const over = new THREE.ExtrudeGeometry(body, { depth: 17, bevelEnabled: true, bevelSize: 0.6, bevelThickness: 0.6, bevelSegments: 2, curveSegments: 16 });
+  const over = new THREE.ExtrudeGeometry(body, { depth: 13, bevelEnabled: true, bevelSize: 0.4, bevelThickness: 0.4, bevelSegments: 2, curveSegments: 16 });
   g.add(at(mesh(over, undefined, true), 0, 0, 6.6));
-  g.add(wire([[0, 0, 23], [0, 0, 30], ...bend], "switched", 1.6));
+  g.add(wire([[0, 0, 19.5], [0, 0, 26], ...bend], "switched", 1.2));
   return g;
 }
 
