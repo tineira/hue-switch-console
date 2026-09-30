@@ -63,11 +63,19 @@ function dialTexture(): THREE.Texture {
   return t;
 }
 
-function display() {
-  const { root, screen } = buildDisplay(new THREE.MeshBasicMaterial());
-  screen.userData.texture = dialTexture();
+// Screen off (no power yet) unless `on`; DIP switches as shipped (OFF) unless `dipOn`.
+function display({ on = false, dipOn = false, dialTurn = 0 }: { on?: boolean; dipOn?: boolean; dialTurn?: number } = {}) {
+  const { root, screen } = buildDisplay(new THREE.MeshBasicMaterial(), { dipOn });
+  if (on) {
+    const t = dialTexture();
+    t.center.set(0.5, 0.5);
+    t.rotation = dialTurn;
+    screen.userData.texture = t;
+  } else screen.userData.tone = "black";
   return part(root);
 }
+
+const DIP_Z = -9.8;
 
 /** XIAO with its headers soldered (long pins down, soldered on the chip side), optionally with the antenna on. */
 function xiaoWithHeaders(opts: { antenna?: boolean; hotSolder?: boolean } = {}) {
@@ -84,22 +92,23 @@ function xiaoWithHeaders(opts: { antenna?: boolean; hotSolder?: boolean } = {}) 
       if (opts.hotSolder) s.userData.tone = "hot";
       g.add(s);
     }
-  if (opts.antenna) g.add(tuckedAntenna());
+  if (opts.antenna) g.add(sideAntenna());
   return { g, x };
 }
 
-/** The antenna folded flat over the chip side, as it ends up inside the Round. */
+/** The antenna plugged in and lying to one side, clear of the XIAO and the display. */
 // Like the real flat antenna: amber film with a copper meander, the coax soldered at one end.
-function tuckedAntenna() {
+const ANT_AT: V3 = [27, T + 2.05, -4];
+function sideAntenna() {
   const g = new THREE.Group();
-  const top = T + 2.05, cx = -2.5, cz = -1.5, L = 16;
+  const top = ANT_AT[1], cx = ANT_AT[0], cz = ANT_AT[2], L = 16;
   g.add(at(mesh(new THREE.BoxGeometry(10, 0.25, L), "polyimide"), cx, top, cz));
   const ty = top + 0.14, z0 = cz - L / 2;
   for (let i = 0; i < 5; i++) g.add(at(mesh(new THREE.BoxGeometry(7.4, 0.04, 0.6), "brown"), cx, ty, z0 + 1.6 + i * 2.1));
   for (let i = 0; i < 4; i++) g.add(at(mesh(new THREE.BoxGeometry(0.6, 0.04, 2.1), "brown"), cx + (i % 2 ? -3.4 : 3.4), ty, z0 + 2.65 + i * 2.1));
   g.add(at(mesh(new THREE.SphereGeometry(0.7, 16, 8).scale(1, 0.5, 1.4), undefined, true), cx, ty + 0.1, z0 + 0.6));
   g.add(at(mesh(new THREE.CylinderGeometry(1, 1, 1.3, 32), undefined, true), JACK[0], JACK[1] + 0.65, JACK[2]));
-  g.add(wire([[JACK[0], JACK[1] + 1.1, JACK[2]], [JACK[0] + 2.5, top + 0.6, JACK[2] - 1.5], [2, top + 0.6, -10.5], [-2.5, top + 0.3, -8.9]], "switched", 0.55));
+  g.add(wire([[JACK[0], JACK[1] + 1.1, JACK[2]], [JACK[0] + 3, top + 0.8, JACK[2] - 2], [14, top + 0.6, -14], [cx, top + 0.4, -14.5], [cx, top + 0.3, cz - L / 2 + 0.6]], "switched", 0.55));
   return g;
 }
 
@@ -177,7 +186,7 @@ function roundAntenna(): SceneDef {
     notes: [
       note("U.FL socket", x, JACK, "left", "hot"),
       note("Antenna plug: straight down until it clicks", a, [0, 1.4, 32.5], "right"),
-      note("Flat antenna, tucked under the XIAO later", a, [0, 0.3, -24], "right"),
+      note("Flat antenna: leave it to one side", a, [0, 0.3, -24], "right"),
     ],
     marks: [
       { kind: "arrow", from: A(x, [JACK[0], JACK[1] + 7.5, JACK[2]]), to: A(x, [JACK[0], JACK[1] + 1.2, JACK[2]]) },
@@ -186,9 +195,34 @@ function roundAntenna(): SceneDef {
   };
 }
 
+function roundDip(): SceneDef {
+  const d = display({ dipOn: true });
+  d.traverse((o) => {
+    if (o.name.startsWith("dip_slider")) o.userData.tone = "hot";
+  });
+  const Y = 4.3; // the display's PCB underside
+  // Close on the switch block and the sockets it sits past.
+  const fit = ["dip_switch", "header_L", "header_R", "microsd_slot"].map((n) => d.getObjectByName(n)!);
+  return {
+    root: group(d),
+    dir: [0.45, -1.5, 0.9],
+    fit,
+    pad: 1.02,
+    notes: [
+      note("DIP switches 1 and 2: slide both to ON", d, [1.35, Y - 1.8, DIP_Z - 1.3], "right", "hot"),
+      note("They ship OFF", d, [-1.35, Y - 1.8, DIP_Z + 1.3], "right"),
+      note("The XIAO's sockets: once it's on it covers the switches", d, [7.62, 0, 4], "right"),
+    ],
+    marks: [
+      { kind: "arrow", from: A(d, [-2.6, Y - 1.9, DIP_Z - 1.3]), to: A(d, [2.4, Y - 1.9, DIP_Z - 1.3]) },
+      { kind: "arrow", from: A(d, [-2.6, Y - 1.9, DIP_Z + 1.3]), to: A(d, [2.4, Y - 1.9, DIP_Z + 1.3]) },
+    ],
+  };
+}
+
 // The Round seen from below: display on top, the XIAO under it, flipped (chip side down).
 function roundFromBelow(gap: number, hotSwitch: boolean) {
-  const d = display();
+  const d = display({ dipOn: true });
   const { g: xa, x } = xiaoWithHeaders({ antenna: true });
   xa.rotation.z = Math.PI;
   // Header body against the sockets when gap = 0; pins 8.5 above the board's back.
@@ -210,8 +244,8 @@ function roundBelow(): SceneDef {
       note("Sockets on the back of the display", d, [7.62, 0, 8], "right"),
       note("Pins go into the sockets", x, [-7.62, -8.4, 5.08], "right"),
       note("USB-C faces out, to the edge", x, [0, T + 1.6, 11], "left", "hot"),
-      note("Chip side faces away from the display", x, [5.5, T + 0.3, -6], "left"),
-      note("Antenna, folded flat over the chip side", x, [-2.5, T + 2.3, -3], "right", "hot"),
+      note("Chip side faces away from the display", x, [-2.5, T + 1.9, -2.4], "left"),
+      note("Antenna on its cable, to one side", x, ANT_AT, "right"),
     ],
   };
 }
@@ -224,20 +258,25 @@ function roundSwitch(): SceneDef {
       note("Slide the power switch to ON", d, [-14.6, 3.4, -11], "left", "hot"),
       note("XIAO pressed home, no gap", x, [8.9, 0, 0], "right"),
       note("USB-C at the edge", x, [0, T + 1.6, 11], "right"),
-      note("Antenna folded flat over the chip side", x, [-2.5, T + 2.3, -3], "right"),
+      note("Antenna to one side", x, ANT_AT, "right"),
     ],
   };
 }
 
+// Turn the finished Round so USB-C leaves to the right of the upright screen.
+const DONE_TURN = 1.93;
+
 function roundDone(): SceneDef {
-  const d = display();
+  const d = display({ on: true, dipOn: true, dialTurn: DONE_TURN - Math.PI });
   const { g: xa } = xiaoWithHeaders();
   xa.rotation.z = Math.PI;
   xa.position.set(0, -2.5, 1.5);
   // USB-C cable in the port: the port mouth is at XIAO z ≈ 11, y = T + 1.58 (flipped: down).
-  const cable = usbAt(0, -2.5 - (T + 1.58), 1.5 + USB_MOUTH_Z - 6.6, [[0, -6, 44], [0, -18, 70]]);
+  const cable = usbAt(0, -2.5 - (T + 1.58), 1.5 + USB_MOUTH_Z - 6.6, [[0, -2, 30], [0, -5, 40]]);
+  const turned = group(d, xa, cable);
+  turned.rotation.y = DONE_TURN;
   return {
-    root: group(d, xa, cable),
+    root: group(turned),
     dir: [0.5, 1.5, 1.35],
     fit: [d, cable],
     pad: 1.03,
@@ -732,6 +771,8 @@ export function buildScene(id: IlloId): SceneDef {
       return roundHeaders();
     case "round-antenna":
       return roundAntenna();
+    case "round-dip":
+      return roundDip();
     case "round-below":
       return roundBelow();
     case "round-switch":

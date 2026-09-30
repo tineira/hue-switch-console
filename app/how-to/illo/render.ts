@@ -276,7 +276,7 @@ function drawNotes(notes: Placed[], px: (a: Anchor) => [number, number], w: numb
       const ly = y + tall(c) / 2;
       out += `<line x1="${sx}" y1="${ly}" x2="${a[0]}" y2="${a[1]}" stroke="${col_}" stroke-width="1.2"/>`;
       out += `<circle cx="${a[0]}" cy="${a[1]}" r="2.6" fill="${col_}"/>`;
-      out += `<text x="${tx}" y="${y}" text-anchor="${side === "left" ? "end" : "start"}" dominant-baseline="middle" font-size="${LABEL_FONT}" font-weight="500" fill="${col_}">`;
+      out += `<text x="${tx}" y="${y}" text-anchor="${side === "left" ? "end" : "start"}" dominant-baseline="middle" font-size="${LABEL_FONT}" font-weight="500" fill="${col_}" stroke="var(--background)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">`;
       n.lines.forEach((line, i) => (out += `<tspan x="${tx}" dy="${i ? LINE_H : 0}">${esc(line)}</tspan>`));
       out += `</text>`;
     }

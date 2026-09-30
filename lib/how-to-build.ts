@@ -11,6 +11,7 @@ export type IlloId =
   | "round-kit"
   | "round-headers"
   | "round-antenna"
+  | "round-dip"
   | "round-below"
   | "round-switch"
   | "round-done"
@@ -94,7 +95,7 @@ export const ROUND_BUY: BuyItem[] = [
 
 export const ROUND_KIT: Pic = {
   illo: "round-kit",
-  alt: "The parts: the Round Display, the XIAO ESP32-S3, two pin header strips and the flat antenna on its thin cable.",
+  alt: "The parts: the Round Display with its screen off, the XIAO ESP32-S3, two pin header strips and the flat antenna on its thin cable.",
 };
 
 export type AssembleStep = { title: string; body: string; pic: Pic };
@@ -117,11 +118,19 @@ export const ROUND_ASSEMBLE: AssembleStep[] = [
     },
   },
   {
+    title: "Set both DIP switches to ON",
+    body: "Turn the Round Display over. Between the sockets and the microSD slot is a small block of two switches, marked **1 2** and **ON**. They ship OFF: slide both to **ON**. Switch 1 lets the XIAO turn the screen's backlight off after the timeout; switch 2 lets it read a battery's charge if you add one later. Do it now: the XIAO covers them once it's on.",
+    pic: {
+      illo: "round-dip",
+      alt: "The back of the Round Display with the two DIP switches highlighted, arrows sliding both from OFF to ON, next to the sockets the XIAO goes into.",
+    },
+  },
+  {
     title: "Line the XIAO up under the display",
-    body: "Turn the Round Display over. The XIAO goes on its back with the **chip side facing away** from the display, the long pins into the two rows of sockets, and the **USB-C port facing out** to the edge, or the port ends up covered. Fold the flat antenna over the chip side.",
+    body: "The XIAO goes on the display's back with the **chip side facing away** from the display, the long pins into the two rows of sockets, and the **USB-C port facing out** to the edge, or the port ends up covered. Leave the antenna on its cable to one side.",
     pic: {
       illo: "round-below",
-      alt: "Seen from below: the back of the Round Display with its two rows of sockets and power switch, and the XIAO under it, chip side down, USB-C toward the edge, pins lined up with the sockets.",
+      alt: "Seen from below: the back of the Round Display with its two rows of sockets, and the XIAO under it, chip side down, USB-C toward the edge, pins lined up with the sockets, the antenna to one side.",
     },
   },
   {
@@ -129,7 +138,7 @@ export const ROUND_ASSEMBLE: AssembleStep[] = [
     body: "Push the XIAO evenly into the sockets until the plastic strips touch them. Then slide the small switch on the back of the display to **ON**; in the other position the screen stays dark.",
     pic: {
       illo: "round-switch",
-      alt: "Seen from below: the XIAO pressed fully into the display's sockets, the antenna folded over it, and the display's power switch highlighted.",
+      alt: "Seen from below: the XIAO pressed fully into the display's sockets, the antenna to one side, and the display's power switch highlighted.",
     },
   },
   {
@@ -137,7 +146,7 @@ export const ROUND_ASSEMBLE: AssembleStep[] = [
     body: "USB-C to your computer for the setup below, and later to a phone charger where the switch lives.",
     pic: {
       illo: "round-done",
-      alt: "The finished Round switch, screen on top, with a USB-C cable in the port at its edge.",
+      alt: "The finished Round switch, screen on top, with a USB-C cable leaving the port on its right edge.",
     },
   },
 ];

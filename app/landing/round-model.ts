@@ -38,8 +38,9 @@ function extrudeFlat(sh: THREE.Shape, h: number) {
 
 export const SCREEN_R = 16.2;
 
-// Round Display for XIAO. `screen` is the disc that shows the dial texture.
-export function buildDisplay(screenMat: Mat) {
+// Round Display for XIAO. `screen` is the disc that shows the dial texture. The two DIP switches
+// (1: the XIAO controls the backlight, 2: battery sense) ship OFF; `dipOn` draws them ON.
+export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolean } = {}) {
   const R = 19.5;
   const H_HDR = 4.3, T_PCB = 1.2, T_LCD = 1.1, T_GLASS = 0.7;
   const Y_PCB = H_HDR, Y_LCD = Y_PCB + T_PCB, Y_GLASS = Y_LCD + T_LCD, Y_TOP = Y_GLASS + T_GLASS;
@@ -68,8 +69,12 @@ export function buildDisplay(screenMat: Mat) {
     for (let i = 0; i < 7; i++)
       add(`header_${tag}_socket_${i + 1}`, box(1.0, 0.04, 1.0), M.tin, side * ROW_X, -0.015, HDR_Z + (i - 3) * PITCH);
   }
-  add("microsd_slot", box(11.4, 1.6, 14), M.tin, 0, Y_PCB - 0.8, -7.2);
-  add("microsd_mouth", box(10.6, 0.9, 0.3), M.plastic, 0, Y_PCB - 0.8, -14.1);
+  add("microsd_slot", box(10.7, 1.6, 5), M.tin, 0, Y_PCB - 0.8, -15.3);
+  add("microsd_mouth", box(10, 0.9, 0.3), M.plastic, 0, Y_PCB - 0.8, -17.9);
+  // DIP switch past the XIAO's far end, half under it once the XIAO is on. ON is toward +x.
+  add("dip_switch", box(6.2, 1.4, 5.4), M.plastic, 0, Y_PCB - 0.7, -9.8);
+  for (const [i, dz] of [[1, -1.3], [2, 1.3]])
+    add(`dip_slider_${i}`, box(1.5, 0.5, 1.3), M.nylon, dipOn ? 1.35 : -1.35, Y_PCB - 1.6, -9.8 + dz);
   add("power_switch", box(6.7, 1.4, 2.6), M.tin, -13.6, Y_PCB - 0.7, -9.2);
   add("power_switch_lever", box(1.4, 1.0, 1.2), M.plastic, -14.6, Y_PCB - 0.9, -11.0);
   add("battery_jst", box(5.4, 3.4, 4.2), M.nylon, 14.0, Y_PCB - 1.7, -8.0);
