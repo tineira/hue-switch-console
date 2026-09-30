@@ -75,6 +75,13 @@ function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
 
 let draftPageSeq = 0;
 
+// "A", "A and B", "A, B and C", then "A, B and 2 more".
+function lightList(names: string[]): string {
+  if (names.length <= 2) return names.join(" and ");
+  if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`;
+  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+}
+
 function nextDraftPageId(): string {
   draftPageSeq += 1;
   return `draft-${draftPageSeq}`;
@@ -247,7 +254,7 @@ export function RoundPagesEditor({
     dim?.mode === "group"
       ? `Dims ${room?.name ?? "the group"} (lights that are on)`
       : dim?.mode === "lights"
-        ? "Dims those lights"
+        ? `Dims ${lightList(dim.rids.map((rid) => snapshot.lights.find((light) => light.id === rid)?.name ?? "a light"))}`
         : "Unused";
 
   return (

@@ -304,6 +304,11 @@ create table if not exists console_settings (
   updated_at timestamptz not null default now()
 );
 
+-- joins_total started after the first waitlist entries: never below the entries still stored.
+insert into console_settings (id, joins_total)
+select true, count(*) from invite_requests
+on conflict (id) do update set joins_total = greatest(console_settings.joins_total, excluded.joins_total);
+
 alter table invite_requests drop constraint if exists invite_requests_status_check;
 
 alter table invite_requests add constraint invite_requests_status_check

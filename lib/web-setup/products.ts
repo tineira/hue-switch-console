@@ -56,3 +56,9 @@ export function chipFamilyMatches(detected: string, expected: string): boolean {
   if (a === b) return true;
   return a.replaceAll("-", "") === b.replaceAll("-", "");
 }
+
+// A name usbKeyName made: "USB <when>" or "<board> · <when>". API keys hides it next to the
+// board it names, since the board column already says the same.
+export function isSetupKeyName(name: string): boolean {
+  return /^(USB |.+ · )\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(name);
+}

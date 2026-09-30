@@ -168,7 +168,8 @@ function leavingLink(event: MouseEvent, switchesPath: string): HTMLAnchorElement
 
 const SWITCHES_PATH = "/switches";
 
-// Boards with recipes poll hourly (docs/definitions.md, "Polling"): three missed polls.
+// Idle boards check in every 15 min (docs/device-api.md, `X-Poll-Sec`); older firmware without
+// the header polls hourly. 3 h covers three missed hourly polls.
 const NOT_SEEN_MIN = 180;
 
 const EMPTY_SNAPSHOT: TopologySnapshot = {
@@ -699,6 +700,14 @@ export function SwitchesWorkspace({
           />
         ) : null}
         {state ? <span className={`shrink-0 text-xs ${state.tone}`}>{state.text}</span> : null}
+        {!state && syncFor(item).last_seen_at && notSeenMin(item) === null ? (
+          <span
+            className="h-2 w-2 shrink-0 rounded-full bg-ok"
+            role="img"
+            aria-label="Online"
+            title="Online"
+          />
+        ) : null}
         {!state && update ? (
           <span className="shrink-0 text-filament" title={`Update to ${update} available`}>
             <UpdateIcon label={`Update to ${update} available`} />
