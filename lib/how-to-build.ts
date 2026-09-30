@@ -25,6 +25,7 @@ export type IlloId =
   | "simple-test"
   | "simple-all"
   | "simple-rc"
+  | "simple-rc3"
   | "simple-box"
   | "wall-board"
   | "wall-usb"
@@ -219,7 +220,8 @@ export const TRY_KIT: Pic = {
   alt: "The parts, numbered 1 and 2 like the list below: the XIAO ESP32-C6 and a USB-C cable, with an arrow from the plug to the board's USB-C port.",
 };
 
-export type PicStep = { title: string; body: string; pic: Pic };
+/** `more`: a second picture under the first. */
+export type PicStep = { title: string; body: string; pic: Pic; more?: Pic };
 
 export const TRY_STEPS: PicStep[] = [
   {
@@ -342,10 +344,14 @@ export const BOX_STEPS: PicStep[] = [
   },
   {
     title: "Long wires? Add the resistors",
-    body: "Per input, at the board: **10 kΩ** from the pin to **3V3**, **1 kΩ** in series between the pin and the wire, and **10 nF** from the wire side of the 1 kΩ to GND. Skip this for wires under about 30 cm.",
+    body: "Per input, at the board: **10 kΩ** from the pin to **3V3**, **1 kΩ** in series between the pin and the wire, and **10 nF** from the wire side of the 1 kΩ to GND. Skip this for wires under about 30 cm. The 10 kΩ can go on the back of the board too. With several inputs, join the 10 kΩ ends first and bring one lead to the 3V3 pad.",
     pic: {
       illo: "simple-rc",
       alt: "At the XIAO: a 10 kΩ resistor over the board from the D0 pad to the 3V3 pad; a 1 kΩ resistor from the D0 pad out to a joint where the switch wire starts; a 10 nF capacitor from that joint to a joint on the GND wire, which runs from the GND pad on to the switch.",
+    },
+    more: {
+      illo: "simple-rc3",
+      alt: "Three inputs, D0 to D2: each pad's 1 kΩ fans out to its own joint where its switch wire starts, each joint has a 10 nF to a bared spot on the one GND wire, and the three 10 kΩ bridge the board with their ends joined before a single lead into the 3V3 pad.",
     },
   },
   {

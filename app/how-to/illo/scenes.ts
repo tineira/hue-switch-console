@@ -562,6 +562,79 @@ function simpleRc(): SceneDef {
   };
 }
 
+// Three inputs at once (D0–D2), as in simple-rc. Each 1 kΩ fans out from its pad to its own
+// joint, where its switch wire starts; each 10 nF lies below its joint, its other leg soldered to
+// a bared spot on the one GND wire. That wire comes from the GND pad over the USB end, runs down
+// under the switch wires (they cross over it, insulated) and on to the switches. The three
+// 10 kΩ bridge the board side by side; their 3V3 ends are twisted into one joint, and one lead
+// goes from there into the 3V3 pad.
+function simpleRc3(): SceneDef {
+  const x = xiao();
+  const root = group(x);
+  const Y = T + 0.45, NX = 26, BUS = 36, OUT = 50;
+  const nz = [14, 4, -6];
+  const marks: Mark[] = [];
+  nz.forEach((z, i) => {
+    const p = PAD(i), N: V3 = [NX, Y, z];
+    // 1 kΩ from the pad to the joint, straight.
+    const dx = N[0] - p[0], dz = N[2] - p[2], L = Math.hypot(dx, dz);
+    const r1 = resistor("1k", L);
+    r1.rotation.y = Math.atan2(-dz, dx);
+    r1.position.set((p[0] + N[0]) / 2, Y, (p[2] + N[2]) / 2);
+    root.add(r1);
+    // 10 nF below the joint, to a bared spot on the GND wire.
+    const cz = z - 4.5, cx = 31, G: V3 = [BUS, 0.9, cz];
+    const cap = ceramicCap(5);
+    cap.rotation.x = -Math.PI / 2;
+    cap.position.set(cx, Y, cz + 2.6); // disc centre at (cx, cz)
+    cap.children.slice(1).forEach((c) => (c.visible = false));
+    root.add(
+      cap,
+      wire([[cx - 1.4, Y, cz + 2.2], [NX + 1.4, Y, z - 1.2], N], "gold", 0.25),
+      wire([[cx + 2.6, Y, cz], [BUS - 1.2, 1.2, cz], G], "gold", 0.25),
+      joint(...G, 0.9),
+    );
+    // Switch wire from the joint out to the left, over the GND wire.
+    root.add(wire([N, [NX + 3, Y + 0.3, z], [BUS - 2.5, 2.7, z], [BUS + 2.5, 2.7, z], [BUS + 6, 1.6, z], [OUT, 1.2, z]], "hot", 0.6), joint(...N, 0.9));
+    root.add(i === 0 ? hotSolder(p) : solder(...p));
+    marks.push({ kind: "badge", at: A(root, [BUS + 8, 2.7, z + 3]), text: `D${i}`, tone: "hot" });
+    // 10 kΩ over the board, from the pad toward the 3V3 side.
+    const zb = [8.6, 5.6, 2.6][i];
+    root.add(at(resistor("10k", 8), 0, 6.6, zb));
+    root.add(wire([[4, 6.6, zb], [6.3, 6.3, (zb + p[2]) / 2], [p[0], 4.2, p[2]], [p[0], T + 0.2, p[2]], [p[0], -0.8, p[2]]], "gold", 0.3));
+  });
+  // The three 3V3 ends into one joint, one lead from it into the 3V3 pad.
+  // The joint sits inboard of the pad row, below 3V3, so no lead passes over the GND pad.
+  const J: V3 = [-5.2, 6.0, 0.2];
+  [8.6, 5.6, 2.6].forEach((zb) => root.add(wire([[-4, 6.6, zb], [-4.8, 6.4, zb - 1], [-5.1, 6.2, (zb + J[2]) / 2], J], "gold", 0.3)));
+  root.add(
+    joint(...J, 0.9),
+    wire([J, [-6.6, 5, 1.2], [V33[0], 3.6, V33[2]], [V33[0], T + 0.2, V33[2]], [V33[0], -0.8, V33[2]]], "gold", 0.3),
+    solder(...V33),
+  );
+  // GND: from its pad over the USB end, down the left under the switch wires, on to the switches.
+  root.add(
+    fromPad(GND, -1, [[-11.5, 1.5, GND[2] + 3], [-11.5, 2, 18], [-8, 2.5, 24], [BUS - 3, 2, 24], [BUS, 1.2, 21], [BUS, 0.9, nz[2] - 9], [BUS + 3, 0.9, nz[2] - 12], [OUT, 0.9, nz[2] - 12]], "switched", 0.6),
+    solder(...GND),
+  );
+  marks.push(
+    { kind: "badge", at: A(root, [15, Y, 13.5]), text: "1 kΩ", tone: "hot" },
+    { kind: "badge", at: A(root, [31, Y, nz[2] - 11]), text: "10 nF", tone: "hot" },
+    { kind: "badge", at: A(root, [0, 6.6, 12.6]), text: "10 kΩ", tone: "hot" },
+  );
+  return {
+    root,
+    dir: TOP,
+    pad: 1.04,
+    marks,
+    notes: [
+      note("To the switches", root, [OUT, 1, -4], "left"),
+      note("3V3: one lead from the joined 10 kΩ ends", x, V33, "right"),
+      note("GND", x, GND, "right"),
+    ],
+  };
+}
+
 // The box open, from the front: the XIAO taped to the floor, the USB-C plug out through a slot
 // in the right wall; the lid hinged back behind it, inside face toward us, the buttons' lugs
 // wired down to the XIAO. (Box camera: +x is to the right.)
@@ -981,6 +1054,8 @@ export function buildScene(id: IlloId): SceneDef {
       return simpleAll();
     case "simple-rc":
       return simpleRc();
+    case "simple-rc3":
+      return simpleRc3();
     case "simple-box":
       return simpleBox();
     case "wall-board":

@@ -156,13 +156,14 @@ function Picture({ pic }: { pic: Pic }) {
   );
 }
 
-function PicSteps({ steps }: { steps: { title: string; body: string; pic: Pic }[] }) {
+function PicSteps({ steps }: { steps: { title: string; body: string; pic: Pic; more?: Pic }[] }) {
   return (
     <Steps>
       {steps.map((step, i) => (
         <Step key={step.title} n={i + 1}>
           <StepText title={step.title} body={step.body} />
           <Picture pic={step.pic} />
+          {step.more ? <Picture pic={step.more} /> : null}
         </Step>
       ))}
     </Steps>
