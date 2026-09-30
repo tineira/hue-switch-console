@@ -215,7 +215,7 @@ function terminal(n: number, pitch: number, h: number, depth: number, tone?: Ton
   g.add(at(mesh(box(w, h, depth), tone), 0, h / 2, 0));
   for (let i = 0; i < n; i++) {
     const x = (i - (n - 1) / 2) * pitch;
-    g.add(at(mesh(box(pitch * 0.62, pitch * 0.55, 0.4)), x, h * 0.35, -depth / 2 - 0.2));
+    g.add(at(mesh(box(pitch * 0.62, pitch * 0.55, 0.4), "black"), x, h * 0.35, -depth / 2 - 0.2));
     g.add(at(mesh(cyl(pitch * 0.3, 0.4, 20), undefined, true), x, h + 0.2, depth * 0.15));
     g.add(at(mesh(box(pitch * 0.42, 0.2, 0.25)), x, h + 0.45, depth * 0.15));
   }
@@ -226,6 +226,8 @@ export type CarrierBoard = {
   root: THREE.Group;
   /** Local (mm) points of interest: terminal entries and the XIAO parts. */
   pts: Record<string, [number, number, number]>;
+  /** Which way each terminal's wire opening faces (local): out of the board edge. */
+  out: Record<string, [number, number, number]>;
 };
 
 /**
@@ -283,7 +285,9 @@ export function carrierBoard(xiao: THREE.Object3D | null): CarrierBoard {
     D5: [7.9, -3, 21.0],
     GND: [4.4, -3, 21.0],
   };
-  return { root, pts };
+  const side: [number, number, number] = [1, 0, 0], end: [number, number, number] = [0, 0, 1];
+  const out = { L: side, N: side, D0: side, D1: side, D2: side, D3: side, D4: end, D5: end, GND: end };
+  return { root, pts, out };
 }
 
 /** The printed enclosure: base (under the board) and lid (over the XIAO), outside 46 × 56 × 26. */
@@ -299,9 +303,10 @@ export function enclosure(): { base: THREE.Group; lid: THREE.Group } {
     return g;
   };
   base.add(shell(floorT + below + boardT, true));
-  // Wire holes on the right wall (J1, J2) and the bottom wall (J3), drawn as dark plugs.
+  // Wire holes on the right wall (J1, J2) and the round end (J3), drawn as dark plugs.
   for (const z of [-12.74, -7.66]) base.add(at(mesh(cyl(1.8, 0.6, 24).rotateZ(Math.PI / 2), "black", true), outW + 0.1, floorT + below - 4.2, z));
   for (const z of [1.0, 4.5, 8.0, 11.5]) base.add(at(mesh(cyl(1.5, 0.6, 24).rotateZ(Math.PI / 2), "black", true), outW + 0.1, floorT + below - 2.4, z));
+  for (const x of [11.4, 7.9, 4.4]) base.add(at(mesh(cyl(1.5, 0.6, 24).rotateX(Math.PI / 2), "black", true), x, floorT + below - 2.4, Math.sqrt(outR * outR - x * x) + 0.1));
 
   const lid = new THREE.Group();
   const lidH = 6 + 1.2 + 2.4;
@@ -309,13 +314,18 @@ export function enclosure(): { base: THREE.Group; lid: THREE.Group } {
   ring.add(mesh(extrude(flatDisc(outR, outW, [pathOf(flatDisc(outR - 1.6, outW - 1.6))]), lidH - 1.2)));
   lid.add(ring);
   const win = new THREE.Path();
-  win.moveTo(-20.4, 4.7);
-  win.lineTo(-15.2, 4.7);
-  win.lineTo(-15.2, -10.3);
-  win.lineTo(-20.4, -10.3);
+  // win: x -20.4..-15.2, y 2.8 ± 7.5 (KiCad y, which extrude() maps to +z as the board does).
+  win.moveTo(-20.4, -4.7);
+  win.lineTo(-15.2, -4.7);
+  win.lineTo(-15.2, 10.3);
+  win.lineTo(-20.4, 10.3);
   win.closePath();
   const roof = extrude(flatDisc(outR, outW, [win]), 1.2);
   lid.add(at(mesh(roof), 0, lidH - 1.2, 0));
+  // USB-C cut-out on the left wall (usb_cut): 12.6 wide at y 2.8, 7.2 tall, centred 2.6 above
+  // the board top. Outside, all of it is in the lid (its skirt covers the base's step).
+  const usbLow = floorT + below + 0.6 - (floorT + below + boardT - 2.4); // 1.4 above the lid's lower edge
+  lid.add(at(mesh(box(0.6, 7.2, 12.6), "black"), -outW - 0.1, usbLow + 3.6, 2.8));
   return { base, lid };
 }
 
@@ -330,24 +340,33 @@ function pathOf(sh: THREE.Shape): THREE.Path {
 
 // ------------------------------------------------------------------------- in the wall
 
-/** A flush wall box, opening toward +z at z = 0, inside 64 × 64, 45 deep; cut away on the right. */
+/**
+ * A flush wall box, opening toward +z at z = 0, inside 64 × 64, `WALL_D` deep, cut away on the
+ * right and on top so the terminals inside show. Deep enough for the enclosure (26) behind a switch (about 24 with its terminals), like
+ * the deep boxes the hardware README asks for.
+ */
+export const WALL_D = 60;
 export function wallBox(): THREE.Group {
   const g = new THREE.Group();
-  const s = 64, d = 45, t = 2;
+  const s = 64, d = WALL_D, t = 2;
   g.add(at(mesh(box(s + 2 * t, s + 2 * t, t)), 0, 0, -d - t / 2));
   g.add(at(mesh(box(t, s + 2 * t, d)), -(s + t) / 2, 0, -d / 2));
-  g.add(at(mesh(box(s + t, t, d)), -t / 2, (s + t) / 2, -d / 2));
   g.add(at(mesh(box(s + t, t, d)), -t / 2, -(s + t) / 2, -d / 2));
   return g;
 }
 
-/** A one-way wall switch: back box with two screw terminals (at `MECH.l` and `MECH.sl`), rocker plate in front. */
+/**
+ * A one-way wall switch: back box with two screw terminals, rocker plate in front. Each terminal
+ * takes its wire into an opening on the back face (at `MECH.l` and `MECH.sl`), screw on top.
+ */
 export function mechanism(): THREE.Group {
   const g = new THREE.Group();
   g.add(at(mesh(box(44, 44, 20)), 0, 0, -10));
   for (const x of [-12, 12]) {
     g.add(at(mesh(box(8, 8, 6), "soft"), x, 14, -21));
-    g.add(at(mesh(cyl(2, 1, 20).rotateX(Math.PI / 2), undefined, true), x, 14, -17.5));
+    g.add(at(mesh(box(3.4, 3.4, 0.3), "black"), x, 14, -24.1));
+    g.add(at(mesh(cyl(2, 0.8, 20), undefined, true), x, 18.4, -21));
+    g.add(at(mesh(box(3, 0.3, 0.5), undefined), x, 18.9, -21));
   }
   g.add(at(mesh(box(80, 80, 3)), 0, 0, 1.5));
   g.add(at(mesh(box(26, 40, 4)), 0, 0, 5));
@@ -355,20 +374,27 @@ export function mechanism(): THREE.Group {
   return g;
 }
 
-export const MECH = { l: [-12, 14, -24] as [number, number, number], sl: [12, 14, -24] as [number, number, number] };
+export const MECH = { l: [-12, 14, -23.5] as [number, number, number], sl: [12, 14, -23.5] as [number, number, number] };
+/** A point on the axis of each terminal opening, `d` mm out from the back face. */
+export const mechOut = (t: "l" | "sl", d = 8): [number, number, number] => [t === "l" ? -12 : 12, 14, -24 - d];
 
 /** WAGO 221-style lever connector with `n` poles, entries facing -x. */
 export function leverConnector(n: number): THREE.Group {
   const g = new THREE.Group();
   const p = 5.8;
-  g.add(at(mesh(box(18, 8.5, n * p), "soft"), 0, 4.25, 0));
-  for (let i = 0; i < n; i++) g.add(at(mesh(box(12, 2.2, p - 1.2), "wago"), 2.5, 9.6, (i - (n - 1) / 2) * p));
+  // 221-41x: 18.7 long, 8.3 tall with the levers down.
+  g.add(at(mesh(box(18, 6.8, n * p), "soft"), 0, 3.4, 0));
+  for (let i = 0; i < n; i++) {
+    const z = (i - (n - 1) / 2) * p;
+    g.add(at(mesh(box(12, 1.5, p - 1.2), "wago"), 2.5, 7.55, z));
+    g.add(at(mesh(box(0.3, 3, 3), "black"), -9.1, 3.2, z));
+  }
   return g;
 }
 
-/** Wire entry of pole `i` of a lever connector, in its local coords. */
-export function leverEntry(n: number, i: number): [number, number, number] {
-  return [-9.5, 3.5, (i - (n - 1) / 2) * 5.8];
+/** Wire entry of pole `i` of a lever connector, in its local coords; `d` mm out from it. */
+export function leverEntry(n: number, i: number, d = 0): [number, number, number] {
+  return [-8.5 - d, 3.2, (i - (n - 1) / 2) * 5.8];
 }
 
 /** A DIN-rail breaker, lever up (on) or down (off), front toward +z. */

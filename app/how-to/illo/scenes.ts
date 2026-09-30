@@ -3,6 +3,7 @@ import { DIAL_SIZE, HDR_Z, buildAntenna, buildDisplay, buildHeaders, buildXiao, 
 import {
   BUTTON_LUGS,
   MECH,
+  WALL_D,
   at,
   box,
   breaker,
@@ -13,6 +14,7 @@ import {
   joint,
   leverConnector,
   leverEntry,
+  mechOut,
   mechanism,
   mesh,
   panelButton,
@@ -645,12 +647,13 @@ function boardWithXiao() {
 function wallBoard(): SceneDef {
   const { root: b, x } = boardWithXiao();
   const { base, lid } = enclosure();
-  base.position.y = -44;
-  lid.position.y = 16;
+  // Exploded along the assembly axis, far enough apart that the lid doesn't hide the XIAO.
+  base.position.y = -52;
+  lid.position.y = 34;
   const root = group(b, base, lid);
   return {
     root,
-    dir: [0.8, 1.1, 1.3],
+    dir: [0.8, 0.75, 1.3],
     pad: 1.04,
     notes: [
       note("Lid: window over BOOT and the LED", lid, [-18, 9.6, -3], "left"),
@@ -664,9 +667,10 @@ function wallBoard(): SceneDef {
 
 function wallUsb(): SceneDef {
   const { root: b, pts } = boardWithXiao();
+  // The XIAO's USB-C mouth is 11.7 out from its centre (-10.1): the tongue goes all the way in.
   const cable = usbCable([[0, 0, 36], [-12, 0, 50]]);
   cable.rotation.y = -Math.PI / 2;
-  cable.position.set(-21 - 6.6 + 4.1, T + 1.6 + 1.58, 2.8);
+  cable.position.set(-10.1 - USB_MOUTH_Z + 6.6, 1.6 + T + 1.58, 2.8);
   const root = group(b, cable);
   return {
     root,
@@ -719,81 +723,126 @@ function inScene(o: THREE.Object3D, p: V3): V3 {
   return [v.x, v.y, v.z];
 }
 
-// A cutaway wall box (right side open) seen from the front right. The switch is pulled out to
-// the front left, turned round so its terminals show.
+// A cutaway wall box (right side and top open) seen from the front right, above. The switch is pulled out to
+// the front left, turned round so its terminal openings face us. Lever connectors lie with
+// their openings toward the front. The carrier board stands at the back, XIAO side to the
+// front, turned so J1/J2 open upward and J3 opens to the right (the open side): every wire
+// visibly goes into an opening.
 function wallScene(o: WallOpts) {
   const root = group();
   root.add(wallBox());
   const mech = mechanism();
-  if (o.mounted) mech.position.set(0, 0, 0);
-  else {
+  if (!o.mounted) {
     mech.position.set(-54, -14, 38);
     mech.rotation.y = -2.5;
   }
   root.add(mech);
+  // The lamp only where the step is about it; elsewhere its cable just leaves the picture.
+  const withLamp = Boolean(o.before || o.lit || !o.board);
   const lampBulb = at(bulb(Boolean(o.lit)), 72, 44, -28);
   lampBulb.scale.setScalar(0.85);
-  root.add(lampBulb);
+  if (withLamp) root.add(lampBulb);
 
   const w = (pts: V3[], tone: Tone, r = 0.9) => root.add(wire(pts, tone, r));
-  // Sheathed cables in through the top: supply on the left, lamp on the right.
-  const sup: V3 = [-18, 30, -34], lamp: V3 = [18, 30, -34];
-  root.add(wire([[-18, 70, -34], [-18, 33, -34]], "switched", 3));
-  root.add(wire([[18, 33, -34], [18, 58, -34], [44, 70, -30], [72, 66, -28], [72, 48, -28]], "switched", 3));
+  // Sheathed cables in through the top, supply and lamp, both on the left and near the front:
+  // from this camera they don't hide the board's terminals.
+  const CZ = -8;
+  const sup: V3 = [-26, 30, CZ], lamp: V3 = [-12, 30, CZ];
+  root.add(wire([[sup[0], 70, CZ], [sup[0], 32.5, CZ]], "switched", 3));
+  const lampUp: V3[] = withLamp ? [[lamp[0], 58, CZ], [20, 72, CZ - 6], [72, 66, -28], [72, 48, -28]] : [[lamp[0], 70, CZ]];
+  root.add(wire([[lamp[0], 32.5, CZ], ...lampUp], "switched", 3));
 
-  const L = inScene(mech, MECH.l), SL = inScene(mech, MECH.sl);
-  const nN = o.mains ? 3 : 2;
-  const nConn = at(leverConnector(nN), -10, -24, -14);
-  const eConn = at(leverConnector(2), 14, -24, -14);
-  root.add(nConn, eConn);
-  const entry = (c: THREE.Object3D, n: number, i: number) => inScene(c, leverEntry(n, i));
-  w([[sup[0] - 2.5, sup[1], sup[2]], [-26, 8, -30], [-26, -18, -20], entry(nConn, nN, 0)], "neutral");
-  w([[lamp[0] - 2.5, lamp[1], lamp[2]], [6, 10, -36], [-24, -12, -26], entry(nConn, nN, 1)], "neutral");
-  w([[sup[0] + 2.5, sup[1], sup[2]], [-6, 12, -36], [0, -16, -24], entry(eConn, 2, 0)], "earth");
-  w([[lamp[0] + 2.5, lamp[1], lamp[2]], [24, 8, -34], [4, -14, -22], entry(eConn, 2, 1)], "earth");
+  // Into a mechanism terminal (from outside), or out of it.
+  const mOut = (t: "l" | "sl", d: number) => inScene(mech, mechOut(t, d));
+  const reach = o.mounted ? 3 : 9;
+  const intoMech = (t: "l" | "sl"): V3[] => [mOut(t, reach), mOut(t, 3), inScene(mech, t === "l" ? MECH.l : MECH.sl)];
 
-  let lConn: THREE.Object3D | null = null;
+  // Lever connectors in a row on the box floor, openings toward the front. With the switch back
+  // in, the only room left is a 10 mm strip on each side of it (and in front of the floor row),
+  // so wires run: along the top, down the left (live, neutral) or right (earth) side, along the
+  // floor row's front into their openings. Local (x, y, z) → (cx + z, cy + y, cz - x).
+  const lever = (n: number, x: number) => {
+    const c = at(leverConnector(n), x, -32, -20);
+    c.rotation.y = Math.PI / 2;
+    root.add(c);
+    return c;
+  };
+  const nN = o.mains ? 3 : 2, nL = o.mains ? 3 : 2;
+  const nConn = lever(nN, -3);
+  const eConn = lever(2, 16);
+  const lv = (c: THREE.Object3D, n: number, i: number, d: number) => inScene(c, leverEntry(n, i, d));
+  const intoLever = (c: THREE.Object3D, n: number, i: number): V3[] => [lv(c, n, i, 10), lv(c, n, i, 3), lv(c, n, i, 0)];
+  // From a cable end down a side strip at x `sx`, then along the front of the floor row.
+  const drop = (from: V3, sx: number, c: THREE.Object3D, n: number, i: number): V3[] => {
+    const a = lv(c, n, i, 10);
+    return [from, [from[0], 26, CZ + 2], [sx, 23, -3.5], [sx, -24.5, -3], [a[0] + (a[0] > sx ? -2 : 2), -26, -1.3], ...intoLever(c, n, i)];
+  };
+  // Out of a connector, back along the floor row (behind the incoming hooks), up the left side
+  // deep in the box, over the top behind the switch.
+  const riseLeft = (c: THREE.Object3D, n: number, i: number, sx: number, zDeep: number): V3[] => {
+    const a = lv(c, n, i, 10);
+    return [...intoLever(c, n, i).reverse(), [a[0], -24.6, -2.5], [sx + 2, -24.3, -3.5], [sx, -22, zDeep], [sx, 22, zDeep], [sx + 6, 27, zDeep - 8]];
+  };
+
+  const lConn = o.lampJoined ? lever(nL, -22) : null;
+  w(drop([sup[0] - 2.5, sup[1], sup[2]], -26.5, nConn, nN, 0), "neutral");
+  w(drop([lamp[0] - 2.5, lamp[1], lamp[2]], -24.5, nConn, nN, 1), "neutral");
+  w(drop([sup[0] + 2.5, sup[1], sup[2]], 25, eConn, 2, 0), "earth");
+  w(drop([lamp[0] + 2.5, lamp[1], lamp[2]], 27, eConn, 2, 1), "earth");
+
   if (o.before) {
-    w([sup, [-20, 18, -16], [-34, 6, 8], L], "live");
-    w([lamp, [16, 16, -14], [-20, 2, 14], SL], "switched");
-  } else if (o.lampJoined) {
-    const n = o.mains ? 3 : 2;
-    lConn = at(leverConnector(n), -10, 14, -16);
-    root.add(lConn);
-    w([sup, [-22, 22, -22], entry(lConn, n, 0)], "live");
-    w([lamp, [8, 24, -30], [-26, 18, -18], entry(lConn, n, 1)], "switched");
+    w([sup, [-24, 20, -10], [-30, 6, 30], ...intoMech("l")], "live");
+    w([lamp, [-4, 16, 4], [-10, -8, 30], [-36, -10, 62], ...intoMech("sl")], "switched");
+  } else if (lConn) {
+    w(drop(sup, -30.5, lConn, nL, 0), "live");
+    w(drop(lamp, -28.5, lConn, nL, 1), "switched");
   }
 
   let board: ReturnType<typeof boardWithXiao> | null = null;
+  // Board-local → scene: KiCad x (J1/J2 side) up, the XIAO side to the front, J3's end to the right.
+  const BOARD_AT: V3 = [0, 0, -WALL_D + 17.2];
+  const turn = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0));
   if (o.board) {
     board = boardWithXiao();
-    board.root.rotation.x = Math.PI / 2;
-    board.root.position.set(4, 2, -30);
+    board.root.setRotationFromMatrix(turn);
+    board.root.position.set(...BOARD_AT);
     root.add(board.root);
     if (o.inEnclosure) {
       const { base, lid } = enclosure();
       base.position.y = -17.2;
+      lid.position.y = -0.8;
       const enc = group(base, lid);
-      enc.rotation.x = Math.PI / 2;
-      enc.position.set(4, 2, -30);
+      enc.setRotationFromMatrix(turn);
+      enc.position.set(...BOARD_AT);
       root.add(enc);
     }
   }
   const bw = (p: V3): V3 => inScene(board!.root, p);
+  // Into a board terminal, straight into its opening. The enclosure leaves about 9 mm to the
+  // box's top wall over J1/J2, and 4 mm to the side wall past J3.
+  const intoBoard = (k: string): V3[] => {
+    const p = board!.pts[k], u = board!.out[k];
+    const off = (d: number): V3 => bw([p[0] + u[0] * d, p[1] + u[1] * d, p[2] + u[2] * d]);
+    return u[0] ? [off(8), off(3), bw(p)] : [off(5), off(2), bw(p)];
+  };
   if (board && o.switchWires) {
-    const d0 = bw(board.pts.D0), gnd = bw(board.pts.GND);
-    w([L, [L[0] + 10, L[1] + 8, L[2] - 6], [30, 10, -8], [d0[0] + 8, d0[1], d0[2] + 2], d0], "signal", 0.8);
-    w([SL, [SL[0] + 10, SL[1] - 10, SL[2] - 4], [16, -34, -10], [gnd[0], gnd[1] - 8, gnd[2] + 2], gnd], "signal", 0.8);
+    const l = inScene(mech, MECH.l), sl = inScene(mech, MECH.sl);
+    if (o.mounted) {
+      w([...intoMech("l").reverse(), [l[0] + 6, 24, -26], [2, 27, -36], ...intoBoard("D0")], "signal", 0.8);
+      w([...intoMech("sl").reverse(), [sl[0] + 10, 10, -26], [29, 6, -36], ...intoBoard("GND")], "signal", 0.8);
+    } else {
+      w([...intoMech("l").reverse(), [l[0] + 18, l[1] + 20, l[2] - 6], [8, 27, 0], [4, 28, -30], ...intoBoard("D0")], "signal", 0.8);
+      w([...intoMech("sl").reverse(), [sl[0] + 16, sl[1] - 16, sl[2] - 4], [10, -26, 20], [29, -8, -10], [29, 2, -38], ...intoBoard("GND")], "signal", 0.8);
+    }
   }
   if (board && o.mains && lConn) {
-    const bl = bw(board.pts.L), bn = bw(board.pts.N);
-    w([entry(lConn, 3, 2), [4, 26, -10], [bl[0] + 8, bl[1] + 6, bl[2] + 4], bl], "live");
-    w([entry(nConn, 3, 2), [24, -16, -8], [bn[0] + 8, bn[1] - 2, bn[2] + 4], bn], "neutral");
+    w([...riseLeft(lConn, nL, 2, -30.5, -12), ...intoBoard("L")], "live");
+    w([...riseLeft(nConn, nN, 2, -28, -15), ...intoBoard("N")], "neutral");
   }
-  return { root, mech, lampBulb, nConn, eConn, lConn, board, bw, L, SL };
+  return { root, mech, lampBulb, nConn, eConn, lConn, board, bw, L: inScene(mech, MECH.l), SL: inScene(mech, MECH.sl) };
 }
 
-const WALL_DIR: V3 = [0.85, 0.55, 1.0];
+const WALL_DIR: V3 = [0.85, 0.8, 1.0];
 
 function wallBefore(labels: boolean): SceneDef {
   const s = wallScene({ before: true });
@@ -882,7 +931,7 @@ function wallFit(on: boolean): SceneDef {
         note("Breaker on: press the switch, the lamp reacts", s.lampBulb, [14, 36, 0], "right", "ok"),
       ]
     : [
-        note("Enclosure at the back of the box", s.root, [-18, 2, -16], "right", "hot"),
+        note("Enclosure at the back of the box", s.root, s.bw([-10, 8.8, -12]), "right", "hot"),
         note("Switch goes back in front of it", s.mech, [0, -22, -10], "left"),
       ];
   const marks: Mark[] = on ? [{ kind: "glow", at: A(s.lampBulb, [0, 34, 0]), r: 40 }] : [];
