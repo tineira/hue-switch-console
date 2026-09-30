@@ -4,6 +4,7 @@ import { configStatus } from "@/lib/config-sync";
 import {
   getSwitchByMac,
   isApiKeyRevoked,
+  removeSwitch,
   toSwitchPublic,
   updateSwitchLabel,
 } from "@/lib/db";
@@ -94,6 +95,28 @@ export async function PATCH(
     const sw = await updateSwitchLabel(user.id, mac, label);
     if (!sw) return jsonError(404, "not_found");
     return jsonOk({ ok: true, ...toSwitchPublic(sw) });
+  } catch (err) {
+    return databaseError(err);
+  }
+}
+
+/** Removes the switch and, unless another switch shares it, revokes its key (docs/device-api.md). */
+export async function DELETE(
+  _req: Request,
+  context: { params: Promise<{ mac: string }> },
+) {
+  if (!isDbConfigured()) {
+    return jsonError(503, "database_not_configured");
+  }
+  const user = await getSessionUser();
+  if (!user) return jsonError(401, "unauthorized");
+  const { mac: rawMac } = await context.params;
+  const mac = normalizeMac(rawMac);
+  if (!mac) return jsonError(400, "mac must be 12 hex digits");
+  try {
+    const result = await removeSwitch(user.id, mac);
+    if (!result.removed) return jsonError(404, "not_found");
+    return jsonOk({ removed: true, key_revoked: result.keyRevoked });
   } catch (err) {
     return databaseError(err);
   }

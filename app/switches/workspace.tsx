@@ -180,6 +180,44 @@ const EMPTY_SNAPSHOT: TopologySnapshot = {
   scenes: [],
 };
 
+function RemoveConfirm({
+  question,
+  detail,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  question: string;
+  detail: string;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-danger/30 bg-danger-soft px-3.5 py-3">
+      <p className="min-w-56 flex-1 text-sm">
+        <span className="font-medium">{question}</span> {detail}
+      </p>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={busy}
+        className="rounded-md border border-line bg-cream px-3 py-1.5 text-sm disabled:opacity-60"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={busy}
+        className="rounded-md bg-danger px-3 py-1.5 text-sm font-medium text-background disabled:opacity-60"
+      >
+        {busy ? "Removing…" : "Remove"}
+      </button>
+    </div>
+  );
+}
+
 function notSeenText(min: number): string {
   const hours = Math.round(min / 60);
   return hours < 48 ? `${hours} h` : `${Math.round(hours / 24)} days`;
@@ -233,6 +271,10 @@ export function SwitchesWorkspace({
   // The update panel (what changes) and the details row, for the selected switch.
   const [updateOpen, setUpdateOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  // Removing a switch or a Bridge: the one being asked about, and whether the request runs.
+  const [removeAsk, setRemoveAsk] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [removedNote, setRemovedNote] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [names, setNames] = useState<Record<string, string | null>>(() =>
@@ -254,6 +296,7 @@ export function SwitchesWorkspace({
     setError(null);
     setUpdateOpen(false);
     setDetailsOpen(false);
+    setRemoveAsk(null);
   }
 
   const selected = switches.find((item) => item.mac === selectedMac) ?? null;
@@ -568,6 +611,36 @@ export function SwitchesWorkspace({
     }
   }
 
+  // docs/specs/console-review-fixes.md §C. Afterwards the page shows the first remaining switch.
+  async function removeFromConsole(url: string, name: string, kind: "switch" | "bridge") {
+    setRemoving(true);
+    setError(null);
+    try {
+      const res = await fetch(url, { method: "DELETE" });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; key_revoked?: boolean };
+      if (!res.ok) {
+        setError(
+          body.error === "bridge_has_switches"
+            ? `${name} still has switches. Remove them first.`
+            : `Could not remove ${name}. Try again.`,
+        );
+        return;
+      }
+      setRemoveAsk(null);
+      setRemovedNote(
+        kind === "bridge"
+          ? `Removed ${name}.`
+          : body.key_revoked
+            ? `Removed ${name} and revoked its key.`
+            : `Removed ${name}. Its key is shared with another switch, so it comes back at its next check-in unless you revoke that key on API keys or erase the board on Setup.`,
+      );
+      if (kind === "switch") window.history.replaceState(null, "", SWITCHES_PATH);
+      router.refresh();
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   function selectBoard(item: WorkspaceSwitch) {
     if (item.mac === selectedMac) return;
     window.history.pushState(null, "", `${SWITCHES_PATH}/${item.mac}`);
@@ -753,6 +826,12 @@ export function SwitchesWorkspace({
         </p>
       ) : null}
 
+      {removedNote ? (
+        <p className="rounded-lg border border-ok/40 bg-ok-soft px-3 py-2 text-sm" role="status">
+          {removedNote}
+        </p>
+      ) : null}
+
       {bridges.map((bridge) => {
         const onBridge = switches.filter((item) => item.bridgeid === bridge.bridgeid);
         const empty =
@@ -792,8 +871,31 @@ export function SwitchesWorkspace({
               <nav aria-label={`Switches on ${bridge.bridgeid}`} className="flex flex-wrap gap-2">
                 {onBridge.map(renderTab)}
               </nav>
+            ) : removeAsk === `bridge:${bridge.bridgeid}` ? (
+              <RemoveConfirm
+                question={`Remove Bridge ${bridge.bridgeid}?`}
+                detail="Its rooms, lights and scenes leave the console. A switch paired with it brings it back when it checks in."
+                busy={removing}
+                onCancel={() => setRemoveAsk(null)}
+                onConfirm={() =>
+                  removeFromConsole(
+                    `/api/bridges/${encodeURIComponent(bridge.bridgeid)}`,
+                    `Bridge ${bridge.bridgeid}`,
+                    "bridge",
+                  )
+                }
+              />
             ) : (
-              <p className="text-sm text-muted">No switches on this Bridge yet.</p>
+              <p className="text-sm text-muted">
+                No switches on this Bridge yet.{" "}
+                <button
+                  type="button"
+                  onClick={() => setRemoveAsk(`bridge:${bridge.bridgeid}`)}
+                  className="text-danger underline underline-offset-2"
+                >
+                  Remove this Bridge
+                </button>
+              </p>
             )}
           </section>
         );
@@ -947,7 +1049,33 @@ export function SwitchesWorkspace({
                     {round ? "What the screen shows" : "What the LED shows"}
                   </Link>
                 </dd>
+                <dt className="text-muted">Console</dt>
+                <dd>
+                  <button
+                    type="button"
+                    onClick={() => setRemoveAsk(`switch:${selected.mac}`)}
+                    className="text-danger underline underline-offset-2"
+                  >
+                    Remove from console
+                  </button>
+                </dd>
               </dl>
+            ) : null}
+            {removeAsk === `switch:${selected.mac}` ? (
+              <RemoveConfirm
+                question={`Remove ${boardName(selected)} from the console?`}
+                detail={
+                  `Its settings here${dirty ? ", with the unsaved changes," : ""} are deleted and its key is revoked, ` +
+                  "unless another switch uses the same key. The board keeps what it saved and works on the LAN, " +
+                  "but gets no more changes. To add it back, use Link to console on Setup. " +
+                  "If you have the board, erase it first on Setup (Reset board, Erase settings)."
+                }
+                busy={removing}
+                onCancel={() => setRemoveAsk(null)}
+                onConfirm={() =>
+                  removeFromConsole(`/api/switches/${selected.mac}`, boardName(selected), "switch")
+                }
+              />
             ) : null}
           </header>
           {editingMac === selected.mac ? (
