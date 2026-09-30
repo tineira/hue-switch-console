@@ -14,6 +14,7 @@ import {
   INPUT_EXPLAINED,
   NEVER,
   RESISTORS,
+  STAIRCASE,
   ROUND_ASSEMBLE,
   ROUND_BUY,
   SIMPLE_LEVELS,
@@ -229,6 +230,9 @@ function ButtonBox() {
       <Sub title="How an input works">
         <p className="text-sm text-muted">
           <Rich text={INPUT_EXPLAINED} />
+        </p>
+        <p className="rounded-xl border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-muted">
+          <Rich text={STAIRCASE} />
         </p>
       </Sub>
       <Sub

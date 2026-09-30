@@ -120,7 +120,7 @@ function PadRow({ edge }: { edge: "top" | "bottom" }) {
 }
 
 // Z positions per stage. "exploded" is the landing page's drawing, with its dimension and
-// part balloons; the others are the /how-to assembly steps (docs/specs/build-guides.md).
+// part balloons; the others are the /how-to assembly steps (docs/specs/finished/build-guides.md).
 export type RoundStage = "exploded" | "antenna" | "assembled";
 
 const Z: Record<RoundStage, { antenna: number; board: number; glass: number }> = {

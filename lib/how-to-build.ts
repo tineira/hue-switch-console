@@ -1,5 +1,5 @@
 // Copy for the Build part of /how-to: what to buy and how to put each switch together
-// (docs/specs/build-guides.md). **label** marks a UI label or key term, as in lib/how-to.ts.
+// (docs/specs/finished/build-guides.md). **label** marks a UI label or key term, as in lib/how-to.ts.
 //
 // The resistor and capacitor values must match the mains carrier board's input circuit
 // (R1–R6, R11–R16, C11–C16 in hue-simple-switch/hardware/). Change both together.
@@ -207,6 +207,11 @@ export const BOX_STEPS: WireStep[] = [
 
 export const INPUT_EXPLAINED =
   "Each of **D0** to **D5** reads one contact. One side of the switch goes to its pin, the other side to **GND**. Closed means pressed, or on. The board doesn't know what's on a pin until you tell it on Switches: **Wall switch** (stays on or off) or **Push button** (press and release).";
+
+// A maintained channel maps closed to on and open to off (docs/definitions.md), so two
+// switches on one room disagree. Supporting the pair needs a new channel kind.
+export const STAIRCASE =
+  "**Two switches for one lamp** (a staircase or hallway pair, also called two-way or 3-way) aren't supported yet. A **Wall switch** input means on when closed and off when open, so two of them on one room disagree. Wire each as its own input for different rooms, or use push buttons, which toggle.";
 
 export const RESISTORS: { lead: string; body: string }[] = [
   {

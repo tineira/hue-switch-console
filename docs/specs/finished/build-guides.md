@@ -2,7 +2,7 @@
 
 Console spec. No device contract change. Process: `AGENTS.md` → "Cross-repo changes" (only the checklist part applies: the Simple firmware repo gets a README link).
 
-**Status:** in progress
+**Status:** done
 
 ## 1. What and why
 
@@ -148,27 +148,27 @@ The web page is a **"can I use this?"** summary plus the **order of installation
 
 ### Console (`hue-switch-console`)
 
-- [ ] Landing: Simple card wiring sentence links to the existing wiring SVG (immediate fix, 3.6)
-- [ ] `lib/how-to.ts`: `shoppingList(product)` and `buildSteps(product)` data; Simple levels A/B/C
-- [ ] `how-to-guide.tsx`: Build section with anchors, collapsed by default, open from `#build`
-- [ ] `RoundDrawing` gets a `stage` prop (exploded, lined up, assembled); landing page unchanged
-- [ ] Simple level B: numbered steps 1–9 (3.4), one drawing per step (XIAO pads, one input with R/C, joined GND)
-- [ ] Simple level C: installation steps 1–10 (3.4), each linking its hardware README section
-- [ ] New drawings, themed and dark-mode aware: Simple wiring (B, with optional R/C), before/after wall switch conversion (C)
-- [ ] Board and enclosure images copied to `public/how-to/`
-- [ ] Landing links to `#build` / `#assemble` (3.6)
-- [ ] `docs/changelog.md` entry
-- [ ] Deployed; checked on production at phone and desktop width, both themes
+- [x] Landing: the Simple card links to the guide itself (shipped together, so the interim SVG link was skipped)
+- [x] Content as data, in `lib/how-to-build.ts` (kept apart from `lib/how-to.ts`); Simple levels A/B/C
+- [x] `app/how-to/build-section.tsx`: Build section with anchors, collapsed by default, opened (and scrolled to) by any Build anchor
+- [x] `RoundDrawing` gets a `stage` prop (exploded, lined up, assembled); landing page unchanged
+- [x] Simple level B: numbered steps 1–9 (3.4), one drawing per step (XIAO pads, one input with R/C, joined GND)
+- [x] Simple level C: installation steps 1–10 (3.4), each linking its hardware README section
+- [x] New drawings (`app/how-to/build-drawings.tsx`), themed and dark-mode aware: Simple wiring (B, with optional R/C), before/after wall switch conversion (C)
+- [x] Board images copied to `public/how-to/`
+- [x] Landing links to `#build` / `#assemble` (3.6)
+- [x] `docs/changelog.md` entry
+- [x] Deployed; checked on production at phone and desktop width, both themes
 
 ### Round (`hue-round-switch`)
 
-- [ ] README "What you need" links to `/how-to?product=round#build`
+- [x] README Setup section links to `/how-to?product=round#build`
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] README wiring paragraph links to `/how-to?product=simple#wire`
-- [ ] `hardware/README.md` links to `/how-to?product=simple#in-wall` for the "can I use this?" summary
-- [ ] AGENTS.md: a change to the input R/C values updates the console guide (3.5)
+- [x] README wiring paragraph links to `/how-to?product=simple#wire`
+- [x] `hardware/README.md` links to `/how-to?product=simple#in-wall` for the "can I use this?" summary
+- [x] AGENTS.md: a change to the input R/C values updates the console guide (3.5)
 
 No `FIRMWARE_VERSION` bump: documentation only.
 
@@ -179,3 +179,8 @@ No `FIRMWARE_VERSION` bump: documentation only.
 3. **Where the Build section opens.** *Recommendation:* collapsed by default, open from `#build` (3.1). Alternative: always open for signed-out visitors, collapsed for signed-in ones (who already own a switch).
 4. **Level B enclosure.** Whether to publish a printable box for the USB button box too. *Recommendation:* not now; any project box works, and the guide says so.
 5. **Photos or drawings for the level B steps.** Photos of a real button box are clearer for a first build; drawings match the site and never go stale. *Recommendation:* ship with drawings, and swap in photos of the maintainer's own box, step by step, when they exist.
+
+## 6. Outcome
+
+- The Simple guide opens on level B, not A: B's first two steps are A, and a reader who followed a "wiring" link from the landing page wants B.
+- The guide says staircase pairs are not supported yet (open question 1); supporting them needs its own cross-repo spec for a toggle-on-change channel kind. Questions 2 (kits), 4 (level B enclosure) and 5 (photos) stay open; the guide ships with drawings.
