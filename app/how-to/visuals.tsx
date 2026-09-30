@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { FaceKind, Pattern, Visual } from "@/lib/how-to";
+import { LedBoard } from "@/app/how-to/led-board";
 
 // Ring colours and pulses live in globals.css (.round-face-*) and mirror ui.h in hue-round-switch.
 type Ring = "wait" | "loading" | "pairing" | "error" | "mute" | "ready";
@@ -7,6 +8,8 @@ type Ring = "wait" | "loading" | "pairing" | "error" | "mute" | "ready";
 // .led is drawn at 14 px and .round-face at 88 px; --k scales both, like .round-dial.
 const LED_BASE = 14;
 const FACE_BASE = 88;
+// Smallest size that shows the LED on the XIAO close-up rather than as a plain dot.
+const BOARD_MIN = 56;
 
 function scale(size: number, base: number): CSSProperties | undefined {
   return size === base ? undefined : ({ ["--k" as string]: size / base } as CSSProperties);
@@ -103,7 +106,8 @@ function faceParts(kind: FaceKind, version: string | null): { ring: Ring; flash?
   }
 }
 
-// One visual at a nominal size in px. LEDs are drawn at about a fifth of it, never under 14 px.
+// One visual at a nominal size in px. From BOARD_MIN up, the LED is shown on the XIAO close-up;
+// the plain dot (about a fifth of the size, never under 14 px) is the small and no-WebGL form.
 export function StateVisual({
   visual,
   label,
@@ -116,7 +120,10 @@ export function StateVisual({
   version: string | null;
 }) {
   if ("led" in visual) {
-    return <Led pattern={visual.led} label={label} size={Math.max(LED_BASE, Math.round(size / 5))} />;
+    const dot = <Led pattern={visual.led} label={label} size={Math.max(LED_BASE, Math.round(size / 5))} />;
+    // Below this the board close-up is too small to read: the plain dot.
+    if (size < BOARD_MIN) return dot;
+    return <LedBoard pattern={visual.led} label={label} size={size} fallback={dot} />;
   }
   const { ring, flash, body } = faceParts(visual.face, version);
   return (

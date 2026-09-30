@@ -490,6 +490,20 @@ option {
   2.667% { opacity: 0; }
 }
 
+/* The same LED placed on the XIAO close-up (app/how-to/led-board.tsx): a small SMD package,
+   pale when off, with a glow sized by --d (its height in px) when lit. */
+.led-onboard {
+  border-radius: 30%;
+  background: #d9cfb4;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 45%);
+}
+.led-onboard::after {
+  border-radius: 30%;
+  box-shadow:
+    0 0 calc(var(--d) * 1.2) calc(var(--d) * 0.5) rgb(255 138 31 / 80%),
+    0 0 calc(var(--d) * 3) calc(var(--d) * 1) rgb(255 138 31 / 35%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .led::after { animation: none; }
   .led:not(.led-solid)::after { opacity: 0.5; }

@@ -1033,6 +1033,16 @@ function wallFit(on: boolean): SceneDef {
   return { root: s.root, dir: WALL_DIR, wrap: WALL_WRAP, pad: 1.03, notes, marks };
 }
 
+/**
+ * The whole XIAO, seen as in the Switches board picture (USB-C at the top), for the status LED:
+ * no callouts; the page draws the blinking LED over the reported `led` point. (A crop around the
+ * LED alone read as loose outlines: the board's edges are what make it the XIAO.)
+ */
+export function ledCloseup(): SceneDef {
+  const x = xiao();
+  return { root: group(x), dir: TOP, pad: 1.02, points: { led: A(x, LED) } };
+}
+
 export function buildScene(id: IlloId): SceneDef {
   switch (id) {
     case "round-kit":

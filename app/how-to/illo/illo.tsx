@@ -14,21 +14,36 @@ const H = 440;
 const cache = new Map<string, Still>();
 let queue: Promise<unknown> = Promise.resolve();
 
-function themeKey() {
+export function themeKey() {
   const el = document.documentElement;
   return `${el.dataset.theme ?? ""}|${el.dataset.scheme ?? ""}`;
 }
 
 function render(id: IlloId): Promise<Still> {
-  const key = `${id}|${themeKey()}`;
+  return renderOnce(id, W, H, (m) => m.buildScene(id));
+}
+
+/**
+ * Render a scene once per theme into a still, queued behind the others (each opens and closes
+ * its own WebGL context). `name` keys the cache; `build` makes the scene.
+ */
+export function renderOnce(
+  name: string,
+  w: number,
+  h: number,
+  build: (scenes: typeof import("@/app/how-to/illo/scenes")) => import("@/app/how-to/illo/render").SceneDef,
+): Promise<Still> {
+  const key = `${name}|${w}x${h}|${themeKey()}`;
   const hit = cache.get(key);
   if (hit) return Promise.resolve(hit);
   const job = queue.then(async () => {
-    const [{ buildScene }, { renderStill }] = await Promise.all([
+    const hit2 = cache.get(key);
+    if (hit2) return hit2;
+    const [scenes, { renderStill }] = await Promise.all([
       import("@/app/how-to/illo/scenes"),
       import("@/app/how-to/illo/render"),
     ]);
-    const still = renderStill(buildScene(id), W, H);
+    const still = renderStill(build(scenes), w, h);
     cache.set(key, still);
     // Let the page breathe between renders.
     await new Promise((r) => setTimeout(r, 16));

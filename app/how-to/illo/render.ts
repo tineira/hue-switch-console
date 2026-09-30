@@ -36,9 +36,11 @@ export type SceneDef = {
   wrap?: number;
   notes?: Note[];
   marks?: Mark[];
+  /** Named points whose pixel position the still reports (for HTML placed over it). */
+  points?: Record<string, Anchor>;
 };
 
-export type Still = { src: string; overlay: string; w: number; h: number };
+export type Still = { src: string; overlay: string; w: number; h: number; points: Record<string, [number, number]>; mmPx: number };
 
 // Fixed colours are real-world (wire insulation, resistor bands); the rest follow the theme.
 const TONES: Record<string, string> = {
@@ -216,6 +218,10 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
     return [((v.x + 1) / 2) * w, ((1 - v.y) / 2) * h];
   };
   const overlay = drawMarks(def.marks ?? [], px) + drawNotes(notes, px, w, h, lm, rm);
+  const points: Record<string, [number, number]> = {};
+  for (const [k, a] of Object.entries(def.points ?? {})) points[k] = px(a);
+  // Pixels per mm at the frame's scale (the world is in metres).
+  const mmPx = s * MM;
 
   disposeTree(def.root);
   extra.forEach((g) => g.dispose());
@@ -224,7 +230,7 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
   outline.dispose();
   renderer.dispose();
   renderer.forceContextLoss();
-  return { src, overlay, w, h };
+  return { src, overlay, w, h, points, mmPx };
 }
 
 const toneVar = (t?: string) => (t === "danger" ? "var(--danger)" : t === "ok" ? "var(--ok)" : t === "muted" ? "var(--muted)" : "var(--filament)");
