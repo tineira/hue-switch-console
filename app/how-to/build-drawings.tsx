@@ -178,7 +178,7 @@ function OneSwitch({ closed, lamp, withSwitch }: { closed: boolean; lamp: boolea
         <>
           <circle cx={110} cy={180} r={2.5} fill={HOT} />
           <circle cx={230} cy={180} r={2.5} fill={HOT} />
-          <Note x={170} y={184} anchor="middle">to the switch</Note>
+          <Note x={170} y={172} anchor="middle">to the switch</Note>
         </>
       )}
       {lamp !== null ? <Bulb x={270} y={70} lit={lamp} /> : null}

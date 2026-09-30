@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Conversion, WireStepDrawing } from "@/app/how-to/build-drawings";
 import { Rich } from "@/app/rich-text";
 import { RoundDrawing } from "@/app/landing/parts-drawings";
@@ -408,19 +408,35 @@ export function BuildSection({ product }: { product: Product }) {
   // B by default: its first two steps are A, and it's what most readers came for.
   const [level, setLevel] = useState<LevelId>("box");
 
+  // The anchor to scroll to once the section (and the right level) has rendered. The browser's
+  // own jump happens before it exists.
+  const target = useRef<string | null>(null);
+
+  const land = useCallback(() => {
+    const id = target.current;
+    const el = id ? document.getElementById(id) : null;
+    if (!el) return;
+    target.current = null;
+    el.scrollIntoView();
+  }, []);
+
   useEffect(() => {
     function follow() {
       const hash = currentHash();
       if (!isBuildAnchor(hash)) return;
+      target.current = hash;
       setOpen(true);
       const l = levelFor(hash);
       if (l) setLevel(l);
-      requestAnimationFrame(() => document.getElementById(hash)?.scrollIntoView());
+      // Already open on the right level: nothing re-renders, so land on the next frame.
+      requestAnimationFrame(land);
     }
     follow();
     window.addEventListener("hashchange", follow);
     return () => window.removeEventListener("hashchange", follow);
-  }, []);
+  }, [land]);
+
+  useEffect(land, [open, level, land]);
 
   const bodyId = "build-body";
 
