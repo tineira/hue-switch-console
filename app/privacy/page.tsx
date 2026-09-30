@@ -133,8 +133,9 @@ function PrivacyContent() {
         <p>
           One cookie keeps you signed in. A second, short-lived cookie (one hour) holds an invite
           code while you sign up. Your browser also remembers your theme and which switch model
-          the How-to page shows; that stays on your device. The sign-in form uses Cloudflare
-          Turnstile to tell people from bots, which runs a check in your browser.
+          the How-to page shows; that stays on your device. The sign-in and waitlist forms use
+          Cloudflare Turnstile to tell people from bots, which runs a check in your browser. On
+          the home page it loads only once you start filling in the waitlist form.
         </p>
       </Section>
 

@@ -33,7 +33,7 @@ declare global {
  * a closed <details> never produces a token). It adds cf-turnstile-response to the form, and
  * resets whenever `resetOn` changes, because a token works only once.
  */
-function Turnstile({ siteKey, resetOn }: { siteKey: string | null; resetOn?: unknown }) {
+export function Turnstile({ siteKey, resetOn }: { siteKey: string | null; resetOn?: unknown }) {
   const ref = useRef<HTMLDivElement>(null);
   const widget = useRef<string | null>(null);
 

@@ -7,9 +7,11 @@ import type { Part } from "@/app/landing/parts-list";
 import { RoundTrack } from "@/app/landing/round-track";
 import { SimpleCard } from "@/app/landing/simple-card";
 import { ThemeToggle } from "@/app/landing/theme-toggle";
-import type { SignupMode } from "@/lib/account-config";
+import { JoinWaitlistLink, LandingWaitlistForm } from "@/app/landing/waitlist-form";
+import { turnstileSiteKey, type SignupMode } from "@/lib/account-config";
 import { getSessionUser } from "@/lib/auth";
 import { currentSignupMode } from "@/lib/console-settings";
+import { isDbConfigured } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,8 @@ export const metadata = {
 const BUTTON = "inline-flex min-h-[46px] items-center rounded-lg px-5 text-[15px] font-medium";
 const PRIMARY = `${BUTTON} bg-filament text-filament-ink`;
 const SECONDARY = `${BUTTON} border border-line bg-background hover:border-filament`;
+const INPUT =
+  "min-h-[46px] min-w-0 flex-[1_1_220px] rounded-lg border border-line bg-background px-4 text-[15px] outline-none focus:border-filament";
 const H2 = "text-[clamp(26px,3cqi,36px)] font-semibold leading-[1.1] tracking-[-0.025em]";
 
 const COPY: Record<
@@ -204,6 +208,8 @@ export default async function Home() {
 
   const mode = await currentSignupMode();
   const copy = COPY[mode];
+  // Invite and waitlist modes take the address right here instead of sending people to /login.
+  const waitlistForm = (mode === "invite" || mode === "waitlist") && isDbConfigured();
   const hero = (
     <>
       <p className="font-mono text-xs uppercase tracking-[0.08em] text-muted">Open source · For Philips Hue</p>
@@ -214,22 +220,35 @@ export default async function Home() {
         Flash a Seeed Studio XIAO from Chrome or Edge, pair it with your Hue Bridge, and choose what each button
         does. Presses go straight to the Bridge on your home network.
       </p>
-      <div className="flex flex-wrap gap-2.5">
-        <Link href={copy.primaryHref} className={PRIMARY}>
-          {copy.primary}
-        </Link>
-        {mode === "closed" ? null : (
-          <Link href="/how-to" className={SECONDARY}>
-            Read the setup guide
+      {waitlistForm ? (
+        <LandingWaitlistForm
+          turnstileSiteKey={turnstileSiteKey()}
+          inputClassName={INPUT}
+          buttonClassName={`${PRIMARY} disabled:opacity-60`}
+        />
+      ) : (
+        <div className="flex flex-wrap gap-2.5">
+          <Link href={copy.primaryHref} className={PRIMARY}>
+            {copy.primary}
           </Link>
-        )}
-      </div>
+          {mode === "closed" ? null : (
+            <Link href="/how-to" className={SECONDARY}>
+              Read the setup guide
+            </Link>
+          )}
+        </div>
+      )}
       <p className="text-sm text-muted">
         {copy.account}{" "}
         <Link href="/login" className="text-foreground underline underline-offset-[3px]">
           Sign in
         </Link>
       </p>
+      {waitlistForm ? (
+        <Link href="/how-to" className="text-[15px] font-medium text-filament hover:underline">
+          Read the setup guide →
+        </Link>
+      ) : null}
     </>
   );
 
@@ -307,9 +326,13 @@ export default async function Home() {
             <p className="text-[15px] leading-normal text-muted">{withRepoLink(copy.closingText)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <Link href={copy.primaryHref} className={PRIMARY}>
-              {copy.primary}
-            </Link>
+            {waitlistForm ? (
+              <JoinWaitlistLink className={PRIMARY} />
+            ) : (
+              <Link href={copy.primaryHref} className={PRIMARY}>
+                {copy.primary}
+              </Link>
+            )}
             <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className={`${SECONDARY} gap-2`}>
               <GitHubMark className="h-[18px] w-[18px]" />
               Source on GitHub

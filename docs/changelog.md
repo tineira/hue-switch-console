@@ -10,6 +10,10 @@ What changed in the console, the Round switch, and the Simple switch. Newest fir
 
 The console has no version number. Each heading is the day the change went live.
 
+### 2026-09-30
+
+- **Join the waitlist from the home page.** The home page takes your email address right under the headline instead of sending you to the sign-in page, and says you're on the list without leaving the page. The bot check appears only once you start typing. The **Join the waitlist** button at the bottom of the page brings you back to that form.
+
 ### 2026-09-29
 
 - **Signing in takes you back.** If a page such as Setup or Switches (for example from a How-to link) sends you to sign in, you land back on that page afterwards instead of the home page. This works with Google, GitHub, an emailed code and a password.
