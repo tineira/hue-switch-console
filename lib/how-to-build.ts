@@ -51,6 +51,7 @@ export type AssembleStep = {
   title: string;
   body: string;
   stage: "antenna" | "exploded" | "assembled";
+  caption?: string;
 };
 
 export const ROUND_ASSEMBLE: AssembleStep[] = [
@@ -63,6 +64,7 @@ export const ROUND_ASSEMBLE: AssembleStep[] = [
     title: "Line the XIAO up with the display",
     body: "The pins along the XIAO's two long edges go into the two rows of sockets on the back of the Round Display. Turn it so the XIAO's **USB-C port faces out**, towards the edge of the round board, or the port ends up covered.",
     stage: "exploded",
+    caption: "1 Round Display · 2 XIAO ESP32-S3 · 3 antenna. The XIAO's USB-C port is drawn with an orange outline.",
   },
   {
     title: "Press it home and switch it on",
@@ -105,7 +107,7 @@ export const SIMPLE_LEVELS: Level[] = [
 
 export const TRY_STEPS: string[] = [
   "Follow **Set up a Simple switch** below with nothing wired to the board.",
-  "In the last step, give **BOOT** (the button on the board) a room and click **Save changes**.",
+  "In its last step, **Give its buttons a job**, give **BOOT** (the button on the board) a room and click **Save changes**.",
   "Press BOOT: the room's lights toggle. That's the whole switch working, board to Bridge.",
   "Holding BOOT for about 3 seconds pairs with the Bridge again, unless you give **Hold** another action.",
 ];
@@ -122,7 +124,12 @@ export const BOX_BUY: BuyItem[] = [
   },
   {
     name: "Hook-up wire",
-    why: "Any thin wire for short runs, or the switch wires already in your wall for long ones.",
+    why: "Any thin insulated wire. Never wire that is, or was, part of your home's mains wiring.",
+    have: true,
+  },
+  {
+    name: "A soldering iron, or jumper wires",
+    why: "To attach wires to the board's pads. On a XIAO with headers, female jumper wires push on instead.",
     have: true,
   },
   {
@@ -158,7 +165,7 @@ export const BOX_STEPS: WireStep[] = [
   },
   {
     title: "Test with BOOT",
-    body: "Give **BOOT** a room on Switches and press it. The lights react: the board, Wi-Fi, the Bridge and the console all work.",
+    body: "Give **BOOT** a room on Switches and press it. It's the small button marked B next to the USB-C port. The lights react: the board, Wi-Fi, the Bridge and the console all work.",
     drawing: "boot",
   },
   {
@@ -173,7 +180,7 @@ export const BOX_STEPS: WireStep[] = [
   },
   {
     title: "Set up the input",
-    body: "Plug USB back in. On Switches, click **Add a switch**: what it is (**Wall switch** or **Push button**), pin **D0**, and a room. Click **Save changes**, then unplug and replug the board so it picks the change up now.",
+    body: "Plug USB back in. On Switches, click **Add a switch** and answer its three questions: what you wired (**Wall switch** or **Push button**), the pin (**D0**), and the room. Click **Save changes**, then unplug and replug the board so it picks the change up now.",
     drawing: "console",
   },
   {

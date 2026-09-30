@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
-import { Conversion, InputRc, WireStepDrawing, WiringAll } from "@/app/how-to/build-drawings";
+import { Conversion, WireStepDrawing } from "@/app/how-to/build-drawings";
 import { Rich } from "@/app/rich-text";
 import { RoundDrawing } from "@/app/landing/parts-drawings";
 import { PRODUCT_INFO, type Product } from "@/lib/how-to";
@@ -25,7 +25,6 @@ import {
   type Level,
 } from "@/lib/how-to-build";
 
-const GROUP_LABEL = "text-[10px] font-medium uppercase tracking-[0.14em] text-muted";
 const SELECTED = "border-filament shadow-[0_0_0_1px_var(--filament)]";
 const CARD = "rounded-xl border border-line bg-cream";
 
@@ -144,8 +143,11 @@ function RoundBuild() {
             <Step key={step.title} n={i + 1}>
               <StepText title={step.title} body={step.body} />
               <DrawingBox>
-                <RoundDrawing stage={step.stage} />
+                <div className="@container mx-auto max-w-[400px]">
+                  <RoundDrawing stage={step.stage} />
+                </div>
               </DrawingBox>
+              {step.caption ? <p className="text-xs text-muted">{step.caption}</p> : null}
             </Step>
           ))}
         </Steps>
@@ -224,6 +226,11 @@ function ButtonBox() {
         <BuyList items={BOX_BUY} />
       </Sub>
       <Never />
+      <Sub title="How an input works">
+        <p className="text-sm text-muted">
+          <Rich text={INPUT_EXPLAINED} />
+        </p>
+      </Sub>
       <Sub
         id="wire"
         title="Wire it, one input at a time"
@@ -234,23 +241,13 @@ function ButtonBox() {
             <Step key={step.title} n={i + 1}>
               <StepText title={step.title} body={step.body} />
               <DrawingBox>
-                <div className="mx-auto max-w-[360px]">
+                <div className="mx-auto max-w-[520px]">
                   <WireStepDrawing drawing={step.drawing} />
                 </div>
               </DrawingBox>
             </Step>
           ))}
         </Steps>
-      </Sub>
-      <Sub title="How an input works">
-        <p className="text-sm text-muted">
-          <Rich text={INPUT_EXPLAINED} />
-        </p>
-        <DrawingBox>
-          <div className="mx-auto max-w-[420px]">
-            <WiringAll />
-          </div>
-        </DrawingBox>
       </Sub>
       <Sub id="resistors" title="Do I need resistors?">
         <div className={`flex flex-col divide-y divide-line text-sm ${CARD}`}>
@@ -260,17 +257,14 @@ function ButtonBox() {
             </p>
           ))}
         </div>
-        <DrawingBox>
-          <div className="mx-auto max-w-[420px]">
-            <InputRc />
-          </div>
-        </DrawingBox>
       </Sub>
     </>
   );
 }
 
 function InWall() {
+  const [checked, setChecked] = useState<string[]>([]);
+  const all = checked.length === WALL_REQUIREMENTS.length;
   return (
     <>
       <div className="flex flex-col gap-2 rounded-xl border border-danger/50 bg-danger-soft p-4 text-sm">
@@ -288,15 +282,29 @@ function InWall() {
       >
         <ul className={`flex flex-col divide-y divide-line text-sm ${CARD}`}>
           {WALL_REQUIREMENTS.map((r) => (
-            <li key={r.need} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2.5 px-4 py-3">
-              <span aria-hidden="true" className="mt-0.5 h-4 w-4 rounded border border-muted" />
-              <span className="flex flex-col gap-0.5">
-                <span className="font-semibold">{r.need}</span>
-                <span className="text-muted">{r.why}</span>
-              </span>
+            <li key={r.need}>
+              <label className="grid cursor-pointer grid-cols-[20px_minmax(0,1fr)] gap-2.5 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={checked.includes(r.need)}
+                  onChange={(e) =>
+                    setChecked((c) => (e.target.checked ? [...c, r.need] : c.filter((x) => x !== r.need)))
+                  }
+                  className="mt-0.5 h-4 w-4 accent-[var(--filament)]"
+                />
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-semibold">{r.need}</span>
+                  <span className="text-muted">{r.why}</span>
+                </span>
+              </label>
             </li>
           ))}
         </ul>
+        <p aria-live="polite" className={`text-sm ${all ? "text-ok" : "text-muted"}`}>
+          {all
+            ? "All four hold: this board suits your box. Next, get the board and show Install it to your electrician."
+            : `${checked.length} of ${WALL_REQUIREMENTS.length} checked. If one doesn't hold for your box, build the button box on USB-C instead.`}
+        </p>
       </Sub>
       <Sub title="What changes in the wall">
         <Conversion />
@@ -397,7 +405,8 @@ function SimpleBuild({ level, onLevel }: { level: LevelId; onLevel: (id: LevelId
 // (and picks the Simple level the anchor belongs to), then scrolls there once it exists.
 export function BuildSection({ product }: { product: Product }) {
   const [open, setOpen] = useState(false);
-  const [level, setLevel] = useState<LevelId>("try");
+  // B by default: its first two steps are A, and it's what most readers came for.
+  const [level, setLevel] = useState<LevelId>("box");
 
   useEffect(() => {
     function follow() {
@@ -433,7 +442,11 @@ export function BuildSection({ product }: { product: Product }) {
       {open ? (
         <div id={bodyId} className="flex flex-col gap-8">
           {product === "round" ? <RoundBuild /> : <SimpleBuild level={level} onLevel={setLevel} />}
-          <p className={GROUP_LABEL}>Built? Set it up next.</p>
+          <a href="#setup" className="self-start text-sm text-filament underline underline-offset-2">
+            {product === "simple" && level === "wall"
+              ? "Step 1 of Install it is the setup below ↓"
+              : "Built? Set it up next ↓"}
+          </a>
         </div>
       ) : null}
     </section>

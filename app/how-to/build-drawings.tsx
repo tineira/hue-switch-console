@@ -159,7 +159,7 @@ function Wire({ d, hot = false, dashed = false }: { d: string; hot?: boolean; da
 
 function Note({ x, y, children, anchor = "start", tone = MUTED }: { x: number; y: number; children: ReactNode; anchor?: "start" | "middle" | "end"; tone?: string }) {
   return (
-    <text x={x} y={y} fontSize={9} fill={tone} textAnchor={anchor}>
+    <text x={x} y={y} fontSize={10} fill={tone} textAnchor={anchor}>
       {children}
     </text>
   );
@@ -186,31 +186,36 @@ function OneSwitch({ closed, lamp, withSwitch }: { closed: boolean; lamp: boolea
   );
 }
 
+// The Add a switch dialog on Switches, reduced to its three questions.
 function ConsoleMock() {
-  const row = (y: number, k: string, v: string, hot = false) => (
-    <g key={k}>
-      <text x={48} y={y} fontSize={9} fill={MUTED}>
-        {k}
-      </text>
-      <rect x={130} y={y - 12} width={140} height={18} rx={4} fill="var(--background)" stroke={hot ? HOT : LINE} />
-      <text x={138} y={y + 1} fontSize={9} fill={FG}>
-        {v}
+  const chip = (x: number, y: number, w: number, text: string, on = false) => (
+    <g key={text}>
+      <rect x={x} y={y} width={w} height={20} rx={10} fill={on ? "var(--filament-soft)" : "var(--background)"} stroke={on ? HOT : LINE} />
+      <text x={x + w / 2} y={y + 13.5} fontSize={9} fill={on ? FG : MUTED} textAnchor="middle" fontWeight={on ? 700 : 400}>
+        {text}
       </text>
     </g>
   );
+  const q = (y: number, n: number, text: string) => (
+    <text x={46} y={y} fontSize={9.5} fill={FG}>
+      <tspan fill={HOT} fontWeight={700}>{n}</tspan>
+      {`  ${text}`}
+    </text>
+  );
   return (
     <>
-      <rect x={30} y={24} width={260} height={160} rx={10} fill="var(--cream)" stroke={LINE} />
-      <text x={48} y={50} fontSize={11} fill={FG} fontWeight={600}>
+      <rect x={30} y={10} width={280} height={184} rx={10} fill="var(--cream)" stroke={LINE} />
+      <text x={46} y={34} fontSize={11.5} fill={FG} fontWeight={700}>
         Add a switch
       </text>
-      {row(80, "What it is", "Wall switch · Push button")}
-      {row(108, "Pin", "D0", true)}
-      {row(136, "Room", "Living room")}
-      <rect x={184} y={152} width={86} height={20} rx={5} fill={HOT} />
-      <text x={227} y={166} fontSize={9} fill="var(--filament-ink)" textAnchor="middle" fontWeight={600}>
-        Save changes
-      </text>
+      {q(58, 1, "What did you wire?")}
+      {chip(46, 66, 92, "Wall switch", true)}
+      {chip(144, 66, 92, "Push button")}
+      {q(108, 2, "Which pin is it on?")}
+      {["D0", "D1", "D2", "D3", "D4", "D5"].map((pin, i) => chip(46 + i * 42, 116, 36, pin, pin === "D0"))}
+      {q(158, 3, "Which room or zone?")}
+      {chip(46, 166, 96, "Living room", true)}
+      {chip(148, 166, 70, "Kitchen")}
     </>
   );
 }
@@ -334,7 +339,7 @@ export function WireStepDrawing({ drawing }: { drawing: WireStep["drawing"] }) {
       return <InputRc />;
     case "done":
       return (
-        <Frame w={320} h={200} label="The board in a box, on a USB-C charger, wires out to the switches">
+        <Frame w={340} h={200} label="The board in a box, on a USB-C charger, wires out to the switches">
           <rect x={70} y={40} width={150} height={130} rx={10} fill="none" stroke={FG} strokeWidth={1.5} />
           <Xiao x={103} y={62} labels={false} />
           <Wire d="M145 53 V20 H250" />
@@ -343,7 +348,7 @@ export function WireStepDrawing({ drawing }: { drawing: WireStep["drawing"] }) {
           <Wire d="M220 110 H290" />
           <Wire d="M220 124 H290" />
           <Wire d="M220 138 H290" />
-          <Note x={255} y={160} anchor="middle">to the switches</Note>
+          <Note x={232} y={158}>to the switches</Note>
         </Frame>
       );
   }
@@ -365,6 +370,7 @@ export function Conversion() {
           {lamp(240, 100)}
           <Wire d="M240 124 V172 H34" />
           <Note x={186} y={24}>switched live</Note>
+          <Note x={262} y={104}>lamp</Note>
         </Frame>
         <figcaption className="text-xs text-muted">
           <span className="font-medium text-foreground">Before.</span> The switch cuts the lamp&apos;s power. A Hue bulb loses its connection whenever it&apos;s off.
@@ -387,7 +393,9 @@ export function Conversion() {
           <Wire d="M152 84 H170 V52 H178" hot />
           <Wire d="M152 106 H228 V52 H218" hot />
           <Contact x={178} y={52} label="" />
-          <Note x={140} y={144} tone={HOT}>3.3 V only</Note>
+          <Note x={160} y={144} tone={HOT}>3.3 V only</Note>
+          <Note x={262} y={104}>lamp</Note>
+          <Note x={166} y={48} anchor="end">wall switch</Note>
         </Frame>
         <figcaption className="text-xs text-muted">
           <span className="font-medium text-foreground">After.</span> The lamp stays powered and the Bridge switches it. The old switch wires are off mains at both ends and only join the switch to the board.
