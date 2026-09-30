@@ -1,22 +1,24 @@
 import * as THREE from "three";
 import { DIAL_SIZE, HDR_Z, buildAntenna, buildDisplay, buildHeaders, buildXiao, drawDial, monoFont } from "@/app/landing/round-model";
 import {
+  BUTTON_LUGS,
   MECH,
-  TACT_LEGS,
   at,
+  box,
   breaker,
   bulb,
   carrierBoard,
   ceramicCap,
   enclosure,
+  joint,
   leverConnector,
   leverEntry,
   mechanism,
   mesh,
-  projectBox,
+  panelButton,
+  plate,
   resistor,
   solder,
-  tactButton,
   usbCable,
   wallBox,
   wire,
@@ -297,7 +299,7 @@ const TOP: V3 = [0.12, 1.5, -0.8];
 
 function simpleKitTry(): SceneDef {
   const x = xiao();
-  const c = usbAt(0, T + 1.58, 24, [[0, 0, 50], [10, 0, 66]]);
+  const c = usbAt(0, T + 1.58, 24, [[0, 0, 40], [6, 0, 52]]);
   return {
     root: group(x, c),
     dir: TOP,
@@ -309,11 +311,11 @@ function simpleKitTry(): SceneDef {
 
 function simplePlugged(extra: { led?: boolean; boot?: boolean }): SceneDef {
   const x = xiao();
-  const c = usbAt(0, T + 1.58, USB_MOUTH_Z - 6.6, [[0, 0, 44], [10, 0, 60]]);
+  const c = usbAt(0, T + 1.58, USB_MOUTH_Z - 6.6, extra.boot ? [[0, 0, 30], [4, 0, 38]] : [[0, 0, 34], [6, 0, 46]]);
   const root = group(x, c);
   const notes: Note[] = [];
   const marks: Mark[] = [];
-  const fit: THREE.Object3D[] = extra.boot ? [x] : [x, c];
+  const fit: THREE.Object3D[] = [x, c];
   if (!extra.led && !extra.boot) {
     notes.push(note("USB-C to your computer", c, [0, 3, 16], "right"));
     notes.push(note("XIAO ESP32-C6", x, [8.9, T, -4], "left"));
@@ -324,41 +326,32 @@ function simplePlugged(extra: { led?: boolean; boot?: boolean }): SceneDef {
     notes.push(note("Setup runs in Chrome over this cable", c, [0, 3, 16], "left"));
   }
   if (extra.boot) {
-    const b = at(bulb(true), -46, -18, -4);
+    const b = at(bulb(true), -46, -18, -18);
     b.scale.setScalar(0.5);
     root.add(b);
     fit.push(b);
     marks.push({ kind: "press", at: A(x, BOOT) });
     marks.push({ kind: "glow", at: A(b, [0, 34, 0]), r: 40 });
-    notes.push(note("BOOT", x, BOOT, "left", "hot"));
+    notes.push(note("BOOT", x, BOOT, "right", "hot"));
     notes.push(note("The room's lights toggle", b, [-14, 38, 0], "right"));
   }
-  return { root, dir: TOP, fit, pad: extra.boot ? 1.15 : 1.08, notes, marks };
+  return { root, dir: TOP, fit, pad: extra.boot ? 1.12 : 1.08, notes, marks };
 }
 
-function simpleKitBox(): SceneDef {
-  const x = at(xiao(), 26, 0, 4);
-  const b1 = at(tactButton(), -6, 3.5, 12);
-  const b2 = at(tactButton(), -24, 3.5, 12);
-  const r10 = at(resistor("10k"), -8, 1.2, -12);
-  const r1 = at(resistor("1k"), -8, 1.2, -20);
-  const cap = at(ceramicCap(6), -28, 6.5, -16);
-  const wires = group(
-    wire([[34, 0.6, -24], [14, 0.6, -28], [-4, 0.6, -32], [-30, 0.6, -30]], "hot", 0.6),
-    wire([[34, 0.6, -30], [12, 0.6, -34], [-6, 0.6, -38], [-32, 0.6, -36]], "switched", 0.6),
-  );
-  return {
-    root: group(x, b1, b2, r10, r1, cap, wires),
-    dir: TOP,
-    pad: 1.04,
-    notes: [
-      note("1 XIAO ESP32-C6", x, [8.9, T, 0], "left"),
-      note("2 Switches or push buttons", b2, [0, 7, 0], "right"),
-      note("3 Hook-up wire", wires, [34, 0.6, -27], "left"),
-      note("4 For long wires: 10 kΩ and 1 kΩ", r10, [3, 0, 0], "left"),
-      note("5 and 10 nF, one of each per input", cap, [0, 4, 0], "right"),
-    ],
-  };
+// A panel push button lying on the desk, cap toward +z (the XIAO), lugs toward -z.
+// Local → scene: (x, y, z) → (bx + x, AXIS_Y - z, bz + y).
+const AXIS_Y = 8;
+function lyingButton(bx: number, bz: number, pressed = false) {
+  const g = panelButton(pressed);
+  g.rotation.x = Math.PI / 2;
+  g.position.set(bx, AXIS_Y, bz);
+  const lug = (l: V3): V3 => [bx + l[0], AXIS_Y + 0.5, bz + l[1]];
+  return { g, a: lug(BUTTON_LUGS.a), b: lug(BUTTON_LUGS.b), cap: [bx, AXIS_Y, bz + (pressed ? 3.1 : 5.5)] as V3 };
+}
+
+// A wire from a pad of the XIAO (flat on the desk) out past the board edge, then along `via`.
+function fromPad(p: V3, side: 1 | -1, via: V3[], tone: Tone, r = 0.6): THREE.Mesh {
+  return wire([[p[0], T + 0.4, p[2]], [p[0] + side * 2, T + 1.1, p[2]], [p[0] + side * 3.5, T + 0.8, p[2]], ...via], tone, r);
 }
 
 // Leads from D0 and GND out toward the viewer, to wherever they end.
@@ -374,6 +367,33 @@ function hotSolder(p: V3) {
   const s = solder(...p);
   s.userData.tone = "hot";
   return s;
+}
+
+function simpleKitBox(): SceneDef {
+  const x = at(xiao(), 44, 0, -8);
+  const b1 = lyingButton(16, 8);
+  const b2 = lyingButton(-6, 8);
+  const r10 = at(resistor("10k"), -34, 1.2, 10);
+  const r1 = at(resistor("1k"), -34, 1.2, 3);
+  const cap = ceramicCap(5);
+  cap.rotation.x = -Math.PI / 2;
+  cap.position.set(-34, 1.3, -10);
+  const wires = group(
+    wire([[56, 0.6, -26], [30, 0.6, -29], [0, 0.6, -33], [-44, 0.6, -31]], "hot", 0.6),
+    wire([[56, 0.6, -32], [28, 0.6, -35], [-2, 0.6, -39], [-44, 0.6, -37]], "switched", 0.6),
+  );
+  return {
+    root: group(x, b1.g, b2.g, r10, r1, cap, wires),
+    dir: TOP,
+    pad: 1.04,
+    notes: [
+      note("1 XIAO ESP32-C6", x, [8.9, T, 0], "left"),
+      note("2 Switches or push buttons", b1.g, [0, 5.5, -4.5], "left"),
+      note("3 Hook-up wire", wires, [56, 0.6, -29], "left"),
+      note("4 For long wires: 10 kΩ and 1 kΩ", r10, [-6, 0, 0], "right"),
+      note("5 and 10 nF, one of each per input", cap, [-2.6, 2.6, 0], "right"),
+    ],
+  };
 }
 
 function simpleWires(): SceneDef {
@@ -392,24 +412,33 @@ function simpleWires(): SceneDef {
   };
 }
 
+const BZ = -34; // button row, centre of the threaded body's panel face
+
 function oneButton(pressed: boolean, lamp: boolean): SceneDef {
   const x = xiao();
-  const Z = -40;
-  const btn = at(tactButton(pressed), 0, 3.4, Z);
-  const la: V3 = [TACT_LEGS.a[0], 3.4 + TACT_LEGS.a[1], Z + TACT_LEGS.a[2]];
-  const lb: V3 = [TACT_LEGS.b[0], 3.4 + TACT_LEGS.b[1], Z + TACT_LEGS.b[2]];
-  const root = group(x, btn, leadD0(lb), leadGnd(la), solder(...PAD(0)), solder(...GND));
+  const btn = lyingButton(0, BZ, pressed);
+  const [ax, ay, az] = btn.a, [bx, by, bz] = btn.b;
+  const root = group(
+    x,
+    btn.g,
+    fromPad(PAD(0), 1, [[13, 1.5, 3], [13.5, 3, BZ - 8], [12.5, 6, az - 1], [9, ay, az], [ax, ay, az]], "hot"),
+    fromPad(GND, -1, [[-13, 1.5, 1], [-13.5, 3, BZ - 8], [-12.5, 6, bz - 1], [-9, by, bz], [bx, by, bz]], "switched"),
+    solder(...PAD(0)),
+    solder(...GND),
+    joint(ax, ay - 0.2, az),
+    joint(bx, by - 0.2, bz),
+  );
   const notes: Note[] = [];
   const marks: Mark[] = [];
-  const fit: THREE.Object3D[] = [x, btn];
+  const fit: THREE.Object3D[] = [x, btn.g];
   if (!lamp) {
-    notes.push(note("One wire to each terminal, either way round", btn, [0, 4, -6], "right"));
+    notes.push(note("One wire to each lug, either way round", root, btn.b, "right"));
   } else {
     const b = at(bulb(true), -44, -16, -18);
     b.scale.setScalar(0.5);
     root.add(b);
     fit.push(b);
-    marks.push({ kind: "press", at: A(btn, [0, 5, 0]) });
+    marks.push({ kind: "press", at: A(root, btn.cap) });
     marks.push({ kind: "glow", at: A(b, [0, 34, 0]), r: 38 });
     notes.push(note("The lights react", b, [-14, 38, 0], "right"));
   }
@@ -418,94 +447,189 @@ function oneButton(pressed: boolean, lamp: boolean): SceneDef {
   return { root, dir: TOP, fit, pad: 1.08, notes, marks };
 }
 
+// Six buttons in a row, D0 on the left. Each D wire leaves its pad, turns down at its own x,
+// runs along its own lane and drops through the gap left of its button to the left lug. The
+// right lugs are chained, switch to switch, under the row and back up the right to GND.
 function simpleAll(): SceneDef {
   const x = xiao();
   const root = group(x);
-  const Z = -46;
-  const notes: Note[] = [];
-  const bxs = [0, 1, 2, 3, 4, 5].map((i) => 45 - 18 * i);
-  bxs.forEach((bx, i) => {
-    const btn = at(tactButton(), bx, 3.4, Z);
-    root.add(btn);
-    const [px, , pz] = PAD(i);
-    const lb: V3 = [bx + TACT_LEGS.b[0], 0.5, Z + TACT_LEGS.b[2]];
-    root.add(wire([[px, T + 0.4, pz], [px + 3 + i * 1.6, T + 1.4, pz], [12 + i * 2, 0.6, pz - 5], [lb[0], 0.6, Z + 20 - i * 1.5], lb], "hot", 0.5));
-    root.add(solder(px, T, pz, 0.8));
-    // Spur from the other leg down to the common GND wire.
-    const la: V3 = [bx + TACT_LEGS.a[0], 0.5, Z + TACT_LEGS.a[2]];
-    root.add(wire([la, [la[0], 0.5, Z - 13]], "switched", 0.5));
-    notes.push(note(`D${i}`, btn, [0, 7.3, 0], i < 3 ? "left" : "right", "hot"));
+  const marks: Mark[] = [];
+  const bxs = [0, 1, 2, 3, 4, 5].map((i) => 50 - 20 * i);
+  const turn = [19, 17.5, 16, 14.5, 13, 11.8];
+  const lane = [-16, -19, -22, -19, -16.5, -14];
+  const btns = bxs.map((bx) => lyingButton(bx, BZ));
+  btns.forEach((b, i) => {
+    root.add(b.g);
+    const p = PAD(i), gap = bxs[i] + 10, tx = turn[i], lz = lane[i], dir = gap > tx ? 1 : -1;
+    const [ax, ay, az] = b.a;
+    root.add(
+      fromPad(p, 1, [[tx, 1, p[2] - 1.5], [tx, 1, lz + 1.5], [tx + dir * 1.5, 1, lz], [gap - dir * 1.5, 1, lz], [gap, 1.5, lz - 1.5], [gap, 4, az + 6], [gap - 1.5, 6.5, az], [ax + 4, ay, az], [ax, ay, az]], "hot", 0.5),
+      solder(p[0], T, p[2], 0.8),
+      joint(ax, ay - 0.2, az, 1),
+      joint(b.b[0], b.b[1] - 0.2, b.b[2], 1),
+    );
+    marks.push({ kind: "badge", at: A(root, [bxs[i], AXIS_Y + 6, BZ - 7]), text: `D${i}`, tone: "hot" });
   });
-  const busL = bxs[0] + TACT_LEGS.a[0];
+  // The chain: right lug of each switch to the right lug of the next, dipping under the row.
+  const dip = BZ - 26;
+  for (let i = 0; i < 5; i++) {
+    const [ux, uy, uz] = btns[i].b, [vx] = btns[i + 1].b;
+    root.add(wire([[ux, uy, uz], [ux, 5, uz - 3.5], [ux - 2.5, 2, dip], [vx + 2.5, 2, dip], [vx, 5, uz - 3.5], [vx, uy, uz]], "switched", 0.5));
+  }
+  const [lx, ly, lzz] = btns[5].b;
   root.add(
-    wire([[GND[0], T + 0.4, GND[2]], [GND[0] - 5, T + 1.2, GND[2]], [-62, 0.6, 2], [-62, 0.6, Z - 13], [busL, 0.6, Z - 13]], "switched", 0.55),
+    wire([[lx, ly, lzz], [lx, 5, lzz - 3.5], [lx - 2.5, 2, dip], [-62, 1.5, dip], [-64, 1, dip + 3], [-64, 1, 2], [-61, 1, GND[2]], [GND[0] - 3.5, T + 0.8, GND[2]], [GND[0] - 2, T + 1.1, GND[2]], [GND[0], T + 0.4, GND[2]]], "switched", 0.5),
+    solder(...GND, 0.8),
   );
-  root.add(solder(...GND, 0.8));
-  notes.push(note("GND: one wire joins every switch's other terminal", x, GND, "right"));
-  return { root, dir: TOP, pad: 1.03, notes };
+  return {
+    root,
+    dir: TOP,
+    pad: 1.03,
+    notes: [
+      note("GND: one wire from switch to switch, then to the board", root, [-10, 2, dip], "right"),
+      note("GND", x, GND, "right"),
+      note("One wire per pad, to one lug", root, [bxs[0] + 10, 2, -26], "left", "hot"),
+    ],
+    marks,
+  };
 }
 
+// Per input, at the board (seen as in simple-wires): the 10 kΩ bridges over the board from the
+// D0 pad to the 3V3 pad; the 1 kΩ runs out from the D0 pad to a joint where the switch wire
+// starts; the 10 nF stands between that joint and a GND joint beside it. The GND wire comes
+// over the USB end from the GND pad to that joint and carries on to the switch.
 function simpleRc(): SceneDef {
   const x = xiao();
   const root = group(x);
   const [px, , pz] = PAD(0);
-  const r1 = at(resistor("1k", 14), px + 12, T + 1.2, pz);
-  const r10 = at(resistor("10k", 10), 0, T + 4, 15.5);
-  const cap = at(ceramicCap(4), px + 25.25, 4.5, pz - 4);
-  root.add(r1, r10, cap);
-  // 10 kΩ: D0 up over the USB end to 3V3.
-  root.add(wire([[px, T + 0.3, pz], [px, T + 3, pz + 3], [5, T + 4, 15.5]], "gold", 0.3));
-  root.add(wire([[-5, T + 4, 15.5], [V33[0] - 1.5, T + 3, 10], [V33[0] - 1.5, T + 2, 4], [V33[0], T + 0.3, V33[2]]], "gold", 0.3));
-  // Node after the 1 kΩ: the capacitor's first leg, then the wire to the switch.
-  const node: V3 = [px + 24, T + 1.2, pz];
-  root.add(wire([[px + 19, T + 1.2, pz], node, [px + 34, 0.8, pz - 4], [px + 40, 0.6, pz - 24]], "hot", 0.6));
-  root.add(wire([[px + 24, 0.5, pz - 4], node], "gold", 0.28));
-  // GND: from its pad, round the bottom of the board, to the capacitor's second leg and on.
+  const Y = T + 0.45;
+  // 1 kΩ from the D0 pad out to the left; its far lead ends at the joint N.
+  const r1 = at(resistor("1k", 16), px + 8, Y, pz);
+  const N: V3 = [px + 16, Y, pz];
+  const G: V3 = [N[0] + 3.5, Y, pz];
+  // 10 kΩ over the board, D0 to 3V3, body clear of the USB-C receptacle.
+  const u = new THREE.Vector3(V33[0] - px, 0, V33[2] - pz).normalize();
+  const r10 = resistor("10k", 8);
+  r10.rotation.y = Math.atan2(-u.z, u.x) + Math.PI;
+  const C: V3 = [0, 6.6, (pz + V33[2]) / 2];
+  r10.position.set(...C);
+  const e0: V3 = [C[0] - u.x * 4, C[1], C[2] - u.z * 4]; // D0 end
+  const e1: V3 = [C[0] + u.x * 4, C[1], C[2] + u.z * 4]; // 3V3 end
   root.add(
-    wire(
-      [[GND[0], T + 0.4, GND[2]], [GND[0] - 4, T + 1, GND[2] - 2], [-14, 0.6, -14], [8, 0.6, -18], [px + 26.5, 0.6, pz - 12], [px + 26.5, 0.5, pz - 4], [px + 30, 0.6, pz - 16], [px + 34, 0.6, pz - 28]],
-      "switched",
-      0.6,
-    ),
+    wire([e0, [px - 1.2, 6.2, pz - 0.4], [px, 4.2, pz], [px, T + 0.2, pz], [px, -0.8, pz]], "gold", 0.3),
+    wire([e1, [V33[0] + 1.2, 6.2, V33[2] + 0.4], [V33[0], 4.2, V33[2]], [V33[0], T + 0.2, V33[2]], [V33[0], -0.8, V33[2]]], "gold", 0.3),
   );
-  root.add(hotSolder(PAD(0)), solder(...V33), solder(...GND));
+  // 10 nF standing on its legs over the two joints, disc toward the USB end.
+  const cap = ceramicCap(5);
+  cap.rotation.x = Math.PI / 2;
+  cap.position.set((N[0] + G[0]) / 2, Y, pz + 5);
+  // Its legs sit at ±1.25; bend them out to the joints.
+  cap.children.slice(1).forEach((c) => (c.visible = false));
+  root.add(
+    wire([[(N[0] + G[0]) / 2 - 1.25, Y, pz + 4.4], [N[0] + 0.2, Y, pz + 2], N], "gold", 0.25),
+    wire([[(N[0] + G[0]) / 2 + 1.25, Y, pz + 4.4], [G[0] - 0.2, Y, pz + 2], G], "gold", 0.25),
+  );
+  root.add(r1, r10, cap);
+  // Switch wire from N; GND wire from its pad, over the USB end, to G and on to the switch.
+  const END = -30;
+  root.add(wire([N, [N[0] - 0.5, Y - 0.2, pz - 3], [N[0] - 0.5, 0.8, END]], "hot", 0.6));
+  root.add(
+    fromPad(GND, -1, [[-11.5, 1.5, GND[2] + 3], [-11.5, 2, 15], [-8, 2.5, 25], [G[0] + 4, 2.5, 25], [G[0] + 6, 2, 22], [G[0] + 6, Y, pz + 2], [G[0] + 3, Y, pz], G], "switched", 0.6),
+  );
+  root.add(wire([G, [G[0] + 0.5, Y - 0.2, pz - 3], [G[0] + 0.5, 0.8, END]], "switched", 0.6));
+  root.add(hotSolder(PAD(0)), solder(...V33), solder(...GND), joint(...N, 0.9), joint(...G, 0.9));
   return {
     root,
     dir: TOP,
     pad: 1.04,
+    // The values as tags beside each part: callout lines would cross the joints.
+    marks: [
+      { kind: "badge", at: A(root, [px + 8, Y, pz + 3.8]), text: "1 kΩ", tone: "hot" },
+      { kind: "badge", at: A(root, [(N[0] + G[0]) / 2, Y, pz + 12.6]), text: "10 nF", tone: "hot" },
+      { kind: "badge", at: A(root, [0, 6.6, 9.8]), text: "10 kΩ", tone: "hot" },
+      { kind: "badge", at: A(root, [12.8, T, 3.6]), text: "D0", tone: "hot" },
+    ],
     notes: [
-      note("10 kΩ: D0 to 3V3", r10, [0, 1.2, 0], "right", "hot"),
-      note("1 kΩ between D0 and the wire", r1, [0, 1.2, 0], "left", "hot"),
-      note("10 nF: wire side of the 1 kΩ to GND", cap, [0, 5, 0], "left", "hot"),
-      note("To the switch", root, [px + 40, 0.6, pz - 24], "left"),
+      note("To the switch", root, [(N[0] + G[0]) / 2, 0.8, END], "left"),
       note("3V3", x, V33, "right"),
       note("GND", x, GND, "right"),
     ],
   };
 }
 
+// The box open, from the front: the XIAO taped to the floor, the USB-C plug out through a slot
+// in the right wall; the lid hinged back behind it, inside face toward us, the buttons' lugs
+// wired down to the XIAO. (Box camera: +x is to the right.)
 function simpleBox(): SceneDef {
-  const bx = projectBox(44, 34, 20);
-  const x = at(xiao(), 4, 3, 0);
-  x.rotation.y = -Math.PI / 2; // USB-C toward -x, the box's left wall
-  const cable = usbCable([[0, 0, 40], [0, -10, 60]]);
-  cable.rotation.y = -Math.PI / 2;
-  cable.position.set(4 - USB_MOUTH_Z + 6.6, 3 + T + 1.58, 0);
-  const lid = at(mesh(new THREE.BoxGeometry(48, 2, 38)), 0, 44, 0);
-  const b = [-12, 0, 12].map((lx) => at(tactButton(), lx, 45, 0));
-  const leads = [-12, 0, 12].map((lx, i) =>
-    wire([[lx + 6.25, 41.6, 2.5], [lx + 4, 32, 8 - i * 3], [10, 12, 6 - i * 2.2], [4 - 7.62 + i * 2.54, 3 + T + 0.4, -7.62]], "hot", 0.45),
+  const W = 50, D = 34, H = 22, t = 2;
+  const usbY = t + T + 1.58;
+  const wallR = plate(H + t, D + 2 * t, t, [], [[-(usbY - (H + t) / 2), 0, 6.2, 10.6]]);
+  wallR.rotation.z = -Math.PI / 2; // plate x (height) → -y, thickness → +x
+  wallR.position.set(W / 2, (H + t) / 2, 0);
+  const bx = group(
+    at(mesh(box(W, t, D)), 0, t / 2, 0),
+    at(mesh(box(t, H + t, D + 2 * t)), -(W + t) / 2, (H + t) / 2, 0),
+    at(mesh(box(W, H + t, t)), 0, (H + t) / 2, -(D + t) / 2),
+    at(mesh(box(W, H + t, t)), 0, (H + t) / 2, (D + t) / 2),
+    wallR,
   );
-  const gnd = wire([[-12 - 6.25, 41.6, 2.5], [-22, 28, 10], [-6, 12, 8], [4 - 5.08, 3 + T + 0.4, 7.62]], "switched", 0.45);
+
+  // XIAO, USB-C toward the right wall, its mouth 5 mm inside it. Local (x, y, z) → (XX + z, t + y, -x).
+  const XX = W / 2 - 5 - USB_MOUTH_Z;
+  const x = at(xiao(), XX, t, 0);
+  x.rotation.y = Math.PI / 2;
+  const onX = (p: V3): V3 => [XX + p[2], t + p[1], -p[0]];
+  const cable = usbCable([[0, 0, 26], [0, -usbY + 1.2, 38], [0, -usbY + 1.2, 52]]);
+  cable.rotation.y = Math.PI / 2;
+  cable.position.set(XX + USB_MOUTH_Z - 6.6, usbY, 0);
+
+  // Lid hinged up behind the back wall: inside face toward +z at z = LZ.
+  const LT = 2, LW = W + 2 * t + 2, LH = 40, LZ = -D / 2 - t, LY = H + t + LH / 2;
+  const lxs = [14, 0, -14]; // D0, D1, D2
+  const lid = plate(LW, LH, LT, lxs.map((lx) => [lx, 0, 6.1] as [number, number, number]));
+  lid.rotation.x = -Math.PI / 2; // plate z → y, thickness → -z
+  lid.position.set(0, LY, LZ);
+  const btns = lxs.map((lx) => {
+    const g = panelButton();
+    g.rotation.x = -Math.PI / 2; // cap → -z (the outside), lugs → +z (toward us)
+    g.position.set(lx, LY, LZ - LT);
+    // Local (x, y, z) → (lx + x, LY + z, LZ - LT - y).
+    const lug = (l: V3): V3 => [lx + l[0], LY + 0.6, LZ - LT - l[1]];
+    return { g, a: lug(BUTTON_LUGS.a), b: lug(BUTTON_LUGS.b) };
+  });
+
+  const root = group(bx, x, cable, lid, ...btns.map((b) => b.g));
+  const turnY = [30, 24, 16];
+  btns.forEach((b, i) => {
+    const p = onX(PAD(i));
+    const [ax, ay, az] = b.a;
+    root.add(
+      // Down at its own x, then over to its pad: D2 runs lowest, so no wire crosses another.
+      wire([[ax, ay, az], [ax, ay - 2, az - 1], [ax, turnY[i] + 3, -10.5], [ax + 1.5, turnY[i], -11], [p[0], 8, -11], [p[0], T + t + 1.2, p[2] - 1.8], [p[0], T + t + 0.4, p[2]]], "hot", 0.45),
+      solder(p[0], p[1], p[2], 0.8),
+      joint(ax, ay - 0.1, az, 0.9),
+      joint(b.b[0], b.b[1] - 0.1, b.b[2], 0.9),
+    );
+  });
+  // The other lugs chained over the top, then down the left to GND (front edge of the XIAO).
+  for (let i = 0; i < 2; i++) {
+    const [ux, uy, uz] = btns[i].b, [vx] = btns[i + 1].b;
+    root.add(wire([[ux, uy, uz], [ux, uy + 2.5, uz - 1], [ux - 3, uy + 5, uz - 2.5], [vx + 3, uy + 5, uz - 2.5], [vx, uy + 2.5, uz - 1], [vx, uy, uz]], "switched", 0.45));
+  }
+  const [gx, gy, gz] = btns[2].b, gp = onX(GND);
+  root.add(
+    wire([[gx, gy, gz], [gx - 1, gy - 2.5, gz + 2], [-W / 2 + 5, H, gz + 6], [-W / 2 + 6, 6, 8], [XX - 12.5, 3, gp[2] + 4], [gp[0] - 2, 3.6, gp[2] + 3.5], [gp[0], T + t + 1.2, gp[2] + 1.8], [gp[0], T + t + 0.4, gp[2]]], "switched", 0.45),
+    solder(gp[0], gp[1], gp[2], 0.8),
+  );
   return {
-    root: group(bx, x, cable, lid, ...b, ...leads, gnd),
-    dir: [0.8, 1.2, 1.5],
-    pad: 1.04,
+    root,
+    dir: [0.3, 2.6, 1.3],
+    pad: 1.03,
     notes: [
-      note("Lid with the buttons", lid, [-24, 1, 10], "left"),
-      note("USB-C out through a hole in the wall", cable, [0, 3, 16], "left", "hot"),
-      note("XIAO inside, on double-sided tape", x, [0, T + 2, 0], "right"),
-      note("Any project box", bx, [22, 12, 17], "right"),
+      note("Lid: the buttons' lugs face in", lid, [-LW / 2 + 3, 0, -LH / 2 + 6], "left"),
+      note("One lug to D0, D1, D2; the others chained to GND", root, [btns[1].b[0], btns[1].b[1] + 5, btns[1].b[2] - 2.5], "right"),
+      note("XIAO on double-sided tape", x, [-4, T + 1.9, -3], "left"),
+      note("USB-C out through a slot in the wall", cable, [0, 2.6, 16], "right", "hot"),
     ],
   };
 }

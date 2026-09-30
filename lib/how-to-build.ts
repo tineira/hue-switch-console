@@ -273,7 +273,7 @@ export const BOX_BUY: BuyItem[] = [
 
 export const BOX_KIT: Pic = {
   illo: "simple-kit-box",
-  alt: "The parts: the XIAO ESP32-C6, two push buttons, two resistors, a ceramic capacitor and two pieces of hook-up wire.",
+  alt: "The parts: the XIAO ESP32-C6, two panel push buttons with two solder lugs each, two resistors, a ceramic capacitor and two pieces of hook-up wire.",
 };
 
 export const NEVER: string[] = [
@@ -304,8 +304,8 @@ export const BOX_STEPS: PicStep[] = [
   },
   {
     title: "Connect the first switch",
-    body: "One wire to each of its two terminals. Which wire goes on which terminal doesn't matter.",
-    pic: { illo: "simple-switch", alt: "The D0 and GND wires going to the two legs of a push button." },
+    body: "One wire to each of its two terminals. Which wire goes on which terminal doesn't matter. A four-leg tact switch has its legs joined in pairs inside: use two diagonally opposite legs.",
+    pic: { illo: "simple-switch", alt: "The D0 and GND wires soldered to the two lugs of a panel push button." },
   },
   {
     title: "Set up the input",
@@ -322,10 +322,10 @@ export const BOX_STEPS: PicStep[] = [
   },
   {
     title: "Repeat for each input, one at a time",
-    body: "D1 to D5, testing each before the next. Every switch's second wire goes to the same GND: join them with a lever connector or a terminal strip and bring one wire to the board.",
+    body: "D1 to D5, testing each before the next. Every switch's second terminal goes to the same GND: run one wire from switch to switch, soldered at each, and on to GND on the board. A lever connector or a terminal strip works too.",
     pic: {
       illo: "simple-all",
-      alt: "Six push buttons in a row, each wired to its own pad D0 to D5, and one common wire joining their other legs to GND.",
+      alt: "Six push buttons in a row, one lug of each wired to its own pad D0 to D5, and one wire running from the other lug of each button to the next and on to GND.",
     },
   },
   {
@@ -333,13 +333,16 @@ export const BOX_STEPS: PicStep[] = [
     body: "Per input, at the board: **10 kΩ** from the pin to **3V3**, **1 kΩ** in series between the pin and the wire, and **10 nF** from the wire side of the 1 kΩ to GND. Skip this for wires under about 30 cm.",
     pic: {
       illo: "simple-rc",
-      alt: "At D0: a 10 kΩ resistor bridging from D0 to the 3V3 pad, a 1 kΩ resistor in line with the wire, and a 10 nF capacitor from the far side of the 1 kΩ to the GND wire.",
+      alt: "At the XIAO: a 10 kΩ resistor over the board from the D0 pad to the 3V3 pad; a 1 kΩ resistor from the D0 pad out to a joint where the switch wire starts; a 10 nF capacitor from that joint to a joint on the GND wire, which runs from the GND pad on to the switch.",
     },
   },
   {
     title: "Close it up",
-    body: "The XIAO into a project box, the buttons in its lid, the USB-C cable out through a hole to a phone charger. Press every switch once more.",
-    pic: { illo: "simple-box", alt: "An open project box with the XIAO inside, the USB-C cable out through the side, and the lid with three buttons above it." },
+    body: "The XIAO into a project box, the buttons in its lid, the USB-C cable out through a slot in the side to a phone charger. Press every switch once more.",
+    pic: {
+      illo: "simple-box",
+      alt: "An open project box: the XIAO taped to the floor, its USB-C plug out through a slot in the wall, and the lid hinged back with three buttons, one lug of each wired to D0, D1 or D2 and the other lugs chained to GND.",
+    },
   },
 ];
 

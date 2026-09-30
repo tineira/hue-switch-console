@@ -59,6 +59,8 @@ const TONES: Record<string, string> = {
   red: "#d23b2b",
   orange: "#f08a24",
   gold: "#c9a64b",
+  // Solder.
+  tin: "#b9bec6",
 };
 
 function colour(tone: string): string {

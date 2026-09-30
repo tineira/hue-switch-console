@@ -25,6 +25,7 @@ export type Tone =
   | "red"
   | "orange"
   | "gold"
+  | "tin"
   | "lit"
   | "screen";
 
@@ -91,18 +92,72 @@ export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE
   return g;
 }
 
-/** 12 mm tactile push button, legs down; the cap top is at y ≈ 7.3 (4.3 when pressed). */
-export function tactButton(pressed = false): THREE.Group {
+/** A solder joint where leads or wires meet in the air: a small blob. */
+export function joint(x: number, y: number, z: number, r = 1.1, tone: Tone = "tin"): THREE.Mesh {
+  return at(mesh(new THREE.SphereGeometry(r, 20, 12), tone, true), x, y, z);
+}
+
+/**
+ * A 12 mm panel-mount momentary push button with two solder lugs, the kind that goes in a box
+ * lid. Axis along +y: the cap on top, the panel face at y = 0 (the flange sits on it, the nut
+ * clamps it from below), the threaded body and the two lugs below. Lug holes at `BUTTON_LUGS`.
+ */
+export function panelButton(pressed = false): THREE.Group {
   const g = new THREE.Group();
-  g.add(at(mesh(box(12, 3.6, 12)), 0, 1.8, 0));
-  g.add(at(mesh(box(12, 0.3, 12)), 0, 3.75, 0));
-  g.add(at(mesh(cyl(3.4, pressed ? 0.8 : 3.4, 36), "hot", true), 0, 3.9 + (pressed ? 0.4 : 1.7), 0));
-  for (const [x, z] of [[-6.25, -2.5], [6.25, -2.5], [-6.25, 2.5], [6.25, 2.5]]) g.add(at(mesh(box(0.7, 3.5, 0.4)), x, -1.2, z));
+  const capH = pressed ? 1.6 : 4;
+  g.add(at(mesh(cyl(4.5, capH, 36), "hot", true), 0, 1.5 + capH / 2, 0));
+  g.add(at(mesh(cyl(7, 1.5, 40), undefined, true), 0, 0.75, 0));
+  g.add(at(mesh(cyl(6, 12, 40), undefined, true), 0, -6, 0));
+  for (let i = 0; i < 4; i++) g.add(at(mesh(cyl(6.2, 0.5, 40), undefined, true), 0, -5.5 - i * 1.8, 0));
+  g.add(at(mesh(new THREE.CylinderGeometry(8, 8, 2.4, 6)), 0, -3.2, 0));
+  g.add(at(mesh(cyl(5.5, 2, 32), undefined, true), 0, -13, 0));
+  for (const x of [-2.5, 2.5]) {
+    const sh = new THREE.Shape();
+    sh.moveTo(-1.2, 0);
+    sh.lineTo(1.2, 0);
+    sh.lineTo(1.2, -5.2);
+    sh.absarc(0, -5.2, 1.2, 0, -Math.PI, true);
+    sh.lineTo(-1.2, 0);
+    const hole = new THREE.Path();
+    hole.absarc(0, -4.8, 0.55, 0, Math.PI * 2, true);
+    sh.holes.push(hole);
+    const lug = new THREE.ExtrudeGeometry(sh, { depth: 0.4, bevelEnabled: false, curveSegments: 12 });
+    lug.translate(0, 0, -0.2);
+    g.add(at(mesh(lug, "gold"), x, -14, 0));
+  }
   return g;
 }
 
-/** Legs of a tact button, local coords. The two on the left (-x) are one side of the contact. */
-export const TACT_LEGS = { a: [-6.25, -2.9, 2.5] as [number, number, number], b: [6.25, -2.9, 2.5] as [number, number, number] };
+/** Lug holes of `panelButton`, local coords. Either lug can take either wire. */
+export const BUTTON_LUGS = { a: [2.5, -18.8, 0] as [number, number, number], b: [-2.5, -18.8, 0] as [number, number, number] };
+
+/** A flat plate w × d (x, z), t thick (y 0..t), with round holes [x, z, r] and slots [x, z, w, h]. */
+export function plate(w: number, d: number, t: number, holes: [number, number, number][] = [], slots: [number, number, number, number][] = []) {
+  const sh = new THREE.Shape();
+  sh.moveTo(-w / 2, -d / 2);
+  sh.lineTo(w / 2, -d / 2);
+  sh.lineTo(w / 2, d / 2);
+  sh.lineTo(-w / 2, d / 2);
+  sh.closePath();
+  for (const [x, z, r] of holes) {
+    const p = new THREE.Path();
+    p.absarc(x, z, r, 0, Math.PI * 2, true);
+    sh.holes.push(p);
+  }
+  for (const [x, z, sw, shh] of slots) {
+    const r = Math.min(sw, shh) / 2, p = new THREE.Path();
+    if (sw >= shh) {
+      p.absarc(x + sw / 2 - r, z, r, -Math.PI / 2, Math.PI / 2, false);
+      p.absarc(x - sw / 2 + r, z, r, Math.PI / 2, Math.PI * 1.5, false);
+    } else {
+      p.absarc(x, z + shh / 2 - r, r, 0, Math.PI, false);
+      p.absarc(x, z - shh / 2 + r, r, Math.PI, Math.PI * 2, false);
+    }
+    p.closePath();
+    sh.holes.push(p);
+  }
+  return mesh(extrude(sh, t));
+}
 
 const BANDS: Record<string, Tone[]> = { "10k": ["brown", "black", "orange", "gold"], "1k": ["brown", "black", "red", "gold"] };
 
@@ -136,17 +191,6 @@ export function bulb(lit: boolean): THREE.Group {
   g.add(at(mesh(new THREE.CylinderGeometry(8.5, 6.5, 10, 32), lit ? "lit" : undefined, true), 0, 20, 0));
   for (let i = 0; i < 4; i++) g.add(at(mesh(cyl(6.6, 2, 32), undefined, true), 0, 6 + i * 2.6, 0));
   g.add(at(mesh(new THREE.CylinderGeometry(3, 5, 4, 24), undefined, true), 0, 2, 0));
-  return g;
-}
-
-/** An open project box, inside w × d, walls h, opening up. */
-export function projectBox(w: number, d: number, h: number, t = 2): THREE.Group {
-  const g = new THREE.Group();
-  g.add(at(mesh(box(w + 2 * t, t, d + 2 * t)), 0, t / 2, 0));
-  g.add(at(mesh(box(t, h, d + 2 * t)), -(w + t) / 2, h / 2 + t, 0));
-  g.add(at(mesh(box(t, h, d + 2 * t)), (w + t) / 2, h / 2 + t, 0));
-  g.add(at(mesh(box(w, h, t)), 0, h / 2 + t, -(d + t) / 2));
-  g.add(at(mesh(box(w, h, t)), 0, h / 2 + t, (d + t) / 2));
   return g;
 }
 
