@@ -53,26 +53,32 @@ export type BuyItem = {
   href?: string;
   // "You may already have it": a cable, a charger, wire.
   have?: boolean;
+  /** Its part balloon in the picture above the list; rows not drawn there have none. */
+  pic?: number;
   optional?: boolean;
 };
 
 export const ROUND_BUY: BuyItem[] = [
   {
     name: "Seeed Round Display for XIAO",
+    pic: 1,
     why: "The 1.28″ round touch screen and its board. The XIAO plugs into the sockets on its back.",
     href: "https://www.seeedstudio.com/Seeed-Studio-Round-Display-for-XIAO-p-5638.html",
   },
   {
     name: "Seeed XIAO ESP32-S3",
+    pic: 2,
     why: "The plain S3. It must be an S3: the C3 and C6 don't run the Round firmware. The S3 **Sense** (with camera) fits the display but hasn't been tested with this firmware.",
     href: "https://www.seeedstudio.com/XIAO-ESP32S3-p-5627.html",
   },
   {
     name: "Pin headers",
+    pic: 3,
     why: "Two strips of 7 pins. Seeed sells the XIAO with them **loose in the bag** or **already soldered**. Loose ones have to be soldered on (step 1); pick the pre-soldered XIAO to skip that.",
   },
   {
     name: "2.4 GHz antenna",
+    pic: 4,
     why: "Comes in the XIAO's bag. Without it the screen says **No Wi-Fi**.",
   },
   {
@@ -95,7 +101,7 @@ export const ROUND_BUY: BuyItem[] = [
 
 export const ROUND_KIT: Pic = {
   illo: "round-kit",
-  alt: "The parts: the Round Display with its screen off, the XIAO ESP32-S3, two pin header strips and the flat antenna on its thin cable.",
+  alt: "The parts, numbered 1 to 4 like the list below: the Round Display with its screen off, the XIAO ESP32-S3, two pin header strips and the flat antenna on its thin cable.",
 };
 
 export type AssembleStep = { title: string; body: string; pic: Pic };
@@ -186,11 +192,13 @@ export const SIMPLE_LEVELS: Level[] = [
 export const TRY_BUY: BuyItem[] = [
   {
     name: "Seeed XIAO ESP32-C6",
+    pic: 1,
     why: "The whole switch, for now. With or without headers: this level needs none.",
     href: "https://www.seeedstudio.com/Seeed-Studio-XIAO-ESP32C6-p-5884.html",
   },
   {
     name: "USB-C cable that carries data",
+    pic: 2,
     why: "Charge-only cables are the most common reason the board never shows up on Setup.",
     have: true,
   },
@@ -208,7 +216,7 @@ export const TRY_BUY: BuyItem[] = [
 
 export const TRY_KIT: Pic = {
   illo: "simple-kit-try",
-  alt: "The XIAO ESP32-C6 and a USB-C cable, with an arrow from the plug to the board's USB-C port.",
+  alt: "The parts, numbered 1 and 2 like the list below: the XIAO ESP32-C6 and a USB-C cable, with an arrow from the plug to the board's USB-C port.",
 };
 
 export type PicStep = { title: string; body: string; pic: Pic };
@@ -242,15 +250,18 @@ export const TRY_STEPS: PicStep[] = [
 export const BOX_BUY: BuyItem[] = [
   {
     name: "Seeed XIAO ESP32-C6",
+    pic: 1,
     why: "With or without pre-soldered headers. Headers let you use jumper wires instead of soldering.",
     href: "https://www.seeedstudio.com/Seeed-Studio-XIAO-ESP32C6-p-5884.html",
   },
   {
     name: "Switches or push buttons, up to six",
+    pic: 2,
     why: "Any plain contact: sold as **dry contact** or \"no light\". Wall switches, arcade buttons, tact switches.",
   },
   {
     name: "Hook-up wire",
+    pic: 3,
     why: "Any thin insulated wire. Never wire that is, or was, part of your home's mains wiring.",
     have: true,
   },
@@ -261,6 +272,7 @@ export const BOX_BUY: BuyItem[] = [
   },
   {
     name: "Per input, for long wires: 10 kΩ, 1 kΩ, 10 nF",
+    pic: 4,
     why: "Two resistors (1/4 W through-hole, any tolerance) and one ceramic capacitor. See **Do I need resistors?**",
     optional: true,
   },
@@ -273,7 +285,7 @@ export const BOX_BUY: BuyItem[] = [
 
 export const BOX_KIT: Pic = {
   illo: "simple-kit-box",
-  alt: "The parts: the XIAO ESP32-C6, two panel push buttons with two solder lugs each, two resistors, a ceramic capacitor and two pieces of hook-up wire.",
+  alt: "The parts, numbered 1 to 4 like the list below: the XIAO ESP32-C6, two panel push buttons with two solder lugs each, two pieces of hook-up wire, and the two resistors and ceramic capacitor used per input.",
 };
 
 export const NEVER: string[] = [

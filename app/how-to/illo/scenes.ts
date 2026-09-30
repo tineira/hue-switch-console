@@ -136,6 +136,8 @@ const note = (text: string, o: THREE.Object3D | undefined, p: V3, side?: "left" 
   tone,
 });
 const A = (o: THREE.Object3D | undefined, p: V3): Anchor => ({ o, p });
+/** A callout with a part balloon: `n` is the number of the matching row in the buy list. */
+const balloon = (n: number, text: string, o: THREE.Object3D | undefined, p: V3, side?: "left" | "right"): Note => ({ ...note(text, o, p, side), n });
 
 // ---------------------------------------------------------------------------------- Round
 
@@ -145,7 +147,7 @@ function roundKit(): SceneDef {
   const x = at(xiao(), 4, 0, -16);
   const h = part(buildHeaders());
   h.rotation.z = Math.PI / 2;
-  h.position.set(30, 1.3, -14);
+  h.position.set(34, 1.3, 4); // below the XIAO, clear of its callout
   const a = part(buildAntenna());
   a.rotation.y = Math.PI / 2;
   a.position.set(14, 0, 22);
@@ -155,10 +157,10 @@ function roundKit(): SceneDef {
     dir: [0.45, 1.7, 1.2],
     pad: 1.04,
     notes: [
-      note("1 Round Display", d, [-17, 6.5, 8], "left"),
-      note("2 XIAO ESP32-S3", x, [8.9, T, -5], "right"),
-      note("3 Pin headers, loose or already soldered", h, [0, 11, 3], "right"),
-      note("4 Antenna, in the XIAO's bag", a, [0, 0.3, -24], "right"),
+      balloon(1, "Round Display", d, [-17, 6.5, 8], "left"),
+      balloon(2, "XIAO ESP32-S3", x, [8.9, T, -5], "right"),
+      balloon(3, "Pin headers", h, [0, 11, 3], "right"),
+      balloon(4, "2.4 GHz antenna", a, [0, 0.3, -24], "left"),
     ],
   };
 }
@@ -306,7 +308,7 @@ function simpleKitTry(): SceneDef {
     root: group(x, c),
     dir: TOP,
     pad: 1.04,
-    notes: [note("XIAO ESP32-C6", x, [8.9, T, -4], "left"), note("USB-C cable that carries data", c, [0, 3, 14], "right")],
+    notes: [balloon(1, "XIAO ESP32-C6", x, [8.9, T, -4], "left"), balloon(2, "USB-C cable that carries data", c, [0, 3, 14], "right")],
     marks: [{ kind: "arrow", from: A(c, [0, 0, -1]), to: A(x, [0, T + 1.58, USB_MOUTH_Z + 1]) }],
   };
 }
@@ -375,25 +377,26 @@ function simpleKitBox(): SceneDef {
   const x = at(xiao(), 44, 0, -8);
   const b1 = lyingButton(16, 8);
   const b2 = lyingButton(-6, 8);
-  const r10 = at(resistor("10k"), -34, 1.2, 10);
-  const r1 = at(resistor("1k"), -34, 1.2, 3);
+  // One row of the list: the two resistors and the capacitor, together.
+  const r10 = at(resistor("10k"), -34, 1.2, 8);
+  const r1 = at(resistor("1k"), -34, 1.2, 2);
   const cap = ceramicCap(5);
   cap.rotation.x = -Math.PI / 2;
-  cap.position.set(-34, 1.3, -10);
+  cap.position.set(-34, 1.3, -9);
   const wires = group(
     wire([[56, 0.6, -26], [30, 0.6, -29], [0, 0.6, -33], [-44, 0.6, -31]], "hot", 0.6),
     wire([[56, 0.6, -32], [28, 0.6, -35], [-2, 0.6, -39], [-44, 0.6, -37]], "switched", 0.6),
   );
+  const root = group(x, b1.g, b2.g, r10, r1, cap, wires);
   return {
-    root: group(x, b1.g, b2.g, r10, r1, cap, wires),
+    root,
     dir: TOP,
     pad: 1.04,
     notes: [
-      note("1 XIAO ESP32-C6", x, [8.9, T, 0], "left"),
-      note("2 Switches or push buttons", b1.g, [0, 5.5, -4.5], "left"),
-      note("3 Hook-up wire", wires, [56, 0.6, -29], "left"),
-      note("4 For long wires: 10 kΩ and 1 kΩ", r10, [-6, 0, 0], "right"),
-      note("5 and 10 nF, one of each per input", cap, [-2.6, 2.6, 0], "right"),
+      balloon(1, "XIAO ESP32-C6", x, [8.9, T, 0], "left"),
+      balloon(2, "Switches or push buttons", b1.g, [0, 5.5, -4.5], "left"),
+      balloon(3, "Hook-up wire", wires, [56, 0.6, -29], "left"),
+      balloon(4, "10 kΩ, 1 kΩ, 10 nF", root, [-34, 1.2, 0], "right"),
     ],
   };
 }

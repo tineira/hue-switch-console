@@ -72,7 +72,18 @@ function BuyList({ items }: { items: BuyItem[] }) {
       {items.map((item) => (
         <li key={item.name} className="flex flex-col gap-1 px-4 py-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="font-semibold">{item.name}</span>
+            <span className="flex items-baseline gap-2 font-semibold">
+              {item.pic ? (
+                // Same part balloon as in the picture above.
+                <span
+                  aria-label={`Part ${item.pic} in the picture`}
+                  className="box-border flex h-[22px] w-[22px] shrink-0 items-center justify-center self-center rounded-full border-[1.5px] border-foreground bg-cream text-xs font-semibold tabular-nums"
+                >
+                  {item.pic}
+                </span>
+              ) : null}
+              <span>{item.name}</span>
+            </span>
             <span className="flex flex-wrap items-center gap-2">
               {item.have ? (
                 <span className="rounded-full border border-line px-2 py-0.5 text-[11px] text-muted">

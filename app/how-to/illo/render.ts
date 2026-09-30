@@ -11,7 +11,8 @@ export type V3 = [number, number, number];
 /** A point in an object's local mm, or in the scene's mm when `o` is left out. */
 export type Anchor = { o?: THREE.Object3D; p: V3 };
 
-export type Note = { at: Anchor; text: string; side?: "left" | "right"; tone?: "hot" | "danger" | "ok" };
+/** `n`: a part balloon (circled number) before the text, matching the numbered row of a list. */
+export type Note = { at: Anchor; text: string; side?: "left" | "right"; tone?: "hot" | "danger" | "ok"; n?: number };
 
 export type Mark =
   | { kind: "dot"; at: Anchor; tone?: "hot" | "danger" | "ok" }
@@ -71,6 +72,9 @@ function colour(tone: string): string {
 const LABEL_FONT = 12.5;
 const CHAR_W = LABEL_FONT * 0.6;
 const LINE_H = 15;
+// A part balloon: its diameter plus the gap to the text.
+const BALLOON_R = 11;
+const BALLOON = 2 * BALLOON_R + 8;
 const WRAP = 20;
 
 // Callout text in lines of at most WRAP characters.
@@ -178,7 +182,7 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
     const v = world3(n.at).applyMatrix4(cam.matrixWorldInverse);
     const side = n.side ?? (v.x < (x0 + x1) / 2 ? "left" : "right");
     const lines = wrap(n.text);
-    return { ...n, side, lines, width: Math.max(...lines.map((l) => l.length)) * CHAR_W + 22 };
+    return { ...n, side, lines, width: Math.max(...lines.map((l) => l.length)) * CHAR_W + 22 + (n.n ? BALLOON : 0) };
   });
   const margin = (side: string) => Math.max(0, ...notes.filter((n) => n.side === side).map((n) => n.width)) + (notes.some((n) => n.side === side) ? 14 : 0);
   const lm = Math.max(16, margin("left")), rm = Math.max(16, margin("right"));
@@ -265,7 +269,7 @@ function drawNotes(notes: Placed[], px: (a: Anchor) => [number, number], w: numb
       .sort((p, q) => p.a[1] - q.a[1]);
     // Spread the labels apart (by their height), inside the frame, as close to their anchors
     // as possible. `y` is the label's first line.
-    const tall = (c: (typeof col)[number]) => (c.n.lines.length - 1) * LINE_H;
+    const tall = (c: (typeof col)[number]) => Math.max((c.n.lines.length - 1) * LINE_H, c.n.n ? 2 * BALLOON_R - LINE_H + 6 : 0);
     const GAP = 10 + LINE_H;
     col.forEach((c, i) => (c.y = Math.max(c.a[1] - tall(c) / 2, i ? col[i - 1].y + tall(col[i - 1]) + GAP : 14)));
     for (let i = col.length - 1; i >= 0; i--)
@@ -273,12 +277,20 @@ function drawNotes(notes: Placed[], px: (a: Anchor) => [number, number], w: numb
     for (const c of col) {
       const { n, a, y } = c;
       const col_ = n.tone ? toneVar(n.tone) : "var(--foreground)";
-      const tx = side === "left" ? lm - 12 : w - rm + 12;
+      const b = n.n ? BALLOON : 0;
+      // The balloon sits on the leader's end, the text beyond it.
+      const tx = side === "left" ? lm - 12 - b : w - rm + 12 + b;
       const sx = side === "left" ? lm - 6 : w - rm + 6;
       const ly = y + tall(c) / 2;
+      const ty = n.n ? ly - ((n.lines.length - 1) * LINE_H) / 2 : y;
       out += `<line x1="${sx}" y1="${ly}" x2="${a[0]}" y2="${a[1]}" stroke="${col_}" stroke-width="1.2"/>`;
       out += `<circle cx="${a[0]}" cy="${a[1]}" r="2.6" fill="${col_}"/>`;
-      out += `<text x="${tx}" y="${y}" text-anchor="${side === "left" ? "end" : "start"}" dominant-baseline="middle" font-size="${LABEL_FONT}" font-weight="500" fill="${col_}" stroke="var(--background)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">`;
+      if (n.n) {
+        const bx = side === "left" ? lm - 6 - BALLOON_R : w - rm + 6 + BALLOON_R;
+        out += `<circle cx="${bx}" cy="${ly}" r="${BALLOON_R}" fill="var(--cream)" stroke="var(--foreground)" stroke-width="1.5"/>`;
+        out += `<text x="${bx}" y="${ly + 0.5}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="600" font-family="var(--font-geist-sans), sans-serif" fill="var(--foreground)">${n.n}</text>`;
+      }
+      out += `<text x="${tx}" y="${ty}" text-anchor="${side === "left" ? "end" : "start"}" dominant-baseline="middle" font-size="${LABEL_FONT}" font-weight="500" fill="${col_}" stroke="var(--background)" stroke-width="4" stroke-linejoin="round" paint-order="stroke">`;
       n.lines.forEach((line, i) => (out += `<tspan x="${tx}" dy="${i ? LINE_H : 0}">${esc(line)}</tspan>`));
       out += `</text>`;
     }
