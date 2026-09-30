@@ -89,12 +89,17 @@ function xiaoWithHeaders(opts: { antenna?: boolean; hotSolder?: boolean } = {}) 
 }
 
 /** The antenna folded flat over the chip side, as it ends up inside the Round. */
+// Like the real flat antenna: amber film with a copper meander, the coax soldered at one end.
 function tuckedAntenna() {
   const g = new THREE.Group();
-  const top = T + 2.05;
-  g.add(at(mesh(new THREE.BoxGeometry(10, 0.25, 19), "cap"), -2.5, top, 1.5));
+  const top = T + 2.05, cx = -2.5, cz = -1.5, L = 16;
+  g.add(at(mesh(new THREE.BoxGeometry(10, 0.25, L), "polyimide"), cx, top, cz));
+  const ty = top + 0.14, z0 = cz - L / 2;
+  for (let i = 0; i < 5; i++) g.add(at(mesh(new THREE.BoxGeometry(7.4, 0.04, 0.6), "brown"), cx, ty, z0 + 1.6 + i * 2.1));
+  for (let i = 0; i < 4; i++) g.add(at(mesh(new THREE.BoxGeometry(0.6, 0.04, 2.1), "brown"), cx + (i % 2 ? -3.4 : 3.4), ty, z0 + 2.65 + i * 2.1));
+  g.add(at(mesh(new THREE.SphereGeometry(0.7, 16, 8).scale(1, 0.5, 1.4), undefined, true), cx, ty + 0.1, z0 + 0.6));
   g.add(at(mesh(new THREE.CylinderGeometry(1, 1, 1.3, 32), undefined, true), JACK[0], JACK[1] + 0.65, JACK[2]));
-  g.add(wire([[JACK[0], JACK[1] + 1.1, JACK[2]], [JACK[0] + 2.5, top + 0.6, JACK[2] - 1.5], [2, top + 0.6, -10.5], [-2.5, top + 0.3, -8]], "switched", 0.55));
+  g.add(wire([[JACK[0], JACK[1] + 1.1, JACK[2]], [JACK[0] + 2.5, top + 0.6, JACK[2] - 1.5], [2, top + 0.6, -10.5], [-2.5, top + 0.3, -8.9]], "switched", 0.55));
   return g;
 }
 
@@ -205,8 +210,8 @@ function roundBelow(): SceneDef {
       note("Sockets on the back of the display", d, [7.62, 0, 8], "right"),
       note("Pins go into the sockets", x, [-7.62, -8.4, 5.08], "right"),
       note("USB-C faces out, to the edge", x, [0, T + 1.6, 11], "left", "hot"),
-      note("Chip side faces away from the display", x, [-4, T + 1.9, -2.4], "left"),
-      note("Power switch", d, [-13.6, 3.6, -9.2], "right"),
+      note("Chip side faces away from the display", x, [5.5, T + 0.3, -6], "left"),
+      note("Antenna, folded flat over the chip side", x, [-2.5, T + 2.3, -3], "right", "hot"),
     ],
   };
 }
@@ -219,7 +224,7 @@ function roundSwitch(): SceneDef {
       note("Slide the power switch to ON", d, [-14.6, 3.4, -11], "left", "hot"),
       note("XIAO pressed home, no gap", x, [8.9, 0, 0], "right"),
       note("USB-C at the edge", x, [0, T + 1.6, 11], "right"),
-      note("Antenna folded flat over the chip side", x, [-2.5, T + 2.2, 4], "right"),
+      note("Antenna folded flat over the chip side", x, [-2.5, T + 2.3, -3], "right"),
     ],
   };
 }

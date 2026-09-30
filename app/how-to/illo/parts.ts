@@ -16,6 +16,7 @@ export type Tone =
   | "earth"
   | "switched"
   | "signal"
+  | "polyimide"
   | "wago"
   | "resistor"
   | "cap"
