@@ -40,7 +40,7 @@ export const SCREEN_R = 16.2;
 
 /** Centre of the XIAO socket rows on the display (z). They run almost to the edge, as on the real
  *  board, so the XIAO's USB-C port ends up just past the display's rim. */
-export const HDR_Z = 8.9;
+export const HDR_Z = 7.9;
 const DIP_Z = HDR_Z - 12.1;
 
 // Round Display for XIAO. `screen` is the disc that shows the dial texture. The two DIP switches
