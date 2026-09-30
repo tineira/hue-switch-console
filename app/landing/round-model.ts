@@ -38,13 +38,18 @@ function extrudeFlat(sh: THREE.Shape, h: number) {
 
 export const SCREEN_R = 16.2;
 
+/** Centre of the XIAO socket rows on the display (z). They run almost to the edge, as on the real
+ *  board, so the XIAO's USB-C port ends up just past the display's rim. */
+export const HDR_Z = 8.9;
+const DIP_Z = HDR_Z - 12.1;
+
 // Round Display for XIAO. `screen` is the disc that shows the dial texture. The two DIP switches
 // (1: the XIAO controls the backlight, 2: battery sense) ship OFF; `dipOn` draws them ON.
 export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolean } = {}) {
   const R = 19.5;
   const H_HDR = 4.3, T_PCB = 1.2, T_LCD = 1.1, T_GLASS = 0.7;
   const Y_PCB = H_HDR, Y_LCD = Y_PCB + T_PCB, Y_GLASS = Y_LCD + T_LCD, Y_TOP = Y_GLASS + T_GLASS;
-  const ROW_X = 7.62, PITCH = 2.54, HDR_Z = 1.5;
+  const ROW_X = 7.62, PITCH = 2.54;
   const M = {
     soldermask: std("soldermask_black", 0x1a1c1f, 0.55, 0.05),
     bezel: std("lcd_frame", 0x2c3036, 0.6, 0.1),
@@ -70,12 +75,13 @@ export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolea
     for (let i = 0; i < 7; i++)
       add(`header_${tag}_socket_${i + 1}`, box(1.0, 0.04, 1.0), M.tin, side * ROW_X, -0.015, HDR_Z + (i - 3) * PITCH);
   }
-  add("microsd_slot", box(10.7, 1.6, 5), M.tin, 0, Y_PCB - 0.8, -15.3);
-  add("microsd_mouth", box(10, 0.9, 0.3), M.plastic, 0, Y_PCB - 0.8, -17.9);
-  // DIP switch past the XIAO's far end, half under it once the XIAO is on. ON is toward +x.
-  add("dip_switch", box(6.2, 1.4, 5.4), M.plastic, 0, Y_PCB - 0.7, -9.8);
+  // microSD (TF) slot, then the DIP switch just past the XIAO's far end, half under it once the
+  // XIAO is on. ON is toward +x.
+  add("microsd_slot", box(10.7, 1.6, 6.0), M.tin, 0, Y_PCB - 0.8, DIP_Z - 6.0);
+  add("microsd_mouth", box(10, 0.9, 0.3), M.plastic, 0, Y_PCB - 0.8, DIP_Z - 9.1);
+  add("dip_switch", box(6.2, 1.4, 5.4), M.plastic, 0, Y_PCB - 0.7, DIP_Z);
   for (const [i, dz] of [[1, -1.3], [2, 1.3]])
-    add(`dip_slider_${i}`, box(1.5, 0.5, 1.3), M.nylon, dipOn ? 1.35 : -1.35, Y_PCB - 1.6, -9.8 + dz);
+    add(`dip_slider_${i}`, box(1.5, 0.5, 1.3), M.nylon, dipOn ? 1.35 : -1.35, Y_PCB - 1.6, DIP_Z + dz);
   // Slide switch near the edge, turned tangent to it; its lever pokes out past the edge on the
   // ON end. Layout of the back follows Seeed's photos (connector side up = +z, right = +x).
   {
@@ -98,9 +104,9 @@ export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolea
   add("battery_jst", box(5.8, 3.4, 4.2), M.nylon, 0, Y_PCB - 1.7, 14.8);
   add("battery_jst_mouth", box(4.8, 2.2, 0.3), M.plastic, 0, Y_PCB - 1.8, 17.0);
   // CR927 RTC battery holder: a round pocket with a spring clip and two tabs.
-  add("rtc_battery_holder", c96(4.4, 1.6), M.plastic, 13.4, Y_PCB - 0.8, -7.5);
-  add("rtc_battery_clip", box(3.2, 0.3, 5.2), M.tin, 13.4, Y_PCB - 1.75, -7.5);
-  for (const [dx, dz] of [[3.4, 3.4], [-3.4, -3.4]]) add("rtc_battery_tab", box(2.2, 0.5, 2.2), M.tin, 13.4 + dx, Y_PCB - 0.3, -7.5 + dz);
+  add("rtc_battery_holder", c96(4.4, 1.6), M.plastic, 12.5, Y_PCB - 0.8, -5.5);
+  add("rtc_battery_clip", box(3.2, 0.3, 5.2), M.tin, 12.5, Y_PCB - 1.75, -5.5);
+  for (const [dx, dz] of [[3.4, 3.4], [-3.4, -3.4]]) add("rtc_battery_tab", box(2.2, 0.5, 2.2), M.tin, 12.5 + dx, Y_PCB - 0.3, -5.5 + dz);
   // RTC chip (SOIC-8) and the charge IC under the XIAO.
   add("rtc_ic", box(4.9, 1.5, 3.9), M.plastic, 12.8, Y_PCB - 0.75, 7.2);
   for (let i = 0; i < 4; i++)
@@ -114,7 +120,7 @@ export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolea
     add("mount_insert", cyl(1.7, 1.2, 32), M.brass, x, Y_PCB - 0.6, z);
     add("mount_hole", cyl(0.9, 1.25, 32), M.plastic, x, Y_PCB - 0.6, z);
   }
-  [[4.5, 17.2], [-4.5, 17.2], [11.0, 13.5], [-9.8, 14.0], [9.5, -13.5], [-12.4, 6.8], [3.6, -2.5], [-4.0, -5.0]].forEach(
+  [[4.5, 17.2], [-4.5, 17.2], [11.0, 13.5], [-9.8, 14.0], [8.5, -12.5], [-12.4, 6.8], [4.2, -1.5], [-4.4, -7.5]].forEach(
     ([x, z], i) => add(`passive_${i + 1}`, box(1.0, 0.5, 0.5), M.ceramic, x, Y_PCB - 0.25, z),
   );
   return { root, screen };
@@ -194,9 +200,9 @@ export function buildXiao() {
     sh.absarc(-hx, 0, r, Math.PI / 2, Math.PI * 1.5, false);
     const g = new THREE.ExtrudeGeometry(sh, { depth: 7.35, bevelEnabled: false, curveSegments: 16 });
     g.translate(0, 0, -7.35 / 2);
-    add("usb_c", g, M.tin, 0, T_PCB + 1.58, L / 2 - 3.2);
+    add("usb_c", g, M.tin, 0, T_PCB + 1.58, L / 2 - 2.5);
   }
-  add("usb_c_mouth", box(7.6, 1.9, 0.3), M.plastic, 0, T_PCB + 1.58, L / 2 - 3.2 + 3.55);
+  add("usb_c_mouth", box(7.6, 1.9, 0.3), M.plastic, 0, T_PCB + 1.58, L / 2 - 2.5 + 3.55);
   add("rf_shield", box(12.6, 1.9, 9.6), M.tin, 0, T_PCB + 0.95, -2.4);
   add("ufl_connector", box(2.6, 0.6, 2.6), M.plastic, 3.8, T_PCB + 0.3, -9.0);
   add("ufl_jack", cyl(1.0, 0.65, 32), M.gold, 3.8, T_PCB + 0.6 + 0.325, -9.0);

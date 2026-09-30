@@ -11,6 +11,7 @@ import {
   buildHeaders,
   buildXiao,
   cssVar,
+  HDR_Z,
   disposeTree,
   drawDial,
   lineStyle,
@@ -70,12 +71,12 @@ function buildAsm(screenMat: THREE.Material) {
   const asm = new THREE.Group();
   const ant = buildAntenna();
   ant.rotation.y = Math.PI / 2;
-  ant.position.set(-(3.8 + 32.5) * MM, 0, -7.5 * MM);
+  ant.position.set(-(3.8 + 32.5) * MM, 0, (HDR_Z - 9) * MM);
   const xiao = buildXiao();
   xiao.rotation.z = Math.PI;
-  xiao.position.set(0, Y.xOff * MM, 1.5 * MM);
+  xiao.position.set(0, Y.xOff * MM, HDR_Z * MM);
   const hdr = buildHeaders();
-  hdr.position.set(0, Y.hBase * MM, 1.5 * MM);
+  hdr.position.set(0, Y.hBase * MM, HDR_Z * MM);
   const { root: disp, screen } = buildDisplay(screenMat);
   disp.position.set(0, Y.dBase * MM, 0);
   asm.add(disp, hdr, xiao, ant);
