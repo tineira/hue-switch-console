@@ -1080,7 +1080,8 @@ export function SwitchesWorkspace({
           </header>
           {editingMac === selected.mac ? (
             <SwitchRenameForm
-              key={selected.mac}
+              // Its own key: the editors below share this parent and use the bare mac.
+              key={`rename:${selected.mac}`}
               mac={selected.mac}
               initial={(names[selected.mac] || "").trim()}
               onCancel={() => setEditingMac(null)}

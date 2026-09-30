@@ -13,6 +13,7 @@ The console has no version number. Each heading is the day the change went live.
 ### 2026-09-30
 
 - **Remove a switch or a Bridge.** A switch's details (the ⓘ button on Switches) have **Remove from console**: its settings leave the console, its key is revoked, and it stops counting toward your 25 switches. The board keeps working on the LAN with what it saved; Link to console on Setup adds it back. A Bridge with no switches left has **Remove this Bridge**. How-to's "Retire a lost or given-away board" uses it.
+- **Renaming a switch finishes.** After **Save** (or **Cancel**) the name form stayed on screen saying "Saving…", even on other switches, although the name was saved. It now closes.
 - **The changelog shows its formatting.** Bold words and code (such as `CONTACT_EMAIL`) used to show their `**` and backticks on this page; now they render. Firmware notes too.
 - **Switch tabs show when a switch is online:** a small green dot, next to the "offline" label a switch gets after 3 hours without checking in.
 - **How-to gives the right timing:** a saved change reaches a switch within about 15 minutes, and faster while Switches stays open. It used to say "within an hour".
