@@ -59,7 +59,7 @@ A Simple that did not answer at Detect (blank chip, or already in the bootloader
 
 - [x] `HUEBOOT` in `usbHandleAscii` (`usb.h`): reply `HUEOK boot`, flush, ~100 ms, set force-download-boot, `esp_restart()`
 - [x] Verify on a board with `arduino-cli monitor` or the Devices USB debug log: after `HUEBOOT` the port comes back and esptool connects without BOOT (`downloadMode` / sync OK)
-- [ ] Verify a RESET after `HUEBOOT` **without** flashing boots the app, not the bootloader again (not tested; after a flash the console clears the flag, and RESET boots the new app)
+- [x] Verify a RESET after `HUEBOOT` **without** flashing boots the app, not the bootloader again. Tested by the user on 2026-09-29 on a Simple on 0.7.1: `HUEBOOT` over `arduino-cli monitor` answered `HUEOK boot` and the ROM reported `boot:0x16 (DOWNLOAD(USB/UART0/SDIO_REI_FEO))`, `waiting for download`; pressing RESET then started the app and the switch worked normally.
 - [x] `FIRMWARE_VERSION` → `0.2.11`; `CHANGELOG.md` entry (user wording: installing from Devices no longer needs the buttons, after this update)
 - [x] AGENTS.md: the spec link moved to `docs/specs/finished/firmware-uploads.md`
 - [x] Pushed; CI upload `201`
