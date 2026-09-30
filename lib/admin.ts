@@ -216,7 +216,10 @@ export async function adminTabCounts(): Promise<{ accounts: number; waiting: num
 }
 
 /** Accounts whose last register was refused after their last board check-in, newest first. */
-export async function refusedRegisters(limit = 5): Promise<{ id: string; email: string; at: string; reason: string }[]> {
+export async function refusedRegisters(
+  since?: string | null,
+  limit = 5,
+): Promise<{ id: string; email: string; at: string; reason: string }[]> {
   const rows = await sql()`
     select u.id, u.email, u.register_refused_at as at, u.register_refused_reason as reason
     from users u
@@ -224,6 +227,7 @@ export async function refusedRegisters(limit = 5): Promise<{ id: string; email: 
       on sw.user_id = u.id
     where u.register_refused_at is not null
       and (sw.seen is null or u.register_refused_at > sw.seen)
+      and (${since ?? null}::timestamptz is null or u.register_refused_at > ${since ?? null}::timestamptz)
     order by u.register_refused_at desc
     limit ${limit}
   `;

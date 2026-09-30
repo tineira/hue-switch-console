@@ -346,10 +346,12 @@ export async function waitlistStats(): Promise<WaitlistStats> {
 }
 
 /** Bounces and complaints in the last 30 days, per kind of email (§2.7). */
-export async function deliveryProblems(): Promise<{ kind: string; tag: string; n: number }[]> {
+/** Bounces and complaints in the last 30 days, or only those after `since` when it is later. */
+export async function deliveryProblems(since?: string | null): Promise<{ kind: string; tag: string; n: number }[]> {
   const rows = await sql()`
     select kind, coalesce(detail, 'unknown') as tag, count(*)::int as n from auth_events
-    where kind in ('email_bounced', 'email_complained') and created_at > now() - interval '30 days'
+    where kind in ('email_bounced', 'email_complained')
+      and created_at > greatest(now() - interval '30 days', ${since ?? null}::timestamptz)
     group by kind, detail order by kind, detail
   `;
   return rows.map((r) => ({ kind: String(r.kind), tag: String(r.tag), n: Number(r.n) }));

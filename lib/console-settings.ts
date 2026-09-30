@@ -11,15 +11,27 @@ export type ConsoleSettings = {
   userCap: number | null;
   capAlertSent: number | null;
   joinsTotal: number;
+  /** When the admin last dismissed each kind of Overview notice. */
+  noticesSeen: Partial<Record<NoticeKind, string>>;
 };
 
-const EMPTY: ConsoleSettings = { signupMode: null, userCap: null, capAlertSent: null, joinsTotal: 0 };
+/** Overview notices an admin can dismiss until something newer happens (docs/specs/finished/admin-tabs.md). */
+export const NOTICE_KINDS = ["bounces", "refused"] as const;
+export type NoticeKind = (typeof NOTICE_KINDS)[number];
+
+const EMPTY: ConsoleSettings = {
+  signupMode: null,
+  userCap: null,
+  capAlertSent: null,
+  joinsTotal: 0,
+  noticesSeen: {},
+};
 
 export async function readSettings(): Promise<ConsoleSettings> {
   if (!isDbConfigured()) return EMPTY;
   try {
     const rows = await sql()`
-      select signup_mode, user_cap, cap_alert_sent, joins_total from console_settings where id
+      select signup_mode, user_cap, cap_alert_sent, joins_total, notices_seen from console_settings where id
     `;
     const row = rows[0];
     if (!row) return EMPTY;
@@ -28,6 +40,7 @@ export async function readSettings(): Promise<ConsoleSettings> {
       userCap: row.user_cap ?? null,
       capAlertSent: row.cap_alert_sent ?? null,
       joinsTotal: Number(row.joins_total ?? 0),
+      noticesSeen: (row.notices_seen as ConsoleSettings["noticesSeen"]) ?? {},
     };
   } catch {
     // Table not created yet (schema runs on first sign-in page or API call).
@@ -76,5 +89,14 @@ export async function countJoin() {
   await sql()`
     insert into console_settings (id, joins_total) values (true, 1)
     on conflict (id) do update set joins_total = console_settings.joins_total + 1
+  `;
+}
+
+/** Hides a kind of Overview notice until something newer than now happens. */
+export async function dismissNotice(kind: NoticeKind) {
+  const seen = JSON.stringify({ [kind]: new Date().toISOString() });
+  await sql()`
+    insert into console_settings (id, notices_seen) values (true, ${seen}::jsonb)
+    on conflict (id) do update set notices_seen = console_settings.notices_seen || ${seen}::jsonb
   `;
 }

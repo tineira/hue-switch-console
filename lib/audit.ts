@@ -15,7 +15,8 @@ export type AdminAction =
   | "settings"
   | "firmware_current"
   | "waitlist_auto_admit"
-  | "firmware_upload";
+  | "firmware_upload"
+  | "notice_dismiss";
 
 // Events nobody clicked: the console acting on its own, or firmware CI uploading a release. They
 // go in admin_email with these names, which no admin address can take.

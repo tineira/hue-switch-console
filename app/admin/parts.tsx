@@ -58,6 +58,7 @@ export const EVENT_LABELS: Record<AdminEvent["action"], string> = {
   firmware_current: "made current",
   waitlist_auto_admit: "admitted from the waitlist",
   firmware_upload: "uploaded",
+  notice_dismiss: "dismissed the notice about",
 };
 
 export const ACTORS: Record<string, string> = {
