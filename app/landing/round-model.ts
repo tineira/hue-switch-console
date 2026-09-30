@@ -53,6 +53,7 @@ export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolea
     plastic: std("plastic_black", 0x1e1e20, 0.75),
     nylon: std("plastic_white", 0xe9e5dc, 0.7),
     ceramic: std("ceramic", 0xb49a70, 0.6),
+    brass: std("brass", 0xc9a24a, 0.35, 0.6),
   };
   const { root, add } = builder("XIAO_Round_Display");
   const c96 = (r: number, h: number, seg = 96) => cyl(r, h, seg);
@@ -75,14 +76,45 @@ export function buildDisplay(screenMat: Mat, { dipOn = false }: { dipOn?: boolea
   add("dip_switch", box(6.2, 1.4, 5.4), M.plastic, 0, Y_PCB - 0.7, -9.8);
   for (const [i, dz] of [[1, -1.3], [2, 1.3]])
     add(`dip_slider_${i}`, box(1.5, 0.5, 1.3), M.nylon, dipOn ? 1.35 : -1.35, Y_PCB - 1.6, -9.8 + dz);
-  add("power_switch", box(6.7, 1.4, 2.6), M.tin, -13.6, Y_PCB - 0.7, -9.2);
-  add("power_switch_lever", box(1.4, 1.0, 1.2), M.plastic, -14.6, Y_PCB - 0.9, -11.0);
-  add("battery_jst", box(5.4, 3.4, 4.2), M.nylon, 14.0, Y_PCB - 1.7, -8.0);
-  add("battery_jst_mouth", box(4.4, 2.2, 0.3), M.plastic, 14.0, Y_PCB - 1.8, -10.2);
-  add("rtc_ic", box(3.0, 0.9, 3.0), M.plastic, -13.4, Y_PCB - 0.45, 6.2);
-  add("user_button", box(3.6, 1.4, 4.2), M.tin, 13.6, Y_PCB - 0.7, 7.4);
-  add("user_button_cap", cyl(0.9, 0.5, 32), M.plastic, 13.6, Y_PCB - 1.65, 7.4);
-  [[-15.5, 1.2], [-16.2, -1.2], [15.8, 1.0], [16.4, -1.4], [-10.6, 11.6], [10.8, 12.4], [0, 14.8], [-2.6, 14.8]].forEach(
+  // Slide switch near the edge, turned tangent to it; its lever pokes out past the edge on the
+  // ON end. Layout of the back follows Seeed's photos (connector side up = +z, right = +x).
+  {
+    const [px, pz] = [-9.8, -14.6];
+    const r = Math.hypot(px, pz), out = [px / r, pz / r], along = [-pz / r, px / r]; // along points to OFF
+    const turn = Math.atan2(-along[1], along[0]);
+    const sw = add("power_switch", box(6.7, 1.4, 2.6), M.tin, px, Y_PCB - 0.7, pz);
+    sw.rotation.y = turn;
+    const lever = add(
+      "power_switch_lever",
+      box(1.4, 1.0, 1.4),
+      M.plastic,
+      px + out[0] * 1.7 - along[0] * 1.3,
+      Y_PCB - 0.8,
+      pz + out[1] * 1.7 - along[1] * 1.3,
+    );
+    lever.rotation.y = turn;
+  }
+  // JST 1.25 battery connector between the socket rows' USB-C end.
+  add("battery_jst", box(5.8, 3.4, 4.2), M.nylon, 0, Y_PCB - 1.7, 14.8);
+  add("battery_jst_mouth", box(4.8, 2.2, 0.3), M.plastic, 0, Y_PCB - 1.8, 17.0);
+  // CR927 RTC battery holder: a round pocket with a spring clip and two tabs.
+  add("rtc_battery_holder", c96(4.4, 1.6), M.plastic, 13.4, Y_PCB - 0.8, -7.5);
+  add("rtc_battery_clip", box(3.2, 0.3, 5.2), M.tin, 13.4, Y_PCB - 1.75, -7.5);
+  for (const [dx, dz] of [[3.4, 3.4], [-3.4, -3.4]]) add("rtc_battery_tab", box(2.2, 0.5, 2.2), M.tin, 13.4 + dx, Y_PCB - 0.3, -7.5 + dz);
+  // RTC chip (SOIC-8) and the charge IC under the XIAO.
+  add("rtc_ic", box(4.9, 1.5, 3.9), M.plastic, 12.8, Y_PCB - 0.75, 7.2);
+  for (let i = 0; i < 4; i++)
+    for (const side of [-1, 1]) add("rtc_ic_leg", box(0.4, 0.3, 1.1), M.tin, 12.8 + (i - 1.5) * 1.27, Y_PCB - 0.3, 7.2 + side * 2.4);
+  add("charge_ic", box(3.0, 0.9, 3.0), M.plastic, -2.5, Y_PCB - 0.45, 2.0);
+  // Screen flex (amber) wrapping round the edge, and its connector.
+  add("screen_flex", box(4.2, 0.3, 8.5), std("polyimide_amber", 0xc98a2c, 0.45), -15.4, Y_PCB - 0.15, 3.0);
+  add("screen_fpc_connector", box(2.6, 1.2, 8.0), M.plastic, -11.6, Y_PCB - 0.6, -4.0);
+  // Brass mounting inserts.
+  for (const [x, z] of [[-15.7, 13.0], [16.4, 1.7], [-15.7, -8.6]]) {
+    add("mount_insert", cyl(1.7, 1.2, 32), M.brass, x, Y_PCB - 0.6, z);
+    add("mount_hole", cyl(0.9, 1.25, 32), M.plastic, x, Y_PCB - 0.6, z);
+  }
+  [[4.5, 17.2], [-4.5, 17.2], [11.0, 13.5], [-11.0, 12.0], [9.5, -13.5], [-12.4, 6.8], [3.6, -2.5], [-4.0, -5.0]].forEach(
     ([x, z], i) => add(`passive_${i + 1}`, box(1.0, 0.5, 0.5), M.ceramic, x, Y_PCB - 0.25, z),
   );
   return { root, screen };

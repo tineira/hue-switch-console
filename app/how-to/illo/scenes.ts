@@ -98,7 +98,7 @@ function xiaoWithHeaders(opts: { antenna?: boolean; hotSolder?: boolean } = {}) 
 
 /** The antenna plugged in and lying to one side, clear of the XIAO and the display. */
 // Like the real flat antenna: amber film with a copper meander, the coax soldered at one end.
-const ANT_AT: V3 = [27, T + 2.05, -4];
+const ANT_AT: V3 = [4, T + 2.05, -33];
 function sideAntenna() {
   const g = new THREE.Group();
   const top = ANT_AT[1], cx = ANT_AT[0], cz = ANT_AT[2], L = 16;
@@ -106,9 +106,10 @@ function sideAntenna() {
   const ty = top + 0.14, z0 = cz - L / 2;
   for (let i = 0; i < 5; i++) g.add(at(mesh(new THREE.BoxGeometry(7.4, 0.04, 0.6), "brown"), cx, ty, z0 + 1.6 + i * 2.1));
   for (let i = 0; i < 4; i++) g.add(at(mesh(new THREE.BoxGeometry(0.6, 0.04, 2.1), "brown"), cx + (i % 2 ? -3.4 : 3.4), ty, z0 + 2.65 + i * 2.1));
-  g.add(at(mesh(new THREE.SphereGeometry(0.7, 16, 8).scale(1, 0.5, 1.4), undefined, true), cx, ty + 0.1, z0 + 0.6));
+  const feed = cz + L / 2 - 0.6; // the coax is soldered at the end nearest the XIAO
+  g.add(at(mesh(new THREE.SphereGeometry(0.7, 16, 8).scale(1, 0.5, 1.4), undefined, true), cx, ty + 0.1, feed));
   g.add(at(mesh(new THREE.CylinderGeometry(1, 1, 1.3, 32), undefined, true), JACK[0], JACK[1] + 0.65, JACK[2]));
-  g.add(wire([[JACK[0], JACK[1] + 1.1, JACK[2]], [JACK[0] + 3, top + 0.8, JACK[2] - 2], [14, top + 0.6, -14], [cx, top + 0.4, -14.5], [cx, top + 0.3, cz - L / 2 + 0.6]], "switched", 0.55));
+  g.add(wire([[JACK[0], JACK[1] + 1.1, JACK[2]], [JACK[0] + 1.5, top + 0.8, JACK[2] - 3], [cx + 1.5, top + 0.5, feed + 4], [cx, top + 0.3, feed]], "switched", 0.55));
   return g;
 }
 
@@ -255,7 +256,7 @@ function roundSwitch(): SceneDef {
   return {
     ...def,
     notes: [
-      note("Slide the power switch to ON", d, [-14.6, 3.4, -11], "left", "hot"),
+      note("Slide the power switch to ON, along the edge", d, [-11.5, 3.4, -15.0], "left", "hot"),
       note("XIAO pressed home, no gap", x, [8.9, 0, 0], "right"),
       note("USB-C at the edge", x, [0, T + 1.6, 11], "right"),
       note("Antenna to one side", x, ANT_AT, "right"),
