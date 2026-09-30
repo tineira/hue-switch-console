@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { dismissNoticeAction } from "@/app/admin/actions";
 import {
   AdminFrame,
   CALLS_PER_SWITCH_MONTH,
@@ -13,7 +14,7 @@ import { emailDailyCap } from "@/lib/account-config";
 import { fleetCounts, refusedRegisters } from "@/lib/admin";
 import { listAdminEvents } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth";
-import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
+import { currentSignupMode, currentUserCap, readSettings, type NoticeKind } from "@/lib/console-settings";
 import { emailsSentToday } from "@/lib/email";
 import { deliveryProblems, loadStats, seatsUsed, waitlistStats } from "@/lib/waitlist";
 
@@ -26,7 +27,14 @@ export const metadata = {
 // Links from before the tabs (/admin?q=…, ?manage=…, ?invites=…) belong to Accounts now.
 const ACCOUNT_PARAMS = ["q", "sort", "dir", "filter", "page", "manage", "invites", "ipage"];
 
-type Attention = { text: string; href: string; action: string; tone: "warn" | "info" };
+type Attention = {
+  text: string;
+  href: string;
+  action: string;
+  tone: "warn" | "info";
+  /** A notice that stays true for days: the admin can dismiss it until something newer happens. */
+  dismiss?: NoticeKind;
+};
 
 function pct(part: number, whole: number): number {
   return whole > 0 ? Math.round((part / whole) * 100) : 0;
@@ -59,17 +67,18 @@ export default async function AdminOverviewPage({
 
   const admin = await requireAdmin();
   const settings = await readSettings();
-  const [mode, cap, seats, stats, problems, load, sent, fleet, waiting, refused, events] = await Promise.all([
+  const [mode, cap, seats, stats, problems, newProblems, load, sent, fleet, waiting, refused, events] = await Promise.all([
     currentSignupMode(settings),
     currentUserCap(settings),
     seatsUsed(),
     waitlistStats(),
     deliveryProblems(),
+    deliveryProblems(settings.noticesSeen.bounces),
     loadStats(),
     emailsSentToday(),
     fleetCounts(),
     waitingReleases(),
-    refusedRegisters(),
+    refusedRegisters(settings.noticesSeen.refused),
     listAdminEvents(5),
   ]);
 
@@ -78,6 +87,7 @@ export default async function AdminOverviewPage({
   const quiet = allCounts.reduce((sum, c) => sum + c.quiet, 0);
   const otaFailed = allCounts.reduce((sum, c) => sum + c.otaFailed, 0);
   const bounces = problems.reduce((sum, p) => sum + p.n, 0);
+  const newBounces = newProblems.reduce((sum, p) => sum + p.n, 0);
   const seatsFull = cap !== null && seats.total >= cap;
   const dbPct = pct(load.dbBytes, NEON_BYTES);
   const callsPct = pct(load.switches * CALLS_PER_SWITCH_MONTH, VERCEL_CALLS_MONTH);
@@ -124,6 +134,7 @@ export default async function AdminOverviewPage({
       href: `/admin/accounts?q=${encodeURIComponent(r.email)}`,
       action: "Open account",
       tone: "warn",
+      dismiss: "refused",
     });
   }
   if (sent >= Math.ceil(emailCap * 0.8)) {
@@ -134,14 +145,15 @@ export default async function AdminOverviewPage({
       tone: "warn",
     });
   }
-  if (bounces > 0) {
+  if (newBounces > 0) {
     attention.push({
-      text: `${bounces} ${bounces === 1 ? "email" : "emails"} bounced or marked as spam in 30 days (${problems
-        .map((p) => p.tag)
-        .join(", ")})`,
+      text: `${newBounces} ${newBounces === 1 ? "email" : "emails"} bounced or marked as spam ${
+        settings.noticesSeen.bounces ? "since you last dismissed this" : "in 30 days"
+      } (${newProblems.map((p) => p.tag).join(", ")})`,
       href: "/admin/accounts?invites=all#invites",
       action: "See invites",
       tone: "info",
+      dismiss: "bounces",
     });
   }
 
@@ -159,20 +171,32 @@ export default async function AdminOverviewPage({
         {attention.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {attention.map((a) => (
-              <li key={a.text}>
+              <li
+                key={a.text}
+                className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border px-4 py-3 text-sm ${
+                  a.tone === "warn" ? "border-warn/40 bg-warn-soft" : "border-line"
+                }`}
+              >
+                <span className={`min-w-0 flex-1 ${a.tone === "warn" ? "text-foreground" : "text-muted"}`}>
+                  {a.text}
+                </span>
                 <Link
                   href={a.href}
-                  className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm ${
-                    a.tone === "warn"
-                      ? "border-warn/40 bg-warn-soft hover:border-warn"
-                      : "border-line hover:border-filament"
-                  }`}
+                  className={`text-xs font-medium hover:underline ${a.tone === "warn" ? "text-warn" : "text-filament"}`}
                 >
-                  <span className={a.tone === "warn" ? "text-foreground" : "text-muted"}>{a.text}</span>
-                  <span className={`text-xs font-medium ${a.tone === "warn" ? "text-warn" : "text-filament"}`}>
-                    {a.action} →
-                  </span>
+                  {a.action} →
                 </Link>
+                {a.dismiss ? (
+                  <form action={dismissNoticeAction}>
+                    <input type="hidden" name="kind" value={a.dismiss} />
+                    <button
+                      className="text-xs text-muted hover:text-foreground hover:underline"
+                      title="Hide this until something new happens"
+                    >
+                      Dismiss
+                    </button>
+                  </form>
+                ) : null}
               </li>
             ))}
           </ul>

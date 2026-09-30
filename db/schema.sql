@@ -304,6 +304,9 @@ create table if not exists console_settings (
   updated_at timestamptz not null default now()
 );
 
+-- When the admin last dismissed each kind of Overview notice ("bounces", "refused"): ISO times.
+alter table console_settings add column if not exists notices_seen jsonb not null default '{}'::jsonb;
+
 -- joins_total started after the first waitlist entries: never below the entries still stored.
 insert into console_settings (id, joins_total)
 select true, count(*) from invite_requests

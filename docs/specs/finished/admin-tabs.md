@@ -22,6 +22,8 @@ Five tabs, each its own route, sharing a header with the tab row. Tab labels car
 | `/admin/settings` | Settings | Sign-up mode and seat cap. Account limit defaults (read-only, from the environment). Email budgets (daily cap, waitlist emails per day). The waitlist history numbers (joined 7/30 days, total, last 90 days). |
 | `/admin/activity` | Activity | The newest 50 events, filterable by **everyone / admins / console / firmware CI** (`?by=`). |
 
+Bounces and refused boards stay true for days, so their notices have **Dismiss** (added 2026-09-30 at the user's request). It stores the time in `console_settings.notices_seen` (`{"bounces": …, "refused": …}`), and the notice counts only what came after it.
+
 Old links keep working. `/admin` with any accounts or invites parameter (`q`, `sort`, `dir`, `filter`, `page`, `manage`, `invites`, `ipage`) redirects to `/admin/accounts` with the same query. The **Admin** menu item keeps pointing at `/admin`.
 
 Server actions refresh every admin route (`revalidateAdmin()`), since one action can change several tabs' counts.

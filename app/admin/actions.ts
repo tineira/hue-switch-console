@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { dismissNotice, NOTICE_KINDS, type NoticeKind } from "@/lib/console-settings";
 import { signupMode } from "@/lib/account-config";
 import { deleteAccountById, setLimits, setSuspension } from "@/lib/admin";
 import { recordAdminEvent } from "@/lib/audit";
@@ -216,6 +217,20 @@ export async function makeCurrentAction(formData: FormData) {
     adminEmail: admin.email,
     action: "firmware_current",
     target: `${product} ${version}`,
+  });
+  revalidateAdmin();
+}
+
+/** Hides an Overview notice (bounces, refused boards) until something newer happens. */
+export async function dismissNoticeAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const kind = String(formData.get("kind"));
+  if (!(NOTICE_KINDS as readonly string[]).includes(kind)) return;
+  await dismissNotice(kind as NoticeKind);
+  await recordAdminEvent({
+    adminEmail: admin.email,
+    action: "notice_dismiss",
+    target: kind === "bounces" ? "bounced emails" : "refused boards",
   });
   revalidateAdmin();
 }
