@@ -382,12 +382,14 @@ option {
   pointer-events: none;
   font-family: var(--font-mono), ui-monospace, monospace;
 }
+/* The board draws the name at GFX size 2 (12 px a character) within about 150 of its 240 px
+   (hue-round-switch ui.h, kNameY), so all 12 characters PAGE_NAME_MAX allows fit. The preview
+   keeps that proportion: a 65/104 box and a mono size where 12 characters fit it. */
 .round-dial-name {
-  font-size: max(7px, calc(11px * var(--k)));
-  letter-spacing: calc(0.3px * var(--k));
+  font-size: max(7px, calc(8.8px * var(--k)));
   color: var(--t-ink);
   margin-bottom: calc(3px * var(--k));
-  max-width: 78%;
+  max-width: calc(65px * var(--k));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
