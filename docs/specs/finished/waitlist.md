@@ -4,6 +4,8 @@ Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `doc
 
 **Status:** done 2026-09-29. Production checks passed for the invite path and bounces; the cap-full path and the leave link were accepted untested.
 
+> **Later change (2026-09-30):** the waitlist form moved from `/login` to the home page hero (`app/landing/waitlist-form.tsx`), and `/login` no longer has one: its intro, and the message after a refused Google or GitHub sign-in, link to `/#waitlist`. `/login?request=waitlist` and `?request=invite` are plain sign-in links now. Turnstile loads only once someone starts filling in an email form (the waitlist or the email code), never for Google or GitHub sign-in. The server checks in §2.4 are unchanged.
+
 ## 1. What and why
 
 The hosted console runs on free tiers (Vercel Hobby, Neon Free, Resend Free; accounts spec §2.11). It must not grow faster than those tiers hold, and the operator wants to see how much interest there is. Today sign-up is invite-only: a visitor requests an invite with an email and a note, and the admin approves or dismisses each request by hand.
