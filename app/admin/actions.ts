@@ -19,6 +19,13 @@ import {
 } from "@/lib/signup";
 import { admitEntry, admitQuietly, dismissEntry } from "@/lib/waitlist";
 
+// One action can change several tabs' numbers and counts (docs/specs/admin-tabs.md §2).
+function revalidateAdmin() {
+  for (const path of ["/admin", "/admin/accounts", "/admin/firmware", "/admin/settings", "/admin/activity"]) {
+    revalidatePath(path);
+  }
+}
+
 // Every action records an admin event (docs/specs/finished/admin-tools.md §2.5).
 
 export type InviteState = { link?: string; error?: string } | undefined;
@@ -34,7 +41,7 @@ export async function createInviteAction(_prev: InviteState, formData: FormData)
     action: "invite_create",
     target: email ?? code.slice(0, 8),
   });
-  revalidatePath("/admin");
+  revalidateAdmin();
   return { link: `${await origin()}/login?invite=${code}` };
 }
 
@@ -48,7 +55,7 @@ export async function revokeInviteAction(formData: FormData) {
     action: "invite_revoke",
     target: invite.email ?? invite.code_prefix,
   });
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 /**
@@ -64,7 +71,7 @@ export async function replaceInviteAction(_prev: InviteState, formData: FormData
   await revokeInvite(old.id);
   await recordAdminEvent({ adminEmail: admin.email, action: "invite_create", target: code.slice(0, 8) });
   await recordAdminEvent({ adminEmail: admin.email, action: "invite_revoke", target: old.code_prefix });
-  revalidatePath("/admin");
+  revalidateAdmin();
   return { link: `${await origin()}/login?invite=${code}` };
 }
 
@@ -89,7 +96,7 @@ export async function emailInviteAction(formData: FormData) {
   }
   await revokeInvite(old.id);
   await recordAdminEvent({ adminEmail: admin.email, action: "invite_email", target: old.email });
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 /** Admit now (works even when the console is full) or remove a waitlist entry (§2.3, §2.7). */
@@ -105,7 +112,7 @@ export async function decideRequestAction(formData: FormData) {
     await dismissEntry(id);
     await recordAdminEvent({ adminEmail: admin.email, action: "waitlist_remove", target: email });
   }
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 export type WaitlistSettingsState = { error?: string; saved?: boolean } | undefined;
@@ -129,7 +136,7 @@ export async function waitlistSettingsAction(
   await saveSettings({ signupMode: mode, userCap: cap });
   await recordAdminEvent({ adminEmail: admin.email, action: "settings", details: { mode, cap } });
   await admitQuietly(await origin());
-  revalidatePath("/admin");
+  revalidateAdmin();
   return { saved: true };
 }
 
@@ -145,7 +152,7 @@ export async function suspendAction(_prev: SuspendState, formData: FormData): Pr
     if (email) {
       await recordAdminEvent({ adminEmail: admin.email, action: "unsuspend", targetUserId: id, target: email });
     }
-    revalidatePath("/admin");
+    revalidateAdmin();
     return undefined;
   }
   const reason = String(formData.get("reason") ?? "").trim().slice(0, 200) || null;
@@ -166,7 +173,7 @@ export async function suspendAction(_prev: SuspendState, formData: FormData): Pr
     target: email,
     details: { reason, until: expires ? expires.toISOString() : null },
   });
-  revalidatePath("/admin");
+  revalidateAdmin();
   return undefined;
 }
 
@@ -181,7 +188,7 @@ export async function deleteAccountAction(formData: FormData) {
   await recordAdminEvent({ adminEmail: admin.email, action: "delete_account", target: deleted });
   // The seat is free: offer it to the next person waiting.
   await admitQuietly(await origin());
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 export async function limitsAction(formData: FormData) {
@@ -195,7 +202,7 @@ export async function limitsAction(formData: FormData) {
     target: String(formData.get("email") ?? "") || null,
     details: limits,
   });
-  revalidatePath("/admin");
+  revalidateAdmin();
 }
 
 /** Roll the installer back or forward to a stored release (admin-tools §2.4). */
@@ -210,5 +217,5 @@ export async function makeCurrentAction(formData: FormData) {
     action: "firmware_current",
     target: `${product} ${version}`,
   });
-  revalidatePath("/admin");
+  revalidateAdmin();
 }

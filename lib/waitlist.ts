@@ -163,7 +163,7 @@ async function checkCapAlerts() {
     threshold === 100
       ? `Hue Switch Console is full (${total} of ${cap} seats)`
       : `Hue Switch Console is at ${total} of ${cap} seats`;
-  const text = `${total} of ${cap} seats are used (accounts plus unused invites), and ${pending} people are waiting.\n\nRaise the cap in /admin when the servers can take more users.`;
+  const text = `${total} of ${cap} seats are used (accounts plus unused invites), and ${pending} people are waiting.\n\nRaise the cap in /admin/settings when the servers can take more users.`;
   for (const to of adminEmails()) {
     try {
       await sendAdminAlert(to, subject, text);
