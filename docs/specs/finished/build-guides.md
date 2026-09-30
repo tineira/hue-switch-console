@@ -182,5 +182,6 @@ No `FIRMWARE_VERSION` bump: documentation only.
 
 ## 6. Outcome
 
+- Illustrations: every step has a picture rendered in the browser from three.js models of the real parts (the landing's XIAO, headers, antenna and Round Display, plus the carrier board, enclosure and wall parts in `app/how-to/illo/parts.ts`), in the Switches board picture's line style. Steps on Switches show the real editor with sample data (`app/how-to/editor-shot.tsx`). The first version's flat line drawings were replaced at the user's request.
 - The Simple guide opens on level B, not A: B's first two steps are A, and a reader who followed a "wiring" link from the landing page wants B.
 - The guide says staircase pairs are not supported yet (open question 1); supporting them needs its own cross-repo spec for a toggle-on-change channel kind. Questions 2 (kits), 4 (level B enclosure) and 5 (photos) stay open; the guide ships with drawings.

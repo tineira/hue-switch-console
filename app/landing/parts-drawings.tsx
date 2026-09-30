@@ -23,8 +23,6 @@ type SlabProps = {
   edge?: string;
   top?: string;
   topBorder?: string;
-  /** Drawn faint, to point at the other parts. */
-  dim?: boolean;
   children?: ReactNode;
 };
 
@@ -40,7 +38,6 @@ function Slab({
   edge = "1px solid var(--muted)",
   top = "var(--cream)",
   topBorder = "1.5px solid var(--foreground)",
-  dim = false,
   children,
 }: SlabProps) {
   const zs: number[] = [];
@@ -55,7 +52,6 @@ function Slab({
     boxSizing: "border-box",
     borderRadius: radius,
     transform: `translate(-50%, -50%) translate(${x}px, ${y}px) translateZ(${z}px)`,
-    opacity: dim ? 0.22 : undefined,
   });
   return (
     <>
@@ -119,25 +115,12 @@ function PadRow({ edge }: { edge: "top" | "bottom" }) {
   );
 }
 
-// Z positions per stage. "exploded" is the landing page's drawing, with its dimension and
-// part balloons; the others are the /how-to assembly steps (docs/specs/finished/build-guides.md).
-export type RoundStage = "exploded" | "antenna" | "assembled";
-
-const Z: Record<RoundStage, { antenna: number; board: number; glass: number }> = {
-  exploded: { antenna: -112, board: 95.5, glass: 142.5 },
-  antenna: { antenna: -112, board: 95.5, glass: 142.5 },
-  assembled: { antenna: -60, board: 12, glass: 16.5 },
-};
-
-export function RoundDrawing({ stage = "exploded" }: { stage?: RoundStage }) {
-  const z = Z[stage];
-  const dimDisplay = stage === "antenna";
-  const notes = stage === "exploded";
+export function RoundDrawing() {
   return (
     <DrawingScale>
       <Stage x={200} y={230}>
         {/* 3. Antenna */}
-        <Slab w={110} h={36} radius={4} z={[z.antenna, z.antenna + 2]}>
+        <Slab w={110} h={36} radius={4} z={[-112, -110]}>
           <Abs style={{ inset: 7, border: "1px solid var(--muted)", borderRadius: 2 }} />
           <Abs style={{ left: 14, right: 40, top: 16, borderTop: "1px solid var(--muted)" }} />
         </Slab>
@@ -160,7 +143,7 @@ export function RoundDrawing({ stage = "exploded" }: { stage?: RoundStage }) {
         <Slab w={18} h={34} radius={6} x={-62} z={[1.5, 9]} topBorder="1.5px solid var(--filament)" />
         <Slab w={10} h={10} radius="50%" x={48} y={-26} z={[1, 4]} />
         {/* 1. Display board, parts on its underside drawn dashed */}
-        <Slab w={234} h={234} radius="50%" z={[z.board, z.board + 4.5]} dim={dimDisplay}>
+        <Slab w={234} h={234} radius="50%" z={[95.5, 100]}>
           {[
             { left: 62, top: 66, width: 110, height: 12 },
             { left: 62, top: 156, width: 110, height: 12 },
@@ -174,7 +157,7 @@ export function RoundDrawing({ stage = "exploded" }: { stage?: RoundStage }) {
           <Abs style={{ left: 110, top: 130, width: 8, height: 6, background: "var(--muted)", borderRadius: 1 }} />
         </Slab>
         {/* 1. Glass with the brightness ring */}
-        <Slab w={234} h={234} radius="50%" z={[z.glass, z.glass + 7.5]} dim={dimDisplay}>
+        <Slab w={234} h={234} radius="50%" z={[142.5, 150]}>
           <Abs
             className="rounded-full"
             style={{
@@ -199,25 +182,9 @@ export function RoundDrawing({ stage = "exploded" }: { stage?: RoundStage }) {
           />
         </Slab>
       </Stage>
-      {stage === "assembled" ? null : (
-        <svg className="absolute left-0 top-0 overflow-visible" width="520" height="440" aria-hidden="true">
-          <path
-            d="M167 339 C 150 300, 240 250, 215 200"
-            fill="none"
-            stroke={stage === "antenna" ? "var(--filament)" : "var(--muted)"}
-            strokeWidth="1.5"
-          />
-        </svg>
-      )}
-      {notes ? <ExplodedNotes /> : null}
-    </DrawingScale>
-  );
-}
-
-// Dimension, leader lines and part balloons of the landing page's exploded view.
-function ExplodedNotes() {
-  return (
-    <>
+      <svg className="absolute left-0 top-0 overflow-visible" width="520" height="440" aria-hidden="true">
+        <path d="M167 339 C 150 300, 240 250, 215 200" fill="none" stroke="var(--muted)" strokeWidth="1.5" />
+      </svg>
       <Abs style={{ left: 200, top: 107, height: 213, borderLeft: "1px dashed var(--muted)" }} />
       <Abs style={{ left: 83, top: 14, height: 93, borderLeft: "1px solid var(--muted)", opacity: 0.6 }} />
       <Abs style={{ left: 317, top: 14, height: 93, borderLeft: "1px solid var(--muted)", opacity: 0.6 }} />
@@ -237,6 +204,6 @@ function ExplodedNotes() {
       <Balloon top={93} n={1} />
       <Balloon top={216} n={2} />
       <Balloon top={306} n={3} />
-    </>
+    </DrawingScale>
   );
 }

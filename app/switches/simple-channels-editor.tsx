@@ -53,7 +53,7 @@ type GestureView = GestureSummary & {
   fixedTarget?: boolean;
 };
 
-type Adding = { kind: ChannelKind | null; pin: string | null };
+export type Adding = { kind: ChannelKind | null; pin: string | null };
 
 const SCENE_OPTIONS: GestureOption[] = [
   { value: "none", label: "Nothing" },
@@ -156,6 +156,7 @@ export function SimpleChannelsEditor({
   onOpenGesture,
   onChange,
   onNotice,
+  initial,
 }: {
   mac: string;
   channels: Channel[];
@@ -167,9 +168,11 @@ export function SimpleChannelsEditor({
   onOpenGesture: (key: string | null) => void;
   onChange: (next: SimpleChannelConfig[]) => void;
   onNotice: (text: string | null) => void;
+  /** Where the editor starts. Only the how-to's pictures of it set this. */
+  initial?: { picked?: string; adding?: Adding };
 }) {
-  const [picked, setPicked] = useState<string | null>(null);
-  const [adding, setAdding] = useState<Adding | null>(null);
+  const [picked, setPicked] = useState<string | null>(initial?.picked ?? null);
+  const [adding, setAdding] = useState<Adding | null>(initial?.adding ?? null);
   const [wiredOpen, setWiredOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   // A switch with "Cycle scenes" picked but no scene yet: an empty list in the draft reads as Nothing.

@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Conversion, WireStepDrawing } from "@/app/how-to/build-drawings";
+import { EditorShot } from "@/app/how-to/editor-shot";
+import { Illo } from "@/app/how-to/illo/illo";
 import { Rich } from "@/app/rich-text";
-import { RoundDrawing } from "@/app/landing/parts-drawings";
 import { PRODUCT_INFO, type Product } from "@/lib/how-to";
 import {
   BOX_BUY,
+  BOX_KIT,
   BOX_STEPS,
   BUILD_ANCHORS,
   HARDWARE_README,
@@ -17,13 +17,20 @@ import {
   STAIRCASE,
   ROUND_ASSEMBLE,
   ROUND_BUY,
+  ROUND_KIT,
   SIMPLE_LEVELS,
+  TRY_BUY,
+  TRY_KIT,
   TRY_STEPS,
+  WALL_AFTER,
+  WALL_BEFORE,
+  WALL_BOARD,
   WALL_INSTALL,
   WALL_REQUIREMENTS,
   buildSummary,
   type BuyItem,
   type Level,
+  type Pic,
 } from "@/lib/how-to-build";
 
 const SELECTED = "border-filament shadow-[0_0_0_1px_var(--filament)]";
@@ -33,6 +40,7 @@ type LevelId = Level["id"];
 
 // Which Simple level an anchor belongs to.
 function levelFor(hash: string): LevelId | null {
+  if (hash === "try") return "try";
   if (hash === "wire" || hash === "resistors") return "box";
   if (hash === "in-wall" || hash === "install") return "wall";
   return null;
@@ -128,30 +136,47 @@ function StepText({ title, body, tag }: { title: string; body: string; tag?: Rea
   );
 }
 
-function DrawingBox({ children }: { children: ReactNode }) {
-  return <div className="@container overflow-hidden rounded-[10px] bg-background p-2">{children}</div>;
+// A step's picture: a render of the 3D models, or the real Switches editor.
+function Picture({ pic }: { pic: Pic }) {
+  return (
+    <div className="overflow-hidden rounded-[10px] bg-background p-2">
+      {"illo" in pic ? <Illo id={pic.illo} alt={pic.alt} /> : <EditorShot state={pic.editor} alt={pic.alt} />}
+    </div>
+  );
+}
+
+function PicSteps({ steps }: { steps: { title: string; body: string; pic: Pic }[] }) {
+  return (
+    <Steps>
+      {steps.map((step, i) => (
+        <Step key={step.title} n={i + 1}>
+          <StepText title={step.title} body={step.body} />
+          <Picture pic={step.pic} />
+        </Step>
+      ))}
+    </Steps>
+  );
+}
+
+function Buy({ kit, items }: { kit: Pic; items: BuyItem[] }) {
+  return (
+    <Sub id="buy" title="What to buy">
+      <Picture pic={kit} />
+      <BuyList items={items} />
+    </Sub>
+  );
 }
 
 function RoundBuild() {
   return (
     <>
-      <Sub id="buy" title="What to buy">
-        <BuyList items={ROUND_BUY} />
-      </Sub>
-      <Sub id="assemble" title="Put it together" lead="About two minutes. Do it before you plug in USB.">
-        <Steps>
-          {ROUND_ASSEMBLE.map((step, i) => (
-            <Step key={step.title} n={i + 1}>
-              <StepText title={step.title} body={step.body} />
-              <DrawingBox>
-                <div className="@container mx-auto max-w-[400px]">
-                  <RoundDrawing stage={step.stage} />
-                </div>
-              </DrawingBox>
-              {step.caption ? <p className="text-xs text-muted">{step.caption}</p> : null}
-            </Step>
-          ))}
-        </Steps>
+      <Buy kit={ROUND_KIT} items={ROUND_BUY} />
+      <Sub
+        id="assemble"
+        title="Put it together"
+        lead="A few minutes, plus soldering if the headers came loose. Do it before you plug in USB."
+      >
+        <PicSteps steps={ROUND_ASSEMBLE} />
       </Sub>
     </>
   );
@@ -190,18 +215,12 @@ function LevelPicker({ level, onChoose }: { level: LevelId; onChoose: (id: Level
 
 function TryIt() {
   return (
-    <Sub title="Try it with BOOT" lead="The quickest way to see the switch work, and the first test for every build.">
-      <ol className={`flex flex-col gap-2 p-4 text-sm ${CARD}`}>
-        {TRY_STEPS.map((step, i) => (
-          <li key={i} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2.5 text-muted">
-            <span className="text-xs leading-5 font-semibold text-filament tabular-nums">{i + 1}</span>
-            <span>
-              <Rich text={step} />
-            </span>
-          </li>
-        ))}
-      </ol>
-    </Sub>
+    <>
+      <Buy kit={TRY_KIT} items={TRY_BUY} />
+      <Sub id="try" title="Try it with BOOT" lead="The quickest way to see the switch work, and the first test for every build.">
+        <PicSteps steps={TRY_STEPS} />
+      </Sub>
+    </>
   );
 }
 
@@ -223,9 +242,7 @@ function Never() {
 function ButtonBox() {
   return (
     <>
-      <Sub id="buy" title="What to buy">
-        <BuyList items={BOX_BUY} />
-      </Sub>
+      <Buy kit={BOX_KIT} items={BOX_BUY} />
       <Never />
       <Sub title="How an input works">
         <p className="text-sm text-muted">
@@ -240,18 +257,7 @@ function ButtonBox() {
         title="Wire it, one input at a time"
         lead="Finish and test each input before you start the next, so a mistake shows up on the first wire, not the sixth."
       >
-        <Steps>
-          {BOX_STEPS.map((step, i) => (
-            <Step key={step.title} n={i + 1}>
-              <StepText title={step.title} body={step.body} />
-              <DrawingBox>
-                <div className="mx-auto max-w-[520px]">
-                  <WireStepDrawing drawing={step.drawing} />
-                </div>
-              </DrawingBox>
-            </Step>
-          ))}
-        </Steps>
+        <PicSteps steps={BOX_STEPS} />
       </Sub>
       <Sub id="resistors" title="Do I need resistors?">
         <div className={`flex flex-col divide-y divide-line text-sm ${CARD}`}>
@@ -304,37 +310,56 @@ function InWall() {
             </li>
           ))}
         </ul>
-        <p aria-live="polite" className={`text-sm ${all ? "text-ok" : "text-muted"}`}>
-          {all
-            ? "All four hold: this board suits your box. Next, get the board and show Install it to your electrician."
-            : `${checked.length} of ${WALL_REQUIREMENTS.length} checked. If one doesn't hold for your box, build the button box on USB-C instead.`}
-        </p>
+        <div aria-live="polite">
+          {all ? (
+            <div className="flex items-center gap-4 rounded-xl border-2 border-ok bg-ok-soft p-5">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ok text-background">
+                <svg viewBox="0 0 20 20" width="26" height="26" fill="currentColor" aria-hidden="true">
+                  <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.58l7.3-7.3a1 1 0 0 1 1.4 0Z" />
+                </svg>
+              </span>
+              <span className="flex flex-col gap-1">
+                <span className="text-lg font-semibold text-ok">Your box is ready for it.</span>
+                <span className="text-sm text-muted">
+                  All four hold. Next, get the board, then show <b className="font-medium text-foreground">Install it</b> to
+                  your electrician.
+                </span>
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl border border-line bg-cream px-4 py-3 text-sm text-muted">
+              <span className="text-base font-semibold text-foreground tabular-nums">
+                {checked.length} / {WALL_REQUIREMENTS.length}
+              </span>
+              <span>Check all four. If one doesn&apos;t hold for your box, build the button box on USB-C instead.</span>
+            </div>
+          )}
+        </div>
       </Sub>
       <Sub title="What changes in the wall">
-        <Conversion />
+        <div className="grid gap-3">
+          <figure className="flex flex-col gap-1.5">
+            <Picture pic={WALL_BEFORE} />
+            <figcaption className="text-xs text-muted">
+              <span className="font-medium text-foreground">Before.</span> The switch cuts the lamp&apos;s live. A Hue
+              bulb loses its connection whenever it&apos;s off.
+            </figcaption>
+          </figure>
+          <figure className="flex flex-col gap-1.5">
+            <Picture pic={WALL_AFTER} />
+            <figcaption className="text-xs text-muted">
+              <span className="font-medium text-foreground">After.</span> The lamp stays powered and the Bridge switches
+              it. The board sits at the back of the box on live and neutral, and the old switch wires carry only 3.3 V to
+              it.
+            </figcaption>
+          </figure>
+        </div>
       </Sub>
       <Sub
         title="Get the board"
         lead="Order it assembled from JLCPCB with the files in the firmware repo, solder the XIAO on, and print the enclosure in PETG or ASA (not PLA)."
       >
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Image
-            src="/how-to/carrier-board-top.png"
-            alt="Carrier board, XIAO side: the XIAO sits flat with USB-C over the left edge, screw terminals for D0 to D5 and GND"
-            width={1176}
-            height={984}
-            sizes="(min-width: 640px) 336px, 100vw"
-            className="h-auto w-full rounded-[10px] border border-line bg-white"
-          />
-          <Image
-            src="/how-to/carrier-board-bottom.png"
-            alt="Carrier board, power side: the sealed 5 V power module, fuse and mains terminal"
-            width={1176}
-            height={984}
-            sizes="(min-width: 640px) 336px, 100vw"
-            className="h-auto w-full rounded-[10px] border border-line bg-white"
-          />
-        </div>
+        <Picture pic={WALL_BOARD} />
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {[
             ["Order from JLCPCB", "#order-assembled-boards-jlcpcb"],
@@ -388,6 +413,7 @@ function InWall() {
                   </>
                 }
               />
+              <Picture pic={step.pic} />
             </Step>
           ))}
         </Steps>
