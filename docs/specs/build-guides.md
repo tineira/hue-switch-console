@@ -27,7 +27,7 @@ None. No endpoint, payload, NVS key or installer change.
 A **Build** section at the top of each product's `/how-to`, before "Set up a …". The flow is linear (buy → build → set up), so it stays one page, one URL per product (`/how-to?product=…`), and search keeps one page per product.
 
 - The section starts collapsed to a one-line summary with a "Show" control for people who already have a built switch, and opens by default when the visitor arrives from the landing page (link with `#build`).
-- Anchors: `#build`, `#buy`, `#assemble` (Round), `#wire` (Simple), `#in-wall` (Simple). The landing page links to them.
+- Anchors: `#build`, `#buy`, `#assemble` (Round), `#wire`, `#in-wall` and `#install` (Simple). The landing page links to them.
 - Content lives in `lib/how-to.ts` next to `setupSteps()`, as data (`buildSteps(product)`, `shoppingList(product)`), rendered by `how-to-guide.tsx` with the same step layout and `Rich` text as the setup steps.
 
 ### 3.2 Shopping list (both products)
@@ -74,27 +74,43 @@ No wiring. Set up the board (existing steps), give BOOT a job, press it. Explain
 
 #### B. Button box on USB-C
 
-Content, in this order:
+Content, in this order: what you need, what never to do, then the numbered steps. The two explanations ("How an input works", "Do I need resistors?") sit after the steps as reference; the steps link to them.
 
-1. **How an input works.** Each of D0–D5 reads a contact: the other side of every switch goes to GND. Closed = pressed / on. Pick "Wall switch" (maintained) or "Push button" (momentary) per input in the console.
-2. **Wiring diagram.** A console copy of `wiring-switches.svg`, redrawn in the site's style (themes, dark mode), with the XIAO pin labels matching the board silkscreen.
-3. **Do I need resistors?** Answer first, then the reason:
-   - **Short wires (on a desk, in a small box, under ~30 cm): no.** The firmware turns on the chip's internal pull-up and ignores bounces shorter than 50 ms. A switch straight between a pin and GND works.
-   - **Long wires (metres, or running next to mains cables in a wall): yes**, per input: a **10 kΩ pull-up** from the pin to 3V3, a **1 kΩ resistor in series** between the pin and the wire, and a **10 nF capacitor** from the wire's end to GND. These are the values on the carrier board.
-   - **What goes wrong without them on long wires:** the internal pull-up is weak (tens of kΩ), so a long wire picks up noise from nearby mains cables and the light switches by itself ("ghost presses"); a static discharge from touching a switch can reach the pin and damage the chip. The 10 kΩ makes the input stiffer, the 1 kΩ limits the current of a spike, the 10 nF shunts fast noise to GND.
-4. **Never** (a short, red-bordered list):
-   - connect a pin to anything that is, or was, connected to mains (220 V / 120 V), even "just the switch wires";
-   - connect a pin to 5 V or any other supply; the pins take 3.3 V at most;
-   - bring the 3V3 pin out to the wall; it only feeds the pull-up resistors on the board side;
-   - use illuminated switches (neon or LED pilot light) or smart switches: they have electronics across the contacts, not a plain contact.
-5. **Shopping list for B:** XIAO ESP32-C6, switches or buttons (any plain contact: "dry contact", "no light"), hook-up wire, optionally 10 kΩ + 1 kΩ resistors and 10 nF ceramic capacitors (one set per input; 1/4 W or 0603, any tolerance), a box, a USB-C charger.
+**Shopping list for B:** XIAO ESP32-C6 (with or without pre-soldered headers; see step 3), switches or buttons (any plain contact: "dry contact", "no light"), hook-up wire, optionally 10 kΩ + 1 kΩ resistors and 10 nF ceramic capacitors (one set per input; 1/4 W or 0603, any tolerance), a box, a USB-C charger.
+
+**Never** (a short, red-bordered list, before the steps):
+
+- connect a pin to anything that is, or was, connected to mains (220 V / 120 V), even "just the switch wires";
+- connect a pin to 5 V or any other supply; the pins take 3.3 V at most;
+- bring the 3V3 pin out to the wall; it only feeds the pull-up resistors on the board side;
+- use illuminated switches (neon or LED pilot light) or smart switches: they have electronics across the contacts, not a plain contact.
+
+**Steps** (`#wire`). Each step has a drawing (or a photo, see open question 5) and one or two sentences. Finish and test one input completely before wiring the next, so a mistake shows up on the first wire, not the sixth.
+
+1. **Set up the board on its own.** Install the firmware, save Wi-Fi, link it and pair the Bridge with nothing wired (links to the Set up steps below). A board that works bare rules out the board.
+2. **Test with BOOT.** Give BOOT a job in the console and press it. The light reacts: the whole chain (board, Wi-Fi, Bridge, console) works.
+3. **Attach the first wires.** Unplug USB. Solder one wire to **D0** and one to **GND**, or, on a board with headers, use female jumper wires. Drawing of the XIAO's pads with D0 and GND highlighted, matching the silkscreen.
+4. **Connect the first switch or button.** One wire to each of its two terminals; which goes where doesn't matter.
+5. **Set up the input in the console.** Plug USB back in. On the switch's page, set D0 to "Wall switch" or "Push button" and give it a target.
+6. **Test it.** Press or flip it: the light reacts. If it doesn't, the page lists the usual causes (wire on the wrong pad, input not set up, illuminated switch).
+7. **Repeat for each input.** D1 to D5, one at a time, testing each. All switches share the one GND: join their GND wires and bring one to the board.
+8. **Long wires? Add the resistors and capacitor** (links to "Do I need resistors?"). Per input, on the board side: 10 kΩ from the pin to 3V3, 1 kΩ in series between the pin and the wire, 10 nF from the wire side of the 1 kΩ to GND. A drawing shows the three parts for one input.
+9. **Close it up.** Into the box, USB-C charger in, and press every switch once more.
+
+**Reference, after the steps:**
+
+- **How an input works.** Each of D0–D5 reads a contact: the other side of every switch goes to GND. Closed = pressed / on. Pick "Wall switch" (maintained) or "Push button" (momentary) per input in the console. Includes the full wiring diagram: a console copy of `wiring-switches.svg`, redrawn in the site's style (themes, dark mode), with the XIAO pin labels matching the board silkscreen.
+- **Do I need resistors?** Answer first, then the reason:
+  - **Short wires (on a desk, in a small box, under ~30 cm): no.** The firmware turns on the chip's internal pull-up and ignores bounces shorter than 50 ms. A switch straight between a pin and GND works.
+  - **Long wires (metres, or running next to mains cables in a wall): yes**, per input: a **10 kΩ pull-up** from the pin to 3V3, a **1 kΩ resistor in series** between the pin and the wire, and a **10 nF capacitor** from the wire side of the 1 kΩ to GND. These are the values on the carrier board.
+  - **What goes wrong without them on long wires:** the internal pull-up is weak (tens of kΩ), so a long wire picks up noise from nearby mains cables and the light switches by itself ("ghost presses"); a static discharge from touching a switch can reach the pin and damage the chip. The 10 kΩ makes the input stiffer, the 1 kΩ limits the current of a spike, the 10 nF shunts fast noise to GND.
 
 #### C. In the wall
 
-The web page is a **"can I use this?"** summary, not the full build manual. The fabrication manual stays in `hue-simple-switch/hardware/README.md` (Gerbers, JLCPCB, soldering, printing), which versions with the board.
+The web page is a **"can I use this?"** summary plus the **order of installation**, not the fabrication manual. Fabrication stays in `hue-simple-switch/hardware/README.md` (Gerbers, JLCPCB, soldering, printing), which versions with the board.
 
 1. Big warning first: mains voltage can kill; the design is uncertified; an electrician installs it; circuit off at the breaker.
-2. Requirements checklist, each a yes/no the reader checks against their box:
+2. Requirements checklist (`#in-wall`), each a yes/no the reader checks against their box:
    - a **neutral** wire in the box (many Chilean and older homes don't have one; without it this board can't be used);
    - enough depth behind the mechanism (enclosure 46 × 56 × 26 mm), with the box-size table from the hardware README;
    - a plastic box (metal boxes cut Wi-Fi);
@@ -103,8 +119,18 @@ The web page is a **"can I use this?"** summary, not the full build manual. The 
    - *Before:* live → wall switch → lamp; the switch cuts the lamp's power.
    - *After:* live joined straight through to the lamp (always on); the carrier board takes L and N; the old switch wires are disconnected from mains **at both ends** and now carry only 3.3 V from the board's D0–D5 and GND terminals to the switch.
 4. Photos/renders of the board and enclosure (`hardware/images/`), copied into `public/how-to/`.
-5. Links to the hardware README sections: order from JLCPCB, solder the XIAO, print the enclosure, wire it.
-6. Set it up over USB **before** it goes on mains; never connect USB while it is on mains; updates arrive over Wi-Fi afterwards.
+5. Getting the board: links to the hardware README sections (order from JLCPCB, solder the XIAO, print the enclosure).
+6. **Installation, step by step** (`#install`). Each step says who does it and links to the hardware README section with the detail. Steps 2 to 9 are for the electrician; the page says so above the list.
+   1. **Set it up over USB, never on mains.** Install, Wi-Fi, link, pair the Bridge and set up the inputs in the console, before the XIAO is soldered to the board or with J1 disconnected. Unplug USB. From here on, USB is never connected while the board is on mains; updates arrive over Wi-Fi.
+   2. **Breaker off, and check it is dead** with a voltage tester, at the box.
+   3. **Identify the wires in the box:** permanent live, neutral, the switched live to the lamp, and the wires that run to each switch. No neutral: stop here (requirements).
+   4. **Make the lamp permanent.** Join the lamp's switched live to the permanent live with a lever connector (for example WAGO 221). The lamp now stays powered; the Hue Bridge switches it.
+   5. **Take the switch wires off mains, at both ends.** Every wire that runs to a switch is disconnected from live, neutral and the lamp, in this box and at the switch. From now on it only connects the switch to the board.
+   6. **Wire the switches.** One terminal of each switch to D0–D5 (J2/J3); the other terminals joined with a lever connector and one wire to J3 GND. Solid 1.5 mm² wire goes through a short 0.5–0.75 mm² flexible pigtail on J2/J3.
+   7. **Wire mains:** permanent live to J1 L, neutral to J1 N. Earth stays joined to the box's earth wires, not to the board.
+   8. **Fit the enclosure** behind (or beside) the mechanism: switch wires through the holes on the low-voltage side, L and N through the two larger ones.
+   9. **Check before power:** the electrician confirms that no switch wire touches mains anywhere, with a continuity tester if needed.
+   10. **Breaker on and test.** The LED shows it is connected (links to "Reading the LED"); then press or flip each switch and the light reacts.
 
 ### 3.5 Source of truth
 
@@ -126,6 +152,8 @@ The web page is a **"can I use this?"** summary, not the full build manual. The 
 - [ ] `lib/how-to.ts`: `shoppingList(product)` and `buildSteps(product)` data; Simple levels A/B/C
 - [ ] `how-to-guide.tsx`: Build section with anchors, collapsed by default, open from `#build`
 - [ ] `RoundDrawing` gets a `stage` prop (exploded, lined up, assembled); landing page unchanged
+- [ ] Simple level B: numbered steps 1–9 (3.4), one drawing per step (XIAO pads, one input with R/C, joined GND)
+- [ ] Simple level C: installation steps 1–10 (3.4), each linking its hardware README section
 - [ ] New drawings, themed and dark-mode aware: Simple wiring (B, with optional R/C), before/after wall switch conversion (C)
 - [ ] Board and enclosure images copied to `public/how-to/`
 - [ ] Landing links to `#build` / `#assemble` (3.6)
@@ -150,3 +178,4 @@ No `FIRMWARE_VERSION` bump: documentation only.
 2. **Kits.** Whether to offer the carrier board assembled (or a Round kit) instead of only links to Seeed and the Gerbers. *Recommendation:* not in this spec; links only. Selling mains hardware brings certification and liability questions the project isn't set up for.
 3. **Where the Build section opens.** *Recommendation:* collapsed by default, open from `#build` (3.1). Alternative: always open for signed-out visitors, collapsed for signed-in ones (who already own a switch).
 4. **Level B enclosure.** Whether to publish a printable box for the USB button box too. *Recommendation:* not now; any project box works, and the guide says so.
+5. **Photos or drawings for the level B steps.** Photos of a real button box are clearer for a first build; drawings match the site and never go stale. *Recommendation:* ship with drawings, and swap in photos of the maintainer's own box, step by step, when they exist.
