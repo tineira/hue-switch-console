@@ -792,6 +792,8 @@ type WallOpts = {
   lit?: boolean;
   /** Draw the lamp at the end of its cable. */
   lamp?: boolean;
+  /** Leave the pulled-out switch out (steps only about the board): its wires end at the front. */
+  noSwitch?: boolean;
 };
 
 // Relative position of `p` (local to `o`, a direct child of the scene root) in scene mm.
@@ -814,7 +816,7 @@ function wallScene(o: WallOpts) {
     mech.position.set(-54, -14, 38);
     mech.rotation.y = -2.5;
   }
-  root.add(mech);
+  if (!o.noSwitch) root.add(mech);
   // The lamp only where the step is about it; elsewhere its cable just leaves the picture.
   const withLamp = Boolean(o.lamp);
   // A pendant lamp: hanging from its cable, cap up.
@@ -907,7 +909,11 @@ function wallScene(o: WallOpts) {
   };
   if (board && o.switchWires) {
     const l = inScene(mech, MECH.l), sl = inScene(mech, MECH.sl);
-    if (o.mounted) {
+    if (o.noSwitch) {
+      // Cut off just outside the box, toward the switch.
+      w([SW_D0, [-12, 24, 10], [8, 27, 0], [4, 28, -30], ...intoBoard("D0")], "signal", 0.8);
+      w([SW_GND, [0, -24, 12], [29, -8, -10], [29, 2, -38], ...intoBoard("GND")], "signal", 0.8);
+    } else if (o.mounted) {
       w([...intoMech("l").reverse(), [l[0] + 6, 24, -26], [2, 27, -36], ...intoBoard("D0")], "signal", 0.8);
       w([...intoMech("sl").reverse(), [sl[0] + 10, 10, -26], [29, 6, -36], ...intoBoard("GND")], "signal", 0.8);
     } else {
@@ -923,6 +929,9 @@ function wallScene(o: WallOpts) {
 }
 
 const WALL_DIR: V3 = [0.85, 0.8, 1.0];
+// Where the switch wires leave the picture when the switch isn't drawn.
+const SW_D0: V3 = [-24, 20, 18];
+const SW_GND: V3 = [-20, -16, 20];
 
 function wallBefore(labels: boolean): SceneDef {
   const s = wallScene({ before: true, lamp: !labels });
@@ -988,18 +997,19 @@ function wallSwitches(): SceneDef {
 }
 
 function wallMains(check: boolean): SceneDef {
-  const s = wallScene({ lampJoined: true, board: true, switchWires: true, mains: true });
+  const s = wallScene({ lampJoined: true, board: true, switchWires: true, mains: true, noSwitch: true });
   const notes: Note[] = check
     ? [
-        note("No switch wire touches L or N", s.mech, [0, 14, -24], "left", "ok"),
+        note("No switch wire touches L or N", s.root, SW_D0, "left", "ok"),
         note("Mains only on the L N terminal", s.root, s.bw(s.board!.pts.L), "right"),
       ]
     : [
         note("Permanent live to L", s.root, s.bw(s.board!.pts.L), "right", "hot"),
         note("Neutral to N", s.root, s.bw(s.board!.pts.N), "right", "hot"),
         note("Earth stays with the box's earth wires", s.eConn, [0, 8, 0], "left"),
+        note("To the switch", s.root, SW_GND, "left"),
       ];
-  const marks: Mark[] = check ? [{ kind: "badge", at: A(s.mech, [0, 30, -24]), text: "Checked", tone: "ok" }] : [];
+  const marks: Mark[] = check ? [{ kind: "badge", at: A(s.root, [SW_GND[0], SW_GND[1] - 8, SW_GND[2]]), text: "Checked", tone: "ok" }] : [];
   return { root: s.root, dir: WALL_DIR, pad: 1.03, notes, marks };
 }
 
