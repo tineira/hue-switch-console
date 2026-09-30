@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { ChangelogItemText } from "@/app/changelog-item";
 import { PublicFrame } from "@/app/public-frame";
+import { Rich } from "@/app/rich-text";
 import { Shell } from "@/app/shell";
 import { getSessionUser } from "@/lib/auth";
 import {
@@ -62,7 +63,7 @@ function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
         <h1 className="text-2xl font-semibold tracking-tight">Changelog</h1>
         {doc.intro.map((paragraph) => (
           <p key={paragraph} className="max-w-2xl text-sm text-muted">
-            {paragraph}
+            <Rich text={paragraph} />
           </p>
         ))}
         <p className="flex gap-4 text-sm">
@@ -83,7 +84,7 @@ function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
           <h2 className="text-lg font-medium">{section.title}</h2>
           {section.intro.map((paragraph) => (
             <p key={paragraph} className="max-w-2xl text-sm text-muted">
-              {paragraph}
+              <Rich text={paragraph} />
             </p>
           ))}
           <div className="flex flex-col gap-5">

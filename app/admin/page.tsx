@@ -264,7 +264,11 @@ export default async function AdminPage({
           />
           <Stat label="Waiting" value={stats.pending} />
           <Stat label="Joined, last 7 days" value={stats.joined7} note={`${stats.joined30} in 30 days`} />
-          <Stat label="Joined, total" value={stats.joinsTotal} note="Since the waitlist started" />
+          <Stat
+            label="Joined, total"
+            value={Math.max(stats.joinsTotal, stats.joined30)}
+            note="Since the waitlist started"
+          />
           <Stat
             label="Last 90 days"
             value={`${stats.admitted} admitted`}

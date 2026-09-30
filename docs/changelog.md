@@ -12,6 +12,15 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-09-30
 
+- **The changelog shows its formatting.** Bold words and code (such as `CONTACT_EMAIL`) used to show their `**` and backticks on this page; now they render. Firmware notes too.
+- **Switch tabs show when a switch is online:** a small green dot, next to the "offline" label a switch gets after 3 hours without checking in.
+- **How-to gives the right timing:** a saved change reaches a switch within about 15 minutes, and faster while Switches stays open. It used to say "within an hour".
+- The theme button no longer shows the default theme's name for a moment when a page loads.
+- On a Round page whose Tap and Double tap control single lights, the Ring row names the lights it dims instead of "those lights".
+- **API keys** no longer repeats a board's name and date under Key when Setup named the key after that board.
+- **Privacy** lists an email address for questions and requests, privacy@tineira.com, next to X. **Credits** thanks Resend and Cloudflare too.
+- For people who run a console: the waitlist's "Joined, total" on `/admin` can no longer read lower than the 7- or 30-day count.
+
 - **Join the waitlist from the home page.** The home page takes your email address right under the headline instead of sending you to the sign-in page, and says you're on the list without leaving the page. The bot check appears only once you start typing. The **Join the waitlist** button at the bottom of the page brings you back to that form.
 - **No bot check for Google or GitHub.** The sign-in page no longer shows Cloudflare's "Verify you are human" box to everyone. It appears only once you start typing in the email sign-in or waitlist form, so signing in with Google or GitHub never loads it.
 - **The sign-in page is only for signing in.** The waitlist box under the sign-in card is gone. New people get a **Join the waitlist** link in the intro (and after a refused Google or GitHub sign-in) that takes them to the form on the home page.

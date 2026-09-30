@@ -100,7 +100,7 @@ driver; for any other Postgres set `DATABASE_DRIVER=pg`.
 | `CRON_SECRET` | The daily cleanup cron (`vercel.json`) |
 | `EMAIL_DAILY_CAP` | Emails a day before email sign-in says it is busy (default 90, under Resend's free 100) |
 | `LIMIT_SWITCHES`, `LIMIT_BRIDGES`, `LIMIT_KEYS`, `LIMIT_SNAPSHOT_KB` | Per-account limits (25, 5, 25, 512); `/admin` overrides one account |
-| `CONTACT_EMAIL` | Contact shown on `/privacy` (else the operator's X profile) |
+| `CONTACT_EMAIL` | Contact shown on `/privacy` (hue.tineira.com defaults to `privacy@tineira.com`) |
 | `PRIVACY_URL`, `TERMS_URL` | Replace the `/privacy` link under the sign-in form; add a Terms link |
 
 Local development without sending mail: `EMAIL_DEV_CONSOLE=1` prints codes to the

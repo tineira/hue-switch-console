@@ -181,7 +181,7 @@ export function tasks(product: Product): Task[] {
     {
       title: "Make a change apply right away",
       steps: [
-        `Each gesture says in words what it will do. Click **Save changes**, and the switch picks the change up the next time it checks in, within an hour.`,
+        `Each gesture says in words what it will do. Click **Save changes**, and the switch picks the change up the next time it checks in: within about 15 minutes, and faster while **Switches** stays open.`,
         "To apply it now, unplug the board and plug it back in.",
         "Changes on several switches? **Save all** saves them together.",
       ],

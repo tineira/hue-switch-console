@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { agoText, CONSOLE_QUIET_MIN, minutesSince } from "@/lib/ago";
 import { formatMac } from "@/lib/mac";
+import { isSetupKeyName } from "@/lib/web-setup/products";
 import type { ApiKeyPublic } from "@/lib/types";
 
 function subscribeNoop() {
@@ -128,7 +129,7 @@ function KeyRow({
         </td>
         <td className="px-3 py-2">
           <div className="flex flex-col">
-            <span>{key.name}</span>
+            {board && isSetupKeyName(key.name) ? null : <span>{key.name}</span>}
             <span
               className="text-xs text-muted"
               title={`Created ${formatFull(key.created_at)}`}

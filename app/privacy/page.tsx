@@ -11,7 +11,7 @@ export const metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = "September 27, 2026";
+const UPDATED = "September 30, 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -24,24 +24,26 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// Only on hue.tineira.com's own policy. Cloudflare Email Routing forwards privacy@ to the operator.
+const HOSTED_CONTACT = "privacy@tineira.com";
+
 function Contact() {
-  const email = process.env.CONTACT_EMAIL;
-  if (email) {
-    return (
+  const email = process.env.CONTACT_EMAIL || HOSTED_CONTACT;
+  return (
+    <>
       <a href={`mailto:${email}`} className="underline underline-offset-4">
         {email}
+      </a>{" "}
+      or{" "}
+      <a
+        href="https://x.com/tomneira"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-4"
+      >
+        @tomneira on X
       </a>
-    );
-  }
-  return (
-    <a
-      href="https://x.com/tomneira"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="underline underline-offset-4"
-    >
-      @tomneira on X
-    </a>
+    </>
   );
 }
 

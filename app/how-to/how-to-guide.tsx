@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { StateVisual } from "@/app/how-to/visuals";
+import { Rich } from "@/app/rich-text";
 import {
   HOWTO_PRODUCT_KEY,
   NEEDS,
@@ -18,23 +19,6 @@ import {
 
 const SELECTED = "border-filament shadow-[0_0_0_1px_var(--filament)]";
 const GROUP_LABEL = "text-[10px] font-medium uppercase tracking-[0.14em] text-muted";
-
-// Renders **label** as a UI label in the foreground colour.
-function Rich({ text }: { text: string }) {
-  return (
-    <>
-      {text.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
-        part.startsWith("**") && part.endsWith("**") ? (
-          <span key={i} className="font-medium text-foreground">
-            {part.slice(2, -2)}
-          </span>
-        ) : (
-          part
-        ),
-      )}
-    </>
-  );
-}
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -173,7 +157,7 @@ function SetupSection({ product, version }: { product: Product; version: string 
             <span className="text-muted">
               Setup&apos;s card turns green and says{" "}
               <span className="font-medium text-foreground">This board is set up</span>. Later
-              changes reach the switch within an hour, or right away if you unplug it and plug
+              changes reach the switch within about 15 minutes, or right away if you unplug it and plug
               it back in.
             </span>
           </div>

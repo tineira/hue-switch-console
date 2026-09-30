@@ -2,7 +2,7 @@
 
 A plan for work in the console only. It comes from a walk through production (`hue.tineira.com`) on 2026-09-30, signed in as the admin: every page plus the logged-out home page, with the code read alongside. No firmware repo changes. The device contract (`docs/device-api.md`) gains two human endpoints (§C) and nothing a board calls.
 
-**Status:** approved 2026-09-30, with Claude's recommendation on every question in §F. Not started.
+**Status:** approved 2026-09-30, with Claude's recommendation on every question in §F. In progress.
 
 ## How it ships
 
@@ -166,7 +166,7 @@ With Tap and Double tap on different lights, "Dims those lights" ([round-pages-e
 
 ### D4. Privacy and Credits
 
-- Privacy: add an email contact for data requests next to the X handle (§F3), and bump "Last updated".
+- Privacy: add an email contact for data requests next to the X handle (§F3), and bump "Last updated". **Done in PR 1:** the Cloudflare rule forwards `privacy@tineira.com` like `conduct@`. The hosted Privacy page defaults to that address (`CONTACT_EMAIL` still overrides it); setting it on Vercel failed because the Vercel connector refused the request body.
 - Credits → Thanks: add **Resend** (email) and **Cloudflare** (DNS and Turnstile), which Privacy already lists as processors.
 
 ---

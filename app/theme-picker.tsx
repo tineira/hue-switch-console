@@ -55,7 +55,10 @@ function SwatchGrid({
 }
 
 export function ThemePicker() {
-  const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
+  // Null until the stored theme is read: the server cannot know it, so the label stays hidden
+  // instead of flashing the default's name over another theme.
+  const [stored, setTheme] = useState<ThemeId | null>(null);
+  const theme = stored ?? DEFAULT_THEME;
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -107,8 +110,10 @@ export function ThemePicker() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="hidden sm:inline">Theme · </span>
-        {current.name}
+        <span className={stored ? undefined : "invisible"}>
+          <span className="hidden sm:inline">Theme · </span>
+          {current.name}
+        </span>
       </button>
       {open ? (
         <>
