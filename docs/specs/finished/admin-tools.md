@@ -1,6 +1,6 @@
 # Admin tools
 
-> Since 2026-09-30 `/admin` is split into tabs: `docs/specs/admin-tabs.md`.
+> Since 2026-09-30 `/admin` is split into tabs: `docs/specs/finished/admin-tabs.md`.
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes". Builds on `docs/specs/finished/multi-user-accounts.md` ("accounts spec") and `docs/specs/finished/waitlist.md`.
 

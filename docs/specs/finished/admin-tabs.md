@@ -2,7 +2,7 @@
 
 Console-only. No device API, payload or firmware change.
 
-**Status:** approved 2026-09-30 (the user took every recommendation below). In progress.
+**Status:** done 2026-09-30 (#59).
 
 ## 1. What and why
 
@@ -39,4 +39,4 @@ Server actions refresh every admin route (`revalidateAdmin()`), since one action
 - [x] Old `/admin?…` links redirect to `/admin/accounts`
 - [x] Actions refresh every admin route
 - [x] Changelog entry; `admin-tools.md` points here
-- [ ] Deployed; every tab checked on production, at desktop and phone width
+- [x] Deployed; every tab checked on production, at desktop and phone width (2026-09-30)
