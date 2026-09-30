@@ -48,6 +48,8 @@ const TONES: Record<string, string> = {
   neutral: "#2f6fd6",
   earth: "#4fa84a",
   switched: "#2b2f36",
+  // Low-voltage switch wires in the wall: a colour no mains wire has.
+  signal: "#7c5cff",
   wago: "#f08a24",
   resistor: "#d9c7a0",
   cap: "#d98a2b",

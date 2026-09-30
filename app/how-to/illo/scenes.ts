@@ -612,8 +612,8 @@ function wallScene(o: WallOpts) {
   const bw = (p: V3): V3 => inScene(board!.root, p);
   if (board && o.switchWires) {
     const d0 = bw(board.pts.D0), gnd = bw(board.pts.GND);
-    w([L, [L[0] + 10, L[1] + 8, L[2] - 6], [30, 10, -8], [d0[0] + 8, d0[1], d0[2] + 2], d0], "hot", 0.8);
-    w([SL, [SL[0] + 10, SL[1] - 10, SL[2] - 4], [16, -34, -10], [gnd[0], gnd[1] - 8, gnd[2] + 2], gnd], "hot", 0.8);
+    w([L, [L[0] + 10, L[1] + 8, L[2] - 6], [30, 10, -8], [d0[0] + 8, d0[1], d0[2] + 2], d0], "signal", 0.8);
+    w([SL, [SL[0] + 10, SL[1] - 10, SL[2] - 4], [16, -34, -10], [gnd[0], gnd[1] - 8, gnd[2] + 2], gnd], "signal", 0.8);
   }
   if (board && o.mains && lConn) {
     const bl = bw(board.pts.L), bn = bw(board.pts.N);
@@ -681,9 +681,9 @@ function wallSwitches(): SceneDef {
     dir: WALL_DIR,
     pad: 1.03,
     notes: [
-      note("One switch terminal to D0", s.root, s.bw(s.board!.pts.D0), "right", "hot"),
-      note("The other to GND", s.root, s.bw(s.board!.pts.GND), "right", "hot"),
-      note("3.3 V only on these wires", s.mech, [0, 14, -24], "left", "hot"),
+      note("One switch terminal to D0", s.root, s.bw(s.board!.pts.D0), "right"),
+      note("The other to GND", s.root, s.bw(s.board!.pts.GND), "right"),
+      note("Violet: 3.3 V switch wires only", s.mech, [0, 14, -24], "left"),
     ],
   };
 }

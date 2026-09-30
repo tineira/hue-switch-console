@@ -416,7 +416,7 @@ export const WALL_INSTALL: InstallStep[] = [
     body: "One terminal of each switch to **D0**–**D5** on J2 and J3. The other terminals joined with a lever connector, and one wire from there to **GND** on J3. Solid 1.5 mm² wire goes through a short 0.5–0.75 mm² flexible pigtail.",
     who: "electrician",
     more: "#wire-it",
-    pic: { illo: "wall-switches", alt: "Two orange low-voltage wires from the switch's terminals to D0 and GND on the carrier board." },
+    pic: { illo: "wall-switches", alt: "Two violet low-voltage wires from the switch's terminals to D0 and GND on the carrier board." },
   },
   {
     title: "Wire mains",

@@ -15,6 +15,7 @@ export type Tone =
   | "neutral"
   | "earth"
   | "switched"
+  | "signal"
   | "wago"
   | "resistor"
   | "cap"
