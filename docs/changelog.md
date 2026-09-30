@@ -19,6 +19,7 @@ The console has no version number. Each heading is the day the change went live.
 - The theme button no longer shows the default theme's name for a moment when a page loads.
 - **The Round preview shows the whole page name.** Names up to the 12-character limit were cut off in the preview (for example "Velador…") although the switch shows them in full. The preview now sizes the name like the screen does.
 - On a Round page whose Tap and Double tap control single lights, the Ring row names the lights it dims instead of "those lights".
+- **API keys** fits a phone again: the page no longer scrolls sideways; only its table does.
 - **API keys** no longer repeats a board's name and date under Key when Setup named the key after that board.
 - **Privacy** lists an email address for questions and requests, privacy@tineira.com, next to X. **Credits** thanks Resend and Cloudflare too.
 - For people who run a console: the waitlist's "Joined, total" on `/admin` can no longer read lower than the 7- or 30-day count.

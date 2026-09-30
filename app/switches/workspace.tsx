@@ -611,7 +611,7 @@ export function SwitchesWorkspace({
     }
   }
 
-  // docs/specs/console-review-fixes.md §C. Afterwards the page shows the first remaining switch.
+  // docs/specs/finished/console-review-fixes.md §C. Afterwards the page shows the first remaining switch.
   async function removeFromConsole(url: string, name: string, kind: "switch" | "bridge") {
     setRemoving(true);
     setError(null);
