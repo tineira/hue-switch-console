@@ -996,7 +996,7 @@ function wallSwitches(): SceneDef {
     notes: [
       note("One terminal to D0", s.root, s.bw(s.board!.pts.D0), "right"),
       note("The other to GND", s.root, s.bw(s.board!.pts.GND), "right"),
-      note("Violet: 3.300a0V only", s.mech, [0, 14, -24], "left"),
+      note("Violet: 3.3 V only", s.mech, [0, 14, -24], "left"),
     ],
   };
 }
