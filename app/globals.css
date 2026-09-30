@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Themes (app/themes.ts). Slate Light is also :root, the server render and no-JS default.
+   Values come from docs/theme-preview.html: the Omarchy palettes (github.com/basecamp/omarchy,
+   MIT) with muted and status colours nudged to pass WCAG AA; soft tints are mixed, not picked. */
 :root,
 html[data-theme="slate-light"] {
   color-scheme: light;
@@ -10,13 +13,13 @@ html[data-theme="slate-light"] {
   --line: #d6dce5;
   --filament: #b85209;
   --filament-ink: #ffffff;
-  --filament-soft: #fbe6d4;
+  --filament-soft: #f6eae1;
   --ok: #157a3a;
-  --ok-soft: #ddf5e4;
+  --ok-soft: #e3efe7;
   --warn: #92400e;
-  --warn-soft: #fbeccf;
+  --warn-soft: #f2e8e2;
   --danger: #b42318;
-  --danger-soft: #fbe3de;
+  --danger-soft: #f6e5e3;
 }
 
 html[data-theme="slate"] {
@@ -28,139 +31,103 @@ html[data-theme="slate"] {
   --line: #242c38;
   --filament: #ff9f1c;
   --filament-ink: #1a1206;
-  --filament-soft: #2e2210;
+  --filament-soft: #342b1f;
   --ok: #6fd3a0;
-  --ok-soft: #10241c;
+  --ok-soft: #203232;
   --warn: #f5c451;
-  --warn-soft: #2a2410;
+  --warn-soft: #333027;
   --danger: #f47a72;
-  --danger-soft: #2e1a1c;
+  --danger-soft: #33262b;
 }
 
-html[data-theme="paper"] {
-  color-scheme: light;
-  --background: #f3eee4;
-  --foreground: #1c1814;
-  --cream: #fffaf2;
-  --muted: #6e675c;
-  --line: #e0d4c4;
-  --filament: #c45c26;
-  --filament-ink: #fffaf2;
-  --filament-soft: #f6e4d6;
-  --ok: #2f5d38;
-  --ok-soft: #e4f0dc;
-  --warn: #8a6314;
-  --warn-soft: #f8ecd0;
-  --danger: #a33b2a;
-  --danger-soft: #f8e2dc;
-}
-
-html[data-theme="ember"] {
+html[data-theme="tokyo-night"] {
   color-scheme: dark;
-  --background: #14110f;
-  --foreground: #f4eee6;
-  --cream: #1e1a17;
-  --muted: #a89a8c;
-  --line: #3a322c;
-  --filament: #e07a3d;
-  --filament-ink: #1c140e;
-  --filament-soft: #3a2618;
-  --ok: #9dce9a;
-  --ok-soft: #1d2b1e;
-  --warn: #e0c078;
-  --warn-soft: #2f2718;
-  --danger: #e08a7a;
-  --danger-soft: #2f1c18;
+  --background: #1a1b26;
+  --foreground: #c0caf5;
+  --cream: #24283b;
+  --muted: #9aa5ce;
+  --line: #3b4261;
+  --filament: #7aa2f7;
+  --filament-ink: #1a1b26;
+  --filament-soft: #303955;
+  --ok: #9ece6a;
+  --ok-soft: #353f42;
+  --warn: #e0af68;
+  --warn-soft: #3e3b41;
+  --danger: #f77b93;
+  --danger-soft: #423347;
 }
 
-html[data-theme="graphite"] {
+html[data-theme="catppuccin"] {
   color-scheme: dark;
-  --background: #121314;
-  --foreground: #ececec;
-  --cream: #1c1d1f;
-  --muted: #9a9ca3;
-  --line: #2e3035;
-  --filament: #d4b483;
-  --filament-ink: #1a1610;
-  --filament-soft: #2f2a22;
-  --ok: #8fbf9a;
-  --ok-soft: #1a2620;
-  --warn: #d4b483;
-  --warn-soft: #2a261c;
-  --danger: #d9897c;
-  --danger-soft: #2f1c18;
+  --background: #181825;
+  --foreground: #cdd6f4;
+  --cream: #1e1e2e;
+  --muted: #a6adc8;
+  --line: #313244;
+  --filament: #89b4fa;
+  --filament-ink: #11111b;
+  --filament-soft: #2d334b;
+  --ok: #a6e3a1;
+  --ok-soft: #313a3e;
+  --warn: #f9e2af;
+  --warn-soft: #3d3940;
+  --danger: #f38ba8;
+  --danger-soft: #3c2d3f;
 }
 
-html[data-theme="night"] {
+html[data-theme="gruvbox"] {
   color-scheme: dark;
-  --background: #070708;
-  --foreground: #f2f2f0;
-  --cream: #111114;
-  --muted: #8e8e96;
-  --line: #24242b;
-  --filament: #ffb020;
-  --filament-ink: #16110a;
-  --filament-soft: #2a220e;
-  --ok: #6ee7b7;
-  --ok-soft: #10231c;
-  --warn: #ffb020;
-  --warn-soft: #2a220e;
-  --danger: #fb7185;
-  --danger-soft: #2f1c18;
+  --background: #282828;
+  --foreground: #d4be98;
+  --cream: #32302f;
+  --muted: #a89984;
+  --line: #504945;
+  --filament: #7daea3;
+  --filament-ink: #1d2021;
+  --filament-soft: #3d423f;
+  --ok: #a9b665;
+  --ok-soft: #434337;
+  --warn: #d8a657;
+  --warn-soft: #494135;
+  --danger: #ef8d88;
+  --danger-soft: #4c3836;
 }
 
-html[data-theme="ink"] {
+html[data-theme="everforest"] {
   color-scheme: dark;
-  --background: #0b1016;
-  --foreground: #e8eef6;
-  --cream: #121a24;
-  --muted: #8fa0b5;
-  --line: #243040;
-  --filament: #3dd6c6;
-  --filament-ink: #06201c;
-  --filament-soft: #143330;
-  --ok: #7dcea0;
-  --ok-soft: #15261c;
-  --warn: #e0c078;
-  --warn-soft: #2f2718;
-  --danger: #f07a72;
-  --danger-soft: #2f1c18;
+  --background: #2d353b;
+  --foreground: #d3c6aa;
+  --cream: #343f44;
+  --muted: #a8b1a6;
+  --line: #475258;
+  --filament: #7fbbb3;
+  --filament-ink: #1e2326;
+  --filament-soft: #3f5054;
+  --ok: #b2c88f;
+  --ok-soft: #44514c;
+  --warn: #dcbf84;
+  --warn-soft: #4b514c;
+  --danger: #eea7a9;
+  --danger-soft: #4d484c;
 }
 
-html[data-theme="plum"] {
+html[data-theme="kanagawa"] {
   color-scheme: dark;
-  --background: #140f14;
-  --foreground: #f3e8ee;
-  --cream: #1d161d;
-  --muted: #b39aa8;
-  --line: #3a2c36;
-  --filament: #e8a0b4;
-  --filament-ink: #2a1218;
-  --filament-soft: #3a222a;
-  --ok: #a8d5b5;
-  --ok-soft: #1c2a20;
-  --warn: #e8c090;
-  --warn-soft: #2f2718;
-  --danger: #e07a7a;
-  --danger-soft: #2f1c18;
-}
-
-html[data-theme="matrix"] {
-  color-scheme: dark;
-  --background: #020402;
-  --foreground: #d0ffd4;
-  --cream: #071208;
-  --muted: #5f9e68;
-  --line: #1a3d1e;
-  --filament: #00ff41;
-  --filament-ink: #021006;
-  --filament-soft: #0a2a12;
-  --ok: #00ff41;
-  --ok-soft: #062410;
-  --warn: #b8ff4d;
-  --warn-soft: #1a2a08;
-  --danger: #ff4d4d;
-  --danger-soft: #2a1010;
+  --background: #1f1f28;
+  --foreground: #dcd7ba;
+  --cream: #2a2a37;
+  --muted: #a6a69c;
+  --line: #363646;
+  --filament: #7e9cd8;
+  --filament-ink: #16161d;
+  --filament-soft: #363a4e;
+  --ok: #98bb6c;
+  --ok-soft: #393e3e;
+  --warn: #e6c384;
+  --warn-soft: #443f42;
+  --danger: #e98691;
+  --danger-soft: #443340;
 }
 
 html[data-theme="nord"] {
@@ -168,179 +135,143 @@ html[data-theme="nord"] {
   --background: #2e3440;
   --foreground: #eceff4;
   --cream: #3b4252;
-  --muted: #a0a8b8;
+  --muted: #b4bccb;
   --line: #4c566a;
   --filament: #88c0d0;
   --filament-ink: #2e3440;
-  --filament-soft: #434c5e;
-  --ok: #a3be8c;
-  --ok-soft: #3b4252;
+  --filament-soft: #465464;
+  --ok: #b9cea8;
+  --ok-soft: #4a535a;
   --warn: #ebcb8b;
-  --warn-soft: #3b4252;
-  --danger: #bf616a;
-  --danger-soft: #3b4252;
+  --warn-soft: #54555a;
+  --danger: #e7b3b8;
+  --danger-soft: #514958;
 }
 
-html[data-theme="dracula"] {
+html[data-theme="matte-black"] {
   color-scheme: dark;
-  --background: #1e1f29;
-  --foreground: #f8f8f2;
-  --cream: #282a36;
-  --muted: #b0b3c8;
-  --line: #44475a;
-  --filament: #bd93f9;
-  --filament-ink: #1e1f29;
-  --filament-soft: #3b3354;
-  --ok: #50fa7b;
-  --ok-soft: #1e3328;
-  --warn: #f1fa8c;
-  --warn-soft: #2a2e1c;
-  --danger: #ff5555;
-  --danger-soft: #3a1c22;
+  --background: #121212;
+  --foreground: #d4d4d4;
+  --cream: #1e1e1e;
+  --muted: #8a8a8d;
+  --line: #2a2a2a;
+  --filament: #e68e0d;
+  --filament-ink: #121212;
+  --filament-soft: #3a2e1c;
+  --ok: #8cc084;
+  --ok-soft: #2d352c;
+  --warn: #ffc107;
+  --warn-soft: #3e351b;
+  --danger: #e27878;
+  --danger-soft: #392929;
 }
 
-html[data-theme="ocean"] {
+html[data-theme="osaka-jade"] {
   color-scheme: dark;
-  --background: #071018;
-  --foreground: #dceef8;
-  --cream: #0d1b28;
-  --muted: #7fa3bb;
-  --line: #1c3348;
-  --filament: #38bdf8;
-  --filament-ink: #062033;
-  --filament-soft: #123044;
-  --ok: #5eead4;
-  --ok-soft: #0f2a28;
-  --warn: #fbbf24;
-  --warn-soft: #2a220e;
-  --danger: #fb7185;
-  --danger-soft: #2f1c18;
+  --background: #111c18;
+  --foreground: #d6d5bc;
+  --cream: #1a2a23;
+  --muted: #8fb4a6;
+  --line: #2b4336;
+  --filament: #2dd5b7;
+  --filament-ink: #0b1411;
+  --filament-soft: #1d4238;
+  --ok: #69b37f;
+  --ok-soft: #243d2f;
+  --warn: #e5c736;
+  --warn-soft: #364026;
+  --danger: #ff7064;
+  --danger-soft: #3a332b;
 }
 
-html[data-theme="snow"] {
+html[data-theme="ristretto"] {
+  color-scheme: dark;
+  --background: #2c2525;
+  --foreground: #e6d9db;
+  --cream: #3a3030;
+  --muted: #bfb2b3;
+  --line: #4d4244;
+  --filament: #f38d70;
+  --filament-ink: #2c2525;
+  --filament-soft: #543d39;
+  --ok: #adda78;
+  --ok-soft: #4a483a;
+  --warn: #f9cc6c;
+  --warn-soft: #554638;
+  --danger: #fd8ca1;
+  --danger-soft: #55383c;
+}
+
+html[data-theme="matrix"] {
+  color-scheme: dark;
+  --background: #020402;
+  --foreground: #d0ffd4;
+  --cream: #071208;
+  --muted: #6fb479;
+  --line: #1a3d1e;
+  --filament: #00ff41;
+  --filament-ink: #021006;
+  --filament-soft: #063310;
+  --ok: #00ff41;
+  --ok-soft: #063310;
+  --warn: #b8ff4d;
+  --warn-soft: #203312;
+  --danger: #ff4d4d;
+  --danger-soft: #2a1a12;
+}
+
+html[data-theme="catppuccin-latte"] {
   color-scheme: light;
-  --background: #f4f6f8;
-  --foreground: #1a2330;
-  --cream: #ffffff;
-  --muted: #5c6b7a;
-  --line: #d5dde4;
-  --filament: #2563eb;
+  --background: #e6e9ef;
+  --foreground: #4c4f69;
+  --cream: #eff1f5;
+  --muted: #5c5f77;
+  --line: #ccd0da;
+  --filament: #1e66f5;
   --filament-ink: #ffffff;
-  --filament-soft: #dbe7ff;
-  --ok: #157a3a;
-  --ok-soft: #ddf5e4;
-  --warn: #b45309;
-  --warn-soft: #f8ecd0;
-  --danger: #b42318;
-  --danger-soft: #f8e2dc;
+  --filament-soft: #e4edfe;
+  --ok: #2d7a1c;
+  --ok-soft: #e6efe4;
+  --warn: #9a5b0c;
+  --warn-soft: #f3ebe2;
+  --danger: #c60d35;
+  --danger-soft: #f8e2e7;
 }
 
-html[data-theme="mist"] {
+html[data-theme="flexoki-light"] {
   color-scheme: light;
-  --background: #eef0f2;
-  --foreground: #1f2328;
-  --cream: #ffffff;
-  --muted: #5e656e;
-  --line: #d4d8de;
-  --filament: #4b5563;
-  --filament-ink: #ffffff;
-  --filament-soft: #e5e7eb;
-  --ok: #2f6b48;
-  --ok-soft: #dcefe4;
-  --warn: #8a6314;
-  --warn-soft: #f8ecd0;
-  --danger: #b42318;
-  --danger-soft: #f8e2dc;
+  --background: #f2f0e5;
+  --foreground: #100f0f;
+  --cream: #fffcf0;
+  --muted: #5e5d59;
+  --line: #dad8ce;
+  --filament: #205ea6;
+  --filament-ink: #fffcf0;
+  --filament-soft: #e4ecf4;
+  --ok: #536907;
+  --ok-soft: #eaede1;
+  --warn: #836201;
+  --warn-soft: #f1ede1;
+  --danger: #af3029;
+  --danger-soft: #f5e6e5;
 }
 
-html[data-theme="meadow"] {
+html[data-theme="rose-pine"] {
   color-scheme: light;
-  --background: #eef3e8;
-  --foreground: #1c2418;
-  --cream: #f7fbf3;
-  --muted: #5d6b55;
-  --line: #d4e0cc;
-  --filament: #3f7a4a;
-  --filament-ink: #f7fbf3;
-  --filament-soft: #dcead8;
-  --ok: #2f6b48;
-  --ok-soft: #d8f0dc;
-  --warn: #8a6314;
-  --warn-soft: #f8ecd0;
-  --danger: #a33b2a;
-  --danger-soft: #f8e2dc;
-}
-
-html[data-theme="porcelain"] {
-  color-scheme: light;
-  --background: #f6f1f3;
-  --foreground: #2a1c22;
-  --cream: #fffafb;
-  --muted: #7a6570;
-  --line: #eadde2;
-  --filament: #c45c78;
-  --filament-ink: #fffafb;
-  --filament-soft: #f6e0e8;
-  --ok: #2f6b48;
-  --ok-soft: #e0f0e4;
-  --warn: #8a6314;
-  --warn-soft: #f8ecd0;
-  --danger: #b42318;
-  --danger-soft: #f8e2dc;
-}
-
-html[data-theme="sky"] {
-  color-scheme: light;
-  --background: #eaf3f8;
-  --foreground: #152030;
-  --cream: #f7fcff;
-  --muted: #4e6a80;
-  --line: #c9dde8;
-  --filament: #0284c7;
-  --filament-ink: #f7fcff;
-  --filament-soft: #d4eef8;
-  --ok: #157a3a;
-  --ok-soft: #ddf5e4;
-  --warn: #b45309;
-  --warn-soft: #f8ecd0;
-  --danger: #b42318;
-  --danger-soft: #f8e2dc;
-}
-
-html[data-theme="linen"] {
-  color-scheme: light;
-  --background: #f3efe4;
-  --foreground: #242018;
-  --cream: #fbf8f0;
-  --muted: #6a6558;
-  --line: #ddd6c4;
-  --filament: #6b7a3a;
-  --filament-ink: #fbf8f0;
-  --filament-soft: #e6ead4;
-  --ok: #3d6b3a;
-  --ok-soft: #e0f0dc;
-  --warn: #8a6314;
-  --warn-soft: #f8ecd0;
-  --danger: #a33b2a;
-  --danger-soft: #f8e2dc;
-}
-
-html[data-theme="phosphor"] {
-  color-scheme: light;
-  --background: #e8f5e9;
-  --foreground: #0b2e14;
-  --cream: #f4fbf4;
-  --muted: #3d6b45;
-  --line: #c5e0c8;
-  --filament: #15803d;
-  --filament-ink: #f4fbf4;
-  --filament-soft: #d1f0d6;
-  --ok: #166534;
-  --ok-soft: #d8f5dc;
-  --warn: #a16207;
-  --warn-soft: #f8ecd0;
-  --danger: #b91c1c;
-  --danger-soft: #f8e2dc;
+  --background: #f2e9e1;
+  --foreground: #575279;
+  --cream: #fffaf3;
+  --muted: #6a6681;
+  --line: #dfdad9;
+  --filament: #286983;
+  --filament-ink: #fffaf3;
+  --filament-soft: #e5edf0;
+  --ok: #3f7550;
+  --ok-soft: #e8eeea;
+  --warn: #945a0f;
+  --warn-soft: #f3ece2;
+  --danger: #a24d66;
+  --danger-soft: #f5eaed;
 }
 
 /* Switch colours on Lights: oklch(var(--switch-l) var(--switch-c) <hue by switch index>)
@@ -381,8 +312,7 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-html[data-theme="matrix"] body,
-html[data-theme="phosphor"] body {
+html[data-theme="matrix"] body {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
 }
 

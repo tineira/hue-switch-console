@@ -1,5 +1,7 @@
 export const THEME_STORAGE_KEY = "hsw-theme";
 
+// Slate and Slate Light are the defaults; Matrix is ours; the rest follow Omarchy's themes
+// (github.com/basecamp/omarchy, MIT). Tokens are in app/globals.css, chosen in docs/theme-preview.html.
 export const THEMES = [
   {
     id: "slate",
@@ -9,46 +11,39 @@ export const THEMES = [
     colors: ["#0b0e13", "#131820", "#ff9f1c", "#e9edf3"],
   },
   {
-    id: "ember",
-    name: "Ember",
-    blurb: "Charcoal, copper",
+    id: "tokyo-night",
+    name: "Tokyo Night",
+    blurb: "Indigo night, blue",
     group: "dark",
-    colors: ["#14110f", "#1e1a17", "#e07a3d", "#f4eee6"],
+    colors: ["#1a1b26", "#24283b", "#7aa2f7", "#c0caf5"],
   },
   {
-    id: "graphite",
-    name: "Graphite",
-    blurb: "Zinc, champagne",
+    id: "catppuccin",
+    name: "Catppuccin",
+    blurb: "Mocha, soft blue",
     group: "dark",
-    colors: ["#121314", "#1c1d1f", "#d4b483", "#ececec"],
+    colors: ["#181825", "#1e1e2e", "#89b4fa", "#cdd6f4"],
   },
   {
-    id: "night",
-    name: "Night",
-    blurb: "OLED, electric amber",
+    id: "gruvbox",
+    name: "Gruvbox",
+    blurb: "Retro brown, aqua",
     group: "dark",
-    colors: ["#070708", "#111114", "#ffb020", "#f2f2f0"],
+    colors: ["#282828", "#32302f", "#7daea3", "#d4be98"],
   },
   {
-    id: "ink",
-    name: "Ink",
-    blurb: "Blue-black, teal",
+    id: "everforest",
+    name: "Everforest",
+    blurb: "Forest gray, sage",
     group: "dark",
-    colors: ["#0b1016", "#121a24", "#3dd6c6", "#e8eef6"],
+    colors: ["#2d353b", "#343f44", "#7fbbb3", "#d3c6aa"],
   },
   {
-    id: "plum",
-    name: "Plum",
-    blurb: "Espresso, rose",
+    id: "kanagawa",
+    name: "Kanagawa",
+    blurb: "Ink wash, crystal blue",
     group: "dark",
-    colors: ["#140f14", "#1d161d", "#e8a0b4", "#f3e8ee"],
-  },
-  {
-    id: "matrix",
-    name: "Matrix",
-    blurb: "Black, phosphor green",
-    group: "dark",
-    colors: ["#020402", "#071208", "#00ff41", "#d0ffd4"],
+    colors: ["#1f1f28", "#2a2a37", "#7e9cd8", "#dcd7ba"],
   },
   {
     id: "nord",
@@ -58,18 +53,32 @@ export const THEMES = [
     colors: ["#2e3440", "#3b4252", "#88c0d0", "#eceff4"],
   },
   {
-    id: "dracula",
-    name: "Dracula",
-    blurb: "Purple, pink",
+    id: "matte-black",
+    name: "Matte Black",
+    blurb: "Flat black, amber",
     group: "dark",
-    colors: ["#1e1f29", "#282a36", "#bd93f9", "#f8f8f2"],
+    colors: ["#121212", "#1e1e1e", "#e68e0d", "#d4d4d4"],
   },
   {
-    id: "ocean",
-    name: "Ocean",
-    blurb: "Navy, sky cyan",
+    id: "osaka-jade",
+    name: "Osaka Jade",
+    blurb: "Deep jade, teal",
     group: "dark",
-    colors: ["#071018", "#0d1b28", "#38bdf8", "#dceef8"],
+    colors: ["#111c18", "#1a2a23", "#2dd5b7", "#d6d5bc"],
+  },
+  {
+    id: "ristretto",
+    name: "Ristretto",
+    blurb: "Espresso, peach",
+    group: "dark",
+    colors: ["#2c2525", "#3a3030", "#f38d70", "#e6d9db"],
+  },
+  {
+    id: "matrix",
+    name: "Matrix",
+    blurb: "Black, phosphor green",
+    group: "dark",
+    colors: ["#020402", "#071208", "#00ff41", "#d0ffd4"],
   },
   {
     id: "slate-light",
@@ -79,62 +88,48 @@ export const THEMES = [
     colors: ["#f3f5f8", "#ffffff", "#b85209", "#141a24"],
   },
   {
-    id: "paper",
-    name: "Paper",
-    blurb: "Cream, filament",
+    id: "catppuccin-latte",
+    name: "Catppuccin Latte",
+    blurb: "Pale lilac, blue",
     group: "light",
-    colors: ["#f3eee4", "#fffaf2", "#c45c26", "#1c1814"],
+    colors: ["#e6e9ef", "#eff1f5", "#1e66f5", "#4c4f69"],
   },
   {
-    id: "snow",
-    name: "Snow",
-    blurb: "Cool white, blue",
+    id: "flexoki-light",
+    name: "Flexoki Light",
+    blurb: "Warm paper, ink blue",
     group: "light",
-    colors: ["#f4f6f8", "#ffffff", "#2563eb", "#1a2330"],
+    colors: ["#f2f0e5", "#fffcf0", "#205ea6", "#100f0f"],
   },
   {
-    id: "mist",
-    name: "Mist",
-    blurb: "Gray, slate",
+    id: "rose-pine",
+    name: "Rosé Pine Dawn",
+    blurb: "Dawn blush, pine",
     group: "light",
-    colors: ["#eef0f2", "#ffffff", "#4b5563", "#1f2328"],
-  },
-  {
-    id: "meadow",
-    name: "Meadow",
-    blurb: "Sage, leaf",
-    group: "light",
-    colors: ["#eef3e8", "#f7fbf3", "#3f7a4a", "#1c2418"],
-  },
-  {
-    id: "porcelain",
-    name: "Porcelain",
-    blurb: "Blush, rose",
-    group: "light",
-    colors: ["#f6f1f3", "#fffafb", "#c45c78", "#2a1c22"],
-  },
-  {
-    id: "sky",
-    name: "Sky",
-    blurb: "Pale blue, azure",
-    group: "light",
-    colors: ["#eaf3f8", "#f7fcff", "#0284c7", "#152030"],
-  },
-  {
-    id: "linen",
-    name: "Linen",
-    blurb: "Ivory, olive",
-    group: "light",
-    colors: ["#f3efe4", "#fbf8f0", "#6b7a3a", "#242018"],
-  },
-  {
-    id: "phosphor",
-    name: "Phosphor",
-    blurb: "Mint paper, matrix green",
-    group: "light",
-    colors: ["#e8f5e9", "#f4fbf4", "#15803d", "#0b2e14"],
+    colors: ["#f2e9e1", "#fffaf3", "#286983", "#575279"],
   },
 ] as const;
+
+// Themes that were retired, mapped to the closest one still offered, in the same scheme so nobody
+// flips between dark and light. Stored ids are mapped when read, here and in the boot script in
+// app/layout.tsx.
+export const RETIRED_THEMES: Record<string, ThemeId> = {
+  ember: "ristretto",
+  graphite: "matte-black",
+  night: "matte-black",
+  ink: "tokyo-night",
+  ocean: "tokyo-night",
+  plum: "catppuccin",
+  dracula: "catppuccin",
+  paper: "flexoki-light",
+  linen: "flexoki-light",
+  meadow: "flexoki-light",
+  porcelain: "rose-pine",
+  snow: "slate-light",
+  sky: "slate-light",
+  mist: "slate-light",
+  phosphor: "slate-light",
+};
 
 export type ThemeId = (typeof THEMES)[number]["id"];
 export type Scheme = "dark" | "light";
@@ -166,9 +161,11 @@ export function isThemeId(value: string | null): value is ThemeId {
   return THEMES.some((theme) => theme.id === value);
 }
 
+// A stored id, with a retired theme mapped to its replacement.
 function read(key: string): string | null {
   try {
-    return localStorage.getItem(key);
+    const value = localStorage.getItem(key);
+    return value !== null && value in RETIRED_THEMES ? RETIRED_THEMES[value] : value;
   } catch {
     return null;
   }
