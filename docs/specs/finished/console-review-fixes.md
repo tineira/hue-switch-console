@@ -2,7 +2,7 @@
 
 A plan for work in the console only. It comes from a walk through production (`hue.tineira.com`) on 2026-09-30, signed in as the admin: every page plus the logged-out home page, with the code read alongside. No firmware repo changes. The device contract (`docs/device-api.md`) gains two human endpoints (§C) and nothing a board calls.
 
-**Status:** approved 2026-09-30, with Claude's recommendation on every question in §F. In progress.
+**Status:** done 2026-09-30. PRs #52–#55 and the `/keys` phone fix are merged and checked on production. What stays with the user is under "Stays with the user".
 
 ## How it ships
 
@@ -175,7 +175,7 @@ With Tap and Double tap on different lights, "Dims those lights" ([round-pages-e
 
 ## E. Not verified in the review
 
-- **Phone layout** of admin, Switches and Lights. The review window could not resize, so it was not checked. This goes in PR 2's production check: Chrome at 390 px wide, no horizontal page scroll, and the admin Accounts table scrolling inside its own box.
+- **Phone layout** of admin, Switches and Lights. The review window could not resize, so it was not checked. **Checked 2026-09-30** on production in a 390 px frame: every signed-in and public page fits except `/keys`, whose table's `sr-only` labels escaped its scroller and widened the page (fixed in PR 5). This goes in PR 2's production check: Chrome at 390 px wide, no horizontal page scroll, and the admin Accounts table scrolling inside its own box.
 - **Setup over USB**: it needs the user and a board. None of these changes touch Setup except the How-to wording.
 
 ## F. Decisions (2026-09-30: the user took each recommendation)
@@ -185,3 +185,8 @@ With Tap and Double tap on different lights, "Dims those lights" ([round-pages-e
 3. **Privacy contact address** (D4). *Recommended:* a forwarding address such as `privacy@tineira.com` through Cloudflare Email Routing. Claude sets it up in PR 1 through the Cloudflare full-API connector. It is connected; checked 2026-09-30: Email Routing is on for `tineira.com` and already forwards `conduct@tineira.com`. The new rule forwards to the same destination as `conduct@`.
 4. **Round page names** (A5). *Recommended:* the preview copies the board's rendering, and `PAGE_NAME_MAX` stays 12. Revisit only if the board itself cannot fit 12 characters.
 5. **System events in the admin log** (B2). *Recommended:* show them mixed in with admin actions, marked "The console" / "Firmware CI", rather than in a separate list.
+
+## Stays with the user
+
+- Removing a real switch: the UI and both endpoints are live, and the confirm was opened and cancelled on production. Removing a board and watching its LED or screen show the auth error (and linking it back on Setup) needs you and the board.
+- `CONTACT_EMAIL` on Vercel: not set (the Vercel connector refused the request). Not needed, since the hosted Privacy page defaults to `privacy@tineira.com`.

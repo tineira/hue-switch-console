@@ -67,7 +67,7 @@ type RowProps = {
 
 function KeyTable({ keys, ...props }: RowProps & { keys: ApiKeyPublic[] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-cream">
+    <div className="relative overflow-x-auto rounded-xl border border-line bg-cream">
       <table className="w-full min-w-[34rem] text-left text-sm">
         <thead className="text-xs uppercase tracking-[0.08em] text-muted">
           <tr>

@@ -1116,7 +1116,7 @@ export function isRoundSwitch(row: { product: SwitchProduct }): boolean {
 }
 
 /**
- * Removes a switch from the console (docs/specs/console-review-fixes.md §C1). Its recipes, pages
+ * Removes a switch from the console (docs/specs/finished/console-review-fixes.md §C1). Its recipes, pages
  * and Simple channels cascade. Its key is revoked unless another switch of the account uses it,
  * so the board cannot register itself back; it gets 401 and keeps its saved recipes.
  */
