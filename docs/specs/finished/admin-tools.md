@@ -30,7 +30,7 @@ No endpoint, payload, NVS, `HUESET`, Improv or installer change. Boards are not 
 `ADMIN_EMAILS` (or `USER_EMAIL` when it is unset) stays the only source. `requireAdmin()` already reads it.
 
 - Stop writing `users.role` at sign-in (`lib/better-auth.ts` session hook). The column stays, unused, until a later cleanup drops it.
-- The guards move into `lib/admin.ts`: `setBanned` and `deleteAccountById` refuse an admin email, whoever calls them. `/account` hides "Delete account" for an admin and says to remove the address from `ADMIN_EMAILS` first.
+- The guards move into `lib/admin.ts`: `setBanned` and `deleteAccountById` refuse an admin email, whoever calls them. `/account` hides "Delete account" for an admin and says to remove the address from `ADMIN_EMAILS` first. On `/admin` an admin account's **Manage** row (2026-09-30) offers limits only, with the same note in place of Suspend and Delete.
 
 No promote-to-admin UI: changing who administers a hosted console is a deploy decision.
 
