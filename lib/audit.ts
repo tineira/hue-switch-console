@@ -13,7 +13,23 @@ export type AdminAction =
   | "waitlist_admit"
   | "waitlist_remove"
   | "settings"
-  | "firmware_current";
+  | "firmware_current"
+  | "waitlist_auto_admit"
+  | "firmware_upload";
+
+// Events nobody clicked: the console acting on its own, or firmware CI uploading a release. They
+// go in admin_email with these names, which no admin address can take.
+export const CONSOLE_ACTOR = "system:console";
+export const FIRMWARE_CI_ACTOR = "system:firmware-ci";
+
+/** Records an event without letting a logging failure break the request that caused it. */
+export async function recordSystemEvent(input: Parameters<typeof recordAdminEvent>[0]) {
+  try {
+    await recordAdminEvent(input);
+  } catch (err) {
+    console.error("admin event not recorded", err);
+  }
+}
 
 export type AdminEvent = {
   id: string;

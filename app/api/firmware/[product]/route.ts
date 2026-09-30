@@ -1,3 +1,4 @@
+import { FIRMWARE_CI_ACTOR, recordSystemEvent } from "@/lib/audit";
 import { ensureSchema } from "@/lib/ensure-schema";
 import {
   checkImage,
@@ -65,6 +66,14 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
       return jsonError(409, "version_exists", {
         version,
         details: "This version already has different bins. Notes were updated. Bump FIRMWARE_VERSION to ship new bins.",
+      });
+    }
+    if (result.status === "created") {
+      await recordSystemEvent({
+        adminEmail: FIRMWARE_CI_ACTOR,
+        action: "firmware_upload",
+        target: `${product} ${version}`,
+        details: { current: result.current },
       });
     }
     return jsonOk(

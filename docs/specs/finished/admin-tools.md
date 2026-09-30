@@ -73,7 +73,7 @@ create table if not exists admin_events (
 create index if not exists admin_events_created on admin_events (created_at desc);
 ```
 
-`target` keeps the email or version as text, so an event still reads well after the account is deleted. Every admin action writes one row: suspend, unsuspend, delete, limits, invite create, email, revoke, waitlist admit, remove, settings change, firmware current. `/admin` lists the newest 50. The daily cron deletes events older than 1 year.
+`target` keeps the email or version as text, so an event still reads well after the account is deleted. Every admin action writes one row: suspend, unsuspend, delete, limits, invite create, email, revoke, waitlist admit, remove, settings change, firmware current. Since 2026-09-30 two events nobody clicked go in the same table, with a reserved actor in `admin_email`: `waitlist_auto_admit` (`system:console`, an automatic waitlist admission) and `firmware_upload` (`system:firmware-ci`, a new release from firmware CI). `/admin` shows these actors as "The console" and "Firmware CI". `/admin` lists the newest 50. The daily cron deletes events older than 1 year.
 
 ### 2.6 Suspension reason and end date
 

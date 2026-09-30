@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { adminEmails } from "@/lib/account-config";
+import { CONSOLE_ACTOR, recordSystemEvent } from "@/lib/audit";
 import {
   countJoin,
   currentSignupMode,
@@ -98,6 +99,10 @@ export async function admitEntry(
     throw err;
   }
   await sql()`update invite_requests set invite_id = ${invite.id} where id = ${id}`;
+  // An admin's "Admit now" logs its own event; an automatic admission is logged here.
+  if (createdBy === null) {
+    await recordSystemEvent({ adminEmail: CONSOLE_ACTOR, action: "waitlist_auto_admit", target: email });
+  }
   return true;
 }
 
