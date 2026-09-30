@@ -458,6 +458,7 @@ Used by the console UI. Firmware does not call these.
 | `DELETE` | `/api/keys/{id}` | revoke |
 | `GET` | `/api/bridges` | snapshots |
 | `GET` | `/api/bridges/{bridgeid}` | one snapshot |
+| `DELETE` | `/api/bridges/{bridgeid}` | remove a Bridge no switch of the account is on → `{ removed: true }`; `409 bridge_has_switches`, `404 not_found` |
 | `GET` | `/api/switches` | registered boards; each has `applied_rev` (or `null`), `config_status` (`current` \| `pending` \| `not_applied` \| `ahead` \| `unknown`), `rev_changed_at`, `next_poll_at`, and for OTA `firmware_seen_at`, `latest_firmware`, `ota_capable`, `ota_status` (`current` \| `behind` \| `offered` \| `failed` \| `ahead` \| `unknown`), `ota_offered_at`, `ota_error`, `ota_error_at` |
 | `GET` | `/api/switches/{mac}` | `{ found: false }` or `{ found: true, last_seen_at, firmware, label, key_revoked, applied_rev, config_status, next_poll_at, firmware_seen_at, latest_firmware, ota_capable, ota_status, ota_offered_at, ota_error }` (Setup reads it after Detect) |
 | `POST` | `/api/switches/sync` | the Switches page calls it every 30 s while visible: every switch polls fast for 15 min; returns `{ switches: [{ mac, rev, applied_rev, config_status, rev_changed_at, next_poll_at, last_seen_at }] }` |
@@ -466,6 +467,7 @@ Used by the console UI. Firmware does not call these.
 | `POST` | `/api/bridges/{bridgeid}/ota` | offer the current release to every switch on that Bridge that can update over Wi-Fi and is behind (never a downgrade); returns `{ offered: [mac…] }` |
 | `POST` | `/api/switches/{mac}/replace-config` | switch `ahead`: moves `rev` past the switch's so its next poll takes the console's config. `409 not_ahead` otherwise |
 | `PATCH` | `/api/switches/{mac}` | `{ "label": "Kitchen" }` or `{ "label": null }` — console display name |
+| `DELETE` | `/api/switches/{mac}` | remove the switch (its recipes, pages and Simple channels go with it) and revoke its key unless another switch of the account uses it → `{ removed: true, key_revoked }`; `404 not_found`. The board then gets `401` (§ Auth) and keeps its NVS recipes; Setup's Link to console adds it back |
 | `GET` | `/api/switches/{mac}/channels` | Simple channel settings (`channelSettings[]`). Round Display: `400 round_switch_uses_pages` |
 | `PUT` | `/api/switches/{mac}/channels` | replace Simple channel settings; increments `rev`. Round: `400 round_switch_uses_pages` |
 | `GET` | `/api/switches/{mac}/pages` | round pages + recipes |

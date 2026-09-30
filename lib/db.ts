@@ -1114,3 +1114,56 @@ async function migratePageGroupsForSwitch(
 export function isRoundSwitch(row: { product: SwitchProduct }): boolean {
   return row.product === "round";
 }
+
+/**
+ * Removes a switch from the console (docs/specs/console-review-fixes.md §C1). Its recipes, pages
+ * and Simple channels cascade. Its key is revoked unless another switch of the account uses it,
+ * so the board cannot register itself back; it gets 401 and keeps its saved recipes.
+ */
+export async function removeSwitch(
+  userId: string,
+  mac: string,
+): Promise<{ removed: boolean; keyRevoked: boolean }> {
+  // One statement: every CTE sees the rows as they were, so "another switch" excludes this mac.
+  const rows = await sql()`
+    with gone as (
+      delete from switches where user_id = ${userId} and mac = ${mac}
+      returning api_key_id
+    ), revoked as (
+      update device_api_keys k set revoked_at = now()
+      where k.user_id = ${userId} and k.revoked_at is null
+        and k.id in (select api_key_id from gone)
+        and not exists (
+          select 1 from switches s
+          where s.api_key_id = k.id and s.user_id = ${userId} and s.mac <> ${mac}
+        )
+      returning k.id
+    )
+    select (select count(*) from gone)::int as removed, (select count(*) from revoked)::int as revoked
+  `;
+  const r = rows[0] as { removed: number; revoked: number };
+  return { removed: Number(r.removed) > 0, keyRevoked: Number(r.revoked) > 0 };
+}
+
+/**
+ * Removes a Bridge with no switches of the account on it (§C2). A switch still on it would
+ * register it again, so that case is refused.
+ */
+export async function removeBridge(
+  userId: string,
+  bridgeid: string,
+): Promise<"removed" | "has_switches" | "not_found"> {
+  const rows = await sql()`
+    with gone as (
+      delete from bridges b
+      where b.user_id = ${userId} and b.bridgeid = ${bridgeid}
+        and not exists (select 1 from switches s where s.user_id = ${userId} and s.bridgeid = ${bridgeid})
+      returning 1
+    )
+    select (select count(*) from gone)::int as removed,
+      exists (select 1 from bridges where user_id = ${userId} and bridgeid = ${bridgeid}) as present
+  `;
+  const r = rows[0] as { removed: number; present: boolean };
+  if (Number(r.removed) > 0) return "removed";
+  return r.present ? "has_switches" : "not_found";
+}
