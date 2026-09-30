@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { signInWithProvider } from "@/app/login/actions";
-import { CodeForm, PasswordForm, WaitlistPanel } from "@/app/login/login-form";
+import { CodeForm, PasswordForm } from "@/app/login/login-form";
 import { ThemePicker } from "@/app/theme-picker";
 import {
   githubConfigured,
@@ -69,6 +70,13 @@ export default async function LoginPage({
   // The console's own /privacy page unless the operator links elsewhere.
   const privacy = process.env.PRIVACY_URL || "/privacy";
   const terms = process.env.TERMS_URL;
+  // New people join the waitlist on the home page (app/landing/waitlist-form.tsx).
+  const waitlistOpen = isDbConfigured() && (mode === "invite" || mode === "waitlist") && !hasInvite;
+  const joinWaitlist = (
+    <Link href="/#waitlist" className="font-medium text-foreground underline underline-offset-4">
+      Join the waitlist
+    </Link>
+  );
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-16">
@@ -81,9 +89,13 @@ export default async function LoginPage({
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
         <p className="text-sm text-muted">
-          {email
-            ? "No password needed. New here? Sign-up works the same way when it is open to you."
-            : "Email and password for this console's account."}{" "}
+          {!email ? (
+            "Email and password for this console's account."
+          ) : waitlistOpen ? (
+            <>No password needed. New here? {joinWaitlist}.</>
+          ) : (
+            "No password needed. New here? Sign-up works the same way when it is open to you."
+          )}{" "}
           This sign-in is for people; switches use a device API key.
         </p>
       </header>
@@ -97,6 +109,7 @@ export default async function LoginPage({
       {error ? (
         <p className="rounded-xl border border-danger p-4 text-sm text-danger" role="alert">
           {error}
+          {waitlistOpen && params.error !== "provider_unavailable" ? <> New here? {joinWaitlist}.</> : null}
         </p>
       ) : null}
 
@@ -144,14 +157,6 @@ export default async function LoginPage({
           {email ? <CodeForm turnstileSiteKey={siteKey} next={next} /> : <PasswordForm next={next} />}
         </div>
       )}
-
-      {isDbConfigured() && (mode === "invite" || mode === "waitlist") && !hasInvite ? (
-        <WaitlistPanel
-          turnstileSiteKey={siteKey}
-          mode={mode}
-          defaultOpen={params.request === "invite" || params.request === "waitlist"}
-        />
-      ) : null}
 
       {privacy || terms ? (
         <p className="flex justify-center gap-4 text-xs text-muted">

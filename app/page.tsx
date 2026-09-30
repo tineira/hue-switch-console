@@ -35,7 +35,7 @@ const COPY: Record<
 > = {
   invite: {
     primary: "Join the waitlist",
-    primaryHref: "/login?request=waitlist",
+    primaryHref: "/login",
     account: "Sign-up is by invitation for now. Already invited?",
     closingTitle: "Sign-up is by invitation for now.",
     closingText:
@@ -43,7 +43,7 @@ const COPY: Record<
   },
   waitlist: {
     primary: "Join the waitlist",
-    primaryHref: "/login?request=waitlist",
+    primaryHref: "/login",
     account: "We let people in in batches while the service runs on free servers. Already have an account?",
     closingTitle: "Join the waitlist, or run your own.",
     closingText:
