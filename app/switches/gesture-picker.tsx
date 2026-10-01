@@ -21,6 +21,10 @@ export type GestureOption = {
 
 const TARGET_ACTIONS: GestureAction[] = ["toggle", "on", "off", "dim", "onoff"];
 
+// Switches resend the Bridge's scenes when they boot and about hourly after that.
+const SCENE_REFRESH =
+  "New scenes show up here within about an hour, or right away if you unplug the switch and plug it back in.";
+
 export function choiceClass(selected: boolean): string {
   return `rounded-md border px-3 py-1.5 text-sm ${
     selected ? "border-filament bg-filament-soft" : "border-line hover:border-filament/50"
@@ -184,9 +188,9 @@ function SceneChooser({
 
   if (available.length === 0) {
     return (
-      <p className="text-xs text-muted">
-        {roomName} has no scenes. Create one in the Hue app; it shows up here
-        after the next snapshot.
+      <p className="max-w-[460px] text-xs text-pretty text-muted">
+        {roomName} has no scenes. Scenes are how a switch sets colors and warm or cool white:
+        save one in the Hue app. {SCENE_REFRESH}
       </p>
     );
   }
@@ -257,6 +261,9 @@ function SceneChooser({
           ))}
         </ol>
       ) : null}
+      <p className="max-w-[460px] text-xs text-pretty text-muted">
+        Want a color or warm or cool white? Save it as a scene in the Hue app. {SCENE_REFRESH}
+      </p>
     </div>
   );
 }

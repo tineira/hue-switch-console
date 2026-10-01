@@ -162,6 +162,17 @@ export function tasks(product: Product): Task[] {
             "Every gesture targets the whole room until you click **Change** to pick one light or scenes. Give it a name so you can tell switches apart. Click **Save changes**.",
           ],
         },
+    {
+      title: "Set colors and warm or cool white",
+      steps: [
+        "A switch does not pick a color or white temperature itself. It recalls **scenes**, which hold the color and brightness of every lamp in a room or zone.",
+        "Make the look you want in the Hue app and save it as a scene in that room or zone.",
+        `On Switches, click **Change** next to ${
+          round ? "**Tap** or **Double tap**" : "**Double-click**"
+        }, pick **Cycle scenes** and click the new scene. Pick several and each press steps to the next, up to 8.`,
+        "New scenes reach the console within about an hour. To see one right away, unplug the board and plug it back in.",
+      ],
+    },
     round
       ? {
           title: "Name a page, pick its theme, set the screen",
