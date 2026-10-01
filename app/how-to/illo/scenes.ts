@@ -783,17 +783,19 @@ type WallOpts = {
   before?: boolean;
   /** Lamp's switched live joined to the permanent live. */
   lampJoined?: boolean;
-  board?: boolean;
+  /**
+   * The board. "out": in its base, lid off, held in front of the box while it's wired (each wire
+   * goes through its hole in the base wall, and the terminal screws are reached through the
+   * base floor). "in": the closed enclosure at the back of the box.
+   */
+  board?: "out" | "in";
   switchWires?: boolean;
   mains?: boolean;
-  inEnclosure?: boolean;
   /** Switch mounted in the box instead of pulled out in front. */
   mounted?: boolean;
   lit?: boolean;
   /** Draw the lamp at the end of its cable. */
   lamp?: boolean;
-  /** Leave the pulled-out switch out (steps only about the board): its wires end at the front. */
-  noSwitch?: boolean;
 };
 
 // Relative position of `p` (local to `o`, a direct child of the scene root) in scene mm.
@@ -807,7 +809,7 @@ function inScene(o: THREE.Object3D, p: V3): V3 {
 // the front left, turned round so its terminal openings face us. Lever connectors lie with
 // their openings toward the front. The carrier board stands at the back, XIAO side to the
 // front, turned so J1/J2 open upward and J3 opens to the right (the open side): every wire
-// visibly goes into an opening.
+// visibly goes into an opening. While it's wired, the same way round, it's out in front of the box.
 function wallScene(o: WallOpts) {
   const root = group();
   root.add(wallBox());
@@ -816,7 +818,7 @@ function wallScene(o: WallOpts) {
     mech.position.set(-54, -14, 38);
     mech.rotation.y = -2.5;
   }
-  if (!o.noSwitch) root.add(mech);
+  root.add(mech);
   // The lamp only where the step is about it; elsewhere its cable just leaves the picture.
   const withLamp = Boolean(o.lamp);
   // A pendant lamp: hanging from its cable, cap up.
@@ -883,37 +885,39 @@ function wallScene(o: WallOpts) {
 
   let board: ReturnType<typeof boardWithXiao> | null = null;
   // Board-local → scene: KiCad x (J1/J2 side) up, the XIAO side to the front, J3's end to the right.
-  const BOARD_AT: V3 = [0, 0, -WALL_D + 17.2];
+  const out = o.board === "out";
+  const BOARD_AT: V3 = out ? BOARD_OUT : [0, 0, -WALL_D + 17.2];
   const turn = new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0));
+  let enc: THREE.Group | null = null;
   if (o.board) {
     board = boardWithXiao();
     board.root.setRotationFromMatrix(turn);
     board.root.position.set(...BOARD_AT);
     root.add(board.root);
-    if (o.inEnclosure) {
-      const { base, lid } = enclosure();
-      base.position.y = -17.2;
-      lid.position.y = -0.8;
-      const enc = group(base, lid);
-      enc.setRotationFromMatrix(turn);
-      enc.position.set(...BOARD_AT);
-      root.add(enc);
-    }
+    const { base, lid } = enclosure();
+    base.position.y = -17.2;
+    lid.position.y = -0.8;
+    enc = out ? group(base) : group(base, lid);
+    enc.setRotationFromMatrix(turn);
+    enc.position.set(...BOARD_AT);
+    root.add(enc);
   }
   const bw = (p: V3): V3 => inScene(board!.root, p);
-  // Into a board terminal, straight into its opening. The enclosure leaves about 9 mm to the
-  // box's top wall over J1/J2, and 4 mm to the side wall past J3.
+  // Into a board terminal, through its hole in the base wall. The enclosure leaves about 9 mm
+  // to the box's top wall over J1/J2, and 4 mm to the side wall past J3.
   const intoBoard = (k: string): V3[] => {
     const p = board!.pts[k], u = board!.out[k];
     const off = (d: number): V3 => bw([p[0] + u[0] * d, p[1] + u[1] * d, p[2] + u[2] * d]);
-    return u[0] ? [off(8), off(3), bw(p)] : [off(5), off(2), bw(p)];
+    return u[0] ? [off(8), off(3), bw(p)] : [off(7), off(4), bw(p)];
   };
+  // Scene offset from the board's origin, for routing round the module held out in front.
+  const B = (dx: number, dy: number, dz: number): V3 => [BOARD_AT[0] + dx, BOARD_AT[1] + dy, BOARD_AT[2] + dz];
   if (board && o.switchWires) {
     const l = inScene(mech, MECH.l), sl = inScene(mech, MECH.sl);
-    if (o.noSwitch) {
-      // Cut off just outside the box, toward the switch.
-      w([SW_D0, [-12, 24, 10], [8, 27, 0], [4, 28, -30], ...intoBoard("D0")], "signal", 0.8);
-      w([SW_GND, [0, -24, 12], [29, -8, -10], [29, 2, -38], ...intoBoard("GND")], "signal", 0.8);
+    if (out) {
+      // Over the top into D0; under the module and up its right end into GND.
+      w([...intoMech("l").reverse(), [l[0] + 14, l[1] + 16, l[2] - 4], B(-10, 36, -6), B(1, 30, -3), ...intoBoard("D0")], "signal", 0.8);
+      w([...intoMech("sl").reverse(), [sl[0] + 4, sl[1] - 24, sl[2] - 4], B(-36, -30, -2), B(4, -32, -8), B(38, -16, -7), B(34, 2, -4), ...intoBoard("GND")], "signal", 0.8);
     } else if (o.mounted) {
       w([...intoMech("l").reverse(), [l[0] + 6, 24, -26], [2, 27, -36], ...intoBoard("D0")], "signal", 0.8);
       w([...intoMech("sl").reverse(), [sl[0] + 10, 10, -26], [29, 6, -36], ...intoBoard("GND")], "signal", 0.8);
@@ -923,18 +927,27 @@ function wallScene(o: WallOpts) {
     }
   }
   if (board && o.mains && lConn) {
-    w([...riseLeft(lConn, nL, 2, -30.5, -12), ...intoBoard("L")], "live");
-    w([...riseLeft(nConn, nN, 2, -28, -15), ...intoBoard("N")], "neutral");
+    if (out) {
+      // Out of the floor row toward the front, up, and down into the two larger holes.
+      const forward = (c: THREE.Object3D, n: number, dx: number): V3[] => {
+        const a = lv(c, n, 2, 10);
+        return [...intoLever(c, n, 2).reverse(), [a[0], -22, 6], B(-12.7 + dx, 30, -14)];
+      };
+      w([...forward(lConn, nL, 0), B(-12.7, 30, -6), ...intoBoard("L")], "live");
+      w([...forward(nConn, nN, 4), B(-7.7, 30, -6), ...intoBoard("N")], "neutral");
+    } else {
+      w([...riseLeft(lConn, nL, 2, -30.5, -12), ...intoBoard("L")], "live");
+      w([...riseLeft(nConn, nN, 2, -28, -15), ...intoBoard("N")], "neutral");
+    }
   }
-  return { root, mech, lampBulb, nConn, eConn, lConn, board, bw, L: inScene(mech, MECH.l), SL: inScene(mech, MECH.sl) };
+  return { root, mech, lampBulb, nConn, eConn, lConn, board, enc, bw, L: inScene(mech, MECH.l), SL: inScene(mech, MECH.sl) };
 }
 
 const WALL_DIR: V3 = [0.85, 0.8, 1.0];
 // Narrow callout columns, so the box gets the width.
 const WALL_WRAP = 12;
-// Where the switch wires leave the picture when the switch isn't drawn.
-const SW_D0: V3 = [-24, 20, 18];
-const SW_GND: V3 = [-20, -16, 20];
+// The board in its open base, held in front of the box while it's wired (board origin, scene mm).
+const BOARD_OUT: V3 = [10, -56, 34];
 
 function wallBefore(labels: boolean): SceneDef {
   const s = wallScene({ before: true, lamp: !labels });
@@ -973,22 +986,19 @@ function wallLamp(): SceneDef {
 }
 
 function wallOffMains(): SceneDef {
-  const s = wallScene({ lampJoined: true, board: true });
+  const s = wallScene({ lampJoined: true });
   return {
     root: s.root,
     dir: WALL_DIR,
     wrap: WALL_WRAP,
     pad: 1.03,
-    notes: [
-      note("Off mains at both ends", s.mech, [0, 14, -24], "left", "danger"),
-      note("Board at the back", s.board!.root, [-18, 2, 0], "right"),
-    ],
+    notes: [note("Off mains at both ends", s.mech, [0, 14, -24], "left", "danger")],
     marks: [{ kind: "badge", at: A(s.mech, [0, 28, -24]), text: "No L, no N", tone: "danger" }],
   };
 }
 
 function wallSwitches(): SceneDef {
-  const s = wallScene({ lampJoined: true, board: true, switchWires: true });
+  const s = wallScene({ lampJoined: true, board: "out", switchWires: true });
   return {
     root: s.root,
     dir: WALL_DIR,
@@ -997,41 +1007,66 @@ function wallSwitches(): SceneDef {
     notes: [
       note("One terminal to D0", s.root, s.bw(s.board!.pts.D0), "right"),
       note("The other to GND", s.root, s.bw(s.board!.pts.GND), "right"),
+      note("Board in its base, lid off", s.board!.root, [-2, 1.6, -14], "right"),
       note("Violet: 3.3 V only", s.mech, [0, 14, -24], "left"),
     ],
   };
 }
 
-function wallMains(check: boolean): SceneDef {
-  const s = wallScene({ lampJoined: true, board: true, switchWires: true, mains: true, noSwitch: true });
-  const notes: Note[] = check
-    ? [
-        note("No switch wire touches L or N", s.root, SW_D0, "left", "ok"),
-        note("Mains only on the L N terminal", s.root, s.bw(s.board!.pts.L), "right"),
-      ]
-    : [
-        note("Permanent live to L", s.root, s.bw(s.board!.pts.L), "right", "hot"),
-        note("Neutral to N", s.root, s.bw(s.board!.pts.N), "right", "hot"),
-        note("Earth stays with earths", s.eConn, [0, 8, 0], "left"),
-        note("To the switch", s.root, SW_GND, "left"),
-      ];
-  const marks: Mark[] = check ? [{ kind: "badge", at: A(s.root, [SW_GND[0], SW_GND[1] - 8, SW_GND[2]]), text: "Checked", tone: "ok" }] : [];
+function wallMains(): SceneDef {
+  const s = wallScene({ lampJoined: true, board: "out", switchWires: true, mains: true });
+  return {
+    root: s.root,
+    dir: WALL_DIR,
+    wrap: WALL_WRAP,
+    pad: 1.03,
+    notes: [
+      note("Permanent live to L", s.root, s.bw(s.board!.pts.L), "right", "hot"),
+      note("Neutral to N", s.root, s.bw(s.board!.pts.N), "right", "hot"),
+      note("Earth stays with earths", s.eConn, [0, 8, 0], "right"),
+    ],
+  };
+}
+
+/** The finished wiring, enclosure at the back and the switch still out: fit, check, and "after". */
+function wallDone(kind: "fit" | "check" | "after"): SceneDef {
+  const s = wallScene({ lampJoined: true, board: "in", switchWires: true, mains: true });
+  // A point on the GND switch wire (a control point of its route out of the switch).
+  const sw: V3 = [s.SL[0] + 16, s.SL[1] - 16, s.SL[2] - 4];
+  const lid = s.bw([-10, 8.8, -12]);
+  const notes: Note[] =
+    kind === "fit"
+      ? [
+          note("Lid on, tape over the slots in the base floor", s.root, lid, "right", "hot"),
+          note("Switch goes in front", s.mech, [0, -22, -10], "left"),
+        ]
+      : kind === "check"
+        ? [
+            note("No switch wire touches L or N", s.root, sw, "left", "ok"),
+            note("Mains only into L and N", s.root, s.bw(s.board!.pts.L), "right"),
+          ]
+        : [
+            note("Lamp's live joined to L", s.lConn!, [0, 10, 0], "right", "hot"),
+            note("Board on L and N only", s.root, s.bw(s.board!.pts.L), "right"),
+            note("Old switch wires: 3.3 V only", s.root, sw, "left"),
+          ];
+  const marks: Mark[] = kind === "check" ? [{ kind: "badge", at: A(s.root, [sw[0], sw[1] - 9, sw[2]]), text: "Checked", tone: "ok" }] : [];
   return { root: s.root, dir: WALL_DIR, wrap: WALL_WRAP, pad: 1.03, notes, marks };
 }
 
-function wallFit(on: boolean): SceneDef {
-  const s = wallScene({ lampJoined: true, board: true, switchWires: true, mains: true, inEnclosure: true, mounted: on, lit: on, lamp: on });
-  const notes: Note[] = on
-    ? [
-        note("Switch back in", s.mech, [30, 30, 3], "left"),
-        note("Press: the lamp reacts", s.lampBulb, [14, 36, 0], "right", "ok"),
-      ]
-    : [
-        note("Enclosure at the back", s.root, s.bw([-10, 8.8, -12]), "right", "hot"),
-        note("Switch goes in front", s.mech, [0, -22, -10], "left"),
-      ];
-  const marks: Mark[] = on ? [{ kind: "glow", at: A(s.lampBulb, [0, 34, 0]), r: 40 }] : [];
-  return { root: s.root, dir: WALL_DIR, wrap: WALL_WRAP, pad: 1.03, notes, marks };
+function wallOn(): SceneDef {
+  const s = wallScene({ lampJoined: true, board: "in", switchWires: true, mains: true, mounted: true, lit: true, lamp: true });
+  return {
+    root: s.root,
+    dir: WALL_DIR,
+    wrap: WALL_WRAP,
+    pad: 1.03,
+    notes: [
+      note("Switch back in", s.mech, [30, 30, 3], "left"),
+      note("Press: the lamp reacts", s.lampBulb, [14, 36, 0], "right", "ok"),
+    ],
+    marks: [{ kind: "glow", at: A(s.lampBulb, [0, 34, 0]), r: 40 }],
+  };
 }
 
 /**
@@ -1101,12 +1136,14 @@ export function buildScene(id: IlloId): SceneDef {
     case "wall-switches":
       return wallSwitches();
     case "wall-mains":
-      return wallMains(false);
-    case "wall-check":
-      return wallMains(true);
+      return wallMains();
     case "wall-fit":
-      return wallFit(false);
+      return wallDone("fit");
+    case "wall-check":
+      return wallDone("check");
+    case "wall-after":
+      return wallDone("after");
     case "wall-on":
-      return wallFit(true);
+      return wallOn();
   }
 }

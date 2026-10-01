@@ -126,11 +126,11 @@ The web page is a **"can I use this?"** summary plus the **order of installation
    3. **Identify the wires in the box:** permanent live, neutral, the switched live to the lamp, and the wires that run to each switch. No neutral: stop here (requirements).
    4. **Make the lamp permanent.** Join the lamp's switched live to the permanent live with a lever connector (for example WAGO 221). The lamp now stays powered; the Hue Bridge switches it.
    5. **Take the switch wires off mains, at both ends.** Every wire that runs to a switch is disconnected from live, neutral and the lamp, in this box and at the switch. From now on it only connects the switch to the board.
-   6. **Wire the switches.** One terminal of each switch to D0–D5 (J2/J3); the other terminals joined with a lever connector and one wire to J3 GND. Solid 1.5 mm² wire goes through a short 0.5–0.75 mm² flexible pigtail on J2/J3.
-   7. **Wire mains:** permanent live to J1 L, neutral to J1 N. Earth stays joined to the box's earth wires, not to the board.
-   8. **Fit the enclosure** behind (or beside) the mechanism: switch wires through the holes on the low-voltage side, L and N through the two larger ones.
-   9. **Check before power:** the electrician confirms that no switch wire touches mains anywhere, with a continuity tester if needed.
-   10. **Breaker on and test.** The LED shows it is connected (links to "Reading the LED"); then press or flip each switch and the light reacts.
+   6. **Wire the switches**, with the board in its base (lid off) in front of the box: each wire through its hole in the base wall into its terminal, the screws reached through the slots in the base floor. One terminal of each switch to D0–D5 (J2/J3); the other terminals joined with a lever connector and one wire to J3 GND. Solid 1.5 mm² wire goes through a short 0.5–0.75 mm² flexible pigtail on J2/J3.
+   7. **Wire mains:** permanent live to J1 L, neutral to J1 N, through the two larger holes. Earth stays joined to the box's earth wires, not to the board.
+   8. **Close it and fit it:** tape over the floor slots, lid on, then into the box behind (or beside) the mechanism. The wires go through the base before they reach the terminals, so the board can't be wired bare and boxed afterwards.
+   9. **Check before power:** the electrician confirms that no switch wire touches mains anywhere, with a continuity tester if needed, then fixes the switch back in.
+   10. **Breaker on and test.** The board shows as online on Switches (its LED is behind the switch); then press or flip each switch and the light reacts.
 
 ### 3.5 Source of truth
 

@@ -38,6 +38,7 @@ export type IlloId =
   | "wall-mains"
   | "wall-check"
   | "wall-fit"
+  | "wall-after"
   | "wall-on";
 
 /** A step's picture: a render, or the real Switches editor in a given state. `alt` describes it. */
@@ -439,37 +440,44 @@ export const WALL_INSTALL: InstallStep[] = [
     title: "Take the switch wires off mains, at both ends",
     body: "Every wire that runs to a switch is disconnected from live, neutral and the lamp, in this box and at the switch. From now on it only joins the switch to the board.",
     who: "electrician",
-    pic: { illo: "wall-offmains", alt: "The switch with its terminals free and a No L, no N badge, and the carrier board at the back of the box." },
+    pic: { illo: "wall-offmains", alt: "The pulled-out switch with both terminals empty and a No L, no N badge." },
   },
   {
     title: "Wire the switches",
-    body: "One terminal of each switch to **D0**–**D5** on J2 and J3. The other terminals joined with a lever connector, and one wire from there to **GND** on J3. Solid 1.5 mm² wire goes through a short 0.5–0.75 mm² flexible pigtail.",
+    body: "With the board in its base, lid off, in front of the box: each wire goes through its hole in the base wall into its terminal, and the screws are reached through the slots in the base floor. One terminal of each switch to **D0**–**D5** on J2 and J3. The other terminals joined with a lever connector, and one wire from there to **GND** on J3. J2 and J3 take about 1 mm²: for solid 1.5 mm² wire, join a short 0.5–0.75 mm² flexible pigtail with a lever connector.",
     who: "electrician",
     more: "#wire-it",
-    pic: { illo: "wall-switches", alt: "Two violet low-voltage wires from the switch's terminals to D0 and GND on the carrier board." },
+    pic: {
+      illo: "wall-switches",
+      alt: "The board in its open base, held in front of the box: two violet low-voltage wires from the pulled-out switch's terminals, through the base wall, into D0 and GND.",
+    },
   },
   {
     title: "Wire mains",
-    body: "Permanent live to **L** on J1, neutral to **N**. Earth stays joined to the box's other earth wires, not to the board.",
+    body: "Permanent live to **L** on J1, from the lever connector that joins the lamp's live. Neutral to **N**, from the neutrals' connector. Both go through the two larger holes in the base wall. Earth stays joined to the box's other earth wires, not to the board.",
     who: "electrician",
     more: "#wire-it",
-    pic: { illo: "wall-mains", alt: "Live from the joined lever connector to L on the board, and neutral from the neutral connector to N; the two violet switch wires already on D0 and GND lead out toward the switch." },
+    pic: {
+      illo: "wall-mains",
+      alt: "A third wire from the live connector and from the neutral connector, through the two larger holes in the base, into L and N; the earth connector stays as it was, and the violet switch wires are already on D0 and GND.",
+    },
   },
   {
-    title: "Fit the enclosure",
-    body: "Behind the switch, or beside it in a rectangular box. Switch wires through the holes on the low-voltage side, live and neutral through the two larger ones.",
+    title: "Close it and fit it",
+    body: "Tape over the slots in the base floor (Kapton or electrical tape) and click the lid on. Push it to the back of the box: behind the switch, or beside it in a rectangular box.",
     who: "electrician",
-    pic: { illo: "wall-fit", alt: "The board inside its printed enclosure at the back of the box, the switch in front of it." },
+    more: "#print-the-enclosure",
+    pic: { illo: "wall-fit", alt: "The closed enclosure at the back of the box with every wire in its hole, and the switch still pulled out in front." },
   },
   {
     title: "Check before power",
-    body: "Confirm that no switch wire touches mains anywhere, with a continuity tester if needed. If one does, the board and its USB port would be at mains voltage.",
+    body: "Confirm that no switch wire touches mains anywhere, with a continuity tester if needed. If one does, the board and its USB port would be at mains voltage. Then fix the switch back in its box.",
     who: "electrician",
-    pic: { illo: "wall-check", alt: "The finished wiring in the box, with a Checked badge on the violet switch wires leading out toward the switch." },
+    pic: { illo: "wall-check", alt: "The finished wiring, enclosure at the back, with a Checked badge on the violet wire to the switch." },
   },
   {
     title: "Breaker on, and test",
-    body: "The orange LED should give one short blink every few seconds (see **Reading the LED**). Then press or flip each switch: the lights react.",
+    body: "Within a minute the board shows as online, a green dot next to it on **Switches**: its LED is behind the switch now. Then press or flip each switch: the lights react.",
     who: "you",
     pic: { illo: "wall-on", alt: "The switch back in the wall and the lamp lit." },
   },
@@ -486,8 +494,8 @@ export const WALL_BEFORE: Pic = {
 };
 
 export const WALL_AFTER: Pic = {
-  illo: "wall-mains",
-  alt: "After: the lamp's live joined to the permanent live, the board at the back of the box on live and neutral, and two violet low-voltage wires from the board out to the switch.",
+  illo: "wall-after",
+  alt: "After: the lamp's live joined to the permanent live, the enclosure at the back of the box on live and neutral only, and two violet low-voltage wires from it to the switch.",
 };
 
 export function buildSummary(product: Product): string {

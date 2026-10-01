@@ -368,15 +368,15 @@ function InWall() {
             <Picture pic={WALL_AFTER} />
             <figcaption className="text-xs text-muted">
               <span className="font-medium text-foreground">After.</span> The lamp stays powered and the Bridge switches
-              it. The board sits at the back of the box on live and neutral, and the old switch wires carry only 3.3 V to
-              it.
+              it. The board, in its enclosure at the back of the box, takes live and neutral, and the old switch wires
+              carry only 3.3 V to it.
             </figcaption>
           </figure>
         </div>
       </Sub>
       <Sub
         title="Get the board"
-        lead="Order it assembled from JLCPCB with the files in the firmware repo, solder the XIAO on, and print the enclosure in PETG or ASA (not PLA)."
+        lead="Order it assembled from JLCPCB with the files in the firmware repo. Set the XIAO up over USB (step 1 below) before you solder it on. Print the enclosure in PETG, ASA or PC, not PLA."
       >
         <Picture pic={WALL_BOARD} />
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
