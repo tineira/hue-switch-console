@@ -269,6 +269,7 @@ offer its users the source of your version; the site footer's "Source" link does
 that for this deployment. Contributions are accepted under the same license.
 
 The switch firmwares, [`hue-round-switch`](https://github.com/tineira/hue-round-switch)
-and [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch), are MIT.
+and [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch), are MIT. The Simple's
+mains carrier board and enclosure (`hue-simple-switch/hardware/`) are CERN-OHL-P-2.0.
 
 Not affiliated with or endorsed by Signify. Philips Hue is a trademark of Signify.

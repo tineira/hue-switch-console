@@ -2,7 +2,7 @@
 
 Cross-repo spec, but not a contract change: no endpoint, payload or NVS key moves. Process: `AGENTS.md` → "Cross-repo changes" (spec first, the user approves, then each repo's checklist).
 
-**Status:** approved 2026-09-30 by the user (all of §5 decided). Not implemented.
+**Status:** approved 2026-09-30 by the user (all of §5 decided). Implemented 2026-09-30 on branch `terms-and-safety` in all three repos, not merged or deployed: waiting for the lawyer review (§5, question 1).
 
 ## 1. What and why
 
@@ -67,11 +67,11 @@ Sign-up happens inside Better Auth (email code, Google, GitHub), and with OAuth 
   - "I agree to the Terms of Use."
 
   The button stays disabled until every box is ticked. A server action re-checks the boxes, inserts the rows and returns to `next` (checked by `safeReturnPath`). "Sign out" is the only other way out.
-- **Where it applies:** every signed-in page and server action. `getSessionUser` (`lib/auth.ts`) is the one place that loads the session, so it is where the check goes: a page that calls it with pending documents redirects to `/accept?next=<path>`; a server action gets an error that says to reload. Admins are not exempt.
+- **Where it applies:** every signed-in page and server action. `getSessionUser` (`lib/auth.ts`) is the one place that loads the session, so it is where the check goes. As built: `getSessionUser()` returns null for an account with pending documents, so session API routes answer 401; `requireSessionUser()` (every signed-in page and server action) redirects to `/accept?next=<path>`; public pages and the home page call `getSessionUser({ allowPending: true })`, so a signed-in person keeps the app frame there and the home page still sends them on to `/accept`. Admins are not exempt.
 - **Where it does not apply:** the device API (`/api/device/*`, firmware downloads, OTA). Boards already on the wall keep working whether or not their owner has accepted. Blocking them would switch off someone's lights to collect a click. Public pages (`/`, `/how-to`, `/changelog`, `/credits`, `/privacy`, `/terms`, `/safety`) stay open.
 - **Under the sign-in form:** "New accounts accept the Terms and the Safety notice before using the console." with both links. This only informs; acceptance is the `/accept` page.
 - **Waitlist form:** the same line, since joining the waitlist is the first step for most people.
-- **Admin:** the Users tab shows each account's accepted versions, or "Not yet" for an account that has not accepted.
+- **Admin:** the Accounts tab shows each account's accepted versions, or "Not yet" for an account that has not accepted.
 
 ### 2.5 Public guides and design status
 
@@ -147,29 +147,29 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 ### Console (`hue-switch-console`)
 
 - [ ] Lawyer review of §2.6 done and edits folded in (the user arranges it; §5, question 1)
-- [ ] `terms_acceptances` table in `db/schema.sql`
-- [ ] `lib/terms.ts`: versions, `TERMS_VERSION` env override, `pendingDocuments`
-- [ ] `/safety` page (every console), with `#status`
-- [ ] `/terms` page: hosted text; redirect to `TERMS_URL` on a self-hosted console
-- [ ] `/accept` page and server action; gate in `getSessionUser`; device API and public pages exempt
-- [ ] Sign-in form and waitlist form line; footer links to Terms and Safety
-- [ ] Admin Users tab shows accepted versions
-- [ ] `/privacy`: the acceptance-record line (§2.3)
-- [ ] `/how-to`: status chips, expanded mains box, "test, don't trust colors" step, illustration caption, low-voltage line
-- [ ] `README.md`: env table (`TERMS_URL`, `TERMS_VERSION`), a Safety section linking `/safety`
-- [ ] `docs/changelog.md` entry
+- [x] `terms_acceptances` table in `db/schema.sql`
+- [x] `lib/terms.ts`: versions, `TERMS_VERSION` env override, `pendingDocuments`
+- [x] `/safety` page (every console), with `#status`
+- [x] `/terms` page: hosted text; redirect to `TERMS_URL` on a self-hosted console
+- [x] `/accept` page and server action; gate in `getSessionUser`; device API and public pages exempt
+- [x] Sign-in form and waitlist form line; footer links to Terms and Safety
+- [x] Admin Accounts tab shows accepted versions
+- [x] `/privacy`: the acceptance-record line (§2.3)
+- [x] `/how-to`: status chips, expanded mains box, "test, don't trust colors" step, illustration caption, low-voltage line
+- [x] `README.md`: env table (`TERMS_URL`, `TERMS_VERSION`), a Safety section linking `/safety`
+- [x] `docs/changelog.md` entry
 - [ ] Deployed; checked on production (sign in with an existing account, see `/accept`, accept, land where you were going)
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] `hardware/`: license decided (§5, question 4); if CERN-OHL-P-2.0, `hardware/LICENSE` added and "Credits and licenses" updated
-- [ ] `hardware/README.md` warning: add "not an electrical engineer", "rules and wire colors vary by country; test, don't trust colors", "insurance", and a link to the console's `/safety`
-- [ ] `README.md`: short Safety section near the top linking `hardware/README.md` and `/safety`
-- [ ] No `FIRMWARE_VERSION` bump (docs only)
+- [x] `hardware/`: license decided (§5, question 4); if CERN-OHL-P-2.0, `hardware/LICENSE` added and "Credits and licenses" updated
+- [x] `hardware/README.md` warning: add "not an electrical engineer", "rules and wire colors vary by country; test, don't trust colors", "insurance", and a link to the console's `/safety`
+- [x] `README.md`: short Safety section near the top linking `hardware/README.md` and `/safety`
+- [x] No `FIRMWARE_VERSION` bump (docs only)
 
 ### Round (`hue-round-switch`)
 
-- [ ] `README.md`: short Safety section (low voltage only, no warranty, link to `/safety`)
+- [x] `README.md`: short Safety section (low voltage only, no warranty, link to `/safety`)
 
 ### Cleanup
 

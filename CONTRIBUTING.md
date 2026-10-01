@@ -6,7 +6,7 @@ Thanks for helping. The Hue switch project is three repos, and this one is the h
 | --- | --- | --- |
 | [`hue-switch-console`](https://github.com/tineira/hue-switch-console) | Web console, device API, contract docs, USB installer | AGPL-3.0-only |
 | [`hue-round-switch`](https://github.com/tineira/hue-round-switch) | Firmware for XIAO ESP32-S3 + Round Display (`product: "round"`) | MIT |
-| [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch) | Firmware for XIAO ESP32-C6 wall contacts (`product: "simple"`) | MIT |
+| [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch) | Firmware for XIAO ESP32-C6 wall contacts (`product: "simple"`) | MIT; `hardware/` CERN-OHL-P-2.0 |
 
 Console bugs and ideas go here. A bug in how a switch behaves goes to that firmware's repo. If you are not sure which one, open it here.
 

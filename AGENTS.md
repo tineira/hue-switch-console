@@ -44,7 +44,7 @@ The firmware repos live in the Arduino sketchbook (`arduino-cli config get direc
 
 More switch firmwares may join; each gets a row here and the same `## Contract` section in its own AGENTS.md.
 
-Licensing: community open source. The console is `AGPL-3.0-only`. Every firmware is MIT, and a new switch repo starts with an MIT `LICENSE` and a README "License" section. Do not add dependencies that are incompatible with those licenses.
+Licensing: community open source. The console is `AGPL-3.0-only`. Every firmware is MIT, and a new switch repo starts with an MIT `LICENSE` and a README "License" section. Hardware designs (board layouts, Gerbers, enclosures) are CERN-OHL-P-2.0 in a `hardware/LICENSE` of their own; their generator scripts stay MIT. Do not add dependencies that are incompatible with those licenses.
 
 Source of truth for anything a switch and the console both depend on:
 
