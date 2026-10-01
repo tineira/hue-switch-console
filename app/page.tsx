@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/app/landing/theme-toggle";
 import { JoinWaitlistLink, LandingWaitlistForm } from "@/app/landing/waitlist-form";
 import { turnstileSiteKey, type SignupMode } from "@/lib/account-config";
 import { getSessionUser } from "@/lib/auth";
+import { hasTerms } from "@/lib/terms";
 import { currentSignupMode } from "@/lib/console-settings";
 import { isDbConfigured } from "@/lib/env";
 
@@ -205,7 +206,7 @@ function StepVisual({ index }: { index: number }) {
 // Signed-out visitors see what the console is (public, for Google's brand review too).
 // Signed-in users go straight to their switches.
 export default async function Home() {
-  const user = await getSessionUser().catch(() => null);
+  const user = await getSessionUser({ allowPending: true }).catch(() => null);
   if (user) redirect("/switches");
 
   const mode = await currentSignupMode();
@@ -225,6 +226,7 @@ export default async function Home() {
       {waitlistForm ? (
         <LandingWaitlistForm
           turnstileSiteKey={turnstileSiteKey()}
+          termsHref={hasTerms() ? "/terms" : null}
           inputClassName={INPUT}
           buttonClassName={`${PRIMARY} disabled:opacity-60`}
         />

@@ -27,7 +27,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/how-to">): 
 
 // Public: signed-out visitors get the same guide (docs/specs/finished/public-how-to-changelog.md §4.2).
 export default async function HowToPage({ searchParams }: PageProps<"/how-to">) {
-  const user = await getSessionUser().catch(() => null);
+  const user = await getSessionUser({ allowPending: true }).catch(() => null);
   const { product } = await searchParams;
   // The Round's Wi-Fi screen shows the firmware version; this one is what /setup flashes now.
   const version = await currentVersion("round").catch(() => null);

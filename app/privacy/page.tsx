@@ -66,7 +66,8 @@ function PrivacyContent() {
           <strong>Your account.</strong> Your email address. If you sign in with Google or GitHub,
           also the name and profile picture they share, and the sign-in tokens they return. The
           console doesn&apos;t use those tokens for anything and stores them encrypted. When you
-          created the account and when you last signed in.
+          created the account and when you last signed in. When you accept the Terms and the
+          Safety notice, which version you accepted and when.
         </p>
         <p>
           <strong>No passwords.</strong> You never set a password here: you sign in with Google,
@@ -217,8 +218,8 @@ function SelfHostedPrivacy() {
       </header>
       <Section title="What the software stores">
         <p>
-          The console software keeps your account (email address, sign-in method and sessions),
-          your API keys, and what your switches send when they check in: each switch&apos;s
+          The console software keeps your account (email address, sign-in method, sessions, and
+          which version of the Safety notice and Terms you accepted), your API keys, and what your switches send when they check in: each switch&apos;s
           hardware address, firmware version and settings, and your Hue Bridge&apos;s rooms,
           zones, lights and scenes. It has no ads, analytics or tracking built in.
         </p>
@@ -241,7 +242,7 @@ function SelfHostedPrivacy() {
 
 // Public: no sign-in needed. Linked from /login and the footer (docs/specs/finished/multi-user-accounts.md §2.12).
 export default async function PrivacyPage() {
-  const user = await getSessionUser().catch(() => null);
+  const user = await getSessionUser({ allowPending: true }).catch(() => null);
   const content = isHostedConsole() ? <PrivacyContent /> : <SelfHostedPrivacy />;
 
   if (user) {

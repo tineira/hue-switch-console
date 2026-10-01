@@ -158,12 +158,30 @@ export const ROUND_ASSEMBLE: AssembleStep[] = [
   },
 ];
 
+/** How proven a design is (docs/specs/terms-and-safety.md §2.5). /safety#status explains each. */
+export type DesignStatus = "experimental" | "maintainer" | "community";
+
+export const DESIGN_STATUS_LABEL: Record<DesignStatus, string> = {
+  experimental: "Experimental",
+  maintainer: "Built by the maintainer",
+  community: "Community-tested",
+};
+
+export const DESIGN_STATUS_TEXT: Record<DesignStatus, string> = {
+  experimental: "Designed, never built and installed. Expect mistakes.",
+  maintainer: "Built and in use by the maintainer, one installation.",
+  community: "Built and reported working by several people.",
+};
+
+export const ROUND_STATUS: DesignStatus = "maintainer";
+
 export type Level = {
   id: "try" | "box" | "wall";
   letter: string;
   name: string;
   needs: string;
   who: string;
+  status: DesignStatus;
 };
 
 export const SIMPLE_LEVELS: Level[] = [
@@ -173,6 +191,7 @@ export const SIMPLE_LEVELS: Level[] = [
     name: "Try it",
     needs: "The XIAO and a USB-C cable. No wiring.",
     who: "Everyone, first.",
+    status: "maintainer",
   },
   {
     id: "box",
@@ -180,6 +199,7 @@ export const SIMPLE_LEVELS: Level[] = [
     name: "Button box on USB-C",
     needs: "The XIAO, switches or buttons, wire. A few resistors if the wires are long.",
     who: "Makers. Low voltage only, no mains anywhere.",
+    status: "maintainer",
   },
   {
     id: "wall",
@@ -187,6 +207,7 @@ export const SIMPLE_LEVELS: Level[] = [
     name: "In the wall",
     needs: "Our mains carrier board and printed enclosure, behind your wall switch.",
     who: "Experienced makers, installed by an electrician.",
+    status: "experimental",
   },
 ];
 
@@ -424,7 +445,7 @@ export const WALL_INSTALL: InstallStep[] = [
   },
   {
     title: "Identify the wires in the box",
-    body: "Permanent live, neutral, the switched live that runs to the lamp, and the wires that run to each switch. No neutral: stop here.",
+    body: "Permanent live, neutral, the switched live that runs to the lamp, and the wires that run to each switch. Identify each one by testing it, never by its color: colors differ between countries and with the age of the wiring, and older work may follow no convention at all. No neutral: stop here.",
     who: "electrician",
     more: "#before-you-install-requirements",
     pic: { illo: "wall-identify", alt: "The wall box opened: permanent live and switched live on the pulled-out switch, neutrals joined in one lever connector, earths in another." },

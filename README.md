@@ -101,7 +101,8 @@ driver; for any other Postgres set `DATABASE_DRIVER=pg`.
 | `EMAIL_DAILY_CAP` | Emails a day before email sign-in says it is busy (default 90, under Resend's free 100) |
 | `LIMIT_SWITCHES`, `LIMIT_BRIDGES`, `LIMIT_KEYS`, `LIMIT_SNAPSHOT_KB` | Per-account limits (25, 5, 25, 512); `/admin` overrides one account |
 | `CONTACT_EMAIL` | Contact shown on `/privacy` (hue.tineira.com defaults to `privacy@tineira.com`) |
-| `PRIVACY_URL`, `TERMS_URL` | Replace the `/privacy` link under the sign-in form; add a Terms link |
+| `PRIVACY_URL` | Replace the `/privacy` link under the sign-in form |
+| `TERMS_URL`, `TERMS_VERSION` | A self-hosted console's own Terms: `/terms` redirects there and accounts accept it on `/accept`. Change `TERMS_VERSION` when you change the text, so everyone accepts again. Without `TERMS_URL`, accounts accept only the Safety notice |
 
 Local development without sending mail: `EMAIL_DEV_CONSOLE=1` prints codes to the
 server log instead (never in production).
@@ -239,6 +240,14 @@ a `CHANGELOG.md`, the `FIRMWARE_UPLOAD_TOKEN` secret, its product id in
 the `firmware_releases` / `firmware_current` checks in `db/schema.sql` (then
 `npm run schema`), a `## <Product>` intro in `docs/changelog.md`, and a
 row in `AGENTS.md` ("Multi-repo").
+
+## Safety
+
+The Simple switch has an in-wall build on mains voltage. The designs are uncertified
+and some are unproven. Read the Safety notice (`/safety` on any console, or
+[hue.tineira.com/safety](https://hue.tineira.com/safety)) before you build anything.
+Every account accepts it, and on hue.tineira.com the Terms, before using the console
+(`docs/specs/terms-and-safety.md`).
 
 ## Contributing
 

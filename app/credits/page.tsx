@@ -156,7 +156,7 @@ async function CreditsContent() {
 
 // Public: no sign-in needed (docs/specs/finished/credits.md §2.2).
 export default async function CreditsPage() {
-  const user = await getSessionUser().catch(() => null);
+  const user = await getSessionUser({ allowPending: true }).catch(() => null);
 
   if (user) {
     return (

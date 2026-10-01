@@ -339,6 +339,16 @@ create index if not exists admin_events_created on admin_events (created_at desc
 
 create index if not exists switches_user_seen_idx on switches (user_id, last_seen_at);
 
+-- Which version of the Safety notice and Terms each account accepted (docs/specs/terms-and-safety.md
+-- §2.3). Append-only, so a re-acceptance keeps the history.
+create table if not exists terms_acceptances (
+  user_id uuid not null references users (id) on delete cascade,
+  document text not null check (document in ('safety', 'terms')),
+  version text not null,
+  accepted_at timestamptz not null default now(),
+  primary key (user_id, document, version)
+);
+
 -- Pre-Better Auth consoles kept the password on users.password_hash: move it to a credential
 -- row if needed, then drop the column.
 do $$

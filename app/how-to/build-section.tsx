@@ -10,6 +10,8 @@ import {
   BOX_KIT,
   BOX_STEPS,
   BUILD_ANCHORS,
+  DESIGN_STATUS_LABEL,
+  DESIGN_STATUS_TEXT,
   HARDWARE_README,
   INPUT_EXPLAINED,
   NEVER,
@@ -18,6 +20,7 @@ import {
   ROUND_ASSEMBLE,
   ROUND_BUY,
   ROUND_KIT,
+  ROUND_STATUS,
   SIMPLE_LEVELS,
   TRY_BUY,
   TRY_KIT,
@@ -29,6 +32,7 @@ import {
   WALL_REQUIREMENTS,
   buildSummary,
   type BuyItem,
+  type DesignStatus,
   type Level,
   type Pic,
 } from "@/lib/how-to-build";
@@ -179,9 +183,35 @@ function Buy({ kit, items }: { kit: Pic; items: BuyItem[] }) {
   );
 }
 
+// How proven this design is, and for low-voltage builds the one rule that keeps them low voltage
+// (docs/specs/terms-and-safety.md §2.5).
+function StatusNote({ status, mains }: { status: DesignStatus; mains?: boolean }) {
+  return (
+    <div className={`flex flex-col gap-1.5 px-4 py-3 text-sm ${CARD}`}>
+      <p className="flex flex-wrap items-center gap-2">
+        <a
+          href="/safety#status"
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+            status === "experimental" ? "bg-warn-soft text-warn" : "bg-filament-soft text-filament"
+          }`}
+        >
+          {DESIGN_STATUS_LABEL[status]}
+        </a>
+        <span className="text-muted">{DESIGN_STATUS_TEXT[status]}</span>
+      </p>
+      {mains ? null : (
+        <p className="text-muted">
+          Low voltage only. Never connect any pin to anything that is or was on mains.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function RoundBuild() {
   return (
     <>
+      <StatusNote status={ROUND_STATUS} />
       <Buy kit={ROUND_KIT} items={ROUND_BUY} />
       <Sub
         id="assemble"
@@ -218,6 +248,9 @@ function LevelPicker({ level, onChoose }: { level: LevelId; onChoose: (id: Level
             </span>
             <span className="text-muted">{item.needs}</span>
             <span className="text-xs text-muted">{item.who}</span>
+            <span className={`text-xs ${item.status === "experimental" ? "text-warn" : "text-muted"}`}>
+              {DESIGN_STATUS_LABEL[item.status]}
+            </span>
           </button>
         );
       })}
@@ -296,6 +329,17 @@ function InWall() {
           electrician installs it, with the circuit off at the breaker. Build and install it at your own
           risk.
         </p>
+        <ul className="flex list-disc flex-col gap-1 pl-5 text-muted marker:text-danger">
+          <li>I am not an electrical engineer. This is a hobby design.</li>
+          <li>
+            Rules and wire colors differ by country. In some countries only a licensed electrician may change
+            fixed wiring.
+          </li>
+          <li>An uncertified device in your home&apos;s wiring may affect your home insurance.</li>
+        </ul>
+        <a href="/safety" className="self-start font-medium text-danger underline underline-offset-2">
+          Read the Safety notice
+        </a>
       </div>
       <Sub
         id="in-wall"
@@ -348,7 +392,10 @@ function InWall() {
           )}
         </div>
       </Sub>
-      <Sub title="What changes in the wall">
+      <Sub
+        title="What changes in the wall"
+        lead="Colors in these drawings are for telling the wires apart, not the colors in your wall."
+      >
         <div className="grid gap-3">
           <figure className="flex flex-col gap-1.5">
             <Picture pic={WALL_BEFORE} />
@@ -395,7 +442,15 @@ function InWall() {
       <Sub
         id="install"
         title="Install it"
-        lead="In this order. Steps 2 to 9 are the electrician's; show them this page."
+        lead={
+          <>
+            In this order. Steps 2 to 9 are the electrician&apos;s; show them this page, and the{" "}
+            <a href="/safety" className="text-danger underline underline-offset-2">
+              Safety notice
+            </a>
+            . Mains voltage can kill.
+          </>
+        }
       >
         <Steps>
           {WALL_INSTALL.map((step, i) => (
@@ -438,6 +493,10 @@ function SimpleBuild({ level, onLevel }: { level: LevelId; onLevel: (id: LevelId
   return (
     <>
       <LevelPicker level={level} onChoose={onLevel} />
+      <StatusNote
+        status={SIMPLE_LEVELS.find((l) => l.id === level)?.status ?? "experimental"}
+        mains={level === "wall"}
+      />
       {level === "try" ? <TryIt /> : level === "box" ? <ButtonBox /> : <InWall />}
     </>
   );

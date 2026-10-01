@@ -17,6 +17,7 @@ import { defaultLimits, isAdminEmail, signInMethodLabels } from "@/lib/account-c
 import { listAccounts, PAGE_SIZE, SORTS, type SortKey } from "@/lib/admin";
 import { requireAdmin } from "@/lib/auth";
 import { currentSignupMode } from "@/lib/console-settings";
+import { acceptedVersions, requiredDocuments } from "@/lib/terms";
 import { INVITE_STATES, inviteState, listInvites, type InviteState } from "@/lib/signup";
 import { listPendingEntries } from "@/lib/waitlist";
 
@@ -86,6 +87,9 @@ export default async function AdminAccountsPage({
     currentSignupMode(),
   ]);
   const waitlistOn = mode === "invite" || mode === "waitlist";
+  // Which Safety and Terms versions each account accepted (docs/specs/terms-and-safety.md §2.4).
+  const accepted = await acceptedVersions(accounts.rows.map((a) => a.id));
+  const required = requiredDocuments();
   const defaults = defaultLimits();
 
   const header = (key: SortKey, label: string) => (
@@ -165,6 +169,7 @@ export default async function AdminAccountsPage({
                 {header("bridges", "Bridges")}
                 {header("seen", "Last board seen")}
                 {header("status", "Status")}
+                <th className="px-2 py-2 text-left font-medium">Accepted</th>
                 <th className="px-2 py-2" />
               </tr>
             </thead>
@@ -197,6 +202,17 @@ export default async function AdminAccountsPage({
                           </p>
                         ) : null}
                       </td>
+                      <td className="px-2 py-2 text-xs">
+                        {required.map((d) => {
+                          const version = accepted.get(a.id)?.[d.document];
+                          const label = d.document === "safety" ? "Safety" : "Terms";
+                          return (
+                            <p key={d.document} className={version === d.version ? "text-muted" : "text-warn"}>
+                              {label}: {version ?? "not yet"}
+                            </p>
+                          );
+                        })}
+                      </td>
                       <td className="whitespace-nowrap px-2 py-2 text-xs">
                         {a.id === admin.id ? <span className="mr-2 text-muted">you</span> : null}
                         {a.id !== admin.id && isAdmin ? <span className="mr-2 text-muted">admin</span> : null}
@@ -212,7 +228,7 @@ export default async function AdminAccountsPage({
                     </tr>
                     {open ? (
                       <tr className="bg-cream">
-                        <td colSpan={9} className="px-2 pb-4">
+                        <td colSpan={10} className="px-2 pb-4">
                           <ManagePanel account={a} isAdmin={isAdmin} isSelf={a.id === admin.id} defaults={defaults} />
                         </td>
                       </tr>

@@ -2,6 +2,7 @@
 
 import { useActionState, type MouseEvent } from "react";
 import { joinWaitlistAction, type SimpleState } from "@/app/login/actions";
+import { AcceptanceLine } from "@/app/acceptance-line";
 import { Turnstile, useTurnstileOnDemand } from "@/app/login/login-form";
 
 const FORM_ID = "waitlist";
@@ -12,10 +13,12 @@ export function LandingWaitlistForm({
   turnstileSiteKey,
   inputClassName,
   buttonClassName,
+  termsHref,
 }: {
   turnstileSiteKey: string | null;
   inputClassName: string;
   buttonClassName: string;
+  termsHref: string | null;
 }) {
   const [state, action, pending] = useActionState<SimpleState, FormData>(joinWaitlistAction, undefined);
   const check = useTurnstileOnDemand(turnstileSiteKey, "Join the waitlist");
@@ -58,6 +61,7 @@ export function LandingWaitlistForm({
           {check.hint ?? state?.error}
         </p>
       ) : null}
+      <AcceptanceLine termsHref={termsHref} />
     </form>
   );
 }

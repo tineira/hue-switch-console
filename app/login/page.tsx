@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { AcceptanceLine } from "@/app/acceptance-line";
 import { signInWithProvider } from "@/app/login/actions";
 import { CodeForm, PasswordForm } from "@/app/login/login-form";
 import { ThemePicker } from "@/app/theme-picker";
@@ -15,6 +16,7 @@ import { ensureSchema } from "@/lib/ensure-schema";
 import { isDbConfigured } from "@/lib/env";
 import { safeReturnPath } from "@/lib/return-path";
 import { INVITE_COOKIE } from "@/lib/signup";
+import { hasTerms } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +71,8 @@ export default async function LoginPage({
   const next = safeReturnPath(typeof params.next === "string" ? params.next : null);
   // The console's own /privacy page unless the operator links elsewhere.
   const privacy = process.env.PRIVACY_URL || "/privacy";
-  const terms = process.env.TERMS_URL;
+  // The hosted text at /terms, or the operator's TERMS_URL (which /terms redirects to).
+  const terms = hasTerms() ? "/terms" : null;
   // New people join the waitlist on the home page (app/landing/waitlist-form.tsx).
   const waitlistOpen = isDbConfigured() && (mode === "invite" || mode === "waitlist") && !hasInvite;
   const joinWaitlist = (
@@ -158,6 +161,7 @@ export default async function LoginPage({
         </div>
       )}
 
+      {isDbConfigured() ? <AcceptanceLine termsHref={terms} /> : null}
       {privacy || terms ? (
         <p className="flex justify-center gap-4 text-xs text-muted">
           {privacy ? (

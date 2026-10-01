@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SPONSOR_URL } from "@/lib/credits";
+import { hasTerms } from "@/lib/terms";
 
 const PROFILE_LINK = "rounded p-1 text-muted transition-colors hover:text-foreground";
 const TEXT_LINK = "hover:text-foreground hover:underline";
@@ -61,6 +62,18 @@ export function SiteFooter() {
         <span aria-hidden="true">·</span>
         <Link href="/privacy" className={TEXT_LINK}>
           Privacy
+        </Link>
+        {hasTerms() ? (
+          <>
+            <span aria-hidden="true">·</span>
+            <Link href="/terms" className={TEXT_LINK}>
+              Terms
+            </Link>
+          </>
+        ) : null}
+        <span aria-hidden="true">·</span>
+        <Link href="/safety" className={TEXT_LINK}>
+          Safety
         </Link>
         <span aria-hidden="true">·</span>
         {/* AGPL-3.0 §13: a hosted copy must offer its users the source. */}
