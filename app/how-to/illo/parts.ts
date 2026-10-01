@@ -68,6 +68,29 @@ export function solder(x: number, y: number, z: number, r = 0.95): THREE.Mesh {
 // ---------------------------------------------------------------------------- small parts
 
 /** A slim USB-C cable: metal tongue at z 0..6.6 (the part that goes in), overmould, then the cable. */
+/** A stadium outline: straight sides 2·hx long, ends of radius r, centred on the origin. */
+function roundedRect(hx: number, r: number): THREE.Shape {
+  const sh = new THREE.Shape();
+  sh.moveTo(-hx, -r);
+  sh.lineTo(hx, -r);
+  sh.absarc(hx, 0, r, -Math.PI / 2, Math.PI / 2, false);
+  sh.lineTo(-hx, r);
+  sh.absarc(-hx, 0, r, Math.PI / 2, Math.PI * 1.5, false);
+  return sh;
+}
+
+/** A closed outline at depth z, as line-segment pairs for `userData.lines` (render.ts). */
+function ring(shape: THREE.Shape, z: number): THREE.BufferGeometry {
+  const pts = shape.getPoints(24);
+  const seg: number[] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    seg.push(a.x, a.y, z, b.x, b.y, z);
+  }
+  return new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(seg, 3));
+}
+
 export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE.Group {
   const g = new THREE.Group();
   const shell = new THREE.Shape();
@@ -87,7 +110,12 @@ export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE
   body.lineTo(-HX, R);
   body.absarc(-HX, 0, R, Math.PI / 2, Math.PI * 1.5, false);
   const over = new THREE.ExtrudeGeometry(body, { depth: 13, bevelEnabled: true, bevelSize: 0.4, bevelThickness: 0.4, bevelSegments: 2, curveSegments: 16 });
-  g.add(at(mesh(over, undefined, true), 0, 0, 6.6));
+  const overmold = at(mesh(over, undefined, true), 0, 0, 6.6);
+  // Smooth, so no crease lines; but where the plug meets the XIAO its silhouette falls behind
+  // the board, and nothing would separate the two. Draw the ring where the end bevel meets the
+  // sides (the outline grown by the bevel, at z = 0).
+  overmold.userData.lines = ring(roundedRect(HX, R + 0.4), 0);
+  g.add(overmold);
   g.add(wire([[0, 0, 19.5], [0, 0, 26], ...bend], "switched", 1.2));
   return g;
 }

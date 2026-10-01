@@ -177,6 +177,13 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
       extra.push(eg);
       m.add(new THREE.LineSegments(eg, edge));
     }
+    // Extra lines a part asks for, e.g. on a smooth part (no crease lines) where its outline
+    // would be hidden (parts.ts usbCable).
+    const lines = m.userData.lines as THREE.BufferGeometry | undefined;
+    if (lines) {
+      extra.push(lines);
+      m.add(new THREE.LineSegments(lines, edge));
+    }
   }
   world.updateMatrixWorld(true);
 
