@@ -99,12 +99,12 @@ Not affected.
 
 ### Simple (`hue-simple-switch`)
 
-- [ ] Parse `flip` in `channels[]` (`recipes.h`); unknown values = set
-- [ ] Toggle-mode state machine (`channels.h`): §2.4 rules 1–3 and 6 (prime on a `flip` change)
-- [ ] Worker queue (`hue_worker.h`): §2.4 rules 4–5 for toggle-mode channels
-- [ ] Host tests for the state machine and the queue rules
-- [ ] `FIRMWARE_VERSION` 0.8.0
-- [ ] `CHANGELOG.md` entry (user-facing wording)
+- [x] Parse `flip` in `channels[]` (`recipes.h`); unknown values = set
+- [x] Toggle-mode state machine (`channels.h`): §2.4 rules 1–3 and 6 (prime on a `flip` change)
+- [x] Worker queue (`hue_worker.h`): §2.4 rules 4–5 for toggle-mode channels
+- [ ] Host tests for the state machine and the queue rules (written; they first run in the firmware pull request's CI)
+- [x] `FIRMWARE_VERSION` 0.8.0
+- [x] `CHANGELOG.md` entry (user-facing wording)
 - [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.8.0
 - [ ] Tested on a board by the user: single flips both ways, quick flick both ways with and without scenes, two boards on one room, power cycle with lights on
 
