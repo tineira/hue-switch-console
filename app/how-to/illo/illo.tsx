@@ -58,6 +58,47 @@ export function renderOnce(
   return job;
 }
 
+/**
+ * A hand drawing laid over a still whose scene reports a `press` point: the fingertip on that
+ * point, at life size (the drawing is 149 mm wide, its finger 17 mm). Two masks of the same
+ * drawing (public/illo, made from a line drawing the maintainer supplied): its lines, painted in
+ * the foreground colour, and the inside of the hand, painted in the page colour so the hand hides
+ * what is behind it. Both follow the theme.
+ */
+const PRESS_HAND = {
+  lines: "/illo/hand-press-lines.png",
+  fill: "/illo/hand-press-fill.png",
+  aspect: 560 / 880,
+  widthMm: 149,
+  tip: [0.423, 0.83] as const,
+};
+
+function PressHand({ still }: { still: Still }) {
+  const at = still.points.press;
+  if (!at) return null;
+  const w = PRESS_HAND.widthMm * still.mmPx;
+  const h = w / PRESS_HAND.aspect;
+  const box = {
+    left: `${((at[0] - PRESS_HAND.tip[0] * w) / still.w) * 100}%`,
+    top: `${((at[1] - PRESS_HAND.tip[1] * h) / still.h) * 100}%`,
+    width: `${(w / still.w) * 100}%`,
+    height: `${(h / still.h) * 100}%`,
+  };
+  const mask = (src: string) => ({
+    ...box,
+    WebkitMaskImage: `url(${src})`,
+    maskImage: `url(${src})`,
+    WebkitMaskSize: "100% 100%",
+    maskSize: "100% 100%",
+  });
+  return (
+    <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
+      <div className="absolute bg-background" style={mask(PRESS_HAND.fill)} />
+      <div className="absolute bg-foreground" style={mask(PRESS_HAND.lines)} />
+    </div>
+  );
+}
+
 function subscribeNothing() {
   return () => {};
 }
@@ -111,6 +152,7 @@ export function Illo({ id, alt }: { id: IlloId; alt: string }) {
         <div className="illo-in absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element -- a data URL rendered in the browser */}
           <img src={still.src} alt="" className="absolute inset-0 h-full w-full" />
+          <PressHand still={still} />
           <svg
             viewBox={`0 0 ${still.w} ${still.h}`}
             aria-hidden="true"
