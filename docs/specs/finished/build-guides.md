@@ -159,6 +159,7 @@ The web page is a **"can I use this?"** summary plus the **order of installation
 - [x] Landing links to `#build` / `#assemble` (3.6)
 - [x] `docs/changelog.md` entry
 - [x] Deployed; checked on production at phone and desktop width, both themes
+- [ ] Wall pictures: earth wires get the yellow stripe on green (`earth` tone in `app/how-to/illo/`), so they read as protective earth and not as a plain green wire
 
 ### Round (`hue-round-switch`)
 

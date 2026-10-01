@@ -324,6 +324,16 @@ function InWall() {
                 <span className="flex flex-col gap-0.5">
                   <span className="font-semibold">{r.need}</span>
                   <span className="text-muted">{r.why}</span>
+                  {r.more ? (
+                    <a
+                      href={`${HARDWARE_README}${r.more.anchor}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="self-start text-filament underline underline-offset-2"
+                    >
+                      {r.more.label} ↗
+                    </a>
+                  ) : null}
                 </span>
               </label>
             </li>

@@ -388,7 +388,8 @@ export const RESISTORS: { lead: string; body: string }[] = [
   },
 ];
 
-export const WALL_REQUIREMENTS: { need: string; why: string }[] = [
+/** `more`: an anchor in the hardware README with the detail. */
+export const WALL_REQUIREMENTS: { need: string; why: string; more?: { label: string; anchor: string } }[] = [
   {
     need: "A neutral wire in the box",
     why: "The power supply needs live and neutral. Many switch boxes (in Chile, and in older homes in the US and Europe) only have the two live wires. Without a neutral this board can't be used; there is no safe no-neutral version.",
@@ -396,6 +397,7 @@ export const WALL_REQUIREMENTS: { need: string; why: string }[] = [
   {
     need: "Room behind the switch",
     why: "The enclosure is 46 × 56 mm and 26 mm tall. EU round boxes need the deep (60 mm) kind, UK boxes the 47 mm kind, most US single-gang boxes fit. In Chilean rectangular boxes it fits beside a one-module switch, not behind it. Measure yours.",
+    more: { label: "Box sizes by country", anchor: "#does-it-fit-my-box" },
   },
   {
     need: "A plastic box",
