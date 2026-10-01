@@ -227,17 +227,19 @@ function StatusTiles({
   selected,
   onSelect,
   version,
+  cols = "grid-cols-[repeat(auto-fill,minmax(124px,1fr))]",
 }: {
-  title: string;
+  title?: string;
   items: Status[];
   selected: string;
   onSelect: (key: string) => void;
   version: string | null;
+  cols?: string;
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className={GROUP_LABEL}>{title}</p>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(124px,1fr))] gap-2">
+      {title ? <p className={GROUP_LABEL}>{title}</p> : null}
+      <div className={`grid ${cols} gap-2`}>
         {items.map((item) => {
           const on = item.key === selected;
           const tag = TAG[item.group];
@@ -335,20 +337,34 @@ function StatusSection({ product, version }: { product: Product; version: string
         </p>
       </div>
 
-      <StatusTiles
-        title="Setting up, in order"
-        items={setupItems}
-        selected={sel.key}
-        onSelect={setPick}
-        version={version}
-      />
-      <StatusTiles
-        title="Something's wrong"
-        items={badItems}
-        selected={sel.key}
-        onSelect={setPick}
-        version={version}
-      />
+      {round ? (
+        <>
+          <StatusTiles
+            title="Setting up, in order"
+            items={setupItems}
+            selected={sel.key}
+            onSelect={setPick}
+            version={version}
+          />
+          <StatusTiles
+            title="Something's wrong"
+            items={badItems}
+            selected={sel.key}
+            onSelect={setPick}
+            version={version}
+          />
+        </>
+      ) : (
+        // Six LED states: one grid, 3 + 3 (2 columns on a narrow phone). Each tile carries
+        // its own tag, so no group headings.
+        <StatusTiles
+          items={[...setupItems, ...badItems]}
+          selected={sel.key}
+          onSelect={setPick}
+          version={version}
+          cols="grid-cols-2 min-[420px]:grid-cols-3"
+        />
+      )}
 
       {/* Every state's details are in the HTML, so search finds them; only the selected
           one is shown. */}
