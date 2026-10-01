@@ -10,17 +10,17 @@ export function NavLinks() {
     {
       href: "/switches",
       label: "Switches",
-      active: path === "/" || path === "/switches" || path.startsWith("/switches/"),
+      // Setup is part of Switches: reached from its header, a switch's card, How-to.
+      active:
+        path === "/" ||
+        path === "/switches" ||
+        path.startsWith("/switches/") ||
+        path.startsWith("/setup"),
     },
     {
       href: "/lights",
       label: "Lights",
       active: path.startsWith("/lights"),
-    },
-    {
-      href: "/setup",
-      label: "Setup",
-      active: path.startsWith("/setup"),
     },
     {
       href: "/how-to",

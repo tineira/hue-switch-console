@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
 
-**Status:** done (2026-09-26; checked on production by the user). Revised on 2026-09-26 after the first deploy: the per-Bridge overview is gone and Switches opens straight on the editor (§12, decision 5).
+**Status:** done (2026-09-26; checked on production by the user). Revised on 2026-09-26 after the first deploy: the per-Bridge overview is gone and Switches opens straight on the editor (§12, decision 5). Revised on 2026-10-01: Setup left the nav and became part of Switches (§4, §5, §6). A tab for a task you do on day one was too much weight, and the header button "Add a switch" read wrong to someone trying to fix a switch.
 
 ## 1. What and why
 
@@ -15,7 +15,7 @@ Afterwards the user has three places, each named after what they work with:
 
 - **Switches**: the editor for every switch in the account. Tabs are grouped in one section per Bridge, each with its health (last seen, update available, stale targets). Each switch has its own URL.
 - **Lights**: read-only topology and which switch gestures act on each room, zone and light, in one section per Bridge. A map: rooms and their lights on one side, zones on the other, connectors between them (§8).
-- **Setup**: the old Devices USB flow, renamed. It is reachable from the nav and from wherever a switch needs it (add a switch, update firmware).
+- **Setup**: the old Devices USB flow, renamed. It is part of Switches, not a nav tab, and is reachable from wherever a switch needs it (§6, "Ways in").
 
 The Bridge stays the configuration context (`docs/definitions.md`, "Per Bridge"): a switch uses only its own Bridge's topology. The Bridge is a section on a page, not a page of its own.
 
@@ -46,16 +46,16 @@ A MAC identifies a switch within an account, so the URL does not need the Bridge
 
 ## 4. Nav
 
-**Top nav** (`app/nav-links.tsx`): **Switches · Lights · Setup · How-to**. API keys, Changelog, and later Account and Admin (`docs/specs/finished/multi-user-accounts.md`) stay in the account menu.
+**Top nav** (`app/nav-links.tsx`): **Switches · Lights · How-to**. API keys, Changelog, and later Account and Admin (`docs/specs/finished/multi-user-accounts.md`) stay in the account menu.
 
-- Active state: Switches is active on `/`, `/switches` and `/switches/*`, Lights on `/lights`, and Setup on `/setup`.
+- Active state: Switches is active on `/`, `/switches`, `/switches/*` and `/setup`, Lights on `/lights`.
 - The "Hue switch console" wordmark links to `/`, which redirects to `/switches`.
 
 ## 5. Switches (`/switches/[mac]`)
 
 The v2 editor (`app/switches/workspace.tsx` and the editors in `app/switches/`), across every Bridge of the account.
 
-**Header:** `h1` "Switches" and, on the right, a primary button **Add a switch** linking to `/setup`.
+**Header:** `h1` "Switches" and, on the right, a primary button **Set up over USB** linking to `/setup`. One label covers adding, fixing and reinstalling a switch, and it no longer clashes with **Add a switch** in the Simple editor (an input on a pin).
 
 **One section per Bridge**, most recently updated first. Each section has:
 
@@ -80,7 +80,8 @@ A switch whose Bridge row is missing is not shown. It can't be configured withou
 **The selected switch's card** follows the sections, unchanged from v2 except as listed here.
 - Its title is an `h2`.
 - `Update to x.y.z` links to `/setup?mac=<mac>`.
-- Under the meta line, a not-seen switch adds a warn line: "Not seen for 5 h. Saved changes reach it when it checks in again."
+- Under the meta line, a not-seen switch adds a warn line: "Offline for 5 h. Changes and updates reach it when it checks in again. If it's stuck, fix it over USB." The last words link to `/setup?mac=<mac>`.
+- The details (ⓘ) have a **USB** row: **Fix or reinstall over USB**, linking to `/setup?mac=<mac>`. Every switch has a way into Setup, not only one with an update.
 - Stale assignments keep their warning and **Clear stale** above the save bar. A Simple on old firmware keeps its banner inside the card.
 - The document `<title>` is the switch name.
 
@@ -104,7 +105,8 @@ A switch whose Bridge row is missing is not shown. It can't be configured withou
 
 The old `app/devices/` moves to `app/setup/` (`SetupPanel`). Its behavior is unchanged (`docs/specs/finished/devices.md` stays the reference for the flow), apart from:
 
-- **Name.** Nav label "Setup". `h1` "Setup". Intro: "Plug a switch into this computer over USB to install or update firmware, save Wi-Fi, and link it to this console. Use Chrome or Edge." `<title>` "Setup".
+- **Name.** No nav tab; Switches stays active. A **← Switches** link above the `h1` "Set up over USB". Intro: "Plug a switch into this computer over USB to add it, fix it, or install firmware, save Wi-Fi, and link it to this console. Use Chrome or Edge." `<title>` "Set up over USB". The URL stays `/setup`, outside `app/switches/layout.tsx`, which loads every Bridge and guards the editor's drafts that Setup does not need.
+- **Ways in.** The Switches header button; the empty state's **Go to Setup**; on a switch, **Update to x.y.z** when it needs USB, the offline line and **Fix or reinstall over USB** in its details (all `?mac=`); the Lights empty states; How-to steps and status fixes (**Open Setup**); the API keys page.
 - **`?mac=<mac>` (optional).** When the account has that switch, a line above Detect reads "Updating **{name}**. Plug it in over USB and press Detect." After Detect, if the board reports a different MAC, a warn line reads "This is {other name or MAC}, not {name}." It only informs and never blocks.
 - **Back to the switch.** When the console knows the board, the checklist links to `/switches/<mac>`: "Edit its pages: Open in Switches". Before, it linked to `/`.
 - `GET /api/switches/{mac}` also returns `label`, for the name in that warning.

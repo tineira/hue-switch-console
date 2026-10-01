@@ -851,7 +851,7 @@ export function SwitchesWorkspace({
           href="/setup"
           className="rounded-md bg-filament px-3 py-1.5 text-sm font-medium text-filament-ink"
         >
-          Add a switch
+          Set up over USB
         </Link>
       </section>
 
@@ -1037,7 +1037,14 @@ export function SwitchesWorkspace({
             {notSeenMin(selected) !== null ? (
               <p className="text-sm text-warn">
                 Offline for {notSeenText(notSeenMin(selected) as number)}. Changes and
-                updates reach it when it checks in again.
+                updates reach it when it checks in again. If it&apos;s stuck,{" "}
+                <Link
+                  href={`/setup?mac=${selected.mac}`}
+                  className="font-medium underline underline-offset-2"
+                >
+                  fix it over USB
+                </Link>
+                .
               </p>
             ) : null}
             {updateOpen && updateFor(selected) ? (
@@ -1093,6 +1100,15 @@ export function SwitchesWorkspace({
                     className="text-filament underline underline-offset-2"
                   >
                     {round ? "What the screen shows" : "What the LED shows"}
+                  </Link>
+                </dd>
+                <dt className="text-muted">USB</dt>
+                <dd>
+                  <Link
+                    href={`/setup?mac=${selected.mac}`}
+                    className="text-filament underline underline-offset-2"
+                  >
+                    Fix or reinstall over USB
                   </Link>
                 </dd>
                 <dt className="text-muted">Console</dt>

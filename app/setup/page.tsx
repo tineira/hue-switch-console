@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { SetupPanel } from "@/app/setup/setup-panel";
 import { Shell } from "@/app/shell";
 import { configuredDeviceConsoleUrl } from "@/lib/account-config";
@@ -9,7 +11,7 @@ import { formatMac, normalizeMac } from "@/lib/mac";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Setup",
+  title: "Set up over USB",
 };
 
 export default async function SetupPage({
@@ -30,10 +32,14 @@ export default async function SetupPage({
   return (
     <Shell email={user.email} userId={user.id}>
       <section className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Setup</h1>
+        <Link href="/switches" className="text-sm text-muted hover:text-filament">
+          ← Switches
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight">Set up over USB</h1>
         <p className="max-w-2xl text-sm text-muted">
-          Plug a switch into this computer over USB to install or update
-          firmware, save Wi-Fi, and link it to this console. Use Chrome or Edge.
+          Plug a switch into this computer over USB to add it, fix it, or
+          install firmware, save Wi-Fi, and link it to this console. Use
+          Chrome or Edge.
         </p>
       </section>
       <SetupPanel
