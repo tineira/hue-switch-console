@@ -1619,7 +1619,7 @@ export function SetupPanel({
   const pairing = busy && status === PAIR_PROMPT;
   const bridgeBody = (
     <>
-      <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3">
           <ButtonSteps
             items={[
@@ -1648,7 +1648,9 @@ export function SetupPanel({
           ) : null}
           {!actions?.pair ? <p className="text-muted">Save Wi-Fi first: the board finds the Bridge over Wi-Fi.</p> : null}
         </div>
-        <Illo id="hue-bridge" alt="A Hue Bridge seen from the front: 1 the round link button in the middle of the top, pressed once." />
+        <div className="w-full max-w-lg">
+          <Illo id="hue-bridge" alt="A Hue Bridge seen from the front, a finger pressing 1, the round link button in the middle of its top." />
+        </div>
       </div>
       {showsNext("bridge")}
       {feedback}

@@ -27,7 +27,8 @@ export type Tone =
   | "gold"
   | "tin"
   | "lit"
-  | "screen";
+  | "screen"
+  | "skin";
 
 const MAT = new THREE.MeshBasicMaterial();
 
@@ -194,13 +195,44 @@ export function hueBridge(): THREE.Group {
   top.scale.set(0.96, 1, 0.96);
   g.add(at(top, 0, h - 2.5, 0));
   // The link button: a shallow disc standing proud of the top, in a thin ring.
-  g.add(at(mesh(cyl(21, 1.6, 64), "soft", true), 0, h + 0.8, 0));
+  g.add(at(mesh(cyl(21, 1.6, 64), "hot", true), 0, h + 0.8, 0));
   g.add(at(mesh(cyl(23, 0.3, 64), undefined, true), 0, h + 0.15, 0));
   for (const x of [-8, 0, 8]) g.add(at(mesh(cyl(1.3, 0.4, 20), "ok", true), x, h + 0.2, 34));
   // Network and power sockets on the back, the network cable lying on the table.
   g.add(at(mesh(box(16, 13, 2)), -10, 9, -w / 2 - 1));
   g.add(at(mesh(cyl(3, 2, 24).rotateX(Math.PI / 2), undefined, true), 18, 9, -w / 2 - 1));
   g.add(wire([[-10, 9, -w / 2 - 2], [-10, 7, -w / 2 - 14], [-18, 2, -w / 2 - 26], [-40, 1.5, -w / 2 - 34], [-90, 1.5, -w / 2 - 38]], "neutral", 2.4));
+  return g;
+}
+
+/**
+ * A finger pressing down, its tip at the origin: the end joint rises steeply, the next one leans
+ * back toward -z, and the back of the hand goes on out of the picture. For a press cue that reads
+ * at any size, instead of an arrow.
+ */
+export function pressingFinger(): THREE.Group {
+  const g = new THREE.Group();
+  const R = 7.5;
+  // A finger segment of radius r from a to b, rounded at both ends.
+  const segment = (a: THREE.Vector3, b: THREE.Vector3, r: number) => {
+    const len = a.distanceTo(b);
+    const m = mesh(new THREE.CapsuleGeometry(r, len, 8, 24), "skin", true);
+    m.position.copy(a).add(b).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+    return m;
+  };
+  const tip = new THREE.Vector3(0, R, 0);
+  const knuckle1 = new THREE.Vector3(6, 34, -12);
+  const knuckle2 = new THREE.Vector3(14, 58, -42);
+  const wrist = new THREE.Vector3(30, 80, -110);
+  g.add(segment(tip, knuckle1, R));
+  g.add(segment(knuckle1, knuckle2, R + 0.6));
+  g.add(segment(knuckle2, wrist, R + 1.2));
+  // The back of the hand beside the finger, toward the wrist.
+  const palm = mesh(new THREE.CapsuleGeometry(16, 60, 8, 24), "skin", true);
+  palm.position.set(34, 74, -88);
+  palm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wrist.clone().sub(knuckle2).normalize());
+  g.add(palm);
   return g;
 }
 

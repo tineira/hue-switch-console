@@ -120,7 +120,7 @@ export function setupSteps(product: Product): SetupStep[] {
       note: round
         ? "Nothing happens? Click **Pair with Bridge** on Setup and press the Bridge's button again."
         : "Missed it? Click **Pair with Bridge** on Setup, or hold **BOOT** on the board for about 3 seconds.",
-      illo: { id: "hue-bridge", alt: "A Hue Bridge seen from the front: 1 the round link button in the middle of the top, pressed once." },
+      illo: { id: "hue-bridge", alt: "A Hue Bridge seen from the front, a finger pressing 1, the round link button in the middle of its top." },
       shows: round
         ? { caption: "Blank disc: needs a page", visual: { face: "empty" } }
         : { caption: "Four blinks: needs a recipe", visual: { led: "burst-4" } },
