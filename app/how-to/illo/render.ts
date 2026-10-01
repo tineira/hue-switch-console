@@ -52,6 +52,8 @@ const TONES: Record<string, string> = {
   live: "#8a5a2b",
   neutral: "#2f6fd6",
   earth: "#4fa84a",
+  // The yellow of a green/yellow protective earth.
+  earthStripe: "#e8c43a",
   switched: "#2b2f36",
   // Low-voltage switch wires in the wall: a colour no mains wire has.
   signal: "#7c5cff",
@@ -116,6 +118,33 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
     }
     return m;
   };
+  // Earth is green/yellow. Real earth wire is striped lengthwise, which blurs to olive at
+  // this scale, so the stripes wind round the wire: one green and one yellow band every 6 mm.
+  // A tube's u runs along it and v round it; each wire gets its own repeat for its length.
+  const earthTex = (() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 16;
+    const g = c.getContext("2d")!;
+    for (let x = 0; x < 16; x++)
+      for (let y = 0; y < 16; y++) {
+        g.fillStyle = colour((x + y) % 16 < 8 ? "earth" : "earthStripe");
+        g.fillRect(x, y, 1, 1);
+      }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  })();
+  const earths: THREE.MeshBasicMaterial[] = [];
+  const earthFor = (m: THREE.Mesh) => {
+    const path = (m.geometry as THREE.TubeGeometry).parameters?.path;
+    const map = earthTex.clone();
+    map.repeat.set(path ? path.getLength() / 6 : 1, 1);
+    map.needsUpdate = true;
+    const mat = new THREE.MeshBasicMaterial({ map, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+    earths.push(mat);
+    return mat;
+  };
   const edge = new THREE.LineBasicMaterial({ color: fg });
   const outline = new THREE.ShaderMaterial({
     side: THREE.BackSide,
@@ -141,7 +170,7 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
       m.material = new THREE.MeshBasicMaterial({ map: tex });
       continue;
     }
-    m.material = fillFor(m.userData.tone ?? "--background");
+    m.material = m.userData.tone === "earth" ? earthFor(m) : fillFor(m.userData.tone ?? "--background");
     m.add(new THREE.Mesh(m.geometry, outline));
     if (!m.userData.smooth) {
       const eg = new THREE.EdgesGeometry(m.geometry, 20);
@@ -226,6 +255,11 @@ export function renderStill(def: SceneDef, w: number, maxH: number): Still {
   disposeTree(def.root);
   extra.forEach((g) => g.dispose());
   fills.forEach((m) => m.dispose());
+  earths.forEach((m) => {
+    m.map?.dispose();
+    m.dispose();
+  });
+  earthTex.dispose();
   edge.dispose();
   outline.dispose();
   renderer.dispose();
