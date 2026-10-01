@@ -43,9 +43,10 @@ No endpoint or payload field changes. The meaning of two existing fields widens:
 
 - **Storage stays UTF-8.** Names are kept as UTF-8 in RAM and in the NVS JSON, so the stored JSON stays valid. Conversion to font bytes happens only at draw time.
 - **Ingest:** `asciiFold` becomes `circleFold`. It keeps ASCII and the circle set as UTF-8 and folds or drops the rest as today. `asciiFoldClip` becomes `circleFoldClip` and clips by characters, never splitting a UTF-8 sequence. The limits stay at 12 characters for a page and 24 for a scene.
-- **Buffers:** a circle-set character is 2 bytes in UTF-8, so name buffers double. `PageDef.name` goes from 13 to 25 bytes. Scene `name` in `recipes.h`, `sceneName` in `hue_job.h` and `gSceneName` in `ui.h` go from 25 to 49 bytes. That's at most about 72 bytes more RAM for pages, plus the same per stored scene. The pages blob stays well under the 4000-byte `putString` limit. Recipes already chunk to fit.
+- **Buffers:** a circle-set character is 2 bytes in UTF-8, so name buffers double. `PageDef.name` goes from 13 to 25 bytes. Scene `name` in `recipes.h`, `sceneName` in `hue_job.h` and `gSceneName` in `ui.h` go from 25 to 49 bytes. Measured on 0.6.5: global RAM grows by about 4.2 KB (16 recipes × 8 scene slots × 24 bytes, plus each copy of the job struct) and flash by 676 bytes. The pages blob stays well under the 4000-byte `putString` limit. Recipes already chunk to fit, but the worst case (12 recipes of 8 scenes with 24 two-byte characters each, about 1,060 bytes per recipe) now fills the 4 stored parts exactly; more pages, events or scenes would need a fifth part.
 - **Draw:** `displayTextCenter` and `displayTextEllipsis` convert UTF-8 to single CP437 bytes into a local buffer first. Measuring and ellipsis then work as today, with one byte per character.
 - **Old NVS:** names saved by older firmware are ASCII and stay valid. They show folded until the console pushes the pages again. No migration.
+- × and ÷ are dropped (they used to fold to `x`), matching the console.
 - Host tests: `circleFold` keeps `Niños`, `Canción` and `¿Qué?`, folds `Ángel` → `Angel` and `Łazienka` → `Lazienka`, and drops emoji. Clipping never cuts `ñ` in half. The UTF-8 → CP437 conversion maps every circle-set entry.
 
 ## 5. Console design
@@ -73,9 +74,9 @@ No endpoint or payload field changes. The meaning of two existing fields widens:
 
 ### Round (`hue-round-switch`)
 
-- [ ] `circleFold`/`circleFoldClip`, bigger name buffers, UTF-8 → CP437 at draw time
-- [ ] Host tests in `tests/host/test_json.cpp`
-- [ ] `FIRMWARE_VERSION` bumped; `CHANGELOG.md` entry (user-facing: names keep ñ and accents)
+- [x] `circleFold`/`circleFoldClip`, bigger name buffers, UTF-8 → CP437 at draw time
+- [ ] Host tests in `tests/host/test_json.cpp` (written; must pass in CI on the pull request)
+- [x] `FIRMWARE_VERSION` bumped to 0.6.5; `CHANGELOG.md` entry (user-facing: names keep ñ and accents)
 - [ ] Release uploaded; `/firmware/round/manifest.json` shows the new version
 - [ ] Tested on a board by the user: a page named `Niños` and a scene with an accent are readable at both text sizes
 

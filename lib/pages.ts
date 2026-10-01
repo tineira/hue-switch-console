@@ -73,6 +73,8 @@ const CIRCLE_FOLD_EXTRA: Record<string, string> = {
   Ø: "O", ø: "o", Ð: "D", ð: "d", Þ: "T", þ: "t", Đ: "D", đ: "d", Ħ: "H", ħ: "h",
   ı: "i", Ĳ: "I", ĳ: "i", ĸ: "k", Ł: "L", ł: "l", Ŋ: "N", ŋ: "n", Œ: "O", œ: "o",
   Ŧ: "T", ŧ: "t", ſ: "s",
+  // Compatibility-only decompositions that NFD leaves alone.
+  Ŀ: "L", ŀ: "l", ŉ: "n",
 };
 
 /**

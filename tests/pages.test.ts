@@ -125,6 +125,7 @@ describe("page names", () => {
     expect(normalizePageName("¿Qué?")).toBe("¿Qué?");
     expect(normalizePageName("Ángel")).toBe("Angel");
     expect(normalizePageName("Łazienka")).toBe("Lazienka");
+    expect(normalizePageName("Ŀŀŉ")).toBe("Lln");
     expect(normalizePageName("Málaga")).toBe("Málaga");
     expect(normalizePageName("  Living room upstairs ")).toBe("Living room");
     expect(normalizePageName("Kitchen 🍳")).toBe("Kitchen");
