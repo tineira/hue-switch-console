@@ -10,6 +10,10 @@ What changed in the console, the Round switch, and the Simple switch. Newest fir
 
 The console has no version number. Each heading is the day the change went live.
 
+### 2026-10-01
+
+- **Accents on the Round.** Page names keep ñ, á, é, í, ó, ú, ü, ç, ¿, ¡ and the other letters the Round's screen can draw, so `Niños` stays `Niños`. Capital Á, Í, Ó and Ú, and letters such as Ł, still show as the plain letter, and emoji are left out. The name field shows exactly what the circle will. The Round shows these letters from its next firmware release; until you update, it shows the plain letters as before.
+
 ### 2026-09-30
 
 - **Terms and a Safety notice.** The console now has a **Safety notice** (mains danger, uncertified and unproven designs, rules that differ by country) and, on hue.tineira.com, **Terms of Use**, both linked in the footer. Before using the console, every account reads and accepts them once, and again if they change. Switches already on the wall keep working whether or not you have accepted.

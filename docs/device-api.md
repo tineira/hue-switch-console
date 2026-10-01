@@ -406,6 +406,13 @@ If the board is a Round Display (`product: "round"`), the payload is instead:
 `{ "mode": "lights", "rids": ["…"] }` (child lights from tap/double). There is
 no `dimTarget`.
 
+`pages[].name` is UTF-8 (NFC), at most 12 characters: ASCII plus the letters
+the Round's 5×7 font can draw (ñ, á, é, í, ó, ú, ü, ç, ¿, ¡, …; the list is in
+`docs/specs/round-accented-names.md` §2). Scene `name`s in `targets[]` are the
+Hue names as they are. The Round keeps those letters (firmware ≥ the release
+that ships this spec) and folds anything else to the plain letter or drops it.
+Older Round firmware folds every name to ASCII itself.
+
 Limits the Round firmware relies on, and the console never exceeds: at most
 **6 pages**, at most **2** `dim.rids` (the tap and double-tap lights), and so
 at most 12 recipes (the firmware keeps 16). Anything past a limit is dropped

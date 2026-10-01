@@ -305,6 +305,13 @@ export const MAX_ROUND_PAGES = 6;
 export const MAX_SCENE_LIST = 8;
 export const PAGE_NAME_MAX = 12;
 
+/**
+ * Non-ASCII characters the Round's built-in 5×7 font can draw (code page 437 glyphs).
+ * Everything else folds to its base letter or is dropped. Must match the firmware's table:
+ * docs/specs/round-accented-names.md §2.
+ */
+export const ROUND_CIRCLE_CHARS = "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜáíóúñÑ¿¡ß";
+
 export function isRoundThemeId(value: string): value is RoundThemeId {
   return (ROUND_THEME_IDS as readonly string[]).includes(value);
 }

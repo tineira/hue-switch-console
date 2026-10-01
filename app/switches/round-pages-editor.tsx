@@ -20,7 +20,7 @@ import {
   PAGE_NAME_MAX,
   computeDim,
   findRoundRecipe,
-  foldAscii,
+  foldForCircle,
   isScreenTimeoutSec,
   normalizePageName,
   pageGroupFromRoom,
@@ -483,7 +483,7 @@ export function RoundPagesEditor({
                     value={page.name}
                     maxLength={PAGE_NAME_MAX}
                     onChange={(event) =>
-                      patchPage({ name: foldAscii(event.target.value).slice(0, PAGE_NAME_MAX) })
+                      patchPage({ name: foldForCircle(event.target.value).slice(0, PAGE_NAME_MAX) })
                     }
                     onBlur={(event) => patchPage({ name: normalizePageName(event.target.value) })}
                     className="border-b border-line bg-transparent pb-1.5 pt-0.5 text-xl font-semibold tracking-[-0.01em] outline-none focus:border-filament"

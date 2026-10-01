@@ -3,6 +3,7 @@ import {
   MAX_ROUND_PAGES,
   MAX_SCENE_LIST,
   PAGE_NAME_MAX,
+  ROUND_CIRCLE_CHARS,
   isRoundThemeId,
   normalizeRoundTheme,
 } from "@/lib/round-themes";
@@ -67,17 +68,33 @@ export function sceneGroupRid(
   return snapshot.scenes.find((scene) => scene.id === sceneRid)?.group_rid ?? null;
 }
 
-export function foldAscii(input: string): string {
-  return input
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\x20-\x7E]/g, "")
-    .trim();
+// Letters with no decomposition fold to the closest base letter, as the firmware does.
+const CIRCLE_FOLD_EXTRA: Record<string, string> = {
+  Ø: "O", ø: "o", Ð: "D", ð: "d", Þ: "T", þ: "t", Đ: "D", đ: "d", Ħ: "H", ħ: "h",
+  ı: "i", Ĳ: "I", ĳ: "i", ĸ: "k", Ł: "L", ł: "l", Ŋ: "N", ŋ: "n", Œ: "O", œ: "o",
+  Ŧ: "T", ŧ: "t", ſ: "s",
+};
+
+/**
+ * What the Round can draw: ASCII and ROUND_CIRCLE_CHARS stay; other accented letters lose
+ * the accent (Á → A, Ł → L); anything else (emoji, other scripts) is dropped.
+ */
+export function foldForCircle(input: string): string {
+  let out = "";
+  for (const ch of input.normalize("NFC")) {
+    if ((ch >= " " && ch <= "~") || ROUND_CIRCLE_CHARS.includes(ch)) {
+      out += ch;
+      continue;
+    }
+    const base = CIRCLE_FOLD_EXTRA[ch] ?? ch.normalize("NFD").replace(/\p{M}/gu, "");
+    out += base.replace(/[^ -~]/g, "");
+  }
+  return out.trim();
 }
 
-/** ASCII fold + 12-char disk limit. Empty after fold → "Page". */
+/** Circle fold + 12-character disk limit. Empty after fold → "Page". */
 export function normalizePageName(input: string): string {
-  const folded = foldAscii(input).slice(0, PAGE_NAME_MAX).trim();
+  const folded = foldForCircle(input).slice(0, PAGE_NAME_MAX).trim();
   return folded || "Page";
 }
 

@@ -240,7 +240,7 @@ The disc in Ready has **no** help sentences. Only name, scene if any, dots, ring
 | Page without recipes | page name | (nothing) |
 | Several pages | name + dots (filled = active) | scene if applicable |
 
-Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. ASCII: accents/ñ are folded. No line breaks.
+Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. Characters: ASCII plus the circle set (ñ, á, é, í, ó, ú, ü, ç, ¿, ¡ and the other letters the built-in font has; list in `docs/specs/round-accented-names.md` §2); other accented letters fold to the plain letter (Á → A, Ł → L), emoji are dropped. No line breaks.
 
 System states (English, one line): `Wi-Fi...`, `No Wi-Fi`, `No Bridge`, `Press Bridge button`, `Token rejected`. They are not pages.
 
@@ -347,14 +347,14 @@ When a Round Display is selected (not a Simple switch), the left column does **n
 
 Minimum 1 page (the last one cannot be deleted: it stays empty, assignable). Maximum **6**.
 
-New page (in the UI): the **group must be chosen** (room/zone). Default name = the group's Hue name trimmed to 12 / ASCII (editable; accents are folded). Theme `ember`. Tap = `toggle` and double tap = `off`, both on the group's `grouped_light`.
+New page (in the UI): the **group must be chosen** (room/zone). Default name = the group's Hue name trimmed to 12 and folded for the circle (editable). Theme `ember`. Tap = `toggle` and double tap = `off`, both on the group's `grouped_light`.
 
 The device **register** may create `p1` without a group. The human **Save** (PUT pages) **requires a group on every page**. Once saved, there is no product page "without a room".
 
 ### 9.3 Page editor
 
 - **Group** — room or zone, required. Changing the group **resets** tap and double tap to the new-page defaults (toggle / off on the new group) with a notice; nothing else survives a room change anyway. Gesture choices **only** show that group's lights and scenes.
-- **Name** — input, ASCII-folded (`Niños` → `Ninos`), max 12 characters (warning if cut; the device truncates). It's what the circle shows.
+- **Name** — input, folded for the circle (`Niños` stays, `Ángel` → `Angel`), max 12 characters (warning if cut; the device truncates). It's what the circle shows.
 - **Theme** — visual picker of **round dials**, the same language as `hue-round-switch/docs/round-themes.html` (not the site's CSS dropdown). One palette per page: clicking a circle picks it (selection ring). On/Off in the preview to see lights on vs off. The name on the sample dial can be the page's. The user does not edit hex.
 - **Gestures** — always **Tap** and **Double tap**, each a card that opens in place: Nothing, Toggle, Turn on, Turn off (with a light chip: the whole group or one light) or Cycle scenes. Empty = no-op; if double is empty, the tap does not wait.
 - **Scene list** — clicking a scene chip of the group adds it (numbered in cycle order); clicking again removes it; reorder with ↑ ↓. Max 8. Off is not a list item.
@@ -540,7 +540,7 @@ Limits the server validates:
 
 - Same poll: without recipes/pages ~1 min; with config at boot and every 1 h. The finger does not wait.
 - Snapshot / register / console poll run **outside** the touch loop. Recipe / ring / page refresh are in `hue_job`.
-- NVS stores `rev`, axis, `screenTimeoutSec`, pages (id, name, theme, group, `dim`), recipes (scene lists with `rid` + ASCII `name`), active page index, last scene `rid` per gesture (cache).
+- NVS stores `rev`, axis, `screenTimeoutSec`, pages (id, name, theme, group, `dim`), recipes (scene lists with `rid` + `name` folded for the circle, stored as UTF-8), active page index, last scene `rid` per gesture (cache).
 - The poll's `dim` is authoritative. `dim: null` = no ring. The firmware does not infer the set from recipes.
 - Screen sleep: `hue-round-switch/docs/specs/finished/idle-display.md`. Backlight off after the timeout; the first touch wakes and does not act.
 - Ring `mode: lights`: GET those rids + PUT to the ones that are on (or turn the set on if all are off). Do not put those GETs on the loop's stack.
@@ -634,7 +634,7 @@ These are not code. They are the default unless said otherwise.
 17. **Dots at the bottom = pages.** One dot per page, console order. The filled one is active. One page → no dots. One row inside the inner disc: shrink the gap, then the diameter; never overflow or two rows.
 18. **No explanatory text in Ready.** No `Tap to toggle` or `Drag ring to dim`. The disc does not teach gestures. System states do have a status line.
 19. **New page: tap and double visible and empty.** Assigned in the console or left empty. No gesture checkbox. The tap waits for double only if double has a recipe.
-20. **Names on the circle = ASCII.** Page and scene: accents/ñ are folded (`Niños` → `Ninos`). Built-in 5×7 font.
+20. **Names on the circle = the circle set.** Page and scene: ASCII plus the accented letters the built-in 5×7 font has (`Niños` stays `Niños`); other letters fold to the plain letter (`Ángel` → `Angel`). Names are UTF-8 on the wire and in NVS; the firmware converts them to font codes when drawing.
 21. **Ring like the Hue app:** only the target's lights that are on. If the whole target is off, the drag turns it on at that %. `mode: lights` uses an absolute % on each light that is on, not a relative scale.
 22. **Tap = bedside lamp and double = group off** → `dim.mode = group` (rule 2), not the individual lights.
 23. **Touches while Hue answers:** the disc keeps accepting input. Optimistic ack (invert, fill, scene, ring). Last-wins. No `UI_BUSY` in Ready. `hue-round-switch/docs/specs/finished/input-during-hue.md`.
@@ -650,7 +650,7 @@ None. Closed:
 1. Swipe left = next.
 2. New page: tap and double always assignable (empty on creation).
 3. Reboot returns to the last page.
-4. ASCII on the circle.
+4. Names on the circle: ASCII plus the circle set (rule 20).
 
 ---
 

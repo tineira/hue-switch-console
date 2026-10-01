@@ -119,8 +119,13 @@ describe("computeDim", () => {
 });
 
 describe("page names", () => {
-  it("folds to ASCII and cuts at 12 characters", () => {
-    expect(normalizePageName("Salón")).toBe("Salon");
+  it("keeps what the circle can draw, folds the rest and cuts at 12 characters", () => {
+    expect(normalizePageName("Salón")).toBe("Salón");
+    expect(normalizePageName("Niños")).toBe("Niños");
+    expect(normalizePageName("¿Qué?")).toBe("¿Qué?");
+    expect(normalizePageName("Ángel")).toBe("Angel");
+    expect(normalizePageName("Łazienka")).toBe("Lazienka");
+    expect(normalizePageName("Málaga")).toBe("Málaga");
     expect(normalizePageName("  Living room upstairs ")).toBe("Living room");
     expect(normalizePageName("Kitchen 🍳")).toBe("Kitchen");
   });
@@ -130,13 +135,13 @@ describe("page names", () => {
     expect(normalizePageName("   ")).toBe("Page");
   });
 
-  it("parseRoundPages folds names, defaults the theme and keeps order", () => {
+  it("parseRoundPages folds names for the circle, defaults the theme and keeps order", () => {
     const pages = parseRoundPages([
       { id: "a", name: "Dormitório", group: livingGroup },
       { id: "b", name: "Hall", theme: "night", group: null },
     ]);
     expect(pages).toEqual([
-      { id: "a", name: "Dormitorio", sortOrder: 0, theme: "ember", group: livingGroup, dim: null },
+      { id: "a", name: "Dormitório", sortOrder: 0, theme: "ember", group: livingGroup, dim: null },
       { id: "b", name: "Hall", sortOrder: 1, theme: "night", group: null, dim: null },
     ]);
   });
