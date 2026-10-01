@@ -136,13 +136,17 @@ The step texts, illustrations and "why" live in one module (`lib/setup-steps.ts`
 - [x] How-to "Set up" section shortened to the overview plus a link to `/setup`
 - [x] Round's pairing window checked in `hue-round-switch` and stated correctly in step 5
 - [x] `docs/changelog.md` entry
-- [ ] Deployed; the user sets up a blank C6 and a Round from production
+- [x] Deployed; the user set up an erased C6 from production, start to finish, with only the page's instructions (2026-10-01)
+- [ ] The user sets up a Round from production
 
 ## 5. Decided during implementation
 
 - **A Simple without `HUEBOOT` always gets BOOT+RESET.** `flash.ts` connects to the C6 without a reset, so the chip must already be in install mode. Before, only a Simple on firmware older than 0.2.11 was asked for the buttons; a factory-fresh board got no instructions. Now every Simple that can't restart itself on `HUEBOOT` is asked for BOOT+RESET. The ask is on the page (the install step turns into "Now, on the board" with **Continue** and **Cancel**), not a `window.confirm`.
 - **The Round never stops asking the Bridge** (`hue_job.h`: fast for 90 s, then every 3 s), so its step 5 says the Round waits; the Simple's says 90 seconds.
 - **RESET's place in the pictures** is BOOT's anchor mirrored across the USB-C socket (`scenes.ts`). The XIAO model is unchanged.
+
+- **A blank board can't be read.** With nothing in flash the C6 restarts over and over and its port drops, so Chrome fails the open or the first read ("An unknown system error has occurred"). Setup releases the port, explains the restarting board with a **Connect again** button, and Install's BOOT+RESET gets it into install mode.
+- **The board choice is pre-selected only when the person picked Simple or Round in step 1**, never from that picker's default.
 
 ## 6. Open questions
 
