@@ -2,7 +2,7 @@
 
 Cross-repo spec, but not a contract change: no endpoint, payload or NVS key moves. Process: `AGENTS.md` → "Cross-repo changes" (spec first, the user approves, then each repo's checklist).
 
-**Status:** approved 2026-09-30 by the user (all of §5 decided). Implemented 2026-09-30 on branch `terms-and-safety` in all three repos, not merged or deployed: waiting for the lawyer review (§5, question 1).
+**Status:** approved 2026-09-30 by the user (all of §5 decided). Implemented and merged 2026-09-30 in all three repos. The user chose to ship before the lawyer review (§5, question 1), which follows later; fold its edits in and bump `SAFETY_VERSION` / the Terms version if they change the meaning.
 
 ## 1. What and why
 
@@ -179,7 +179,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 
 Decided by the user on 2026-09-30.
 
-1. **Lawyer review:** yes, once, before launch. The user arranges it; the console ships the texts only after it.
+1. **Lawyer review:** yes, once. The user arranges it. On 2026-09-30 the user chose to merge and ship first and do the review later.
 2. **Contact:** `privacy@tineira.com`. **Governing law (§2.6.2):** Chile, where the maintainer lives. The lawyer review in question 1 is done in Chile.
 3. **Starting status:** Round on USB `maintainer`; Simple try-it and button box `maintainer`; Simple in-wall carrier board `experimental` until the user has built and installed one.
 4. **Hardware license:** `hue-simple-switch/hardware/` moves to CERN-OHL-P-2.0; firmware stays MIT. `<HARDWARE LICENSE>` in §2.6.2 is CERN-OHL-P-2.0.
