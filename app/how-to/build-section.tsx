@@ -275,7 +275,7 @@ function ButtonBox() {
         <p className="text-sm text-muted">
           <Rich text={INPUT_EXPLAINED} />
         </p>
-        <p className="rounded-xl border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-muted">
+        <p className={`${CARD} px-4 py-3 text-sm text-muted`}>
           <Rich text={STAIRCASE} />
         </p>
       </Sub>

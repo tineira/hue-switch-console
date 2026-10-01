@@ -273,6 +273,16 @@ Simple switch (firmware ≥ 0.3.0):
       }
     },
     {
+      "id": "d1",
+      "kind": "maintained",
+      "flip": "toggle",
+      "group": {
+        "rtype": "room",
+        "rid": "11111111-2222-3333-4444-555555555555",
+        "groupedLightRid": "66666666-7777-8888-9999-000000000000"
+      }
+    },
+    {
       "id": "boot",
       "kind": "momentary",
       "group": {
@@ -304,6 +314,18 @@ Simple switch (firmware ≥ 0.3.0):
       ]
     },
     {
+      "channelId": "d1",
+      "event": "on",
+      "action": "toggle",
+      "target": { "rtype": "grouped_light", "rid": "66666666-7777-8888-9999-000000000000" }
+    },
+    {
+      "channelId": "d1",
+      "event": "off",
+      "action": "toggle",
+      "target": { "rtype": "grouped_light", "rid": "66666666-7777-8888-9999-000000000000" }
+    },
+    {
       "channelId": "boot",
       "event": "short",
       "action": "toggle",
@@ -316,8 +338,15 @@ Simple switch (firmware ≥ 0.3.0):
 - `channels[]` lists only the channels the user configured. A pin that is not
   listed does nothing. `kind` is `maintained` (wall switch) or `momentary`
   (push button); the user picks it, not the firmware.
+- `flip` (`maintained` only) is `"toggle"` when each flip of the lever toggles
+  the target, whichever way it moves (`docs/specs/toggle-on-flip.md`). A wall
+  switch in set mode (closed = on, open = off) leaves the field out, so its
+  payload is the same as before the field existed. Firmware treats a missing
+  or unknown `flip` as set mode. Toggle-mode timing is in
+  `docs/definitions.md` → "What the firmware must do (Simple)".
 - The console **derives** the recipes from each channel: a wall switch gets
-  `on` + `off` on its target and, if it has scenes, `double_click` →
+  `on` → `on` + `off` → `off` on its target (set mode) or `on` → `toggle` +
+  `off` → `toggle` (toggle mode) and, if it has scenes, `double_click` →
   `recall_scene`; a push button gets `short` → `toggle` plus its `double_click`
   and `hold` actions, when set.
   With no `hold` recipe, BOOT's 3 s long press re-pairs with the Bridge; with
@@ -487,6 +516,7 @@ Content-Type: application/json
     {
       "id": "d0",
       "kind": "maintained",
+      "flip": "toggle",
       "group": { "rtype": "room", "rid": "11111111-2222-3333-4444-555555555555" },
       "target": { "rtype": "grouped_light", "rid": "66666666-7777-8888-9999-000000000000" },
       "scenes": ["99999999-aaaa-bbbb-cccc-dddddddddddd"],
@@ -523,15 +553,24 @@ A string is trimmed, and an empty string or `null` clears it. A channel sent
 without `label` keeps the name already stored, so a page opened before names
 existed cannot erase them. The response's `channels` carry `label`.
 
+`flip` is optional and only for a `maintained` channel: `"toggle"` (each flip
+of the lever toggles the target) or `"set"` (closed = on, open = off). A
+channel stored before the field existed is `"set"`. A `maintained` channel
+sent without `flip` keeps the stored value (`"set"` for a new channel, or one
+that was a push button), the same rule as `label`. A `momentary` channel with
+`flip` is refused. `GET` and the response's `channels` carry `flip` on every
+`maintained` channel and leave it out on `momentary` ones.
+
 Validation, with the `error` code:
 
 | Rule | `error` |
 | --- | --- |
 | `id` is a channel the switch registered, listed once | `invalid_channel` |
-| `boot` is `momentary`; only `maintained` has `scenes`; only `momentary` has `double` / `hold`; `double` is a scene list; `hold` is `dim` or `off` | `channel_kind_not_allowed` |
+| `boot` is `momentary`; only `maintained` has `scenes` and `flip`; only `momentary` has `double` / `hold`; `double` is a scene list; `hold` is `dim` or `off` | `channel_kind_not_allowed` |
 | `target` is the group's `grouped_light` or one of its lights (a `dim` hold takes the same target); an `off` hold targets the group's `grouped_light` | `target_outside_group` |
 | An `off` hold while the click target is already the whole group | `validation_error` |
 | `label` is a string or `null`, at most 40 characters after trimming | `validation_error` (a non-string is a 400 on the body) |
+| `flip` is `"set"` or `"toggle"` | a 400 on the body |
 | Every scene belongs to the group | `scene_outside_group` |
 | `group` is a room or zone in the snapshot; `scenes` holds 0–8, a `double` / `hold` list 1–8, no duplicates | `validation_error` |
 | Switch firmware is older than 0.3.0 | `409 firmware_update_required` |

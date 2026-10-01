@@ -604,6 +604,7 @@ function mapSimpleChannel(row: Record<string, unknown>): SimpleChannelConfig {
   return {
     id: String(row.channel_id),
     kind: row.kind === "momentary" ? "momentary" : "maintained",
+    flip: row.kind !== "momentary" && row.flip === "toggle" ? "toggle" : "set",
     group: {
       rtype: row.group_rtype === "zone" ? "zone" : "room",
       rid: String(row.group_rid),
@@ -625,7 +626,7 @@ export async function listSimpleChannels(
 ): Promise<SimpleChannelConfig[]> {
   const rows = await sql()`
     select channel_id, kind, group_rtype, group_rid, grouped_light_rid,
-           target_rtype, target_rid, scenes, double_click, hold, label
+           target_rtype, target_rid, scenes, double_click, hold, label, flip
     from simple_channels
     where switch_id = ${switchId}
     order by channel_id asc
@@ -642,7 +643,7 @@ export async function replaceSimpleChannels(
     await sql()`
       insert into simple_channels (
         switch_id, channel_id, kind, group_rtype, group_rid, grouped_light_rid,
-        target_rtype, target_rid, scenes, double_click, hold, label
+        target_rtype, target_rid, scenes, double_click, hold, label, flip
       )
       values (
         ${switchId}, ${config.id}, ${config.kind}, ${config.group.rtype},
@@ -651,7 +652,7 @@ export async function replaceSimpleChannels(
         ${JSON.stringify(config.scenes)}::jsonb,
         ${config.double ? JSON.stringify(config.double) : null}::jsonb,
         ${config.hold ? JSON.stringify(config.hold) : null}::jsonb,
-        ${config.label}
+        ${config.label}, ${config.kind === "maintained" ? config.flip : "set"}
       )
     `;
   }

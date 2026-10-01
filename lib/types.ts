@@ -1,6 +1,8 @@
 import type { ConfigStatus } from "@/lib/config-sync";
 
 export type ChannelKind = "maintained" | "momentary";
+/** What a wall switch's lever does: set on/off by position, or toggle on each flip. */
+export type SimpleFlip = "set" | "toggle";
 export type ChannelEvent = "on" | "off" | "double_click" | "short";
 export type HueAction = "on" | "off" | "recall_scene" | "toggle";
 export type TargetRtype = "light" | "grouped_light" | "scene";
@@ -61,6 +63,8 @@ export type SimpleChannelConfig = {
   group: PageGroup;
   /** `light` or `grouped_light` inside the group. */
   target: RecipeTarget;
+  /** Each flip toggles, or the lever sets on/off (maintained only; always "set" on momentary). */
+  flip: SimpleFlip;
   /** Double-click scene list (maintained only). */
   scenes: SceneListItem[];
   /** Double-click (momentary only). */

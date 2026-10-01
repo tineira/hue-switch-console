@@ -155,7 +155,7 @@ export function tasks(product: Product): Task[] {
           title: "Change what a button does",
           steps: [
             "Open **Switches**, pick the switch from the tabs, then pick the switch you want from the list or on the board picture.",
-            "**Wall switch**: the lever turns the lights on and off. A quick off-on flick steps through the scenes under **Double-click**.",
+            "**Wall switch**: under **Flip**, pick **Each flip toggles the lights** (the default: any flip, up or down, toggles, so the lever never disagrees with the lights) or **The lever sets on or off** (up is on, down is off). A quick flick and back steps through the scenes under **Double-click**.",
             "**Push button**: a click toggles the lights. **Double-click** can step through scenes. **Hold** can dim (it ramps while you hold and stops when you let go) or turn off the whole room.",
             "Every gesture targets the whole room until you click **Change** to pick one light or scenes. Give it a name so you can tell switches apart. Click **Save changes**.",
           ],

@@ -27,7 +27,7 @@ The **display name** is edited by the user in the console (`switches.label`); it
 
 **Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/specs/finished/simple-channel-types.md`); both use the same wiring:
 
-- `maintained` — UI *Wall switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states).
+- `maintained` — UI *Wall switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states). Its **Flip** setting (`flip`) is `toggle` (UI *Each flip toggles the lights*, the default for a new wall switch) or `set` (UI *The lever sets on or off*). Spec: `docs/specs/toggle-on-flip.md`.
 - `momentary` — UI *Push button*: press and release.
 
 Channels (declared by the firmware; closed = GPIO to GND, `INPUT_PULLUP`):
@@ -96,9 +96,12 @@ The configuration context is **one Bridge** (`bridgeid`):
 
 ## Events read (`maintained` channel, Simple)
 
-A wall switch **is not a firmware toggle**. The contact has state: closed = on, open = off. The XIAO reads **edges and a short pattern**; it does not "invert the lamp because someone pressed".
+A wall switch has two modes, picked per channel with `flip`. The XIAO reads **edges and a short pattern** in both; the mode only changes what the console maps the events to and how the firmware times them.
 
-v1 events:
+- **Set mode** (`flip: "set"`, the stored default): the contact has state, closed = on, open = off. The lever is copied to Hue; the firmware does not "invert the lamp because someone pressed".
+- **Toggle mode** (`flip: "toggle"`): any change of lever position toggles the target, whichever way the lever moves. The lever position means nothing, so it never disagrees with the lights, and two switches on one room (a staircase pair) both work. A quick flick and back is a `double_click` from **either** position.
+
+Events (both modes):
 
 | Event | What happens in the circuit | Typical Hue use |
 | --- | --- | --- |
@@ -106,7 +109,7 @@ v1 events:
 | `off` | Goes **open** and stays | `off` (turn target off) |
 | `double_click` | Was **closed**, **opens** and **closes again** within a short window (e.g. &lt; 400 ms) | Third action: scene, brightness, another room |
 
-`on`/`off` copy the wall lever to Hue (no GET). Double-click is an "extra" without a second lever.
+In set mode `on`/`off` copy the wall lever to Hue (no GET). In toggle mode the console maps both to `toggle`, so `on` and `off` only say which way the lever moved. Double-click is an "extra" without a second lever.
 
 Not needed in v1: triple click, long-off, double_off. Noise and long wires eat the double-click if the window is too short; it is calibrated in firmware.
 
@@ -126,9 +129,10 @@ The XIAO is not drawn inside the Hue tree. A gesture's light chips are the whole
 **Simple channel settings → recipes**
 
 ```text
-switch + channelId → group (room | zone), kind, target (light | grouped_light), scenes[], double, hold
-  maintained: on → on target · off → off target · double_click → recall_scene scenes[] (if any)
-  momentary:  short → toggle target · double_click → double (if any) · hold → hold (if any)
+switch + channelId → group (room | zone), kind, flip, target (light | grouped_light), scenes[], double, hold
+  maintained, flip set:    on → on target · off → off target · double_click → recall_scene scenes[] (if any)
+  maintained, flip toggle: on → toggle target · off → toggle target · double_click → recall_scene scenes[] (if any)
+  momentary:               short → toggle target · double_click → double (if any) · hold → hold (if any)
 ```
 
 The user edits channel settings; the console derives the recipes the switch runs. `toggle` (GET + invert) is a Hue action, not a GPIO event.
@@ -158,23 +162,24 @@ The UI does not invent pins. If a channel is not sent, it cannot be assigned. Th
 1. Pick a **switch** tab. The editor shows the board picture (Top or 3D) and the list of switches, with **BOOT** pinned at the top.
 2. Start with **BOOT**, the button on the board: pick a room or zone and save, then press BOOT to test before wiring anything. BOOT is always a push button.
 3. **Add a switch** for each wired input: what it is (Wall switch or Push button), which free pin (D0–D5), which room or zone. Clicking a free pad on the board picture starts the same flow with that pin chosen.
-4. Pick the **target** on the On / Off or Click card: the whole group (`grouped_light`) or one light of it. It defaults to the whole group. Optionally give the switch a **name** (console only, never sent to the board).
+4. Wall switch: pick the **Flip** mode, **Each flip toggles the lights** (the default for a new wall switch, and for a push button changed to a wall switch) or **The lever sets on or off**. Pick the **target** on the Flip or Click card: the whole group (`grouped_light`) or one light of it. It defaults to the whole group. Optionally give the switch a **name** (console only, never sent to the board).
 5. Wall switch: optionally add **scenes** for double-click (1–8, from the group, in order). Push button: **double-click** is nothing or Cycle scenes; **hold** is nothing, **Dim** (always dims what Click controls; it has no target of its own), or Turn off the whole room or zone (offered only when the click target is one light). On BOOT, a hold set to nothing is shown as **Re-pair with the Bridge**, and any other hold replaces re-pairing.
 6. **Wired as → Change** switches the type or moves the switch to another free pin after rewiring. **Remove *name*** (e.g. "Remove Front door") deletes it and frees its pin; on BOOT, **Clear BOOT settings** goes back to re-pairing.
 
 | Type | Gesture | What it does |
 | --- | --- | --- |
-| Wall switch | lever closes / opens | `on` / `off` the target (automatic) |
-| Wall switch | double-click | next scene in the list; empty list → `on` (the lever ends up; the console says "Does nothing") |
+| Wall switch, each flip toggles | any flip | `toggle` the target (automatic) |
+| Wall switch, the lever sets | lever closes / opens | `on` / `off` the target (automatic) |
+| Wall switch | double-click | next scene in the list. Empty list: in set mode → `on` (the lever ends up; the console says "Does nothing"); in toggle mode there is no double-click, each flip toggles |
 | Push button | click | `toggle` the target (automatic) |
 | Push button | double-click | next scene in the list; nothing = no-op |
 | Push button | hold | dim the click target, or turn off the whole group; nothing = no-op (BOOT: re-pair) |
 
 If the target is one light, a scene still applies to the whole group; the console warns.
 
-Each gesture card sums up its gesture in words (not UUIDs): *"Lever up turns on, down turns off all of Living"*, *"Cycles Relax → Bright"*.
+Each gesture card sums up its gesture in words (not UUIDs): *"Toggles all of Living"*, *"Lever up turns on, down turns off all of Living"*, *"Cycles Relax → Bright"*.
 
-Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only wall switches have a scene list; only push buttons have double-click and hold actions. A name is at most 40 characters. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
+Validate on save: channel registered; BOOT is a push button; group is in that `bridgeid`'s snapshot; target and scenes belong to the group; only wall switches have a scene list and a flip setting; only push buttons have double-click and hold actions. A name is at most 40 characters. A Simple on firmware < 0.3.0 cannot be edited: the console asks to update it.
 
 `rev` increments. That is what the poll compares.
 
@@ -190,7 +195,7 @@ Round: Save (PUT pages) **requires a group** on every page. The device register 
 {
   rev: 12,
   product: "simple",
-  channels: [ { id: "d0", kind: "maintained", group: { rtype, rid, groupedLightRid } }, … ],
+  channels: [ { id: "d0", kind: "maintained", flip?: "toggle", group: { rtype, rid, groupedLightRid } }, … ],
   recipes: [
     { channelId: "d0", event: "on", action: "on", target: { rtype: "grouped_light", rid: "…" } },
     { channelId: "d0", event: "double_click", action: "recall_scene", targets: [ { rtype: "scene", rid, name }, … ] },
@@ -207,7 +212,7 @@ If local `rev` ≥ remote `rev`, the firmware does **not** write NVS. If remote 
 
 ### What the firmware must do (Simple)
 
-Channels come from `channels[]` in the config; a pin not listed is ignored. For each `maintained` channel (contact to GND = closed, pull-up, ~50 ms debounce):
+Channels come from `channels[]` in the config; a pin not listed is ignored. For each `maintained` channel in **set mode** (no `flip`, or any value other than `"toggle"`; contact to GND = closed, pull-up, ~50 ms debounce):
 
 1. Read the GPIO. Stable closed/open state.
 2. **Double-click** state machine (important: do not fire `off` then `on` if it was a double):
@@ -228,6 +233,17 @@ Channels come from `channels[]` in the config; a pin not listed is ignored. For 
 
 5. The contact path does **not** use the console URL. If the PUT fails, log and move on; do not block other channels.
 
+`maintained` channel in **toggle mode** (`"flip": "toggle"`, Simple ≥ 0.8.0). Edges are debounced as in set mode (~50 ms); each debounced change of position is a **flip**.
+
+1. **No `double_click` recipe:** each flip posts its event at once, in both directions (closed → `on`, open → `off`). No window.
+2. **With a `double_click` recipe:** a flip starts the window (~400 ms, same constant as set mode) in either direction. A second flip inside the window (the lever is back where it started) posts `double_click` and closes the window. If the window expires, the first flip posts its event (`on` or `off`). This is the push button's click / double-click logic, run on lever edges.
+3. **No fallback:** there is no `double_click` → `on` fallback in toggle mode. Without a recipe, a quick flick and back toggles twice.
+4. **Queue:** toggle events are never merged or dropped for "the lever wins". Each is queued in order on its channel, like push-button gestures, and expires after 10 s (`kHueJobStaleMs`) waiting for the Bridge.
+5. **Scene cycle:** a toggle that turned the target **off** (the firmware knows from its `GET`) restarts the channel's scene cycle, like `off` in set mode. A toggle that turned it on, or failed, leaves the cycle alone.
+6. **No action at startup:** boot, a reconnect, a config change, or a change of `kind` or `flip` reads the pin and starts from that position without posting anything. Hue bulbs come back on after a power cut, so a toggle at boot would turn them off.
+
+The Hue call is the `toggle` action (`GET on` + inverse `PUT`). On a `grouped_light`, `on` is true when any light in the group is on, so a half-lit room turns off on the first flip. Two boards on one target flipped within ~100 ms may both read the same state and set the same result; accepted.
+
 `momentary` channel: `short` on release, **immediately** when the channel has no `double_click` recipe (otherwise after the window); `double_click` on the second press; `hold` once at ~800 ms while pressed. BOOT with no `hold` recipe: 3 s long press → re-pair. BOOT with a `hold` recipe: never re-pairs from the button (USB install only).
 
 At boot: load recipes from NVS **before** handling GPIO. The first read of each GPIO **only sets the state**; it does not fire `on`/`off`. Then Wi‑Fi, poll, etc.
@@ -238,7 +254,7 @@ If the user changes a recipe in the app, the switch learns about it on the poll.
 
 - The config `GET` **replaces** the recipe array in NVS (not a patch). Slots no longer sent are deleted.
 - If the paired `bridgeid` changes: the firmware drops the recipes in NVS **and** the console deletes them + increments `rev` (defense in depth).
-- Two switches (or the Hue app) on the same target: **last event wins**. No 3-way wiring or lever syncing.
+- Two switches (or the Hue app) on the same target: **last event wins**. No 3-way wiring or lever syncing. In toggle mode the lever has no position to disagree with, so two wall switches on one room (a staircase pair, one board in each housing) both work.
 - Console chrome in English; **Hue names** (Living, Velador Tomás) are shown as they are.
 - Several topology POSTs for the same `bridgeid`: **last good snapshot wins**. A register without `rooms`/`scenes` (omitted) is a 400; it does not overwrite.
 - Revoked API key: the poll fails; recipes in NVS **keep** running on the LAN.

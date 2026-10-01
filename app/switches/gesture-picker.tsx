@@ -58,7 +58,7 @@ export function GesturePicker({
   muted: boolean;
   open: boolean;
   onToggle: () => void;
-  /** Omitted for target-only slots (On / Off, Click). */
+  /** Omitted for target-only slots (Click). */
   options?: GestureOption[];
   action: GestureAction;
   onAction?: (action: GestureAction) => void;

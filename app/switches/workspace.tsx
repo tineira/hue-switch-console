@@ -492,6 +492,8 @@ export function SwitchesWorkspace({
         channels: configs.map((config) => ({
           id: config.id,
           kind: config.kind,
+          // Only a wall switch has a flip; the endpoint refuses it on a push button.
+          ...(config.kind === "maintained" ? { flip: config.flip } : {}),
           group: { rtype: config.group.rtype, rid: config.group.rid },
           target: config.target,
           scenes: config.scenes.map((item) => item.rid),
@@ -503,14 +505,16 @@ export function SwitchesWorkspace({
     });
     const body = (await res.json()) as {
       rev?: number;
-      channels?: SimpleChannelConfig[];
+      channels?: (Omit<SimpleChannelConfig, "flip"> & { flip?: SimpleChannelConfig["flip"] })[];
       error?: string;
       details?: string;
     };
     if (!res.ok) {
       return { ok: false, error: body.details ?? body.error ?? "Could not save switches" };
     }
-    const next = body.channels ?? configs;
+    // A push button comes back without `flip`.
+    const next: SimpleChannelConfig[] =
+      body.channels?.map((config) => ({ ...config, flip: config.flip ?? "set" })) ?? configs;
     setDrafts((current) => ({ ...current, [mac]: next }));
     setSaved((current) => ({ ...current, [mac]: next }));
     return { ok: true, rev: body.rev };

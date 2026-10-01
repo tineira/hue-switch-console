@@ -60,6 +60,12 @@ const SCENE_OPTIONS: GestureOption[] = [
   { value: "scenes", label: "Cycle scenes" },
 ];
 
+// A wall switch's Flip card: the lever toggles on each flip, or sets on/off by position.
+const FLIP_OPTIONS: GestureOption[] = [
+  { value: "toggle", label: "Each flip toggles the lights" },
+  { value: "onoff", label: "The lever sets on or off" },
+];
+
 const KIND_TEXT: Record<ChannelKind, string> = {
   maintained: "A lever that stays up or down.",
   momentary: "A button that springs back.",
@@ -76,6 +82,9 @@ function channelGestures(
   const boot = isBootChannel(config.id);
   const roomName = groupRoom(snapshot, config.group)?.name ?? "the group";
   return simpleChannelGestures(config, snapshot, wantsScenes).map((gesture) => {
+    if (gesture.slot === "primary" && config.kind === "maintained") {
+      return { ...gesture, options: FLIP_OPTIONS };
+    }
     if (gesture.slot === "double") return { ...gesture, options: SCENE_OPTIONS };
     if (gesture.slot !== "hold") return gesture;
     // BOOT's Hold is the one that competes with re-pairing: nothing set means re-pair.
@@ -133,10 +142,10 @@ function kindNotice(before: SimpleChannelConfig, kind: ChannelKind): string {
       ? "Now a push button: the double-click scenes moved over."
       : "Now a push button: Click toggles; Double-click and Hold do nothing yet.";
   }
-  const parts: string[] = [];
+  const parts: string[] = ["each flip toggles the lights"];
   if (before.double?.action === "recall_scene") parts.push("double-click scenes kept");
   if (before.hold) parts.push("hold cleared");
-  return `Now a wall switch${parts.length ? `: ${parts.join("; ")}` : ""}.`;
+  return `Now a wall switch: ${parts.join("; ")}.`;
 }
 
 function switchName(config: SimpleChannelConfig, snapshot: TopologySnapshot): string {
@@ -255,7 +264,7 @@ export function SimpleChannelsEditor({
   function createFromRoom(id: string, kind: ChannelKind, room: Room) {
     const group = pageGroupFromRoom(room);
     if (!group) return;
-    patch(id, { ...defaultSimpleChannel(id, group), kind });
+    patch(id, defaultSimpleChannel(id, group, kind));
     select(id);
   }
 
@@ -652,7 +661,7 @@ function AddFlow({
         <p className="text-xs text-muted">
           {adding.kind === "momentary"
             ? "Click will toggle the whole group. You can change it after."
-            : "Up turns the whole group on, down turns it off. You can change it after."}
+            : "Each flip toggles the whole group, whichever way the lever moves. You can change it after."}
         </p>
       </Step>
       <button type="button" onClick={onCancel} className="self-start text-xs text-muted hover:text-foreground">
@@ -763,6 +772,10 @@ function SwitchEditor({
   }
 
   function setAction(slot: GestureSlot, action: GestureAction) {
+    if (config.kind === "maintained" && slot === "primary") {
+      onPatch({ ...config, flip: action === "toggle" ? "toggle" : "set" });
+      return;
+    }
     if (config.kind === "maintained") {
       onWantsScenes(action === "scenes");
       if (action === "none") onPatch({ ...config, scenes: [] });
@@ -812,6 +825,11 @@ function SwitchEditor({
   }
   if (config.kind === "maintained" && config.target.rtype === "light" && config.scenes.length > 0) {
     notes.push({ text: `Scenes apply to the whole ${config.group.rtype}, not only this light.` });
+  }
+  if (config.kind === "maintained" && config.flip === "toggle" && config.scenes.length > 0) {
+    notes.push({
+      text: "With scenes set, each flip waits a moment before it acts. A quick flick and back steps through the scenes, from either lever position.",
+    });
   }
   if (config.kind === "momentary") {
     if (config.double) {

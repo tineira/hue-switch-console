@@ -11,6 +11,7 @@ import type {
   Scene,
   SceneListItem,
   SimpleChannelConfig,
+  SimpleFlip,
   SimpleGesture,
   SwitchPage,
   SwitchProduct,
@@ -308,8 +309,20 @@ function parseSimpleGesture(raw: unknown): SimpleGesture | null | undefined {
   return { action: row.action, target };
 }
 
-/** A channel from the request. `label` is undefined when the body omits it: keep the stored name. */
-export type ParsedSimpleChannel = Omit<SimpleChannelConfig, "label"> & { label?: string | null };
+/**
+ * A channel from the request. `label` and `flip` are undefined when the body omits them:
+ * keep the stored values.
+ */
+export type ParsedSimpleChannel = Omit<SimpleChannelConfig, "label" | "flip"> & {
+  label?: string | null;
+  flip?: SimpleFlip;
+};
+
+/** Optional flip setting: missing → undefined, unknown → false. */
+function parseChannelFlip(raw: unknown): SimpleFlip | undefined | false {
+  if (raw === undefined) return undefined;
+  return raw === "set" || raw === "toggle" ? raw : false;
+}
 
 /** Optional switch name: trimmed, empty → null, missing → undefined. False when not a string or null. */
 function parseChannelLabel(raw: unknown): string | null | undefined | false {
@@ -341,7 +354,15 @@ export function parseSimpleChannels(raw: unknown): ParsedSimpleChannel[] | null 
     const double = parseSimpleGesture(row.double);
     const hold = parseSimpleGesture(row.hold);
     const label = parseChannelLabel(row.label);
-    if (!target || !scenes || double === undefined || hold === undefined || label === false) {
+    const flip = parseChannelFlip(row.flip);
+    if (
+      !target ||
+      !scenes ||
+      double === undefined ||
+      hold === undefined ||
+      label === false ||
+      flip === false
+    ) {
       return null;
     }
     configs.push({
@@ -353,6 +374,7 @@ export function parseSimpleChannels(raw: unknown): ParsedSimpleChannel[] | null 
       double,
       hold,
       ...(label === undefined ? {} : { label }),
+      ...(flip === undefined ? {} : { flip }),
     });
   }
   return configs;

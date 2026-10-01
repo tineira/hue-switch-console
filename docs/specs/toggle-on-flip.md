@@ -82,15 +82,15 @@ There is one user today, so the console carries **no** old-firmware path: no ver
 
 ### Console (`hue-switch-console`)
 
-- [ ] DB: `simple_channels.flip text not null default 'set' check (flip in ('set', 'toggle'))` (schema version bump)
-- [ ] Types, parse and validation (`lib/simple-channels.ts`, `lib/parse.ts`, `lib/types.ts`): `flip` on `maintained` only; keep the stored value when absent
-- [ ] Recipe derivation: `on`/`off` → `toggle` in toggle mode; `flip: "toggle"` in the config poll's `channels[]`
-- [ ] Editor (`app/switches/simple-channels-editor.tsx`): Flip row on the Toggle switch card, "Each flip toggles the lights" / "The lever sets on or off"; a new Toggle switch input defaults to toggle
-- [ ] Gesture and Lights labels (`lib/gestures.ts`, `lib/lights-map.ts`): a toggle-mode lever reads "Toggles <target>"
-- [ ] Build guide (`lib/how-to-build.ts`): replace "Two switches for one lamp … aren't supported yet" with how to do it: one board in each switch housing, both inputs Toggle switch, Flip = toggles, same room or zone. An old 3-way switch is wired as a plain contact: common terminal plus one other
-- [ ] How-to guide copy for Toggle switch mentions the Flip choice
-- [ ] `docs/device-api.md` and `docs/definitions.md` updated in the same commit as the API change
-- [ ] `docs/changelog.md` entry
+- [x] DB: `simple_channels.flip text not null default 'set' check (flip in ('set', 'toggle'))` (schema version bump)
+- [x] Types, parse and validation (`lib/simple-channels.ts`, `lib/parse.ts`, `lib/types.ts`): `flip` on `maintained` only; keep the stored value when absent
+- [x] Recipe derivation: `on`/`off` → `toggle` in toggle mode; `flip: "toggle"` in the config poll's `channels[]`
+- [x] Editor (`app/switches/simple-channels-editor.tsx`): Flip row on the Toggle switch card, "Each flip toggles the lights" / "The lever sets on or off"; a new Toggle switch input defaults to toggle
+- [x] Gesture and Lights labels (`lib/gestures.ts`, `lib/lights-map.ts`): a toggle-mode lever reads "Toggles <target>"
+- [x] Build guide (`lib/how-to-build.ts`): replace "Two switches for one lamp … aren't supported yet" with how to do it: one board in each switch housing, both inputs Toggle switch, Flip = toggles, same room or zone. An old 3-way switch is wired as a plain contact: common terminal plus one other
+- [x] How-to guide copy for Toggle switch mentions the Flip choice
+- [x] `docs/device-api.md` and `docs/definitions.md` updated in the same commit as the API change
+- [x] `docs/changelog.md` entry
 - [ ] Deployed; checked on production
 
 ### Round (`hue-round-switch`)

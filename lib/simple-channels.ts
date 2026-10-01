@@ -19,6 +19,7 @@ import type {
   Room,
   SceneListItem,
   SimpleChannelConfig,
+  SimpleFlip,
   SimpleGesture,
   SimpleRecipe,
   TopologySnapshot,
@@ -49,13 +50,20 @@ export function kindLabel(kind: ChannelKind): string {
   return kind === "momentary" ? "Push button" : "Wall switch";
 }
 
+/** A new wall switch toggles on each flip (docs/specs/toggle-on-flip.md); a push button has no flip. */
+export function defaultFlip(kind: ChannelKind): SimpleFlip {
+  return kind === "maintained" ? "toggle" : "set";
+}
+
 export function defaultSimpleChannel(
   channelId: string,
   group: PageGroup,
+  kind: ChannelKind = isBootChannel(channelId) ? "momentary" : "maintained",
 ): SimpleChannelConfig {
   return {
     id: channelId,
-    kind: isBootChannel(channelId) ? "momentary" : "maintained",
+    kind,
+    flip: defaultFlip(kind),
     group,
     target: { rtype: "grouped_light", rid: group.groupedLightRid },
     scenes: [],
@@ -71,8 +79,8 @@ export function withGroup(
   group: PageGroup,
 ): SimpleChannelConfig {
   if (config.group.rid === group.rid) return config;
-  const next = defaultSimpleChannel(config.id, group);
-  return { ...next, kind: config.kind, label: config.label };
+  const next = defaultSimpleChannel(config.id, group, config.kind);
+  return { ...next, flip: config.flip, label: config.label };
 }
 
 /** The same settings on another pin, after the user rewired the switch. BOOT has no pin to move. */
@@ -118,6 +126,7 @@ export function withKind(
     return {
       ...config,
       kind,
+      flip: defaultFlip(kind),
       scenes: [],
       // Same scene list, now on the push-button double-click.
       double:
@@ -130,6 +139,7 @@ export function withKind(
   return {
     ...config,
     kind,
+    flip: defaultFlip(kind),
     scenes: config.double?.action === "recall_scene" ? config.double.targets : [],
     double: null,
     hold: null,
@@ -144,8 +154,10 @@ export function deriveSimpleRecipes(
   for (const config of configs) {
     const target = config.target;
     if (config.kind === "maintained") {
-      recipes.push({ channelId: config.id, event: "on", action: "on", target });
-      recipes.push({ channelId: config.id, event: "off", action: "off", target });
+      // Toggle mode: every flip toggles, whichever way the lever moves.
+      const toggle = config.flip === "toggle";
+      recipes.push({ channelId: config.id, event: "on", action: toggle ? "toggle" : "on", target });
+      recipes.push({ channelId: config.id, event: "off", action: toggle ? "toggle" : "off", target });
       if (config.scenes.length > 0) {
         recipes.push({
           channelId: config.id,
@@ -167,16 +179,31 @@ export function deriveSimpleRecipes(
   return recipes;
 }
 
+/** A channel in the config poll. `flip` only appears in toggle mode, so set-mode payloads stay as they were. */
 export function deviceSimpleChannel(config: SimpleChannelConfig) {
   return {
     id: config.id,
     kind: config.kind,
+    ...(config.kind === "maintained" && config.flip === "toggle" ? { flip: "toggle" as const } : {}),
     group: {
       rtype: config.group.rtype,
       rid: config.group.rid,
       groupedLightRid: config.group.groupedLightRid,
     },
   };
+}
+
+/**
+ * A channel as `GET`/`PUT /api/switches/{mac}/channels` return it: `flip` only on a wall switch,
+ * since a push button with `flip` is refused on save.
+ */
+export function browserSimpleChannel(
+  config: SimpleChannelConfig,
+): Omit<SimpleChannelConfig, "flip"> & { flip?: SimpleFlip } {
+  if (config.kind === "maintained") return config;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { flip, ...rest } = config;
+  return rest;
 }
 
 export function deviceSimpleRecipe(recipe: SimpleRecipe): Record<string, unknown> {
@@ -308,6 +335,9 @@ export function validateSimpleChannels(
     }
     const targetError = checkTarget(config.target, group, snapshot);
     if (targetError) return targetError;
+    if (config.kind === "momentary" && config.flip !== "set") {
+      return fail("channel_kind_not_allowed", "Only a wall switch has a flip setting.");
+    }
     if (config.kind === "maintained") {
       if (config.double || config.hold) {
         return fail(
@@ -445,6 +475,7 @@ export function simpleChannelsEqual(
         JSON.stringify([
           config.id,
           config.kind,
+          config.kind === "maintained" ? config.flip : "set",
           config.group.rid,
           config.target.rtype,
           config.target.rid,

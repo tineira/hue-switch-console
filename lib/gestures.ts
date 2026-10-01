@@ -14,7 +14,10 @@ import type {
   TopologySnapshot,
 } from "@/lib/types";
 
-/** What a gesture card shows as its action. `onoff` is a wall switch's lever. */
+/**
+ * What a gesture card shows as its action. `onoff` is a wall switch's lever in set mode;
+ * in toggle mode the lever is `toggle`.
+ */
 export type GestureAction = "none" | "toggle" | "on" | "off" | "dim" | "onoff" | "scenes";
 
 /** "all of Kitchen" for a room or zone, otherwise the light's name. */
@@ -135,12 +138,13 @@ export function simpleChannelGestures(
   if (config.kind === "maintained") {
     const doubleAction: GestureAction =
       config.scenes.length > 0 || wantsScenes ? "scenes" : "none";
+    const flipAction: GestureAction = config.flip === "toggle" ? "toggle" : "onoff";
     return [
       {
         slot: "primary",
-        label: "On / Off",
-        action: "onoff",
-        summary: summarizeGesture("onoff", config.target, [], snapshot, ""),
+        label: "Flip",
+        action: flipAction,
+        summary: summarizeGesture(flipAction, config.target, [], snapshot, ""),
         target: config.target,
         scenes: [],
       },

@@ -17,6 +17,7 @@ import { parseSimpleChannels } from "@/lib/parse";
 import { snapshotFromJson } from "@/lib/recipes";
 import {
   SIMPLE_MIN_FIRMWARE,
+  browserSimpleChannel,
   supportsChannelTypes,
   validateSimpleChannels,
   withDimOnTarget,
@@ -64,7 +65,10 @@ export async function GET(
       await listSimpleChannels(sw.id),
       snapshotFromJson(bridge?.snapshot),
     );
-    return jsonOk({ ...toSwitchPublic(sw), channelSettings: channels });
+    return jsonOk({
+      ...toSwitchPublic(sw),
+      channelSettings: channels.map(browserSimpleChannel),
+    });
   } catch (err) {
     return databaseError(err);
   }
@@ -86,6 +90,11 @@ export async function PUT(
   }
   const parsed = parseSimpleChannels((body as { channels?: unknown })?.channels);
   if (!parsed) return jsonError(400, "channels[] is required");
+  if (parsed.some((config) => config.kind === "momentary" && config.flip !== undefined)) {
+    return jsonError(400, "channel_kind_not_allowed", {
+      details: "Only a wall switch has a flip setting.",
+    });
+  }
 
   try {
     const sw = await getSwitchByMac(user.id, mac);
@@ -105,26 +114,28 @@ export async function PUT(
     if (!snapshot) {
       return jsonError(400, "no topology snapshot for this bridge");
     }
-    // A body without `label` (a tab opened before names existed) keeps the stored name.
+    // A body without `label` or `flip` (a tab opened before they existed) keeps the stored value.
     const stored = await listSimpleChannels(sw.id);
     // A dim hold always dims what Click controls; a body that says otherwise is aligned, not refused.
-    const resolved = parsed.map((config) =>
-      withDimOnTarget({
+    const resolved = parsed.map((config) => {
+      const before = stored.find((item) => item.id === config.id);
+      return withDimOnTarget({
         ...config,
         group: resolvePageGroup(snapshot, config.group) ?? config.group,
-        label:
-          config.label === undefined
-            ? (stored.find((item) => item.id === config.id)?.label ?? null)
-            : config.label,
-      }),
-    );
+        label: config.label === undefined ? (before?.label ?? null) : config.label,
+        flip:
+          config.kind === "momentary"
+            ? "set"
+            : (config.flip ?? (before?.kind === "maintained" ? before.flip : "set")),
+      });
+    });
     const invalid = validateSimpleChannels(resolved, sw.channels ?? [], snapshot);
     if (invalid) return jsonError(400, invalid.error, { details: invalid.details });
 
     const channels = withSnapshotNames(resolved, snapshot);
     await markSwitchEditing(sw.id, EDITING_WINDOW_MIN);
     const rev = await replaceSimpleChannels(sw.id, channels);
-    return jsonOk({ ok: true, mac, rev, channels });
+    return jsonOk({ ok: true, mac, rev, channels: channels.map(browserSimpleChannel) });
   } catch (err) {
     return databaseError(err);
   }

@@ -281,7 +281,7 @@ export function buildLightsModel(bridge: LoadedBridge, items: BridgeSwitch[]): L
           }
         };
         if (config.kind === "maintained") {
-          add(u, "On / Off", "onoff", target(config.target, config.group.rtype));
+          add(u, "Flip", config.flip === "toggle" ? "toggle" : "onoff", target(config.target, config.group.rtype));
           if (config.scenes.length > 0) {
             add(u, "Double-click", "scenes", scenesTarget(config.group, config.scenes), names(config.scenes));
           }
