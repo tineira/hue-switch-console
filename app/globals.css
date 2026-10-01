@@ -504,7 +504,14 @@ option {
     0 0 calc(var(--d) * 3) calc(var(--d) * 1) rgb(255 138 31 / 35%);
 }
 
+/* The board arrives once rendered: a short fade in, nothing with reduced motion. */
+.led-board-in { animation: led-board-in 150ms ease-out; }
+@keyframes led-board-in {
+  from { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .led-board-in { animation: none; }
   .led::after { animation: none; }
   .led:not(.led-solid)::after { opacity: 0.5; }
 }
