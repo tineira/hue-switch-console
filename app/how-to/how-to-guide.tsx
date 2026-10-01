@@ -9,7 +9,7 @@ import { StateVisual } from "@/app/how-to/visuals";
 import { Rich } from "@/app/rich-text";
 import { Illo } from "@/app/how-to/illo/illo";
 import { BEFORE_YOU_START } from "@/lib/setup-guide";
-import { InstallBarMock } from "@/app/setup/guide-parts";
+import { ConnectMock, InstallBarMock } from "@/app/setup/guide-parts";
 import {
   PRODUCT_INFO,
   PRODUCTS,
@@ -194,10 +194,10 @@ function SetupSection({ product, version }: { product: Product; version: string 
                   </div>
                 ) : null}
               </div>
-              {step.now === "install" ? (
+              {step.now === "install" || step.now === "connect" ? (
                 <div className="flex flex-[1_1_148px] flex-col justify-center gap-2.5 rounded-[10px] bg-background p-3 sm:flex-[0_0_168px]">
                   <span className={`${GROUP_LABEL} text-center`}>Setup shows now</span>
-                  <InstallBarMock compact />
+                  {step.now === "install" ? <InstallBarMock compact /> : <ConnectMock />}
                 </div>
               ) : step.now ? (
                 <div className="flex flex-[1_1_148px] flex-col items-center justify-center gap-2.5 rounded-[10px] bg-background p-3 text-center sm:flex-[0_0_148px]">

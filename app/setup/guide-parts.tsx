@@ -252,3 +252,37 @@ export function InstallBarMock({ compact }: { compact?: boolean }) {
     </figure>
   );
 }
+
+/**
+ * A picture of step 1 for How-to's narrow "Setup shows now" column: the Connect button, then the
+ * window Chrome opens with the board's entry picked. Dashed and labelled as an example, nothing
+ * in it reacts, like PortPickerMock.
+ */
+export function ConnectMock() {
+  return (
+    <figure className="flex min-w-0 flex-col gap-1.5">
+      <div className="pointer-events-none flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-line p-2.5 select-none">
+        <span className="self-start text-[10px] font-medium uppercase tracking-[0.14em] text-muted">Example</span>
+        <div aria-hidden="true" className="flex w-full flex-col items-center gap-1.5">
+          <span className="rounded-md bg-filament px-2.5 py-1 text-[11px] font-medium text-filament-ink">Connect</span>
+          <svg viewBox="0 0 10 14" width="8" height="12" className="text-muted">
+            <path d="M5 1v11M1.5 8.5 5 12l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div className="w-full rounded-md bg-[#3c3c3c] p-1.5 text-[#e3e3e3] shadow-md">
+            <p className="mb-1 text-[9px] leading-tight font-medium">This site wants to connect to a serial port</p>
+            <div className="rounded border border-[#5f5f5f] p-0.5">
+              <div className="rounded bg-[#4a4a4a] px-1 py-0.5 text-[9.5px] leading-tight">{PORT_NAME} (COM3)</div>
+            </div>
+            <div className="mt-1 flex justify-end gap-1 text-[8.5px]">
+              <span className="rounded-full border border-[#5f5f5f] px-1.5">Connect</span>
+              <span className="rounded-full border border-[#5f5f5f] px-1.5">Cancel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption className="text-[11px] text-balance text-muted">
+        Click Connect, pick the board, Connect again in Chrome&apos;s window.
+      </figcaption>
+    </figure>
+  );
+}

@@ -55,9 +55,10 @@ export type SetupStep = {
   note?: string;
   // A picture of what to do with your hands.
   illo?: { id: IlloId; alt: string };
-  // What the switch shows while you are on this step; "install" is Setup's install bar, which is
-  // what you watch then. Steps where the board shows nothing you can count on have none.
-  now?: { caption: string; visual: Visual } | "install";
+  // What the switch shows while you are on this step. On the first two the board shows nothing
+  // you can count on, so they show what Setup shows: its Connect button and Chrome's port window
+  // ("connect"), then its install bar ("install").
+  now?: { caption: string; visual: Visual } | "connect" | "install";
 };
 
 export type Task = { title: string; steps: string[] };
@@ -84,6 +85,7 @@ export function setupSteps(product: Product): SetupStep[] {
     {
       title: connect.title,
       body: connect.summary,
+      now: "connect",
       illo: round
         ? { id: "round-plug", alt: "The Round with a USB-C cable to the computer." }
         : { id: "simple-plug", alt: "The XIAO ESP32-C6 with a USB-C cable to the computer." },

@@ -1067,7 +1067,7 @@ export function SetupPanel({
   // What the board shows while each step is open (the How-to pictures); "done" is the Done card.
   const nowOf = (i: number) => {
     const now = howTo[i]?.now;
-    return now && now !== "install" ? now : undefined;
+    return now && typeof now === "object" ? now : undefined;
   };
   const shows: Partial<Record<GuideStepId | "done", { caption: string; visual: Visual }>> = {
     wifi: nowOf(2),
