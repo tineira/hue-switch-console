@@ -1,8 +1,8 @@
-import { AdminFrame, CARD, FleetTable, ReleaseRow, waitingReleases } from "@/app/admin/parts";
+import { AdminFrame, CARD, FirmwareTable, NotesOnlyRow, waitingReleases } from "@/app/admin/parts";
 import { fleetCounts } from "@/lib/admin";
 import { requireAdmin } from "@/lib/auth";
 import { listStoredReleases } from "@/lib/firmware";
-import { fleetRows } from "@/lib/fleet";
+import { firmwareTable } from "@/lib/fleet";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +33,8 @@ export default async function AdminFirmwarePage() {
         <p className="text-sm text-muted">
           What <code>/setup</code> installs and Switches offers over Wi-Fi. A new upload from firmware CI
           waits here until you make it current; until then it is not installed, offered or shown on{" "}
-          <code>/changelog</code>. Make an older release current to roll back. Above each list: which
-          firmware the switches run.
+          <code>/changelog</code>. Make an older release current to roll back. Beside each release: the
+          switches that run it.
         </p>
         <div className="grid gap-5 md:grid-cols-2">
           {(
@@ -43,18 +43,11 @@ export default async function AdminFirmwarePage() {
               ["simple", "Simple", simpleReleases, fleet.simple],
             ] as const
           ).map(([product, label, releases, counts]) => {
-            const shipped = releases.filter((r) => r.hasBins || r.current);
-            const notesOnly = releases.filter((r) => !r.hasBins && !r.current);
-            const current = releases.find((r) => r.current)?.version ?? null;
+            const { rows, notesOnly } = firmwareTable(releases, counts);
             return (
               <div key={product} className="flex flex-col gap-3">
                 <h2 className="text-base font-medium">{label}</h2>
-                <FleetTable rows={fleetRows(counts, current)} />
-                <ul className="flex flex-col divide-y divide-line text-sm">
-                  {shipped.map((r) => (
-                    <ReleaseRow key={r.version} product={product} release={r} />
-                  ))}
-                </ul>
+                <FirmwareTable product={product} rows={rows} />
                 {notesOnly.length > 0 ? (
                   <details className="text-sm">
                     <summary className="cursor-pointer text-xs text-muted">
@@ -62,7 +55,7 @@ export default async function AdminFirmwarePage() {
                     </summary>
                     <ul className="mt-1 flex max-h-72 flex-col divide-y divide-line overflow-y-auto">
                       {notesOnly.map((r) => (
-                        <ReleaseRow key={r.version} product={product} release={r} />
+                        <NotesOnlyRow key={r.version} release={r} />
                       ))}
                     </ul>
                   </details>

@@ -5,7 +5,7 @@ import { Shell } from "@/app/shell";
 import { LIMIT_KEYS, PAGE_SIZE, adminTabCounts, type AdminAccountRow } from "@/lib/admin";
 import { CONSOLE_ACTOR, FIRMWARE_CI_ACTOR, type AdminEvent } from "@/lib/audit";
 import { listStoredReleases, type StoredRelease } from "@/lib/firmware";
-import type { FleetRow } from "@/lib/fleet";
+import type { FirmwareRow } from "@/lib/fleet";
 import type { ProductId } from "@/lib/web-setup/products";
 
 // What the admin tabs share (docs/specs/finished/admin-tabs.md).
@@ -81,71 +81,78 @@ export function eventDetails(e: AdminEvent): string {
   return "";
 }
 
-export function ReleaseRow({ product, release: r }: { product: ProductId; release: StoredRelease }) {
+// A release kept for its notes only, under the fold of the firmware table.
+export function NotesOnlyRow({ release: r }: { release: StoredRelease }) {
   return (
     <li className="flex items-center gap-3 py-1.5">
       <span className="font-mono text-xs">{r.version}</span>
       <span className="text-xs text-muted">{day(r.createdAt)}</span>
-      {r.waiting ? (
-        <span className="rounded-full bg-warn-soft px-2 py-px text-[11px] font-medium text-warn">
-          waiting
-        </span>
-      ) : null}
-      <span className="ml-auto text-xs">
-        {r.current ? (
-          <span className="font-medium">current</span>
-        ) : r.hasBins ? (
-          <form action={makeCurrentAction}>
-            <input type="hidden" name="product" value={product} />
-            <input type="hidden" name="version" value={r.version} />
-            <button className={SMALL_BUTTON}>Make current</button>
-          </form>
-        ) : (
-          <span className="text-muted">notes only</span>
-        )}
-      </span>
+      <span className="ml-auto text-xs text-muted">notes only</span>
     </li>
   );
 }
 
-const RELATION_TEXT: Record<FleetRow["relation"], string> = {
-  current: "current",
-  older: "older",
-  newer: "newer than current",
-  unknown: "",
-};
+function Count({ value, className = "" }: { value: number | undefined; className?: string }) {
+  return value ? <span className={className}>{value}</span> : <span className="text-muted/60">—</span>;
+}
 
-// Which firmware the switches run, across every account. An old path in the device API goes only
-// once no switch runs an older version (AGENTS.md, "Cross-repo changes").
-export function FleetTable({ rows }: { rows: FleetRow[] }) {
-  if (rows.length === 0) return <p className="text-xs text-muted">No switches yet.</p>;
+// Each release with the switches that run it, across every account. Older rows that still have
+// switches stay amber: an old path in the device API goes only once no switch runs an older
+// version (AGENTS.md, "Cross-repo changes").
+export function FirmwareTable({ product, rows }: { product: ProductId; rows: FirmwareRow[] }) {
+  if (rows.length === 0) return <p className="text-xs text-muted">No releases yet.</p>;
   return (
-    <table className="w-full text-xs">
-      <thead className="text-muted">
-        <tr>
-          <th className="py-1 text-left font-medium">Running</th>
-          <th className="py-1 text-right font-medium">Switches</th>
-          <th className="py-1 text-right font-medium" title="Not seen for 24 hours, or never">
+    <table className="w-full text-sm">
+      <thead className="text-xs text-muted">
+        <tr className="align-bottom">
+          <th className="py-1 text-left font-medium">Version</th>
+          <th className="py-1 pl-2 text-right font-medium">Switches</th>
+          <th className="py-1 pl-2 text-right font-medium" title="Not seen for 24 hours, or never">
             Quiet 24 h
           </th>
-          <th className="py-1 text-right font-medium" title="An update failed in the last 7 days">
+          <th className="py-1 pl-2 text-right font-medium" title="An update failed in the last 7 days">
             Update failed
+          </th>
+          <th className="py-1 pl-2">
+            <span className="sr-only">Action</span>
           </th>
         </tr>
       </thead>
       <tbody className="divide-y divide-line">
-        {rows.map((row) => (
-          <tr key={row.firmware ?? "none"} className={row.relation === "older" ? "text-warn" : undefined}>
-            <td className="py-1">
-              <span className="font-mono">{row.firmware ?? "not reported"}</span>
-              {RELATION_TEXT[row.relation] ? (
-                <span className="ml-2 text-muted">{RELATION_TEXT[row.relation]}</span>
-              ) : null}
+        {rows.map(({ version, release: r, count, relation }) => (
+          <tr key={version ?? "none"}>
+            <td className={`py-1.5 ${relation === "older" && count ? "text-warn" : ""}`}>
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                <span className="font-mono text-xs">{version ?? "not reported"}</span>
+                {r ? <span className="text-xs text-muted">{day(r.createdAt)}</span> : null}
+                {r?.waiting ? (
+                  <span className="rounded-full bg-warn-soft px-2 py-px text-[11px] font-medium text-warn">
+                    waiting
+                  </span>
+                ) : null}
+              </span>
             </td>
-            <td className="py-1 text-right">{row.switches}</td>
-            <td className="py-1 text-right">{row.quiet || "—"}</td>
-            <td className={`py-1 text-right ${row.otaFailed ? "text-danger" : ""}`}>
-              {row.otaFailed || "—"}
+            <td className="py-1.5 pl-2 text-right text-xs">
+              <Count value={count?.switches} />
+            </td>
+            <td className="py-1.5 pl-2 text-right text-xs">
+              <Count value={count?.quiet} />
+            </td>
+            <td className="py-1.5 pl-2 text-right text-xs">
+              <Count value={count?.otaFailed} className="text-danger" />
+            </td>
+            <td className="py-1.5 pl-2 text-right text-xs whitespace-nowrap">
+              {r?.current ? (
+                <span className="font-medium">current</span>
+              ) : r?.hasBins ? (
+                <form action={makeCurrentAction}>
+                  <input type="hidden" name="product" value={product} />
+                  <input type="hidden" name="version" value={r.version} />
+                  <button className={SMALL_BUTTON}>Make current</button>
+                </form>
+              ) : (
+                <span className="text-muted">{r ? "notes only" : version ? "not uploaded" : ""}</span>
+              )}
             </td>
           </tr>
         ))}
