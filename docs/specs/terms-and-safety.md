@@ -2,7 +2,7 @@
 
 Cross-repo spec, but not a contract change: no endpoint, payload or NVS key moves. Process: `AGENTS.md` → "Cross-repo changes" (spec first, the user approves, then each repo's checklist).
 
-**Status:** draft, 2026-09-30.
+**Status:** approved 2026-09-30 by the user (§5 decided, except the country in question 2). Not implemented.
 
 ## 1. What and why
 
@@ -92,7 +92,7 @@ The gate does not reach someone who reads a guide and never signs up. So:
 
 ### 2.6 Draft texts
 
-Plain language, short sentences, written for an international audience. To be reviewed by a lawyer (§5, question 1). `<COUNTRY>` and `<CONTACT>` are filled in from §5.
+Plain language, short sentences, written for an international audience. To be reviewed by a lawyer (§5, question 1). `<COUNTRY>` is filled in from §5.
 
 #### 2.6.1 Safety notice (`/safety`)
 
@@ -109,11 +109,11 @@ Plain language, short sentences, written for an international audience. To be re
 >
 > If you are unsure about any step, stop and ask a qualified electrician.
 
-The page then has: `#status` (the three statuses from §2.5), a short "If something goes wrong" (switch off at the breaker, do not touch, call an electrician or emergency services), and how to report a design problem (a GitHub issue, or `<CONTACT>` for anything that could hurt someone).
+The page then has: `#status` (the three statuses from §2.5), a short "If something goes wrong" (switch off at the breaker, do not touch, call an electrician or emergency services), and how to report a design problem (a GitHub issue, or privacy@tineira.com for anything that could hurt someone).
 
 #### 2.6.2 Terms of Use (`/terms`, hosted console only)
 
-> **1. Who we are.** Hue Switch Console at hue.tineira.com is a free, non-commercial service run by Tomas Neira, an individual, from `<COUNTRY>`. Contact: `<CONTACT>`.
+> **1. Who we are.** Hue Switch Console at hue.tineira.com is a free, non-commercial service run by Tomas Neira, an individual, from `<COUNTRY>`. Contact: privacy@tineira.com.
 >
 > **2. Accepting these terms.** You accept these Terms and the Safety notice when you create an account. You must be at least 18. If you do not accept them, do not use the console.
 >
@@ -127,7 +127,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 >
 > **7. Limitation of liability.** As far as the law where you live allows, Tomas Neira and the project's contributors are not liable for any damage, injury, loss or cost arising from building, installing or using anything from this project, or from using the console. Nothing in these Terms limits liability that cannot be limited by law, such as liability for death or personal injury caused by negligence where the law forbids that limit, or your rights as a consumer.
 >
-> **8. Open-source licenses.** The console's source is AGPL-3.0-only, and the firmware is MIT. The hardware designs are `<HARDWARE LICENSE>`. Those licenses govern the code and designs; these Terms govern this hosted service.
+> **8. Open-source licenses.** The console's source is AGPL-3.0-only, and the firmware is MIT. The hardware designs are CERN-OHL-P-2.0. Those licenses govern the code and designs; these Terms govern this hosted service.
 >
 > **9. Changes.** We may update these Terms or the Safety notice. For a material change, the console asks you to accept the new version before you continue. Switches already installed keep working in the meantime.
 >
@@ -175,12 +175,14 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 
 - [ ] Spec moved to `docs/specs/finished/` once all boxes are ticked
 
-## 5. Open questions
+## 5. Decisions
 
-1. **Lawyer review.** Have a lawyer in your country review §2.6 once before launch, or launch with the drafts and review later? *Recommendation:* review before launch. It is one short review of two short texts, and mains designs are where it matters.
-2. **Country for §2.6.2 (governing law) and contact.** *Recommendation:* the country you live in, and `privacy@tineira.com` as the contact (it already forwards to you), or a new `legal@` alias on the same Email Routing setup.
-3. **Starting status per design.** *Recommendation:* Round on USB `maintainer`; Simple try-it and button box `maintainer`; Simple in-wall carrier board `experimental` until you have built and installed one yourself. Correct me where you have built more.
-4. **Hardware license for the carrier board.** Keep MIT, or move `hue-simple-switch/hardware/` to CERN-OHL-P-2.0? Both are permissive; CERN-OHL-P is written for physical hardware and has a disclaimer worded for it. *Recommendation:* CERN-OHL-P-2.0 for `hardware/` only, firmware stays MIT. You are the only author so far, so the change needs no one else's consent.
-5. **Minimum age.** *Recommendation:* 18, because of the mains build.
-6. **Gate on self-hosted consoles.** Require Safety acceptance on every console, or only on the hosted one? *Recommendation:* every console; the Safety notice is about the designs, which are the same everywhere, and it costs a self-hoster one click.
-7. **Hide the in-wall install steps until accepted?** *Recommendation:* no. Safety information should be easy to find, and hiding it from people who will build anyway makes them less safe. The red box, the status chip and `/safety` cover the public pages.
+Decided by the user on 2026-09-30.
+
+1. **Lawyer review:** yes, once, before launch. The user arranges it; the console ships the texts only after it.
+2. **Contact:** `privacy@tineira.com`. **Country for governing law (§2.6.2): still open.** Fill in `<COUNTRY>` once the user names it.
+3. **Starting status:** Round on USB `maintainer`; Simple try-it and button box `maintainer`; Simple in-wall carrier board `experimental` until the user has built and installed one.
+4. **Hardware license:** `hue-simple-switch/hardware/` moves to CERN-OHL-P-2.0; firmware stays MIT. `<HARDWARE LICENSE>` in §2.6.2 is CERN-OHL-P-2.0.
+5. **Minimum age:** 18.
+6. **Self-hosted consoles:** the Safety notice is accepted on every console.
+7. **In-wall install steps:** stay public, never hidden behind acceptance.
