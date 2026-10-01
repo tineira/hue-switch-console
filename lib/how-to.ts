@@ -55,8 +55,9 @@ export type SetupStep = {
   note?: string;
   // A picture of what to do with your hands.
   illo?: { id: IlloId; alt: string };
-  // What the switch shows once this step is done.
-  shows?: { caption: string; visual: Visual };
+  // What the switch shows while you are on this step; "install" is Setup's install bar, which is
+  // what you watch then. Steps where the board shows nothing you can count on have none.
+  now?: { caption: string; visual: Visual } | "install";
 };
 
 export type Task = { title: string; steps: string[] };
@@ -94,25 +95,23 @@ export function setupSteps(product: Product): SetupStep[] {
       illo: round
         ? undefined
         : { id: "simple-buttons", alt: "The XIAO ESP32-C6 seen from above: 1 BOOT and 2 RESET on either side of the USB-C socket." },
-      shows: round
-        ? { caption: "No Wi-Fi. Expected: none saved yet.", visual: { face: "nowifi" } }
-        : { caption: "Fast blink: no Wi-Fi yet", visual: { led: "fast" } },
+      now: "install",
     },
     {
       title: wifi.title,
       body: wifi.summary,
       note: round ? "The Round needs its U.FL antenna plugged in to reach the router." : undefined,
-      shows: round
-        ? { caption: "Loading…, then Press Bridge button", visual: { face: "loading" } }
-        : { caption: "Two blinks: needs the console", visual: { led: "burst-2" } },
+      now: round
+        ? { caption: "No Wi-Fi: none saved yet", visual: { face: "nowifi" } }
+        : { caption: "Fast blink: no Wi-Fi yet", visual: { led: "fast" } },
     },
     {
       title: link.title,
       body: link.summary,
       note: "Wi-Fi or Console can turn amber for a moment while the board joins. Setup checks again every 10 seconds, up to three times, then offers **Check again**.",
-      shows: round
-        ? { caption: "Press Bridge button: it waits until step 5", visual: { face: "pairing" } }
-        : { caption: "Three blinks: needs pairing", visual: { led: "burst-3" } },
+      now: round
+        ? { caption: "Loading…, then Press Bridge button", visual: { face: "loading" } }
+        : { caption: "Two blinks: needs the console", visual: { led: "burst-2" } },
     },
     {
       title: bridge.title,
@@ -121,9 +120,9 @@ export function setupSteps(product: Product): SetupStep[] {
         ? "Nothing happens? Click **Pair with Bridge** on Setup and press the Bridge's button again."
         : "Missed it? Click **Pair with Bridge** on Setup, or hold **BOOT** on the board for about 3 seconds.",
       illo: { id: "hue-bridge", alt: "A Hue Bridge seen from the front, a finger pressing 1, the round link button in the middle of its top." },
-      shows: round
-        ? { caption: "Blank disc: needs a page", visual: { face: "empty" } }
-        : { caption: "Four blinks: needs a recipe", visual: { led: "burst-4" } },
+      now: round
+        ? { caption: "Press Bridge button: it waits for you", visual: { face: "pairing" } }
+        : { caption: "Three blinks: needs pairing", visual: { led: "burst-3" } },
     },
     {
       title: round ? "Give it a page" : "Give its buttons a job",
@@ -132,9 +131,9 @@ export function setupSteps(product: Product): SetupStep[] {
       body: round
         ? "Pick the switch, click **Add page** and choose a room or zone. Tap toggles its lights and double tap turns them off. Click **Save changes**."
         : "Pick the switch and start with **BOOT**, the button on the board: choose a room or zone, click **Save changes**, and press BOOT to test. Then click **Add a switch** for each switch or button you wired: what it is (**Wall switch** or **Push button**), which pin, which room.",
-      shows: round
-        ? { caption: "Ready", visual: { face: "ready" } }
-        : { caption: "Ready", visual: { led: "heart" } },
+      now: round
+        ? { caption: "Blank disc: needs a page", visual: { face: "empty" } }
+        : { caption: "Four blinks: needs a recipe", visual: { led: "burst-4" } },
     },
   ];
 }

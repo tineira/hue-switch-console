@@ -49,7 +49,7 @@ import {
   type ProductSpec,
 } from "@/lib/web-setup/products";
 import { BytePort, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
-import { setupSteps } from "@/lib/how-to";
+import { setupSteps, type Visual } from "@/lib/how-to";
 import {
   BEFORE_YOU_START,
   HUEBOOT_SINCE,
@@ -62,6 +62,7 @@ import { Illo } from "@/app/how-to/illo/illo";
 import { StateVisual } from "@/app/how-to/visuals";
 import {
   ButtonSteps,
+  InstallBarMock,
   CantBreak,
   ChipList,
   PortPickerMock,
@@ -1063,11 +1064,16 @@ export function SetupPanel({
   const step = (id: GuideStepId) => guide.find((g) => g.id === id) as GuideStep;
   // What the board shows once each step is done (the How-to "Then it shows" pictures).
   const howTo = setupSteps(shown);
-  const shows: Partial<Record<GuideStepId, (typeof howTo)[number]["shows"]>> = {
-    firmware: howTo[1]?.shows,
-    wifi: howTo[2]?.shows,
-    console: howTo[3]?.shows,
-    bridge: howTo[4]?.shows,
+  // What the board shows while each step is open (the How-to pictures); "done" is the Done card.
+  const nowOf = (i: number) => {
+    const now = howTo[i]?.now;
+    return now && now !== "install" ? now : undefined;
+  };
+  const shows: Partial<Record<GuideStepId | "done", { caption: string; visual: Visual }>> = {
+    wifi: nowOf(2),
+    console: nowOf(3),
+    bridge: nowOf(4),
+    done: nowOf(5),
   };
   const ver = card?.ver || "Unknown version";
   const manifestVersion = detected?.manifest?.version ?? null;
@@ -1153,19 +1159,25 @@ export function SetupPanel({
     </>
   );
 
-  function showsNext(id: GuideStepId) {
-    const next = shows[id];
-    if (!next) return null;
+  function showsNow(id: GuideStepId | "done") {
+    const now = shows[id];
+    if (!now) return null;
     return (
       <div className="flex items-center gap-3 rounded-lg bg-background px-3 py-2.5">
         <span className="flex h-14 w-14 shrink-0 items-center justify-center">
-          <StateVisual visual={next.visual} label={next.caption} size={56} version={manifestVersion} />
+          <StateVisual visual={now.visual} label={now.caption} size={56} version={manifestVersion} />
         </span>
         <span className="flex flex-col gap-0.5 text-sm">
           <span className="text-xs text-muted">
-            Then the {round ? "screen" : "orange LED on the board"} shows
+            {round ? "The screen shows now" : "The orange LED on the board shows now"}
           </span>
-          <span>{next.caption}</span>
+          <span>{now.caption}</span>
+          <Link
+            href={`/how-to?product=${shown}&topic=status`}
+            className="w-fit text-xs text-muted underline underline-offset-2 hover:text-filament"
+          >
+            Shows something else?
+          </Link>
         </span>
       </div>
     );
@@ -1485,7 +1497,7 @@ export function SetupPanel({
             <p className="text-muted">No buttons to press: the console restarts the Round by itself.</p>
           )}
           {installButton}
-          {actions.flash === "install" ? showsNext("firmware") : null}
+          <InstallBarMock />
         </>
       ) : null}
       <CantBreak />
@@ -1563,7 +1575,7 @@ export function SetupPanel({
       {round ? (
         <p className="text-xs text-muted">The Round needs its antenna clicked into its socket to reach the router.</p>
       ) : null}
-      {showsNext("wifi")}
+      {showsNow("wifi")}
       {feedback}
       <StepHelp why={step("wifi").why} trouble={step("wifi").trouble} />
     </>
@@ -1610,7 +1622,7 @@ export function SetupPanel({
       ) : (
         <p className="text-muted">Connect the board again to link it.</p>
       )}
-      {showsNext("console")}
+      {showsNow("console")}
       {feedback}
       <StepHelp why={step("console").why} trouble={step("console").trouble} />
     </>
@@ -1652,7 +1664,7 @@ export function SetupPanel({
           <Illo id="hue-bridge" alt="A Hue Bridge seen from the front, a finger pressing 1, the round link button in the middle of its top." />
         </div>
       </div>
-      {showsNext("bridge")}
+      {showsNow("bridge")}
       {feedback}
       <StepHelp why={step("bridge").why} trouble={step("bridge").trouble} />
     </>
@@ -1756,6 +1768,7 @@ export function SetupPanel({
                 {round ? "put it where it goes" : "mount it"}. Changes reach the switch within about 15
                 minutes, or right away if you unplug it and plug it back in.
               </p>
+              {showsNow("done")}
               <div className="flex flex-wrap gap-2">
                 <Link href={switchHref} className={PRIMARY}>
                   Set up its {round ? "pages" : "buttons"}

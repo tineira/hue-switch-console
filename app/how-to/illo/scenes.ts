@@ -278,9 +278,9 @@ function roundSwitch(): SceneDef {
 // Turn the finished Round so USB-C leaves to the right of the upright screen.
 const DONE_TURN = 2.2;
 
-function roundDone(cableNote = "USB-C to a phone charger"): SceneDef {
+function roundDone(cableNote = "USB-C to a phone charger", on = true): SceneDef {
   // The dial texture turned back so its text reads level from this camera.
-  const d = display({ on: true, dipOn: true, dialTurn: -1.74 });
+  const d = display({ on, dipOn: true, dialTurn: -1.74 });
   const { g: xa } = xiaoWithHeaders();
   xa.rotation.z = Math.PI;
   xa.position.set(0, -2.5, HDR_Z);
@@ -1142,7 +1142,8 @@ export function buildScene(id: IlloId): SceneDef {
     case "round-done":
       return roundDone();
     case "round-plug":
-      return roundDone("USB-C to this computer");
+      // Not set up yet: the screen is off.
+      return roundDone("USB-C to this computer", false);
     case "simple-kit-try":
       return simpleKitTry();
     case "simple-plug":

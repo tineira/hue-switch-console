@@ -229,3 +229,26 @@ export function ChipList({ label, items }: { label: string; items: string[] }) {
     </div>
   );
 }
+
+/**
+ * A picture of Setup's install bar, for the install step: in a dashed frame labelled as an
+ * example (like PortPickerMock), so it isn't taken for the real one.
+ */
+export function InstallBarMock({ compact }: { compact?: boolean }) {
+  return (
+    <figure className="flex min-w-0 flex-col gap-1.5">
+      <div className="pointer-events-none flex flex-col gap-1.5 rounded-lg border border-dashed border-line p-2.5 select-none">
+        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted">Example</span>
+        <div aria-hidden="true" className="flex flex-col gap-1.5">
+          <span className={compact ? "text-[11px] font-medium" : "text-xs font-medium"}>Writing firmware… 42%</span>
+          <span className="h-1.5 overflow-hidden rounded-full bg-line">
+            <span className="block h-full w-[42%] bg-filament" />
+          </span>
+        </div>
+      </div>
+      <figcaption className={`text-muted ${compact ? "text-[11px] text-balance" : "text-xs"}`}>
+        About a minute. Keep the cable in until it says it&apos;s done.
+      </figcaption>
+    </figure>
+  );
+}

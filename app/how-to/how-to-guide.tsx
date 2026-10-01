@@ -9,6 +9,7 @@ import { StateVisual } from "@/app/how-to/visuals";
 import { Rich } from "@/app/rich-text";
 import { Illo } from "@/app/how-to/illo/illo";
 import { BEFORE_YOU_START } from "@/lib/setup-guide";
+import { InstallBarMock } from "@/app/setup/guide-parts";
 import {
   PRODUCT_INFO,
   PRODUCTS,
@@ -193,18 +194,29 @@ function SetupSection({ product, version }: { product: Product; version: string 
                   </div>
                 ) : null}
               </div>
-              {step.shows ? (
+              {step.now === "install" ? (
+                <div className="flex flex-[1_1_148px] flex-col justify-center gap-2.5 rounded-[10px] bg-background p-3 sm:flex-[0_0_168px]">
+                  <span className={`${GROUP_LABEL} text-center`}>Setup shows now</span>
+                  <InstallBarMock compact />
+                </div>
+              ) : step.now ? (
                 <div className="flex flex-[1_1_148px] flex-col items-center justify-center gap-2.5 rounded-[10px] bg-background p-3 text-center sm:flex-[0_0_148px]">
-                  <span className={GROUP_LABEL}>Then it shows</span>
+                  <span className={GROUP_LABEL}>{product === "round" ? "The screen shows now" : "The board shows now"}</span>
                   <span className="flex min-h-16 items-center justify-center">
                     <StateVisual
-                      visual={step.shows.visual}
-                      label={step.shows.caption}
+                      visual={step.now.visual}
+                      label={step.now.caption}
                       size={64}
                       version={version}
                     />
                   </span>
-                  <span className="text-xs text-balance">{step.shows.caption}</span>
+                  <span className="text-xs text-balance">{step.now.caption}</span>
+                  <Link
+                    href={`/how-to?product=${product}&topic=status`}
+                    className="text-[11px] text-muted underline underline-offset-2 hover:text-filament"
+                  >
+                    Shows something else?
+                  </Link>
                 </div>
               ) : null}
             </div>
