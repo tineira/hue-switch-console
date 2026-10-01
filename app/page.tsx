@@ -7,6 +7,7 @@ import type { Part } from "@/app/landing/parts-list";
 import { RoundTrack } from "@/app/landing/round-track";
 import { SimpleCard } from "@/app/landing/simple-card";
 import { ThemeToggle } from "@/app/landing/theme-toggle";
+import { NeedsRow } from "@/app/landing/needs-row";
 import { JoinWaitlistLink, LandingWaitlistForm } from "@/app/landing/waitlist-form";
 import { turnstileSiteKey, type SignupMode } from "@/lib/account-config";
 import { getSessionUser } from "@/lib/auth";
@@ -301,6 +302,11 @@ export default async function Home() {
               <p className="text-pretty text-sm leading-normal text-muted">{fact.text}</p>
             </div>
           ))}
+        </section>
+
+        <section className="flex flex-col gap-7">
+          <h2 className={H2}>What you need</h2>
+          <NeedsRow />
         </section>
 
         <section className="flex flex-col gap-7">
