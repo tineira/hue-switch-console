@@ -247,7 +247,7 @@ export function InstallBarMock({ compact }: { compact?: boolean }) {
         </div>
       </div>
       <figcaption className={`text-muted ${compact ? "text-[11px] text-balance" : "text-xs"}`}>
-        About a minute. Keep the cable in until it says it&apos;s done.
+        A few seconds. Keep the cable in until it says it&apos;s done.
       </figcaption>
     </figure>
   );

@@ -54,7 +54,7 @@ Text below is the proposed wording. "Why" and "If it goes wrong" are the disclos
   - **Simple already on our firmware:** no buttons until the end (`HUEBOOT`), then tap **RESET** once.
   - **Round (S3):** no buttons; the console resets it itself.
 - **Illustration:** render of the board from the USB side with numbered balloons on BOOT and RESET that match the numbered sequence (no part moves on the approved model). Round gets a render of the plugged-in kit instead.
-- **What you'll see:** a progress bar (about a minute), then the board restarts. A preview of the LED or screen state it should show next (`StateVisual`, as on How-to).
+- **What you'll see:** a progress bar (a few seconds: about 5 on the Simple, 10 on the Round), then the board restarts. A preview of the LED or screen state it should show next (`StateVisual`, as on How-to).
 - **Reassurance box** (always visible on this step, not in a disclosure): **You can't break the XIAO this way.** The install mode lives in read-only memory inside the chip, and no firmware can erase it. Holding BOOT and tapping RESET always gets back to it. If an install stops half-way, just install again.
 - **Why:** The XIAO ships with a demo program from the factory. This replaces it with the switch firmware, the version the console currently serves.
 - **If it goes wrong:**

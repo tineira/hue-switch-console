@@ -1466,7 +1466,7 @@ export function SetupPanel({
               <div className="h-full bg-filament" style={{ width: `${percent}%` }} />
             </div>
           ) : null}
-          <p className="mt-2 text-xs text-muted">Keep the cable in. This takes about a minute.</p>
+          <p className="mt-2 text-xs text-muted">Keep the cable in. This takes a few seconds.</p>
         </div>
       ) : !actions.unsupported ? (
         <>
