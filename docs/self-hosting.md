@@ -127,11 +127,11 @@ Without the secret, a fork's CI still builds and skips the upload with a notice.
 
 ## 6. Point switches at your console
 
-1. Plug the switch into the computer running Setup (step 2) and press **Detect**.
-2. **Install** the firmware if the board has none, then **Set up Wi-Fi**.
-3. **Link to console** makes a key for the board and writes it, with `DEVICE_CONSOLE_URL`, to the board. The hint shows the URL first.
+1. Plug the switch into the computer running Setup (step 2) and click **Connect**.
+2. **Install** the firmware if the board has none, then **Save Wi-Fi**.
+3. **Link to console** makes a key for the board and writes it, with `DEVICE_CONSOLE_URL`, to the board. The step shows the URL first.
 
-A board that was set up for another console (such as `hue.tineira.com`) shows **Linked to another console** in the checklist and a **Move to this console** button. It asks before it writes anything. Moving keeps Wi-Fi and the Hue link; the board registers with your console on its next check-in, and you set its buttons or pages again in **Switches**.
+A board that was set up for another console (such as `hue.tineira.com`) shows **Linked to another console** on its console step and a **Move to this console** button. It asks before it writes anything. Moving keeps Wi-Fi and the Hue link; the board registers with your console on its next check-in, and you set its buttons or pages again in **Switches**.
 
 To move a board back to the hosted console, link it again from `https://hue.tineira.com/setup`.
 

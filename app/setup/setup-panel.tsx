@@ -49,6 +49,26 @@ import {
   type ProductSpec,
 } from "@/lib/web-setup/products";
 import { BytePort, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
+import { setupSteps } from "@/lib/how-to";
+import {
+  BEFORE_YOU_START,
+  HUEBOOT_SINCE,
+  PORT_NAME,
+  guideSteps,
+  type GuideStep,
+  type GuideStepId,
+} from "@/lib/setup-guide";
+import { Illo } from "@/app/how-to/illo/illo";
+import { StateVisual } from "@/app/how-to/visuals";
+import {
+  ButtonSteps,
+  CantBreak,
+  ChipList,
+  PortPickerMock,
+  StepHelp,
+  StepRow,
+  type StepState,
+} from "@/app/setup/guide-parts";
 import {
   type ReactNode,
   useEffect,
@@ -61,6 +81,7 @@ import {
 const PAIR_CONFIRM =
   "This forgets the current Hue link and starts pairing again.";
 const PAIR_PROMPT = "Press the button on the Hue Bridge.";
+const PAIR_MS = 90_000;
 const PICK_PORT = "Choose the board's port in the window Chrome opened.";
 const READING = "Reading the board…";
 const CLEAR_CONFIRM =
@@ -90,7 +111,14 @@ type Detected = {
   cdc: boolean;
 };
 
-type Panel = "none" | "wifi" | "flash" | "after-flash";
+type Panel = "none" | "flash" | "after-flash";
+
+// Install waits on the page for the person's hands: "boot" is BOOT+RESET on the Simple, "hold"
+// is BOOT held on a board Chrome could not identify (the Round resets itself once it answers).
+type Gate = { kind: "boot" | "hold"; resolve: (go: boolean) => void };
+
+// How the Simple gets into install mode (docs/specs/finished/usb-download-mode.md).
+type InstallMode = "auto" | "hueboot" | "buttons";
 
 function FirmwareVersion({
   productId,
@@ -209,31 +237,29 @@ function Field({
   );
 }
 
+const PRIMARY =
+  "w-fit rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60";
+const SECONDARY =
+  "w-fit rounded-md border border-line bg-background px-3 py-2 text-sm font-medium disabled:opacity-60";
 
 function ActionRow({
   label,
   hint,
   onClick,
   disabled,
-  primary,
 }: {
   label: string;
   hint: ReactNode;
   onClick: () => void;
   disabled: boolean;
-  primary?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg px-2 py-2 sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-2 py-1 sm:flex-row sm:items-center sm:gap-4">
       <button
         type="button"
         disabled={disabled}
         onClick={onClick}
-        className={`w-fit shrink-0 rounded-md px-3 py-2 text-sm disabled:opacity-60 sm:w-44 ${
-          primary
-            ? "bg-filament font-medium text-filament-ink"
-            : "border border-line bg-background"
-        }`}
+        className="w-fit shrink-0 rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-60 sm:w-44"
       >
         {label}
       </button>
@@ -243,15 +269,6 @@ function ActionRow({
 }
 
 type CheckState = "done" | "warn" | "error" | "todo";
-
-type CheckRow = { label: string; state: CheckState; text: string };
-
-const CHECK_ICON: Record<CheckState, { mark: string; className: string; sr: string }> = {
-  done: { mark: "✓", className: "bg-ok text-background", sr: "done" },
-  warn: { mark: "!", className: "bg-warn text-background", sr: "warning" },
-  error: { mark: "✕", className: "bg-danger text-background", sr: "problem" },
-  todo: { mark: "", className: "border border-line text-muted", sr: "to do" },
-};
 
 // revoked: the board's last key was revoked. replacing: a new key was saved here and the
 // board has not checked in with it yet. elsewhere: the board talks to another console's host
@@ -285,7 +302,7 @@ function liveChecks(
   const consoleQuiet = seenMin === null || seenMin > CONSOLE_QUIET_MIN;
   const consoleState: CheckState = !linked
     ? "todo"
-    : consoleLookup === "revoked"
+    : consoleLookup === "revoked" || consoleLookup === "elsewhere"
       ? "error"
       : consoleLookup === "found" && !consoleQuiet
         ? "done"
@@ -294,241 +311,16 @@ function liveChecks(
   // that talks to another console.
   const settling =
     (wifiSaved && wifiState !== "done") ||
-    (linked && consoleState === "warn" && consoleLookup !== "elsewhere");
+    (linked && consoleState === "warn");
   return { seenMin, wifiSaved, wifiState, linked, consoleQuiet, consoleState, settling };
-}
-
-type Recheck = {
-  countdown: number | null;
-  checking: boolean;
-  tries: number;
-  canCheck: boolean;
-  onStop: () => void;
-  onCheckAgain: () => void;
-};
-
-function SetupChecklist({
-  huesta,
-  productId,
-  manifestVersion,
-  manifestLoading,
-  versionCmp,
-  importantCount,
-  lastSeenAt,
-  consoleLookup,
-  otherConsole,
-  switchHref,
-  recheck,
-}: {
-  huesta: Huesta;
-  productId: ProductId | null;
-  manifestVersion: string | null;
-  manifestLoading: boolean;
-  versionCmp: -1 | 0 | 1 | null;
-  importantCount: number;
-  lastSeenAt: string | null;
-  consoleLookup: ConsoleLookup;
-  // Host of the other console this board talks to, when consoleLookup is "elsewhere".
-  otherConsole: string | null;
-  switchHref: string | null;
-  recheck: Recheck;
-}) {
-  const { seenMin, wifiSaved, wifiState, linked, consoleQuiet, consoleState, settling } =
-    liveChecks(huesta, lastSeenAt, consoleLookup);
-  const autoLeft = settling && recheck.tries < RECHECK_TRIES;
-  const firmwareOld = versionCmp === -1;
-  const ver = huesta.ver || "Unknown version";
-  const firmwareState: CheckState = manifestLoading
-    ? "todo"
-    : versionCmp === 0 || versionCmp === 1
-      ? "done"
-      : "warn";
-
-  const rows: CheckRow[] = [
-    {
-      label: "Firmware",
-      state: firmwareState,
-      text: manifestLoading
-        ? `${ver} · checking for updates…`
-        : versionCmp === -1
-          ? `${ver} · ${manifestVersion} is available${
-              importantCount > 0
-                ? ` · ${importantCount} important ${importantCount === 1 ? "note" : "notes"}`
-                : ""
-            }`
-          : versionCmp === 0
-            ? `${ver} (latest)`
-            : versionCmp === 1
-              ? `${ver} (newer than the latest release)`
-              : `${ver} · can't check for updates`,
-    },
-    {
-      label: "Wi-Fi",
-      state: wifiState,
-      text:
-        wifiState === "todo"
-          ? "No network saved"
-          : wifiState === "done"
-            ? `${huesta.ssid} · connected${huesta.ip ? ` (${huesta.ip})` : ""}`
-            : wifiState === "warn"
-              ? `${huesta.ssid} · reconnecting. It was not connected when read, but the console heard from it ${agoText(seenMin ?? 0)}.`
-              : `${huesta.ssid} · not connected${seenMin !== null ? `, and the console last heard from it ${agoText(seenMin)}` : ""}.`,
-    },
-    {
-      label: "Console",
-      state: consoleState,
-      text: !linked
-        ? "Not linked"
-        : consoleLookup === "elsewhere"
-          ? `Linked to another console · ${otherConsole ?? huesta.url}`
-          : consoleLookup === "revoked"
-          ? "Key revoked · the console rejects this board"
-          : consoleLookup === "replacing"
-            ? "New key saved · waiting for the board to check in with it"
-            : consoleLookup === "error"
-          ? "Key saved · couldn't check when the console last heard from it"
-          : consoleLookup === "missing" || seenMin === null
-            ? "Key saved · the console has no record of this board yet"
-            : consoleQuiet
-              ? `Key saved · the console last heard from it ${agoText(seenMin)}`
-              : `Linked · last heard from it ${agoText(seenMin)}`,
-    },
-    {
-      label: "Hue Bridge",
-      state: huesta.key ? "done" : "todo",
-      text: huesta.key ? (huesta.bid ? `Paired with ${huesta.bid}` : "Paired") : "Not paired",
-    },
-  ];
-
-  const next = !wifiSaved
-      ? "Save a Wi-Fi network with Set up Wi-Fi below."
-      : wifiState === "error"
-        ? autoLeft
-          ? "Wi-Fi can take a few seconds after the board restarts. The console checks again on its own."
-          : "Wi-Fi is still not connected. Check the network name and password with Change Wi-Fi below."
-        : !linked
-          ? "Link the board to the console with Link to console below."
-          : consoleLookup === "elsewhere"
-            ? `This board talks to ${otherConsole ?? "another console"}. To manage it here, use Move to this console below.`
-          : consoleState === "error"
-            ? "This board's key was revoked on API keys. Give it a new one with Replace console key below."
-          : !huesta.key
-            ? "Pair with the Hue Bridge: press the button on the Bridge when the board asks, or use Pair with Bridge below."
-            : wifiState === "warn"
-              ? autoLeft
-                ? "Wi-Fi should come back in a few seconds. The console checks again on its own."
-                : "Wi-Fi has not come back. Check the network with Change Wi-Fi below."
-              : consoleState === "warn" && consoleLookup !== "error"
-                ? autoLeft
-                  ? "The board checks in with the console shortly after it joins Wi-Fi. The console checks again on its own."
-                  : "If the console still hasn't heard from it after a few minutes on Wi-Fi, its key may have been revoked. Use Replace console key below."
-                : firmwareOld
-                  ? importantCount > 0
-                    ? (
-                        <>
-                          Read the{" "}
-                          <a href="#update-notes" className="text-filament underline underline-offset-2">
-                            important {importantCount === 1 ? "note" : "notes"}
-                          </a>
-                          , then update to {manifestVersion} with Update below. Settings stay.
-                        </>
-                      )
-                    : `Update to ${manifestVersion} with Update below when convenient. Settings stay.`
-                  : null;
-  const guide = `/how-to?product=${productId === "round" ? "round" : "simple"}&topic=status`;
-  const guideText = productId === "round" ? "What the screen shows" : "What the LED shows";
-  const allDone = rows.every((row) => row.state === "done");
-  const anyError = rows.some((row) => row.state === "error");
-  const setUp = rows.every((row) => row.state === "done" || row.state === "warn");
-
-  return (
-    <section
-      className={`flex flex-col gap-3 rounded-xl border p-4 ${
-        allDone
-          ? "border-ok/40 bg-ok-soft"
-          : anyError
-            ? "border-danger/40 bg-cream"
-            : "border-line bg-cream"
-      }`}
-    >
-      <h2 className="text-sm font-medium">
-        {anyError ? "Needs attention" : setUp ? "This board is set up" : "Setup"}
-      </h2>
-      <ul className="flex flex-col gap-2 text-sm">
-        {rows.map((row) => {
-          const icon = CHECK_ICON[row.state];
-          return (
-            <li key={row.label} className="flex gap-2">
-              <span
-                aria-hidden="true"
-                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${icon.className}`}
-              >
-                {icon.mark}
-              </span>
-              <span className="min-w-0">
-                <span className="font-medium">{row.label}</span>
-                <span className="sr-only"> ({icon.sr})</span>
-                <span className="text-muted"> · {row.text}</span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="text-sm text-muted">
-        {next ? (
-          <>
-            <span className="font-medium text-foreground">Next: </span>
-            {next}{" "}
-          </>
-        ) : (
-          <>
-            Edit its {productId === "round" ? "pages" : "buttons"}:{" "}
-            <Link
-              href={switchHref ?? "/switches"}
-              className="text-filament underline underline-offset-2"
-            >
-              Open in Switches
-            </Link>
-            .{" "}
-          </>
-        )}
-        <Link href={guide} className="text-filament underline underline-offset-2">
-          {guideText}
-        </Link>{" "}
-        tells you which step the board is on.
-      </p>
-      {recheck.checking ? (
-        <p className="text-sm text-filament" role="status">
-          Checking the board again…
-        </p>
-      ) : recheck.countdown !== null ? (
-        <p className="text-sm text-filament" role="status">
-          Checking again in {recheck.countdown} s (try {recheck.tries + 1} of{" "}
-          {RECHECK_TRIES}).{" "}
-          <button
-            type="button"
-            onClick={recheck.onStop}
-            className="underline underline-offset-2"
-          >
-            Stop
-          </button>
-        </p>
-      ) : settling && recheck.canCheck ? (
-        <button
-          type="button"
-          onClick={recheck.onCheckAgain}
-          className="w-fit rounded-md border border-line px-3 py-2 text-sm font-medium"
-        >
-          Check again
-        </button>
-      ) : null}
-    </section>
-  );
 }
 
 function pageOriginSnapshot() {
   return window.location.origin;
 }
+
+// Raw state of each step: what the board reported, before one of them is picked to be open.
+type RawState = CheckState | "later";
 
 export function SetupPanel({
   expected,
@@ -567,6 +359,13 @@ export function SetupPanel({
   const [countdown, setCountdown] = useState<number | null>(null);
   const [rechecking, setRechecking] = useState(false);
   const [replacedKeyMac, setReplacedKeyMac] = useState<string | null>(null);
+  // Which switch the pictures show before a board is connected.
+  const [chosenProduct, setChosenProduct] = useState<ProductId>("simple");
+  // The step the person opened by hand ("none": they closed the open one); null follows the board.
+  const [openStep, setOpenStep] = useState<GuideStepId | "none" | null>(null);
+  const [gate, setGate] = useState<Gate | null>(null);
+  const [pairLeft, setPairLeft] = useState<number | null>(null);
+  const [flashed, setFlashed] = useState<ProductId | null>(null);
   const sessionRef = useRef<BytePort | null>(null);
   const portRef = useRef<SerialPort | null>(null);
   const detectGen = useRef(0);
@@ -614,19 +413,22 @@ export function SetupPanel({
     }
   }
 
-  async function detect() {
+  // `all`: list every serial port, not only XIAOs (a board under another vendor id).
+  async function detect(all = false) {
     if (blocked) return;
     const gen = ++detectGen.current;
     setBusy(true);
     setError(null);
     setStatus(PICK_PORT);
     setPanel("none");
+    setOpenStep(null);
     try {
-      const port = await requestSerialPort();
+      const port = await requestSerialPort(all);
       if (gen !== detectGen.current) return;
       await closeSession();
       if (gen !== detectGen.current) return;
       portRef.current = port;
+      setFlashed(null);
       setNetworks([]);
       setSsid("");
       setPassword("");
@@ -719,8 +521,7 @@ export function SetupPanel({
     }
   }
 
-
-  async function disconnect() {
+  async function disconnect(message = "Port released. Other apps can use it now.") {
     ++detectGen.current;
     ++manifestGen.current;
     setBusy(true);
@@ -733,6 +534,8 @@ export function SetupPanel({
     portRef.current = null;
     setDetected(null);
     setPanel("none");
+    setOpenStep(null);
+    setFlashed(null);
     setNetworks([]);
     setSsid("");
     setPassword("");
@@ -740,7 +543,7 @@ export function SetupPanel({
     setUsbLog([]);
     setPercent(null);
     setRecheckTries(RECHECK_TRIES);
-    setStatus("Port released. Other apps can use it now.");
+    setStatus(message);
     setBusy(false);
   }
 
@@ -788,7 +591,7 @@ export function SetupPanel({
     if (auto) setRecheckTries((n) => n + 1);
     if (!session || session.dead) {
       setRecheckTries(RECHECK_TRIES);
-      setError("Serial port lost. Detect the device again.");
+      setError("Serial port lost. Connect the board again.");
       return;
     }
     setBusy(true);
@@ -806,6 +609,15 @@ export function SetupPanel({
     }
   }
 
+  function waitForHands(kind: Gate["kind"]): Promise<boolean> {
+    return new Promise((resolve) => setGate({ kind, resolve }));
+  }
+
+  function releaseGate(go: boolean) {
+    gate?.resolve(go);
+    setGate(null);
+  }
+
   async function runFlash() {
     if (!detected || !product || !detected.manifest || blocked) return;
     if (detected.manifest.missing.length > 0) return;
@@ -813,14 +625,15 @@ export function SetupPanel({
     setBusy(true);
     setError(null);
     setPanel("flash");
+    setOpenStep(null);
     setPercent(null);
-    setStatus("Flashing…");
+    setStatus("Getting the board ready…");
     try {
       // The console cannot reset the C6 into its bootloader on Windows. When Detect found
-      // the firmware running, Simple 0.2.11+ restarts into it on HUEBOOT; older firmware
-      // answers HUEERR unknown and the person does BOOT+RESET instead.
-      const firmwareRunning =
-        product.chipFamily === "ESP32-C6" && (detected.improv !== null || detected.huesta !== null);
+      // the firmware running, Simple 0.2.11+ restarts into it on HUEBOOT; otherwise (older
+      // firmware, the factory program, a blank chip) the person does BOOT+RESET.
+      const simple = product.chipFamily === "ESP32-C6";
+      const firmwareRunning = simple && (detected.improv !== null || detected.huesta !== null);
       let booted = false;
       const session = sessionRef.current;
       if (firmwareRunning && session && !session.dead) {
@@ -843,13 +656,11 @@ export function SetupPanel({
       }
       setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
       const picked = portRef.current;
-      if (!picked) throw new Error("Detect the device again.");
-      const needsBoot = firmwareRunning && !booted;
+      if (!picked) throw new Error("Connect the board again.");
+      const needsBoot = simple && !booted;
       if (needsBoot) {
-        const ok = window.confirm(
-          "Hold BOOT on the Simple and keep holding it. Tap RESET, then click OK. Release BOOT only when the page says Writing firmware.",
-        );
-        if (!ok) {
+        setStatus("Waiting for BOOT and RESET…");
+        if (!(await waitForHands("boot"))) {
           setPanel("none");
           setStatus(null);
           return;
@@ -868,17 +679,14 @@ export function SetupPanel({
       }
       if (!port) {
         throw new Error(
-          "The board came back on a new USB port after RESET. Click Detect, pick it, then Install.",
+          "The board came back on a new USB port after RESET. Click Connect, pick it, then Install.",
         );
       }
       portRef.current = port;
       appendUsbLog(port === picked ? "— install —" : "— install (board came back on a new port) —");
-      if (detected.usb.kind === "other") {
-        const board = product.board;
-        const ok = window.confirm(
-          `This writes the ${board} firmware. Hold BOOT, then click OK. If the chip does not answer, tap RESET while holding BOOT and try again. If this board is not a ${board}, it can fail to start.`,
-        );
-        if (!ok) {
+      if (detected.usb.kind === "other" && !simple) {
+        setStatus("Waiting for BOOT…");
+        if (!(await waitForHands("hold"))) {
           setPanel("none");
           setStatus(null);
           return;
@@ -897,6 +705,7 @@ export function SetupPanel({
         },
       });
       portRef.current = null;
+      setFlashed(productId);
       setDetected(null);
       setPanel("after-flash");
       setStatus(null);
@@ -907,25 +716,15 @@ export function SetupPanel({
       setStatus(null);
       setPercent(null);
     } finally {
+      setGate(null);
       setBusy(false);
     }
-  }
-
-  function openWifi() {
-    const session = sessionRef.current;
-    if (!session || session.dead) {
-      setError("Detect the device again.");
-      return;
-    }
-    setPanel("wifi");
-    setError(null);
-    setScanHint(null);
   }
 
   async function runScan() {
     const session = sessionRef.current;
     if (!session || session.dead) {
-      setError("Detect the device again.");
+      setError("Connect the board again.");
       return;
     }
     setBusy(true);
@@ -943,10 +742,10 @@ export function SetupPanel({
           setScanHint(PING_MISS_COPY);
         } else if (!result.finished) {
           setScanHint(
-            "No list from the device (silence, not an empty scan). Enter the SSID manually. See USB debug.",
+            "No list from the device (silence, not an empty scan). Enter the network name yourself. See USB debug.",
           );
         } else {
-          setScanHint("No networks reported. Enter the SSID manually.");
+          setScanHint("No networks reported. Enter the network name yourself.");
         }
       } else {
         setScanHint(null);
@@ -964,7 +763,7 @@ export function SetupPanel({
   async function runSaveWifi() {
     const session = sessionRef.current;
     if (!session || session.dead) {
-      setError("Detect the device again.");
+      setError("Connect the board again.");
       return;
     }
     const network = ssid.trim();
@@ -980,8 +779,8 @@ export function SetupPanel({
       setPassword("");
       setStatus("Wi-Fi saved.");
       await reread(session);
-      // Close the form so the checklist can follow the board as it joins.
-      setPanel("none");
+      // Let the stepper follow the board as it joins.
+      setOpenStep(null);
       setRecheckTries(0);
     } catch (err) {
       setError(errorMessage(err));
@@ -991,11 +790,10 @@ export function SetupPanel({
     }
   }
 
-
   async function runToken() {
     const session = sessionRef.current;
     if (!session || session.dead) {
-      setError("Detect the device again.");
+      setError("Connect the board again.");
       return;
     }
     const target = deviceConsoleUrl;
@@ -1020,9 +818,10 @@ export function SetupPanel({
           `${errorMessage(err)} The key was created; revoke it on API keys if this device did not save it.`,
         );
       }
-      setStatus("Token saved.");
+      setStatus("Key saved.");
       setReplacedKeyMac(detected?.huesta?.mac ?? null);
       await reread(session);
+      setOpenStep(null);
       setRecheckTries(0);
     } catch (err) {
       setError(errorMessage(err));
@@ -1036,7 +835,7 @@ export function SetupPanel({
     const session = sessionRef.current;
     const card = detected?.huesta;
     if (!session || session.dead || !card) {
-      setError("Detect the device again.");
+      setError("Connect the board again.");
       return;
     }
     if (card.key && !window.confirm(PAIR_CONFIRM)) return;
@@ -1048,21 +847,22 @@ export function SetupPanel({
       const ack = await huePair(session, appendUsbLog);
       if (ack === "no-wifi") {
         setError(
-          "The board is not on Wi-Fi yet. It can take a few seconds after Detect. Wait a moment and try again.",
+          "The board is not on Wi-Fi yet. It can take a few seconds after it restarts. Wait a moment and try again.",
         );
         setStatus(null);
         return;
       }
       setStatus(PAIR_PROMPT);
       let paired = false;
-      while (Date.now() - started < 90_000) {
+      while (Date.now() - started < PAIR_MS) {
         if (session.dead) {
-          setError("Serial port lost. Detect the device again.");
+          setError("Serial port lost. Connect the board again.");
           setStatus(null);
           break;
         }
-        const remain = 90_000 - (Date.now() - started);
+        const remain = PAIR_MS - (Date.now() - started);
         if (remain <= 0) break;
+        setPairLeft(Math.ceil(remain / 1000));
         const next = await hueGet(session, Math.min(4000, remain), appendUsbLog);
         if (next) {
           setDetected((prev) => (prev ? { ...prev, huesta: next } : prev));
@@ -1071,18 +871,22 @@ export function SetupPanel({
             break;
           }
         }
-        const after = 90_000 - (Date.now() - started);
+        const after = PAIR_MS - (Date.now() - started);
         if (after <= 0) break;
+        setPairLeft(Math.ceil(after / 1000));
         await sleep(Math.min(1000, after));
       }
-      if (paired) setStatus(null);
-      else if (!session.dead) {
-        setStatus("Pairing did not finish. The board is not paired.");
+      if (paired) {
+        setStatus(null);
+        setOpenStep(null);
+      } else if (!session.dead) {
+        setStatus("Pairing did not finish. The board is not paired. Try again.");
       }
     } catch (err) {
       setError(errorMessage(err));
       setStatus(null);
     } finally {
+      setPairLeft(null);
       setBusy(false);
     }
   }
@@ -1090,7 +894,7 @@ export function SetupPanel({
   async function runClear() {
     const session = sessionRef.current;
     if (!session || session.dead) {
-      setError("Detect the device again.");
+      setError("Connect the board again.");
       return;
     }
     if (!window.confirm(CLEAR_CONFIRM)) return;
@@ -1111,6 +915,7 @@ export function SetupPanel({
             }
           : prev,
       );
+      setOpenStep(null);
       if (!card) {
         setError("Cleared, but the board did not return a stored card.");
         setStatus(null);
@@ -1150,9 +955,6 @@ export function SetupPanel({
     detected?.huesta && detected.manifest
       ? compareVersions(detected.huesta.ver, detected.manifest.version)
       : null;
-  const showChecklist = Boolean(
-    actions?.showSaved && detected?.huesta && !actions.cross,
-  );
   const installedVersion = detected ? reportedVersion(detected) : "";
   const updateNotes =
     actions?.flash === "update" && productId && detected?.manifest
@@ -1178,18 +980,13 @@ export function SetupPanel({
     : detected?.consoleError
       ? "error"
       : "missing";
-  const settling = Boolean(
-    showChecklist &&
-      detected?.cdc &&
-      detected.huesta &&
-      liveChecks(
-        detected.huesta,
-        detected.consoleRecord?.lastSeenAt ?? null,
-        consoleLookup,
-      ).settling,
-  );
-  const autoRecheck =
-    settling && !busy && panel === "none" && recheckTries < RECHECK_TRIES;
+  // The board's own firmware card, unless it runs another product's firmware.
+  const card = detected?.huesta && actions?.showSaved && !actions.cross ? detected.huesta : null;
+  const live = card
+    ? liveChecks(card, detected?.consoleRecord?.lastSeenAt ?? null, consoleLookup)
+    : null;
+  const settling = Boolean(live?.settling && detected?.cdc);
+  const autoRecheck = settling && !busy && panel === "none" && recheckTries < RECHECK_TRIES;
 
   const fireRecheck = useEffectEvent(() => void recheck(true));
   useEffect(() => {
@@ -1215,6 +1012,7 @@ export function SetupPanel({
   const reading = busy && status === READING;
   // Hide the last result while a new port is being chosen or read.
   const choosing = busy && status === PICK_PORT;
+  const connected = Boolean(detected && actions && !reading && !choosing);
   const flashText =
     actions?.flash === "update"
       ? "Update"
@@ -1222,498 +1020,455 @@ export function SetupPanel({
         ? "Reinstall"
         : "Install";
 
+  // ---------------------------------------------------------------- the stepper's states
 
-  return (
-    <div className="flex flex-col gap-5">
-      {blocked ? (
+  // Pictures and texts follow the board once it is known, the picker before that.
+  const shown: ProductId = productId ?? flashed ?? chosenProduct;
+  const round = shown === "round";
+  const guide = guideSteps(shown);
+  const step = (id: GuideStepId) => guide.find((g) => g.id === id) as GuideStep;
+  // What the board shows once each step is done (the How-to "Then it shows" pictures).
+  const howTo = setupSteps(shown);
+  const shows: Partial<Record<GuideStepId, (typeof howTo)[number]["shows"]>> = {
+    firmware: howTo[1]?.shows,
+    wifi: howTo[2]?.shows,
+    console: howTo[3]?.shows,
+    bridge: howTo[4]?.shows,
+  };
+  const ver = card?.ver || "Unknown version";
+  const manifestVersion = detected?.manifest?.version ?? null;
+
+  const firmwareRaw: RawState = !connected
+    ? "later"
+    : actions?.unsupported
+      ? "error"
+      : actions?.cross
+        ? "error"
+        : !card
+          ? "todo"
+          : detected?.manifestLoading
+            ? "done"
+            : versionCmp === -1
+              ? "warn"
+              : "done";
+  const raw: Record<GuideStepId, RawState> = {
+    connect: connected ? "done" : "todo",
+    firmware: firmwareRaw,
+    wifi: !live ? "later" : live.wifiState,
+    console: !live ? "later" : live.consoleState,
+    bridge: !card ? "later" : card.key ? "done" : "todo",
+  };
+  const ORDER: GuideStepId[] = ["connect", "firmware", "wifi", "console", "bridge"];
+  const firstTodo = ORDER.find((id) => raw[id] === "todo" || raw[id] === "error") ?? null;
+  // Nothing left to do but an update: open the firmware step on it.
+  const autoOpen: GuideStepId | null =
+    firstTodo ?? (raw.firmware === "warn" && actions?.flash === "update" ? "firmware" : null);
+  const open: GuideStepId | null =
+    panel === "flash" || gate
+      ? "firmware"
+      : openStep === "none"
+        ? null
+        : (openStep ?? autoOpen);
+  const display = (id: GuideStepId): StepState => {
+    const r = raw[id];
+    if (r === "later") return "later";
+    if (r === "todo") return id === firstTodo ? "current" : "later";
+    return r;
+  };
+  const toggle = (id: GuideStepId) => () => setOpenStep(open === id ? "none" : id);
+  const allDone = Boolean(card) && firstTodo === null;
+  const switchHref =
+    detected?.consoleRecord && card?.mac ? `/switches/${card.mac}` : "/switches";
+  const sessionAlive = Boolean(detected?.cdc);
+
+  const boardTitle = detected
+    ? (sketchTitle(learnedChip(detected.improv, detected.huesta)) ?? detected.usb.title)
+    : null;
+
+  const feedback = (
+    <>
+      {status &&
+      panel !== "flash" &&
+      status !== PICK_PORT &&
+      status !== READING &&
+      status !== PAIR_PROMPT ? (
+        <p className="text-sm text-muted" role="status">
+          {status}
+        </p>
+      ) : null}
+      {error ? (
         <p
-          className="rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-warn"
-          role="status"
+          className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          role="alert"
         >
-          {blocked}
+          {error}
         </p>
       ) : null}
+    </>
+  );
 
-      <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
-        <h2 className="text-sm font-medium">Detect</h2>
-        {expected ? (
-          <p className="text-sm">
-            Updating <span className="font-medium">{expected.name}</span>. Plug
-            it in over USB and press Detect.
-          </p>
-        ) : null}
-        <p className="text-sm text-muted">
-          Plug the board in with a USB-C cable that carries data, then choose
-          its port. It is usually listed as a USB serial or JTAG device.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={Boolean(blocked) || busy}
-            onClick={() => void detect()}
-            className="w-fit rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60"
-          >
-            {busy && (status === PICK_PORT || status === READING)
-              ? "Detecting…"
-              : detected
-                ? "Detect another device"
-                : "Detect device"}
-          </button>
-          {detected && !busy ? (
-            <button
-              type="button"
-              onClick={() => void disconnect()}
-              className="w-fit rounded-md border border-line px-3 py-2 text-sm font-medium"
-            >
-              Disconnect
-            </button>
+  function showsNext(id: GuideStepId) {
+    const next = shows[id];
+    if (!next) return null;
+    return (
+      <div className="flex items-center gap-3 rounded-lg bg-background px-3 py-2.5">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center">
+          <StateVisual visual={next.visual} label={next.caption} size={56} version={manifestVersion} />
+        </span>
+        <span className="flex flex-col gap-0.5 text-sm">
+          <span className="text-xs text-muted">
+            Then the {round ? "screen" : "orange LED on the board"} shows
+          </span>
+          <span>{next.caption}</span>
+        </span>
+      </div>
+    );
+  }
+
+  // How this install gets the board into install mode.
+  const hueboot = card ? compareVersions(card.ver, HUEBOOT_SINCE) : null;
+  const installMode: InstallMode =
+    shown === "round" ? "auto" : hueboot === 0 || hueboot === 1 ? "hueboot" : "buttons";
+
+  // ---------------------------------------------------------------- step bodies
+
+  const connectBody = connected && detected ? (
+    <>
+      <p>
+        <span className="font-medium">{boardTitle}</span>
+        <span className="text-muted">
+          {" · "}
+          {detected.improv ? (
+            <>
+              {detected.improv.name || "Firmware"}
+              {detected.improv.version ? (
+                <>
+                  {" "}
+                  <FirmwareVersion productId={productId} version={detected.improv.version} />
+                </>
+              ) : null}
+            </>
+          ) : (
+            "no switch firmware yet"
+          )}
+          {card?.mac ? (
+            <>
+              {" · MAC "}
+              <span className="font-mono text-xs">{formatMac(card.mac)}</span>
+            </>
           ) : null}
-        </div>
-        {busy && status === PICK_PORT ? (
-          <p className="text-sm text-filament" role="status">
-            {PICK_PORT}
-          </p>
-        ) : null}
-        {expected && detected?.huesta?.mac && detected.huesta.mac !== expected.mac ? (
-          <p className="text-sm text-warn" role="status">
-            This is{" "}
-            {detected.consoleRecord?.label?.trim() || formatMac(detected.huesta.mac)},
-            not {expected.name}.
-          </p>
-        ) : null}
-      </section>
-
-      {panel === "after-flash" ? (
-        <section className="flex flex-col gap-2 rounded-xl border border-line bg-cream p-4">
-          <h2 className="text-sm font-medium">Reconnect USB</h2>
-          <p className="text-sm text-muted">
-            After reset the COM port may change. Detect the device again.
-          </p>
-        </section>
+        </span>
+      </p>
+      {expected && card?.mac && card.mac !== expected.mac ? (
+        <p className="text-sm text-warn" role="status">
+          This is {detected.consoleRecord?.label?.trim() || formatMac(card.mac)}, not {expected.name}.
+        </p>
       ) : null}
-
-      {reading ? (
-        <section
-          className="flex items-center gap-3 rounded-xl border border-line bg-cream p-4"
-          role="status"
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={Boolean(blocked) || busy} onClick={() => void detect()} className={SECONDARY}>
+          Connect another board
+        </button>
+        <button type="button" disabled={busy} onClick={() => void disconnect()} className={SECONDARY}>
+          Disconnect
+        </button>
+      </div>
+    </>
+  ) : (
+    <>
+      {flashed ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-ok/40 bg-ok-soft p-3">
+          <p className="font-medium text-ok">Firmware installed.</p>
+          {flashed === "simple" ? (
+            <div className="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,240px)]">
+              <ButtonSteps
+                items={[
+                  { n: 2, text: "Tap **RESET** once, so the board starts the new firmware." },
+                  { text: "Click **Connect** and pick the board again. Windows may give it a new COM number." },
+                ]}
+              />
+              <Illo id="simple-buttons" alt="The XIAO ESP32-C6 seen from above: 1 BOOT and 2 RESET on either side of the USB-C socket." />
+            </div>
+          ) : (
+            <p className="text-sm text-muted">
+              The Round restarts by itself. Click <span className="font-medium text-foreground">Connect</span>{" "}
+              and pick it again to carry on.
+            </p>
+          )}
+        </div>
+      ) : null}
+      {expected ? (
+        <p>
+          Updating <span className="font-medium">{expected.name}</span>. Plug it in and click Connect.
+        </p>
+      ) : null}
+      {!flashed ? (
+        <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Which switch">
+          <span className="text-xs text-muted">Setting up a</span>
+          {(["simple", "round"] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={chosenProduct === id}
+              onClick={() => setChosenProduct(id)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                chosenProduct === id ? "border-filament bg-filament-soft text-filament" : "border-line"
+              }`}
+            >
+              {id === "simple" ? "Simple switch" : "Round switch"}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <ButtonSteps
+        items={[
+          { text: "Plug the XIAO into this computer with a USB-C cable that carries data." },
+          { text: "Click **Connect**." },
+          { n: 1, text: `In the window Chrome opens, pick **${PORT_NAME}** and click **Connect**.` },
+        ]}
+      />
+      <div className="grid items-center gap-4 sm:grid-cols-2">
+        <Illo
+          id={round ? "round-plug" : "simple-plug"}
+          alt={round ? "The Round with a USB-C cable to this computer." : "The XIAO ESP32-C6 with a USB-C cable to this computer."}
+        />
+        <PortPickerMock />
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <button
+          type="button"
+          disabled={Boolean(blocked) || busy}
+          onClick={() => void detect()}
+          className={PRIMARY}
         >
+          {choosing || reading ? "Connecting…" : "Connect"}
+        </button>
+        <button
+          type="button"
+          disabled={Boolean(blocked) || busy}
+          onClick={() => void detect(true)}
+          className="text-sm text-muted underline underline-offset-2 hover:text-foreground disabled:opacity-60"
+        >
+          My board isn&apos;t in the list
+        </button>
+      </div>
+      {choosing ? (
+        <p className="text-sm text-filament" role="status">
+          {PICK_PORT}
+        </p>
+      ) : null}
+      {reading ? (
+        <p className="flex items-center gap-2 text-sm" role="status">
           <span
             aria-hidden="true"
             className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-line border-t-filament"
           />
-          <div className="flex flex-col gap-0.5">
-            <p className="text-sm font-medium">{READING}</p>
-            <p className="text-sm text-muted">This takes a few seconds. Keep it plugged in.</p>
+          {READING} This takes a few seconds. Keep it plugged in.
+        </p>
+      ) : null}
+      {feedback}
+      <StepHelp why={step("connect").why} trouble={step("connect").trouble} />
+    </>
+  );
+
+  const installButton =
+    actions && (actions.flash === "install" || actions.flash === "update" || actions.flash === "reinstall") ? (
+      <button
+        type="button"
+        disabled={Boolean(blocked) || busy || !product || !binsReady}
+        onClick={() => void runFlash()}
+        className={PRIMARY}
+      >
+        {flashBusy ? "Installing…" : flashText}
+      </button>
+    ) : null;
+
+  const firmwareBody = detected && actions ? (
+    <>
+      {actions.unsupported ? (
+        <p className="text-warn">
+          This board isn&apos;t supported. The switches use the XIAO ESP32-C6 (Simple) or the XIAO
+          ESP32-S3 (Round).
+        </p>
+      ) : null}
+      {actions.cross ? (
+        <p className="text-warn">
+          This board runs firmware for another switch. Wi-Fi, the console link and pairing are off
+          until you install this board&apos;s own firmware.
+        </p>
+      ) : null}
+      {actions.askBoard ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-muted">
+            This port doesn&apos;t say which XIAO it is. Pick the switch you are setting up. If the
+            chip turns out to be the other one, nothing is written.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {([
+              ["c6", "Simple switch", "XIAO ESP32-C6"],
+              ["s3", "Round switch", "XIAO ESP32-S3"],
+            ] as const).map(([choice, name, chip]) => {
+              const selected = detected.boardChoice === choice;
+              return (
+                <button
+                  key={choice}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void chooseBoard(choice)}
+                  className={`rounded-lg border px-4 py-3 text-left ${
+                    selected ? "border-filament bg-filament-soft" : "border-line bg-background hover:border-filament/50"
+                  }`}
+                >
+                  <span className="block font-medium">{name}</span>
+                  <span className="block text-xs text-muted">{chip}</span>
+                </button>
+              );
+            })}
           </div>
-        </section>
+        </div>
       ) : null}
 
-      {detected && actions && !reading && !choosing ? (
-        <>
-          {showChecklist && detected.huesta ? (
-            <SetupChecklist
-              huesta={detected.huesta}
-              productId={productId}
-              manifestVersion={detected.manifest?.version ?? null}
-              manifestLoading={detected.manifestLoading}
-              versionCmp={versionCmp}
-              importantCount={importantCount}
-              lastSeenAt={detected.consoleRecord?.lastSeenAt ?? null}
-              consoleLookup={consoleLookup}
-              otherConsole={otherConsole}
-              switchHref={
-                detected.consoleRecord && detected.huesta.mac
-                  ? `/switches/${detected.huesta.mac}`
-                  : null
+      {product && detected.manifestLoading ? <p className="text-muted">Loading firmware…</p> : null}
+      {product && detected.manifestError ? (
+        <p className="text-danger" role="alert">
+          {detected.manifestError}
+        </p>
+      ) : null}
+      {product && detected.manifest && detected.manifest.missing.length > 0 ? (
+        <p className="text-warn">
+          Firmware images are not published yet ({detected.manifest.missing.join(", ")}). Install is
+          unavailable until CI exports bootloader, partitions, boot_app0, and app.
+        </p>
+      ) : null}
+      {card && detected.manifest && !detected.manifestLoading && versionCmp === 1 ? (
+        <p className="text-muted">
+          This board is newer than the published firmware, so there is nothing to update or reinstall.
+        </p>
+      ) : null}
+      {card && detected.manifest && !detected.manifestLoading && versionCmp === null ? (
+        <p className="text-muted">This firmware version cannot be compared, so update and reinstall are hidden.</p>
+      ) : null}
+      {detected.consoleError ? (
+        <p className="text-muted">Could not read the console record for this board.</p>
+      ) : null}
+      {detected.consoleRecord && mismatchText(detected.consoleRecord, reportedVersion(detected)) ? (
+        <p className="text-warn">{mismatchText(detected.consoleRecord, reportedVersion(detected))}</p>
+      ) : null}
+      {updateNotes.length > 0 && detected.manifest ? (
+        <UpdateNotes installed={installedVersion} latest={detected.manifest.version} notes={updateNotes} />
+      ) : null}
+
+      {product && manifestVersion && !actions.unsupported ? (
+        <p>
+          {actions.flash === "update"
+            ? `Installs ${manifestVersion}. Wi-Fi, the console link and the ${round ? "pages" : "buttons"} stay.`
+            : `Installs the ${round ? "Round" : "Simple"} switch firmware, version ${manifestVersion}.`}
+        </p>
+      ) : null}
+
+      {gate ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-filament bg-filament-soft p-3" role="alert">
+          <p className="font-medium">Now, on the board:</p>
+          <div className="grid items-center gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,260px)]">
+            <ButtonSteps
+              items={
+                gate.kind === "boot"
+                  ? [
+                      { n: 1, text: "Hold **BOOT** and keep holding it." },
+                      { n: 2, text: "Tap **RESET**." },
+                      { text: "Click **Continue**, still holding BOOT." },
+                      { text: "Let go of BOOT when the page says **Writing firmware**." },
+                    ]
+                  : [
+                      { n: 1, text: "Hold **BOOT** and keep holding it." },
+                      { text: "Click **Continue**. If the chip does not answer, tap **RESET** while holding BOOT and try again." },
+                    ]
               }
-              recheck={{
-                countdown: autoRecheck ? (countdown ?? RECHECK_SECONDS) : null,
-                checking: rechecking,
-                tries: recheckTries,
-                canCheck: !busy && Boolean(detected.cdc),
-                onStop: () => setRecheckTries(RECHECK_TRIES),
-                onCheckAgain: () => void recheck(false),
-              }}
             />
-          ) : null}
-
-          <section className="flex flex-col gap-1 rounded-xl border border-line bg-cream p-4">
-            <h2 className="font-medium">
-              {sketchTitle(learnedChip(detected.improv, detected.huesta)) ??
-                detected.usb.title}
-            </h2>
-            <p className="text-sm text-muted">
-              {detected.improv ? (
-                <>
-                  {detected.improv.name || "Firmware"}
-                  {detected.improv.version ? (
-                    <>
-                      {" "}
-                      <FirmwareVersion
-                        productId={productId}
-                        version={detected.improv.version}
-                      />
-                    </>
-                  ) : null}
-                </>
-              ) : product && detected.manifest && !actions.showSaved ? (
-                <>
-                  Latest firmware{" "}
-                  <FirmwareVersion
-                    productId={productId}
-                    version={detected.manifest.version}
-                  />{" "}
-                  · {detected.manifest.manifest.name}
-                </>
-              ) : (
-                "No switch firmware detected"
-              )}
-              {detected.huesta?.mac ? (
-                <>
-                  {" · MAC "}
-                  <span className="font-mono text-xs">
-                    {formatMac(detected.huesta.mac)}
-                  </span>
-                </>
-              ) : null}
-            </p>
-            {actions.unsupported && status !== "Detecting chip…" ? (
-              <p className="text-sm text-warn">Not supported.</p>
+            {gate.kind === "boot" ? (
+              <Illo id="simple-buttons" alt="The XIAO ESP32-C6 seen from above: 1 BOOT and 2 RESET on either side of the USB-C socket." />
             ) : null}
-            {detected.consoleError ? (
-              <p className="text-sm text-muted">
-                Could not read the console record for this board.
-              </p>
-            ) : null}
-            {detected.consoleRecord &&
-            mismatchText(detected.consoleRecord, reportedVersion(detected)) ? (
-              <p className="text-sm text-warn">
-                {mismatchText(detected.consoleRecord, reportedVersion(detected))}
-              </p>
-            ) : null}
-          </section>
-
-          {actions.cross ? (
-            <p className="text-sm text-warn">
-              This firmware does not match this USB board. Wi-Fi, token, pairing,
-              and clear are off. Install writes only this board&apos;s firmware.
-            </p>
-          ) : null}
-
-          {!actions.unsupported &&
-          !actions.askBoard &&
-          !actions.cross &&
-          !actions.showSaved &&
-          (detected.usb.kind === "c6" ||
-            detected.usb.kind === "s3" ||
-            detected.cdc) ? (
-            <p className="text-sm text-muted">
-              {detected.cdc
-                ? "This board has no switch settings yet. Install firmware, then save Wi-Fi."
-                : "This board has no switch settings yet."}
-            </p>
-          ) : null}
-
-          {actions.askBoard ? (
-            <section className="flex flex-col gap-3 rounded-xl border border-line bg-cream p-4">
-              <h2 className="text-sm font-medium">Board</h2>
-              <p className="text-sm text-muted">
-                {detected.usb.kind === "bootloader"
-                  ? "Bootloader. This USB id does not say C6 or S3. Choose the board, then install its firmware. The chip read while flashing still has to match, or the write is aborted."
-                  : "This port did not identify the board. Choose C6 or S3. Hold BOOT, then click Install. If it does not answer, tap RESET while holding BOOT and try again. If it answers and it is the other chip, the write is aborted."}
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {([
-                  ["c6", "XIAO ESP32-C6"],
-                  ["s3", "XIAO ESP32-S3"],
-                ] as const).map(([choice, title]) => {
-                  const selected = detected.boardChoice === choice;
-                  return (
-                    <button
-                      key={choice}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void chooseBoard(choice)}
-                      className={`rounded-lg border px-4 py-3 text-left ${
-                        selected
-                          ? "border-filament bg-filament-soft"
-                          : "border-line bg-background hover:border-filament/50"
-                      }`}
-                    >
-                      <p className="font-medium">{title}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ) : null}
-
-          {product && detected.manifestLoading ? (
-            <p className="text-sm text-muted">Loading firmware…</p>
-          ) : null}
-          {product && detected.manifestError ? (
-            <p className="text-sm text-danger" role="alert">
-              {detected.manifestError}
-            </p>
-          ) : null}
-          {product && detected.manifest && detected.manifest.missing.length > 0 ? (
-            <p className="text-sm text-warn">
-              Firmware images are not published yet (
-              {detected.manifest.missing.join(", ")}). Install is unavailable
-              until CI exports bootloader, partitions, boot_app0, and app.
-              {actions.wifi
-                ? " Wi-Fi still works on a board that already has firmware."
-                : ""}
-            </p>
-          ) : null}
-          {actions.showSaved &&
-          detected.manifest &&
-          !detected.manifestLoading &&
-          versionCmp === 1 ? (
-            <p className="text-sm text-muted">
-              This board is newer than the published firmware, so there is
-              nothing to update or reinstall.
-            </p>
-          ) : null}
-          {actions.showSaved &&
-          detected.manifest &&
-          !detected.manifestLoading &&
-          versionCmp === null ? (
-            <p className="text-sm text-muted">
-              This firmware version cannot be compared, so update and reinstall
-              are hidden.
-            </p>
-          ) : null}
-
-          {actions.flash !== "none" || actions.wifi || actions.token || actions.pair ? (
-            <section className="flex flex-col gap-1 rounded-xl border border-line bg-cream p-2">
-              <h2 className="px-2 pt-1 text-sm font-medium">Actions</h2>
-              {updateNotes.length > 0 && detected.manifest ? (
-                <UpdateNotes
-                  installed={installedVersion}
-                  latest={detected.manifest.version}
-                  notes={updateNotes}
-                />
-              ) : null}
-              {actions.flash === "install" || actions.flash === "update" ? (
-                <ActionRow
-                  primary
-                  label={flashBusy ? "Installing…" : flashText}
-                  disabled={Boolean(blocked) || busy || !product || !binsReady}
-                  onClick={() => void runFlash()}
-                  hint={
-                    actions.flash === "update"
-                      ? `Install ${detected.manifest?.version ?? "the latest firmware"}. Wi-Fi, the console link, and ${productId === "round" ? "pages" : "buttons"} stay.`
-                      : `Install the ${productId === "round" ? "Round" : "Simple"} switch firmware${detected.manifest ? `, version ${detected.manifest.version}` : ""}.`
-                  }
-                />
-              ) : null}
-              {actions.wifi && detected.cdc ? (
-                <ActionRow
-                  label={detected.huesta?.ssid ? "Change Wi-Fi" : "Set up Wi-Fi"}
-                  disabled={Boolean(blocked) || busy}
-                  onClick={openWifi}
-                  hint="Scan for a 2.4 GHz network and save it on the board."
-                />
-              ) : null}
-              {actions.token ? (
-                <ActionRow
-                  label={
-                    busy && status === "Saving device token…"
-                      ? "Saving…"
-                      : otherConsole
-                        ? "Move to this console"
-                        : detected.huesta?.token
-                          ? "Replace console key"
-                          : "Link to console"
-                  }
-                  disabled={Boolean(blocked) || busy || !deviceConsoleUrl}
-                  onClick={() => void runToken()}
-                  hint={
-                    <>
-                      {otherConsole
-                        ? `It talks to ${otherConsole} now. Make a key here and point it at this console.`
-                        : detected.huesta?.token
-                          ? "Make a new key for this board. Only needed if the old one was revoked."
-                          : "Make a key for this board and save it, so it can talk to the console."}{" "}
-                      {deviceConsoleUrl ? (
-                        <>
-                          This board will talk to{" "}
-                          <span className="font-mono text-xs text-foreground">{deviceConsoleUrl}</span>.
-                          {isLoopbackConsole(deviceConsoleUrl) ? (
-                            <span className="text-warn">
-                              {" "}
-                              A board can&apos;t reach this address. Set DEVICE_CONSOLE_URL to this
-                              computer&apos;s LAN address first.
-                            </span>
-                          ) : null}
-                        </>
-                      ) : null}
-                    </>
-                  }
-                />
-              ) : null}
-              {actions.pair ? (
-                <ActionRow
-                  label={
-                    busy && status === PAIR_PROMPT
-                      ? "Pairing…"
-                      : detected.huesta?.key
-                        ? "Pair again"
-                        : "Pair with Bridge"
-                  }
-                  disabled={Boolean(blocked) || busy}
-                  onClick={() => void runPair()}
-                  hint={
-                    detected.huesta?.key
-                      ? "Forget the current Hue link and pair from scratch. Press the button on the Bridge when asked."
-                      : "Press the button on the Hue Bridge when asked."
-                  }
-                />
-              ) : null}
-              {actions.flash === "reinstall" ? (
-                <ActionRow
-                  label={flashBusy ? "Installing…" : "Reinstall"}
-                  disabled={Boolean(blocked) || busy || !product || !binsReady}
-                  onClick={() => void runFlash()}
-                  hint={`Install ${detected.manifest?.version ?? "this version"} again. Settings stay.`}
-                />
-              ) : null}
-            </section>
-          ) : null}
-
-          {actions.showSaved && detected.huesta ? (
-            <details className="group rounded-xl border border-line bg-cream p-4">
-              <summary className="cursor-pointer text-sm font-medium">Details</summary>
-              <p className="mt-2 text-sm text-muted">
-                What the board reported when you clicked Detect. Wi-Fi and IP are
-                its connection at that moment; the rest is saved on the board.
-              </p>
-              <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                <Field label="SSID" value={detected.huesta.ssid || "—"} />
-                <Field
-                  label="Wi-Fi"
-                  value={
-                    detected.huesta.wifi === "up" ? "Connected" : "Not connected when read"
-                  }
-                />
-                <Field label="IP" value={detected.huesta.ip || "—"} mono />
-                <Field label="Bridge id" value={detected.huesta.bid || "—"} mono />
-                <Field label="Bridge IP" value={detected.huesta.bip || "—"} mono />
-                <Field label="Console URL" value={detected.huesta.url || "—"} mono />
-                <Field
-                  label="Console key"
-                  value={
-                    !detected.huesta.token
-                      ? "No"
-                      : consoleLookup === "revoked"
-                        ? "Yes · revoked"
-                        : "Yes"
-                  }
-                />
-                <Field label="Hue key" value={detected.huesta.key ? "Yes" : "No"} />
-                <Field label="USB id" value={detected.usb.idText} mono />
-                {detected.consoleRecord ? (
-                  <>
-                    <Field
-                      label="Console last heard from it"
-                      value={formatSeen(detected.consoleRecord.lastSeenAt)}
-                    />
-                    <Field
-                      label="Firmware the console has on record"
-                      value={detected.consoleRecord.firmware ?? "—"}
-                      mono
-                      href={
-                        detected.consoleRecord.firmware
-                          ? firmwareChangelogHref(
-                              productId,
-                              detected.consoleRecord.firmware,
-                            )
-                          : null
-                      }
-                    />
-                    {detected.consoleRecord.otaStatus === "offered" ||
-                    detected.consoleRecord.otaStatus === "failed" ? (
-                      <Field
-                        label="Wi-Fi update"
-                        value={
-                          detected.consoleRecord.otaStatus === "failed"
-                            ? `Failed: ${otaErrorText(detected.consoleRecord.otaError)}`
-                            : "Offered on Switches; the switch installs it when it checks in"
-                        }
-                      />
-                    ) : null}
-                  </>
-                ) : null}
-              </dl>
-            </details>
-          ) : null}
-
-          {actions.clear ? (
-            <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/40 p-4">
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <h2 className="text-sm font-medium text-danger">Reset board</h2>
-                <p className="text-sm text-muted">
-                  Erase Wi-Fi, the console link, the Hue link, and{" "}
-                  {productId === "round" ? "pages" : "recipes"}. The firmware stays.
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={Boolean(blocked) || busy}
-                onClick={() => void runClear()}
-                className="rounded-md border border-danger/60 px-3 py-2 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-60"
-              >
-                {busy && status === "Clearing saved data…" ? "Erasing…" : "Erase settings"}
-              </button>
-            </section>
-          ) : null}
-        </>
-      ) : null}
-
-
-      {panel === "flash" ? (
-        <section className="rounded-xl border border-line bg-cream p-4 text-sm">
-          <p className="font-medium">{status ?? "Flashing…"}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => releaseGate(true)} className={PRIMARY}>
+              Continue
+            </button>
+            <button type="button" onClick={() => releaseGate(false)} className={SECONDARY}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : panel === "flash" ? (
+        <div className="rounded-lg bg-background p-3" role="status">
+          <p className="font-medium">{status ?? "Installing…"}</p>
           {percent != null ? (
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
               <div className="h-full bg-filament" style={{ width: `${percent}%` }} />
             </div>
           ) : null}
-        </section>
-      ) : null}
-
-      {panel === "wifi" ? (
-        <section className="flex flex-col gap-4 rounded-xl border border-line bg-cream p-4">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-sm font-medium">Wi-Fi (2.4 GHz)</h2>
-            <p className="text-sm text-muted">
-              Scan or type the network. The password is not shown again. Saving
-              Wi-Fi does not write a token.
+          <p className="mt-2 text-xs text-muted">Keep the cable in. This takes about a minute.</p>
+        </div>
+      ) : !actions.unsupported ? (
+        <>
+          {installMode === "buttons" ? (
+            <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
+              <div className="flex flex-col gap-2">
+                <p className="text-muted">
+                  This board needs two buttons to take new firmware. After you click {flashText}, the
+                  page asks you to:
+                </p>
+                <ButtonSteps
+                  items={[
+                    { n: 1, text: "Hold **BOOT**," },
+                    { n: 2, text: "tap **RESET**, then click Continue." },
+                    { n: 2, text: "When it's written, tap **RESET** once more." },
+                  ]}
+                />
+              </div>
+              <Illo id="simple-buttons" alt="The XIAO ESP32-C6 seen from above: 1 BOOT and 2 RESET on either side of the USB-C socket." />
+            </div>
+          ) : installMode === "hueboot" ? (
+            <p className="text-muted">
+              No buttons until the end: the console restarts the board into install mode. When it&apos;s
+              written, tap <span className="font-medium text-foreground">RESET</span> once on the
+              board, next to the USB-C socket.
             </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void runScan()}
-              className="rounded-md border border-line bg-background px-3 py-2 text-sm disabled:opacity-60"
-            >
-              {busy && status?.startsWith("Scanning") ? "Scanning…" : "Scan"}
-            </button>
-          </div>
-          {scanHint ? <p className="text-sm text-muted">{scanHint}</p> : null}
+          ) : (
+            <p className="text-muted">No buttons to press: the console restarts the Round by itself.</p>
+          )}
+          {installButton}
+          {actions.flash === "install" ? showsNext("firmware") : null}
+        </>
+      ) : null}
+      <CantBreak />
+      {feedback}
+      <StepHelp why={step("firmware").why} trouble={step("firmware").trouble} />
+    </>
+  ) : null;
+
+  const wifiBody = (
+    <>
+      {!sessionAlive ? (
+        <p className="text-muted">Connect the board again to change its Wi-Fi.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <p className="text-muted">
+            Click <span className="font-medium text-foreground">Scan</span>, pick your 2.4 GHz network
+            and type its password. The password is not shown again.
+          </p>
+          <button type="button" disabled={busy} onClick={() => void runScan()} className={SECONDARY}>
+            {busy && status?.startsWith("Scanning") ? "Scanning…" : "Scan"}
+          </button>
+          {scanHint ? <p className="text-muted">{scanHint}</p> : null}
           {networks.length > 0 ? (
-            <ul className="flex flex-col gap-1 text-sm">
+            <ul className="flex flex-col gap-1">
               {networks.map((network) => (
                 <li key={network.ssid}>
                   <button
                     type="button"
                     onClick={() => setSsid(network.ssid)}
                     className={`w-full rounded-md border px-3 py-2 text-left ${
-                      ssid === network.ssid
-                        ? "border-filament bg-filament-soft"
-                        : "border-line bg-background"
+                      ssid === network.ssid ? "border-filament bg-filament-soft" : "border-line bg-background"
                     }`}
                   >
                     <span className="font-medium">{network.ssid}</span>
@@ -1727,7 +1482,7 @@ export function SetupPanel({
             </ul>
           ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1">
               <span className="font-medium">Network name</span>
               <input
                 value={ssid}
@@ -1736,7 +1491,7 @@ export function SetupPanel({
                 className="rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-filament"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1">
               <span className="font-medium">Password</span>
               <input
                 type="password"
@@ -1751,26 +1506,355 @@ export function SetupPanel({
             type="button"
             disabled={busy || !ssid.trim()}
             onClick={() => void runSaveWifi()}
-            className="w-fit rounded-md bg-filament px-3 py-2 text-sm font-medium text-filament-ink disabled:opacity-60"
+            className={PRIMARY}
           >
             {busy && status?.startsWith("Connecting") ? "Saving…" : "Save Wi-Fi"}
           </button>
-        </section>
+        </div>
+      )}
+      {round ? (
+        <p className="text-xs text-muted">The Round needs its antenna clicked into its socket to reach the router.</p>
       ) : null}
+      {showsNext("wifi")}
+      {feedback}
+      <StepHelp why={step("wifi").why} trouble={step("wifi").trouble} />
+    </>
+  );
 
-      {status && panel !== "flash" && status !== PICK_PORT && status !== READING ? (
-        <p className="text-sm text-muted" role="status">
-          {status}
-        </p>
-      ) : null}
-
-      {error ? (
-        <p
-          className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-          role="alert"
+  const consoleBody = (
+    <>
+      <p className="text-muted">
+        {otherConsole
+          ? `It talks to ${otherConsole} now. Make a key here and point it at this console.`
+          : consoleLookup === "revoked"
+            ? "This board's key was revoked on API keys. Give it a new one."
+            : card?.token
+              ? "Make a new key for this board. Only needed if the old one was revoked."
+              : "Make a key for this board and save it on the board, so it can fetch its setup."}{" "}
+        {deviceConsoleUrl ? (
+          <>
+            It will talk to <span className="font-mono text-xs text-foreground">{deviceConsoleUrl}</span>.
+            {isLoopbackConsole(deviceConsoleUrl) ? (
+              <span className="text-warn">
+                {" "}
+                A board can&apos;t reach this address. Set DEVICE_CONSOLE_URL to this computer&apos;s
+                LAN address first.
+              </span>
+            ) : null}
+          </>
+        ) : null}
+      </p>
+      {sessionAlive ? (
+        <button
+          type="button"
+          disabled={Boolean(blocked) || busy || !deviceConsoleUrl}
+          onClick={() => void runToken()}
+          className={PRIMARY}
         >
-          {error}
+          {busy && status === "Saving device token…"
+            ? "Saving…"
+            : otherConsole
+              ? "Move to this console"
+              : card?.token
+                ? "Replace console key"
+                : "Link to console"}
+        </button>
+      ) : (
+        <p className="text-muted">Connect the board again to link it.</p>
+      )}
+      {showsNext("console")}
+      {feedback}
+      <StepHelp why={step("console").why} trouble={step("console").trouble} />
+    </>
+  );
+
+  const pairing = busy && status === PAIR_PROMPT;
+  const bridgeBody = (
+    <>
+      <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
+        <div className="flex flex-col gap-3">
+          <ButtonSteps
+            items={[
+              { text: "Stand next to your Hue Bridge and click **Pair with Bridge**." },
+              { n: 1, text: "Press the round link button on top of the Bridge once. A short press is enough." },
+              { text: "The step turns green when the Bridge lets the board in." },
+            ]}
+          />
+          {sessionAlive ? (
+            <button
+              type="button"
+              disabled={Boolean(blocked) || busy || !actions?.pair}
+              onClick={() => void runPair()}
+              className={PRIMARY}
+            >
+              {pairing ? "Pairing…" : card?.key ? "Pair again" : "Pair with Bridge"}
+            </button>
+          ) : (
+            <p className="text-muted">Connect the board again to pair it.</p>
+          )}
+          {pairing ? (
+            <p className="rounded-lg border border-filament bg-filament-soft px-3 py-2 font-medium" role="status">
+              Press the button on the Hue Bridge now.
+              {pairLeft !== null ? <span className="font-normal text-muted"> Waiting {pairLeft} s…</span> : null}
+            </p>
+          ) : null}
+          {!actions?.pair ? <p className="text-muted">Save Wi-Fi first: the board finds the Bridge over Wi-Fi.</p> : null}
+        </div>
+        <Illo id="hue-bridge" alt="A Hue Bridge seen from the front: 1 the round link button in the middle of the top, pressed once." />
+      </div>
+      {showsNext("bridge")}
+      {feedback}
+      <StepHelp why={step("bridge").why} trouble={step("bridge").trouble} />
+    </>
+  );
+
+  // ---------------------------------------------------------------- summaries
+
+  const firmwareSummary = !card
+    ? actions?.unsupported
+      ? "Not supported"
+      : "Not installed yet"
+    : detected?.manifestLoading
+      ? `${ver} · checking for updates…`
+      : versionCmp === -1
+        ? `${ver} · ${manifestVersion} is available${
+            importantCount > 0 ? ` · ${importantCount} important ${importantCount === 1 ? "note" : "notes"}` : ""
+          }`
+        : versionCmp === 0
+          ? `${ver} (latest)`
+          : versionCmp === 1
+            ? `${ver} (newer than the latest release)`
+            : `${ver} · can't check for updates`;
+  const seenMin = live?.seenMin ?? null;
+  const wifiSummary = !card
+    ? null
+    : live?.wifiState === "todo"
+      ? "No network saved"
+      : live?.wifiState === "done"
+        ? `${card.ssid} · connected${card.ip ? ` (${card.ip})` : ""}`
+        : live?.wifiState === "warn"
+          ? `${card.ssid} · reconnecting`
+          : `${card.ssid} · not connected${seenMin !== null ? `; the console last heard from it ${agoText(seenMin)}` : ""}`;
+  const consoleSummary = !card
+    ? null
+    : !live?.linked
+      ? "Not linked"
+      : consoleLookup === "elsewhere"
+        ? `Linked to another console · ${otherConsole ?? card.url}`
+        : consoleLookup === "revoked"
+          ? "Key revoked · the console rejects this board"
+          : consoleLookup === "replacing"
+            ? "New key saved · waiting for the board to check in with it"
+            : consoleLookup === "error"
+              ? "Key saved · couldn't check when the console last heard from it"
+              : consoleLookup === "missing" || seenMin === null
+                ? "Key saved · waiting for the board to check in"
+                : live.consoleQuiet
+                  ? `Key saved · the console last heard from it ${agoText(seenMin)}`
+                  : `Linked · last heard from it ${agoText(seenMin)}`;
+  const bridgeSummary = !card ? null : card.key ? (card.bid ? `Paired with ${card.bid}` : "Paired") : "Not paired";
+
+  const rows: { id: GuideStepId; summary: ReactNode; body: ReactNode }[] = [
+    { id: "connect", summary: connected ? boardTitle : null, body: connectBody },
+    { id: "firmware", summary: connected ? firmwareSummary : null, body: firmwareBody },
+    { id: "wifi", summary: wifiSummary, body: wifiBody },
+    { id: "console", summary: consoleSummary, body: consoleBody },
+    { id: "bridge", summary: bridgeSummary, body: bridgeBody },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      {blocked ? (
+        <p
+          className="rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-warn"
+          role="status"
+        >
+          {blocked}
         </p>
+      ) : null}
+
+      {!connected ? <ChipList label="You need" items={BEFORE_YOU_START} /> : null}
+
+      <ol className="flex flex-col">
+        {rows.map((row, i) => (
+          <StepRow
+            key={row.id}
+            n={i + 1}
+            title={step(row.id).title}
+            state={display(row.id)}
+            summary={row.summary}
+            open={open === row.id}
+            last={i === rows.length - 1 && !allDone}
+            onToggle={toggle(row.id)}
+          >
+            {row.body}
+          </StepRow>
+        ))}
+        {allDone ? (
+          <li className="grid grid-cols-[24px_minmax(0,1fr)] gap-x-3 sm:gap-x-4">
+            <div className="flex justify-center">
+              <span className="mt-4 flex h-6 w-6 items-center justify-center rounded-full bg-ok-soft text-ok">
+                <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor" aria-hidden="true">
+                  <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.58l7.3-7.3a1 1 0 0 1 1.4 0Z" />
+                </svg>
+              </span>
+            </div>
+            <div className="flex flex-col gap-3 rounded-xl border border-ok/40 bg-ok-soft p-4 text-sm">
+              <p className="font-semibold text-ok">This board is set up.</p>
+              <p className="text-muted">
+                Next, give its {round ? "pages a room or zone" : "buttons a job"}. Then unplug it and{" "}
+                {round ? "put it where it goes" : "mount it"}. Changes reach the switch within about 15
+                minutes, or right away if you unplug it and plug it back in.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Link href={switchHref} className={PRIMARY}>
+                  Set up its {round ? "pages" : "buttons"}
+                </Link>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void disconnect("Port released. Plug in the next board and click Connect.")}
+                  className={SECONDARY}
+                >
+                  Set up another board
+                </button>
+              </div>
+              {open === null ? feedback : null}
+            </div>
+          </li>
+        ) : null}
+      </ol>
+
+      {settling ? (
+        rechecking ? (
+          <p className="text-sm text-filament" role="status">
+            Checking the board again…
+          </p>
+        ) : autoRecheck ? (
+          <p className="text-sm text-filament" role="status">
+            The board is still joining. Checking again in {countdown ?? RECHECK_SECONDS} s (try{" "}
+            {recheckTries + 1} of {RECHECK_TRIES}).{" "}
+            <button type="button" onClick={() => setRecheckTries(RECHECK_TRIES)} className="underline underline-offset-2">
+              Stop
+            </button>
+          </p>
+        ) : !busy ? (
+          <button
+            type="button"
+            onClick={() => void recheck(false)}
+            className="w-fit rounded-md border border-line px-3 py-2 text-sm font-medium"
+          >
+            Check again
+          </button>
+        ) : null
+      ) : null}
+
+      {open === null && !allDone ? feedback : null}
+
+      {connected && detected && card ? (
+        <details className="rounded-xl border border-line p-4">
+          <summary className="cursor-pointer text-sm font-medium">Maintenance</summary>
+          <div className="mt-3 flex flex-col gap-1">
+            {actions?.flash === "reinstall" ? (
+              <ActionRow
+                label={flashBusy ? "Installing…" : "Reinstall"}
+                disabled={Boolean(blocked) || busy || !product || !binsReady}
+                onClick={() => void runFlash()}
+                hint={`Install ${manifestVersion ?? "this version"} again. Settings stay.`}
+              />
+            ) : null}
+            {sessionAlive ? (
+              <ActionRow
+                label="Change Wi-Fi"
+                disabled={busy}
+                onClick={() => setOpenStep("wifi")}
+                hint="Save another 2.4 GHz network on the board."
+              />
+            ) : null}
+            {sessionAlive && card.token ? (
+              <ActionRow
+                label="Replace console key"
+                disabled={Boolean(blocked) || busy || !deviceConsoleUrl}
+                onClick={() => void runToken()}
+                hint="Make a new key for this board. Only needed if the old one was revoked."
+              />
+            ) : null}
+            {sessionAlive && card.key && actions?.pair ? (
+              <ActionRow
+                label="Pair again"
+                disabled={Boolean(blocked) || busy}
+                onClick={() => setOpenStep("bridge")}
+                hint="Forget the current Hue link and pair from scratch."
+              />
+            ) : null}
+          </div>
+          <details className="mt-3 rounded-lg border border-line p-3">
+            <summary className="cursor-pointer text-sm font-medium">Details</summary>
+            <p className="mt-2 text-sm text-muted">
+              What the board reported when you connected it. Wi-Fi and IP are its connection at that
+              moment; the rest is saved on the board.
+            </p>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+              <Field label="SSID" value={card.ssid || "—"} />
+              <Field label="Wi-Fi" value={card.wifi === "up" ? "Connected" : "Not connected when read"} />
+              <Field label="IP" value={card.ip || "—"} mono />
+              <Field label="Bridge id" value={card.bid || "—"} mono />
+              <Field label="Bridge IP" value={card.bip || "—"} mono />
+              <Field label="Console URL" value={card.url || "—"} mono />
+              <Field
+                label="Console key"
+                value={!card.token ? "No" : consoleLookup === "revoked" ? "Yes · revoked" : "Yes"}
+              />
+              <Field label="Hue key" value={card.key ? "Yes" : "No"} />
+              <Field label="USB id" value={detected.usb.idText} mono />
+              {detected.consoleRecord ? (
+                <>
+                  <Field label="Console last heard from it" value={formatSeen(detected.consoleRecord.lastSeenAt)} />
+                  <Field
+                    label="Firmware the console has on record"
+                    value={detected.consoleRecord.firmware ?? "—"}
+                    mono
+                    href={
+                      detected.consoleRecord.firmware
+                        ? firmwareChangelogHref(productId, detected.consoleRecord.firmware)
+                        : null
+                    }
+                  />
+                  {detected.consoleRecord.otaStatus === "offered" ||
+                  detected.consoleRecord.otaStatus === "failed" ? (
+                    <Field
+                      label="Wi-Fi update"
+                      value={
+                        detected.consoleRecord.otaStatus === "failed"
+                          ? `Failed: ${otaErrorText(detected.consoleRecord.otaError)}`
+                          : "Offered on Switches; the switch installs it when it checks in"
+                      }
+                    />
+                  ) : null}
+                </>
+              ) : null}
+            </dl>
+          </details>
+          {actions?.clear ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-danger/40 p-3">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <p className="text-sm font-medium text-danger">Reset board</p>
+                <p className="text-sm text-muted">
+                  Erase Wi-Fi, the console link, the Hue link, and {round ? "pages" : "recipes"}. The
+                  firmware stays.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={Boolean(blocked) || busy || !sessionAlive}
+                onClick={() => void runClear()}
+                className="rounded-md border border-danger/60 px-3 py-2 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-60"
+              >
+                {busy && status === "Clearing saved data…" ? "Erasing…" : "Erase settings"}
+              </button>
+            </div>
+          ) : null}
+        </details>
       ) : null}
 
       <details className="rounded-md border border-line bg-background p-3">
@@ -1792,7 +1876,13 @@ export function SetupPanel({
           </button>
         ) : null}
       </details>
+      <p className="text-xs text-muted">
+        Stuck?{" "}
+        <Link href={`/how-to?product=${shown}&topic=status`} className="text-filament underline underline-offset-2">
+          {round ? "What the screen shows" : "What the LED shows"}
+        </Link>{" "}
+        tells you which step the board is on.
+      </p>
     </div>
   );
 }
-

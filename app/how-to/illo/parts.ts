@@ -165,6 +165,45 @@ export function panelButton(pressed = false): THREE.Group {
   return g;
 }
 
+/**
+ * A Hue Bridge, generic and without a logo: a rounded square box (x, z) on y 0..h, the round link
+ * button raised in the middle of the top, three status lights in a row along the front edge
+ * (+z), and the network cable leaving the back (-z).
+ */
+export const BRIDGE = { w: 88, h: 24, button: [0, 25.6, 0] as [number, number, number], lights: [0, 24.2, 34] as [number, number, number] };
+export function hueBridge(): THREE.Group {
+  const g = new THREE.Group();
+  const { w, h } = BRIDGE;
+  const r = 16;
+  const hw = w / 2 - r;
+  const sq = new THREE.Shape();
+  sq.moveTo(-hw, -w / 2);
+  sq.lineTo(hw, -w / 2);
+  sq.absarc(hw, -hw, r, -Math.PI / 2, 0, false);
+  sq.lineTo(w / 2, hw);
+  sq.absarc(hw, hw, r, 0, Math.PI / 2, false);
+  sq.lineTo(-hw, w / 2);
+  sq.absarc(-hw, hw, r, Math.PI / 2, Math.PI, false);
+  sq.lineTo(-w / 2, -hw);
+  sq.absarc(-hw, -hw, r, Math.PI, Math.PI * 1.5, false);
+  // The body, then a top a little smaller and thinner: the step reads as the rounded top edge.
+  const body = mesh(extrude(sq, h - 2.5));
+  body.name = "bridge_body";
+  g.add(body);
+  const top = mesh(extrude(sq, 2.5));
+  top.scale.set(0.96, 1, 0.96);
+  g.add(at(top, 0, h - 2.5, 0));
+  // The link button: a shallow disc standing proud of the top, in a thin ring.
+  g.add(at(mesh(cyl(21, 1.6, 64), "soft", true), 0, h + 0.8, 0));
+  g.add(at(mesh(cyl(23, 0.3, 64), undefined, true), 0, h + 0.15, 0));
+  for (const x of [-8, 0, 8]) g.add(at(mesh(cyl(1.3, 0.4, 20), "ok", true), x, h + 0.2, 34));
+  // Network and power sockets on the back, the network cable lying on the table.
+  g.add(at(mesh(box(16, 13, 2)), -10, 9, -w / 2 - 1));
+  g.add(at(mesh(cyl(3, 2, 24).rotateX(Math.PI / 2), undefined, true), 18, 9, -w / 2 - 1));
+  g.add(wire([[-10, 9, -w / 2 - 2], [-10, 7, -w / 2 - 14], [-18, 2, -w / 2 - 26], [-40, 1.5, -w / 2 - 34], [-90, 1.5, -w / 2 - 38]], "neutral", 2.4));
+  return g;
+}
+
 /** Lug holes of `panelButton`, local coords. Either lug can take either wire. */
 export const BUTTON_LUGS = { a: [2.5, -18.8, 0] as [number, number, number], b: [-2.5, -18.8, 0] as [number, number, number] };
 

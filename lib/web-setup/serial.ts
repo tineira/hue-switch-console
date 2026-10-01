@@ -9,12 +9,17 @@ const REOPEN_MS = 10000;
 const POST_OPEN_WATCH_MS = 3000;
 const POST_REOPEN_SETUP_MS = 3000;
 
-export async function requestSerialPort(): Promise<SerialPort> {
+// Seeed and Espressif USB vendor ids: every XIAO port, its ROM bootloader included. Bluetooth
+// serial ports have no USB vendor id, so the filtered list leaves them out.
+const XIAO_FILTERS = [{ usbVendorId: 0x2886 }, { usbVendorId: 0x303a }];
+
+/** `all` lists every serial port, for a board that shows up under another vendor id. */
+export async function requestSerialPort(all = false): Promise<SerialPort> {
   if (!("serial" in navigator)) {
     throw new Error("Use Chrome or Edge on a computer");
   }
   try {
-    return await navigator.serial.requestPort();
+    return await navigator.serial.requestPort(all ? undefined : { filters: XIAO_FILTERS });
   } catch (err) {
     const name = err instanceof DOMException ? err.name : "";
     if (name === "NotFoundError") {

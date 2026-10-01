@@ -7,8 +7,9 @@ import { BuildSection, LevelPicker } from "@/app/how-to/build-section";
 import { ProductPicture } from "@/app/how-to/product-picture";
 import { StateVisual } from "@/app/how-to/visuals";
 import { Rich } from "@/app/rich-text";
+import { Illo } from "@/app/how-to/illo/illo";
+import { BEFORE_YOU_START } from "@/lib/setup-guide";
 import {
-  NEEDS,
   PRODUCT_INFO,
   PRODUCTS,
   setupSteps,
@@ -138,14 +139,18 @@ function SetupSection({ product, version }: { product: Product; version: string 
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-medium">Set up a {PRODUCT_INFO[product].name}</h2>
         <p className="text-sm text-muted">
-          About five minutes, once per board. After each step the switch itself shows what
-          it needs next, so you always know where you are.
+          About five minutes, once per board, on{" "}
+          <Link href="/setup" className="text-filament underline underline-offset-2">
+            Set up over USB
+          </Link>
+          . It walks you through these steps one at a time with the board plugged in, and says why
+          each one is needed. After each step the switch itself shows what it needs next.
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-0.5 text-xs text-muted">You need</span>
-        {NEEDS.map((need) => (
+        {BEFORE_YOU_START.map((need) => (
           <span key={need} className="rounded-full border border-line px-2 py-1 text-xs">
             {need}
           </span>
@@ -181,6 +186,11 @@ function SetupSection({ product, version }: { product: Product; version: string 
                   <p className="border-t border-line pt-2 text-xs text-muted">
                     <Rich text={step.note} />
                   </p>
+                ) : null}
+                {step.illo ? (
+                  <div className="mt-1 w-full max-w-xl">
+                    <Illo id={step.illo.id} alt={step.illo.alt} />
+                  </div>
                 ) : null}
               </div>
               {step.shows ? (

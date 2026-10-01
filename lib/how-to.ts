@@ -1,6 +1,9 @@
 // Copy for /how-to, per product. **label** marks a UI label; the page renders it in the
 // foreground colour.
 
+import type { IlloId } from "@/lib/how-to-build";
+import { guideSteps } from "@/lib/setup-guide";
+
 export type Product = "round" | "simple";
 
 export const PRODUCTS: Product[] = ["round", "simple"];
@@ -43,12 +46,6 @@ export const PRODUCT_INFO: Record<Product, ProductInfo> = {
   },
 };
 
-export const NEEDS = [
-  "The switch",
-  "A USB-C data cable",
-  "Chrome or Edge",
-  "The Hue Bridge on the same network",
-];
 
 export type SetupStep = {
   title: string;
@@ -56,6 +53,8 @@ export type SetupStep = {
   href?: string;
   body: string;
   note?: string;
+  // A picture of what to do with your hands.
+  illo?: { id: IlloId; alt: string };
   // What the switch shows once this step is done.
   shows?: { caption: string; visual: Visual };
 };
@@ -78,48 +77,50 @@ export type Status = {
 
 export function setupSteps(product: Product): SetupStep[] {
   const round = product === "round";
+  // Steps 1–5 are Set up over USB's (lib/setup-guide.ts), in its words.
+  const [connect, firmware, wifi, link, bridge] = guideSteps(product);
   return [
     {
-      title: "Plug it in",
-      where: "Open Setup",
-      href: "/setup",
-      body: "Connect the board to this computer with a USB-C cable that carries data. Charge-only cables never show up. On Setup, click **Detect device** and pick the board's port in the window Chrome opens.",
+      title: connect.title,
+      body: connect.summary,
+      illo: round
+        ? { id: "round-plug", alt: "The Round with a USB-C cable to the computer." }
+        : { id: "simple-plug", alt: "The XIAO ESP32-C6 with a USB-C cable to the computer." },
     },
     {
-      title: "Install the firmware",
-      where: "Setup",
-      href: "/setup",
-      body: round
-        ? "Click **Install** and keep the cable in until it finishes."
-        : "Hold **BOOT** on the board while you click **Install**, then keep the cable in until it finishes. A new Simple switch only accepts firmware this way.",
+      title: firmware.title,
+      body: firmware.summary,
+      note: "You can't break the XIAO this way: its install mode lives in read-only memory, so a failed install is fixed by installing again.",
+      illo: round
+        ? undefined
+        : { id: "simple-buttons", alt: "The XIAO ESP32-C6 seen from above: 1 BOOT and 2 RESET on either side of the USB-C socket." },
       shows: round
         ? { caption: "No Wi-Fi. Expected: none saved yet.", visual: { face: "nowifi" } }
         : { caption: "Fast blink: no Wi-Fi yet", visual: { led: "fast" } },
     },
     {
-      title: "Save Wi-Fi",
-      where: "Setup",
-      href: "/setup",
-      body: "Click **Set up Wi-Fi** and pick a **2.4 GHz** network. The board can't join 5 GHz.",
+      title: wifi.title,
+      body: wifi.summary,
       note: round ? "The Round needs its U.FL antenna plugged in to reach the router." : undefined,
       shows: round
         ? { caption: "Loading…, then Press Bridge button", visual: { face: "loading" } }
         : { caption: "Two blinks: needs the console", visual: { led: "burst-2" } },
     },
     {
-      title: "Link it to this console",
-      where: "Setup",
-      href: "/setup",
-      body: "Click **Link to console**. This saves a device key on the board so it can fetch what its buttons do.",
+      title: link.title,
+      body: link.summary,
       note: "Wi-Fi or Console can turn amber for a moment while the board joins. Setup checks again every 10 seconds, up to three times, then offers **Check again**.",
       shows: round
         ? { caption: "Press Bridge button: it waits until step 5", visual: { face: "pairing" } }
         : { caption: "Three blinks: needs pairing", visual: { led: "burst-3" } },
     },
     {
-      title: "Approve it on the Hue Bridge",
-      body: "Press the round button on top of the Hue Bridge.",
-      note: "Missed it? Click **Pair with Bridge** on Setup, or hold **BOOT** on the board for about 3 seconds.",
+      title: bridge.title,
+      body: bridge.summary,
+      note: round
+        ? "Nothing happens? Click **Pair with Bridge** on Setup and press the Bridge's button again."
+        : "Missed it? Click **Pair with Bridge** on Setup, or hold **BOOT** on the board for about 3 seconds.",
+      illo: { id: "hue-bridge", alt: "A Hue Bridge seen from the front: 1 the round link button in the middle of the top, pressed once." },
       shows: round
         ? { caption: "Blank disc: needs a page", visual: { face: "empty" } }
         : { caption: "Four blinks: needs a recipe", visual: { led: "burst-4" } },
@@ -188,7 +189,7 @@ export function tasks(product: Product): Task[] {
       title: "Update the firmware",
       steps: [
         "On Switches, a switch with newer firmware shows **Update to**. Click it.",
-        "Plug the board in, click **Detect device** on Setup, then **Update**.",
+        "Plug the board in, click **Connect** on Set up over USB, then **Update**.",
         `Wi-Fi, the console link and its ${round ? "pages" : "buttons"} are kept.`,
       ],
     },

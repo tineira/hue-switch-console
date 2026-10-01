@@ -2,7 +2,7 @@
 
 Console-only spec. No device endpoint, payload or NVS change, so the cross-repo order in `AGENTS.md` does not apply; the user still approves this before code.
 
-**Status:** draft
+**Status:** in progress
 
 ## 1. What and why
 
@@ -124,22 +124,29 @@ The step texts, illustrations and "why" live in one module (`lib/setup-steps.ts`
 
 ### Console (`hue-switch-console`)
 
-- [ ] Step data module (titles, texts, why, troubleshooting, illustration ids) shared by `/setup` and How-to
-- [ ] `/setup` stepper replacing Detect / Setup / identity / Actions; Maintenance disclosure
-- [ ] Step 1 names the entry to pick (`USB JTAG/serial debug unit` on the C6) and explains the other entries
-- [ ] `lib/web-setup/serial.ts`: vendor-ID filters plus the unfiltered fallback, checked on the maintainer's PC (Bluetooth entries gone?)
+- [x] Step data module (titles, texts, why, troubleshooting, illustration ids) shared by `/setup` and How-to
+- [x] `/setup` stepper replacing Detect / Setup / identity / Actions; Maintenance disclosure
+- [x] Step 1 names the entry to pick (`USB JTAG/serial debug unit` on the C6) and explains the other entries
+- [x] `lib/web-setup/serial.ts`: vendor-ID filters plus the unfiltered fallback
+- [ ] Filter checked on the maintainer's PC: only the board listed, Bluetooth entries gone
 - [ ] Port entry names recorded for the Round (factory-fresh and our firmware) and on macOS
-- [ ] Step 2: pre-install button sequence with numbered render; "can't break it" box; progress and "what you'll see"
-- [ ] Hue Bridge 3D model and the pairing scene
-- [ ] BOOT/RESET balloon scene for the Simple, plugged scene for the Round
-- [ ] How-to "Set up" section shortened to the overview plus a link to `/setup`
-- [ ] Round's pairing window checked in `hue-round-switch` and stated correctly in step 5
-- [ ] `docs/changelog.md` entry
+- [x] Step 2: pre-install button sequence with numbered render; "can't break it" box; progress and "what you'll see"
+- [x] Hue Bridge 3D model and the pairing scene
+- [x] BOOT/RESET balloon scene for the Simple, plugged scene for the Round
+- [x] How-to "Set up" section shortened to the overview plus a link to `/setup`
+- [x] Round's pairing window checked in `hue-round-switch` and stated correctly in step 5
+- [x] `docs/changelog.md` entry
 - [ ] Deployed; the user sets up a blank C6 and a Round from production
 
-## 5. Open questions
+## 5. Decided during implementation
 
-1. **Round pairing window.** The Simple keeps trying for 90 s (`kPairTimeoutMs`). I haven't found the Round's value yet. Recommendation: read it from the Round firmware during implementation; if it differs, step 5 says each product's own number.
+- **A Simple without `HUEBOOT` always gets BOOT+RESET.** `flash.ts` connects to the C6 without a reset, so the chip must already be in install mode. Before, only a Simple on firmware older than 0.2.11 was asked for the buttons; a factory-fresh board got no instructions. Now every Simple that can't restart itself on `HUEBOOT` is asked for BOOT+RESET. The ask is on the page (the install step turns into "Now, on the board" with **Continue** and **Cancel**), not a `window.confirm`.
+- **The Round never stops asking the Bridge** (`hue_job.h`: fast for 90 s, then every 3 s), so its step 5 says the Round waits; the Simple's says 90 seconds.
+- **RESET's place in the pictures** is BOOT's anchor mirrored across the USB-C socket (`scenes.ts`). The XIAO model is unchanged.
+
+## 6. Open questions
+
+1. **Round pairing window.** Resolved: the Round never gives up (§5).
 2. **Factory USB IDs and port names.** I haven't checked which vendor ID and port name a factory-fresh XIAO C6 or S3 shows before our firmware is on it, or what the Round shows. Recommendation: keep both vendor-ID filters plus the unfiltered fallback, always name the entry in the text, and confirm on the next new board you plug in.
 3. **Bridge generation.** Recommendation: model the square Bridge (v2), the one most people own. A Bridge Pro look can come later if people ask.
 4. **How-to "Set up" section.** Recommendation: shorten it to an overview plus a link (§2.4) rather than removing it, because How-to is public and people read it before buying.

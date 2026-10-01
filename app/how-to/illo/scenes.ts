@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { DIAL_SIZE, HDR_Z, buildAntenna, buildDisplay, buildHeaders, buildXiao, drawDial, monoFont } from "@/app/landing/round-model";
 import {
+  BRIDGE,
   BUTTON_LUGS,
   MECH,
   WALL_D,
@@ -11,6 +12,7 @@ import {
   carrierBoard,
   ceramicCap,
   enclosure,
+  hueBridge,
   joint,
   leverConnector,
   leverEntry,
@@ -41,6 +43,8 @@ const PAD = (i: number): V3 => [7.62, T, 7.62 - i * 2.54]; // D0..D5
 const GND: V3 = [-7.62, T, 5.08];
 const V33: V3 = [-7.62, T, 2.54];
 const BOOT: V3 = [-5.2, T + 0.5, 8.9];
+// BOOT mirrored across the USB-C socket.
+const RESET: V3 = [5.2, T + 0.5, 8.9];
 const LED: V3 = [-5.3, T + 1.2, 4.8];
 const JACK: V3 = [3.8, T + 1.3, -9.0];
 const USB_MOUTH_Z = 11.7;
@@ -274,7 +278,7 @@ function roundSwitch(): SceneDef {
 // Turn the finished Round so USB-C leaves to the right of the upright screen.
 const DONE_TURN = 2.2;
 
-function roundDone(): SceneDef {
+function roundDone(cableNote = "USB-C to a phone charger"): SceneDef {
   // The dial texture turned back so its text reads level from this camera.
   const d = display({ on: true, dipOn: true, dialTurn: -1.74 });
   const { g: xa } = xiaoWithHeaders();
@@ -291,7 +295,7 @@ function roundDone(): SceneDef {
     pad: 1.03,
     notes: [
       note("Screen on top", d, [-12, 6.5, -8], "left"),
-      note("USB-C to a phone charger", cable, [0, 0, 30], "right"),
+      note(cableNote, cable, [0, 0, 30], "right"),
     ],
   };
 }
@@ -341,6 +345,41 @@ function simplePlugged(extra: { led?: boolean; boot?: boolean }): SceneDef {
     notes.push(note("The room's lights toggle", b, [-14, 38, 0], "right"));
   }
   return { root, dir: TOP, fit, pad: extra.boot ? 1.12 : 1.08, notes, marks };
+}
+
+// Set up over USB, install step: the two buttons by the USB-C socket, numbered as the steps
+// beside the picture (hold 1, tap 2).
+function simpleButtons(): SceneDef {
+  const x = xiao();
+  const c = usbAt(0, T + 1.58, USB_MOUTH_Z - 6.6, [[0, 0, 34], [6, 0, 46]]);
+  return {
+    root: group(x, c),
+    dir: TOP,
+    fit: [x],
+    pad: 1.04,
+    notes: [balloon(1, "BOOT", x, BOOT, "left"), balloon(2, "RESET", x, RESET, "right")],
+    marks: [
+      { kind: "dot", at: A(x, BOOT), tone: "hot" },
+      { kind: "dot", at: A(x, RESET), tone: "hot" },
+    ],
+  };
+}
+
+// Set up over USB, pairing step: the Bridge's link button, pressed once.
+function hueBridgePress(): SceneDef {
+  const b = hueBridge();
+  return {
+    root: group(b),
+    dir: [0.3, 1.25, 1.2],
+    // The Bridge itself; its cable runs out of the picture.
+    fit: [b.getObjectByName("bridge_body")!],
+    pad: 1.12,
+    notes: [
+      balloon(1, "Link button", b, [14, BRIDGE.button[1], -10], "right"),
+      note("Status lights", b, BRIDGE.lights, "left"),
+    ],
+    marks: [{ kind: "press", at: A(b, BRIDGE.button) }],
+  };
 }
 
 // A panel push button lying on the desk, cap toward +z (the XIAO), lugs toward -z.
@@ -1099,6 +1138,8 @@ export function buildScene(id: IlloId): SceneDef {
       return roundSwitch();
     case "round-done":
       return roundDone();
+    case "round-plug":
+      return roundDone("USB-C to this computer");
     case "simple-kit-try":
       return simpleKitTry();
     case "simple-plug":
@@ -1107,6 +1148,10 @@ export function buildScene(id: IlloId): SceneDef {
       return simplePlugged({ led: true });
     case "simple-boot":
       return simplePlugged({ boot: true });
+    case "simple-buttons":
+      return simpleButtons();
+    case "hue-bridge":
+      return hueBridgePress();
     case "simple-kit-box":
       return simpleKitBox();
     case "simple-wires":
