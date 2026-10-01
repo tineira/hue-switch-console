@@ -505,13 +505,15 @@ option {
 }
 
 /* The board arrives once rendered: a short fade in, nothing with reduced motion. */
-.led-board-in { animation: led-board-in 150ms ease-out; }
+.led-board-in,
+.illo-in { animation: led-board-in 150ms ease-out; }
 @keyframes led-board-in {
   from { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .led-board-in { animation: none; }
+  .led-board-in,
+  .illo-in { animation: none; }
   .led::after { animation: none; }
   .led:not(.led-solid)::after { opacity: 0.5; }
 }
