@@ -2,7 +2,7 @@
 
 Console-only spec. No device endpoint, payload, NVS key or installer changes. Process: `AGENTS.md`.
 
-**Status:** draft
+**Status:** approved (2026-09-30), not started
 
 Prototype (real 3D renders and guide content, navigation only): https://claude.ai/artifact/7Y33Hzv9HivHxeA8eXtenP
 
@@ -89,7 +89,7 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 
 ### Console (`hue-switch-console`)
 
-- [ ] User approves this spec and the prototype
+- [x] User approves this spec and the prototype
 - [ ] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned, Simple zoomed with its LED on the heartbeat
 - [ ] Later, separate change: dedicated monochrome renders, Round display off (§2.7)
 - [ ] Stored-switch logic removed (§2.4)
