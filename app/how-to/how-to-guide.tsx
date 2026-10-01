@@ -196,12 +196,12 @@ function SetupSection({ product, version }: { product: Product; version: string 
               </div>
               {step.now === "install" || step.now === "connect" ? (
                 <div className="flex flex-[1_1_148px] flex-col justify-center gap-2.5 rounded-[10px] bg-background p-3 sm:flex-[0_0_168px]">
-                  <span className={`${GROUP_LABEL} text-center`}>Setup shows now</span>
+                  <span className={`${GROUP_LABEL} text-center text-balance`}>Setup shows now</span>
                   {step.now === "install" ? <InstallBarMock compact /> : <ConnectMock />}
                 </div>
               ) : step.now ? (
-                <div className="flex flex-[1_1_148px] flex-col items-center justify-center gap-2.5 rounded-[10px] bg-background p-3 text-center sm:flex-[0_0_148px]">
-                  <span className={GROUP_LABEL}>{product === "round" ? "The screen shows now" : "The board shows now"}</span>
+                <div className="flex flex-[1_1_148px] flex-col items-center justify-center gap-2.5 rounded-[10px] bg-background p-3 text-center sm:flex-[0_0_168px]">
+                  <span className={`${GROUP_LABEL} text-balance`}>{product === "round" ? "Screen shows now" : "Board shows now"}</span>
                   <span className="flex min-h-16 items-center justify-center">
                     <StateVisual
                       visual={step.now.visual}
