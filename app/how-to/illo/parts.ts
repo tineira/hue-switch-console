@@ -397,6 +397,28 @@ export function leverEntry(n: number, i: number, d = 0): [number, number, number
   return [-8.5 - d, 3.2, (i - (n - 1) / 2) * 5.8];
 }
 
+/**
+ * A two-pole voltage tester lying flat, facing +z: the display unit on the left with its probe
+ * tip pointing left, the second probe on the right with its tip pointing right, the coiled lead
+ * between them hanging below. About 160 mm across.
+ */
+export function voltageTester(): THREE.Group {
+  const g = new THREE.Group();
+  const along = (r: number, len: number) => cyl(r, len, 24).rotateZ(Math.PI / 2);
+  // Display unit: body, screen, finger guard, tip.
+  g.add(at(mesh(box(66, 24, 12), "soft"), -40, 0, 0));
+  g.add(at(mesh(box(26, 12, 0.6), "black"), -34, 2, 6.2));
+  g.add(at(mesh(along(8, 2), undefined, true), -74, 0, 0));
+  g.add(at(mesh(along(1.1, 14), "tin", true), -82, 0, 0));
+  // Second probe: handle, guard, tip.
+  g.add(at(mesh(along(6, 48), "soft", true), 44, 0, 0));
+  g.add(at(mesh(along(8, 2), undefined, true), 69, 0, 0));
+  g.add(at(mesh(along(1.1, 14), "tin", true), 77, 0, 0));
+  // The lead from the unit's back end to the probe's, sagging below.
+  g.add(wire([[-7, -4, 0], [-2, -16, 0], [6, -22, 0], [14, -16, 0], [20, -4, 0]], "switched", 1.6));
+  return g;
+}
+
 /** A DIN-rail breaker, lever up (on) or down (off), front toward +z. */
 export function breaker(on: boolean): THREE.Group {
   const g = new THREE.Group();

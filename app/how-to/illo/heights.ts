@@ -26,7 +26,7 @@ export const ILLO_HEIGHT: Record<IlloId, number> = {
   "simple-box": 322,
   "wall-board": 440,
   "wall-usb": 403,
-  "wall-breaker": 384,
+  "wall-breaker": 422,
   "wall-before": 316,
   "wall-identify": 352,
   "wall-lamp": 321,

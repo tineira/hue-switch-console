@@ -22,6 +22,7 @@ import {
   resistor,
   solder,
   usbCable,
+  voltageTester,
   wallBox,
   wire,
   type Tone,
@@ -767,13 +768,16 @@ function wallBreaker(): SceneDef {
   root.add(rail);
   const bs = [-36, -18, 0, 18, 36].map((x, i) => at(breaker(i !== 2), x, 0, 0));
   root.add(...bs);
+  // The tester the electrician takes to the box, in front of the panel.
+  const tester = at(voltageTester(), 0, -78, 20);
+  root.add(tester);
   return {
     root,
     dir: [0.35, 0.35, 1.3],
     pad: 1.1,
     notes: [
       note("This circuit's breaker: OFF", bs[2], [0, -7, 24], "right", "danger"),
-      note("Then check the box with a voltage tester", bs[0], [0, 30, 10], "left"),
+      note("Then check at the box with a voltage tester", tester, [-40, 6, 6], "left"),
     ],
   };
 }

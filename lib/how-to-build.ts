@@ -421,7 +421,7 @@ export const WALL_INSTALL: InstallStep[] = [
     title: "Breaker off, and check it's dead",
     body: "Switch the circuit off at the breaker, then check at the box with a voltage tester.",
     who: "electrician",
-    pic: { illo: "wall-breaker", alt: "A row of breakers with this circuit's breaker switched off." },
+    pic: { illo: "wall-breaker", alt: "A row of breakers with this circuit's breaker switched off, and a two-pole voltage tester in front." },
   },
   {
     title: "Identify the wires in the box",
