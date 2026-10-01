@@ -28,6 +28,8 @@ Several Claude sessions can work in these repos at once. In the shared checkouts
 - Before every commit, run `git branch --show-current` and confirm it is the branch you mean.
 - Do not switch branches, reset or stash in a shared checkout. Do other work in its own worktree (for firmware, name the last folder like the sketch: `git worktree add ../worktrees/<branch>/<repo> -b <branch> origin/main`). Remove it once merged.
 - A session that edits another repo (a coordinating session doing a firmware checklist) does it in a worktree of that repo, never in the checkout another session may be using.
+- Do not leave unpushed commits on `main` in a shared checkout. The next session to push either publishes them or gets stuck behind them. Work that waits for a batched deploy waits on its own branch (in a worktree), and joins `main` only when it is pushed.
+- Before pushing, `git fetch` and rebase onto `origin/main`. Other sessions push from their worktrees, so `origin/main` moves under you.
 - If you find commits on your branch that are not yours, do not push it. Tell the user.
 
 ## Multi-repo: this repo owns the contract
