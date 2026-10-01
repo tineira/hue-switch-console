@@ -61,9 +61,9 @@ export function renderOnce(
 /**
  * A hand drawing laid over a still whose scene reports a `press` point: the fingertip on that
  * point, at life size (the drawing is 149 mm wide, its finger 17 mm). Two masks of the same
- * drawing (public/illo, made from a line drawing the maintainer supplied): its lines, painted in
- * the foreground colour, and the inside of the hand, painted in the page colour so the hand hides
- * what is behind it. Both follow the theme.
+ * drawing (public/illo, made from a line drawing the maintainer supplied): the inside of the hand,
+ * painted white so it hides what is behind it, and its lines, painted near-black, as the drawing
+ * is in every theme.
  */
 const PRESS_HAND = {
   lines: "/illo/hand-press-lines.png",
@@ -93,8 +93,8 @@ function PressHand({ still }: { still: Still }) {
   });
   return (
     <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
-      <div className="absolute bg-background" style={mask(PRESS_HAND.fill)} />
-      <div className="absolute bg-foreground" style={mask(PRESS_HAND.lines)} />
+      <div className="absolute bg-white" style={mask(PRESS_HAND.fill)} />
+      <div className="absolute bg-[#1c1c1c]" style={mask(PRESS_HAND.lines)} />
     </div>
   );
 }
