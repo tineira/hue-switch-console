@@ -9,7 +9,7 @@ import { webglAvailable } from "@/app/landing/webgl";
 
 // The picture on a /how-to switch card: a build-guide still without its callouts, cropped to
 // what's drawn and fitted into a fixed 16:10 box, so both cards line up
-// (docs/specs/how-to-navigation.md §2.7). `keep` trims the top of the drawing to zoom in on the
+// (docs/specs/finished/how-to-navigation.md §2.7). `keep` trims the top of the drawing to zoom in on the
 // board (the Simple's cable). The Simple's LED shows the working heartbeat.
 const CARD: Record<Product, { scene: IlloId; keep: number }> = {
   round: { scene: "round-done", keep: 1 },

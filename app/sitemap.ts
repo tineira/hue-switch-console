@@ -3,7 +3,7 @@ import { siteOrigin } from "@/lib/origin";
 import { howToPages } from "@/lib/how-to-nav";
 
 // Pages a signed-out visitor can read. How-to has one URL per switch and topic, and per build type
-// on the Simple's Build (docs/specs/how-to-navigation.md §2.3).
+// on the Simple's Build (docs/specs/finished/how-to-navigation.md §2.3).
 // This console's own address (BETTER_AUTH_URL, else the request), so a self-hosted one lists its own pages.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = await siteOrigin();
