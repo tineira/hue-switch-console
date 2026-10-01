@@ -87,7 +87,7 @@ const READING = "Reading the board…";
 // Chrome says "An unknown system error has occurred" when the port vanishes while it is opened
 // or read: a board with nothing in flash restarts over and over, and its USB port drops each time.
 const PORT_WONT_OPEN =
-  "The page couldn't read the board. A board with no firmware keeps restarting, so its port comes and goes. Hold BOOT, tap RESET, let go, and click Connect again; or carry on with Install, which asks for the same buttons. If another program has the port open (the Arduino IDE's Serial Monitor, for example), close it first.";
+  "The page couldn't read the board. A board with no firmware keeps restarting, so its port comes and goes. Hold BOOT, tap RESET, let go, and click Connect again below; or carry on with Install, which asks for the same buttons. If another program has the port open (the Arduino IDE's Serial Monitor, for example), close it first.";
 const CLEAR_CONFIRM =
   "This forgets Wi-Fi, the console token, the Hue link, and saved recipes or pages. The firmware stays.";
 
@@ -364,7 +364,8 @@ export function SetupPanel({
   const [rechecking, setRechecking] = useState(false);
   const [replacedKeyMac, setReplacedKeyMac] = useState<string | null>(null);
   // Which switch the pictures show before a board is connected.
-  const [chosenProduct, setChosenProduct] = useState<ProductId>("simple");
+  // Which switch the person said they are setting up in step 1; null until they pick one.
+  const [chosenProduct, setChosenProduct] = useState<ProductId | null>(null);
   // The step the person opened by hand ("none": they closed the open one); null follows the board.
   const [openStep, setOpenStep] = useState<GuideStepId | "none" | null>(null);
   const [gate, setGate] = useState<Gate | null>(null);
@@ -483,7 +484,7 @@ export function SetupPanel({
           appendUsbLog(`open failed: ${errorMessage(err)}`);
           setError(PORT_WONT_OPEN);
           setStatus(null);
-          if (!knownBoard) void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
+          if (!knownBoard) preselectBoard();
           return;
         }
         if (gen !== detectGen.current) return;
@@ -520,9 +521,9 @@ export function SetupPanel({
           void loadManifestFor(spec, mgen);
         }
         // Nothing answered to say which XIAO: start from the switch picked on the page.
-        if (!knownBoard && !chip) void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
+        if (!knownBoard && !chip) preselectBoard();
       } else if (usb.kind === "other") {
-        void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
+        preselectBoard();
       }
       if (gen === detectGen.current) setStatus(null);
     } catch (err) {
@@ -543,7 +544,7 @@ export function SetupPanel({
       }
       setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
       setError(PORT_WONT_OPEN);
-      if (!identified) void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
+      if (!identified) preselectBoard();
     } finally {
       if (gen === detectGen.current) setBusy(false);
     }
@@ -590,6 +591,11 @@ export function SetupPanel({
         : prev,
     );
     await loadManifestFor(spec, mgen);
+  }
+
+  // Only a switch the person picked in step 1 is chosen for them; otherwise they pick it here.
+  function preselectBoard() {
+    if (chosenProduct) void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
   }
 
   async function reread(session: BytePort) {
@@ -1051,7 +1057,7 @@ export function SetupPanel({
   // ---------------------------------------------------------------- the stepper's states
 
   // Pictures and texts follow the board once it is known, the picker before that.
-  const shown: ProductId = productId ?? flashed ?? chosenProduct;
+  const shown: ProductId = productId ?? flashed ?? chosenProduct ?? "simple";
   const round = shown === "round";
   const guide = guideSteps(shown);
   const step = (id: GuideStepId) => guide.find((g) => g.id === id) as GuideStep;
@@ -1132,6 +1138,16 @@ export function SetupPanel({
           role="alert"
         >
           {error}
+          {error === PORT_WONT_OPEN ? (
+            <button
+              type="button"
+              disabled={Boolean(blocked) || busy}
+              onClick={() => void detect()}
+              className="mt-2 block rounded-md border border-danger/50 bg-background px-3 py-1.5 font-medium text-foreground disabled:opacity-60"
+            >
+              Connect again
+            </button>
+          ) : null}
         </p>
       ) : null}
     </>
@@ -1330,9 +1346,10 @@ export function SetupPanel({
       {actions.askBoard ? (
         <div className="flex flex-col gap-2">
           <p className="text-muted">
-            This port doesn&apos;t say which XIAO it is, so the page starts from the switch you
-            picked in step 1. Change it if this is the other one. If the chip turns out not to
-            match, nothing is written.
+            {chosenProduct
+              ? "This port doesn't say which XIAO it is, so the page starts from the switch you picked in step 1. Change it if this is the other one."
+              : "This port doesn't say which XIAO it is. Pick the switch you are setting up."}{" "}
+            If the chip turns out not to match, nothing is written.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {([

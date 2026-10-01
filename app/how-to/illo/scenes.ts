@@ -357,7 +357,8 @@ function simpleButtons(): SceneDef {
     dir: TOP,
     fit: [x],
     pad: 1.04,
-    notes: [balloon(1, "BOOT", x, BOOT, "left"), balloon(2, "RESET", x, RESET, "right")],
+    // Seen from this side BOOT is right of the socket and RESET left, so their labels go there too.
+    notes: [balloon(1, "BOOT", x, BOOT, "right"), balloon(2, "RESET", x, RESET, "left")],
     marks: [
       { kind: "dot", at: A(x, BOOT), tone: "hot" },
       { kind: "dot", at: A(x, RESET), tone: "hot" },
