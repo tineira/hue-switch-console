@@ -289,16 +289,23 @@ function InWall() {
   const all = checked.length === WALL_REQUIREMENTS.length;
   return (
     <>
-      <div className="flex flex-col gap-2 rounded-xl border border-danger/50 bg-danger-soft p-4 text-sm">
+      {/* The anchor is on the warning, so a link to #in-wall never lands below it. */}
+      <div
+        id="in-wall"
+        className="flex scroll-mt-6 flex-col gap-2 rounded-xl border border-danger/50 bg-danger-soft p-4 text-sm"
+      >
         <p className="font-semibold text-danger">Mains voltage can kill.</p>
         <p className="text-muted">
-          This board is an uncertified design: no lab has tested it and it carries no approval mark. An
-          electrician installs it, with the circuit off at the breaker. Build and install it at your own
-          risk.
+          This board is an uncertified design, made with AI assistance and checked only by design-rule tools: no
+          lab has tested it and it carries no approval mark. An electrician installs it, with the circuit off at
+          the breaker. Build and install it at your own risk.
+        </p>
+        <p className="text-muted">
+          <b className="font-semibold text-foreground">Never connect USB while the board is on mains.</b> A fault
+          or a wrongly wired switch line would put mains on the cable and your computer.
         </p>
       </div>
       <Sub
-        id="in-wall"
         title="Can I use it?"
         lead="A small board with its own power supply that sits in the wall box and reads the switches already there. Check all four before you order anything."
       >
