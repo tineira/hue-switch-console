@@ -707,10 +707,9 @@ option {
 .lv-part-text { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms ease; }
 .lv-part-text[data-open] { grid-template-rows: 1fr; }
 .lv-part-text > * { min-height: 0; overflow: hidden; }
-/* Pre-rendered Round placeholders: one per scheme, whatever the theme. */
-.lv-only-dark { display: none; }
-[data-scheme="dark"] .lv-only-dark { display: block; }
-[data-scheme="dark"] .lv-only-light { display: none; }
+/* The Round scene (canvases and balloons): hidden until its first frame, then a short fade. */
+.lv-scene { opacity: 0; transition: opacity 150ms ease-out; }
+.lv-scene.lv-scene-ready { opacity: 1; }
 
 /* "It's live" hint: two rings on the screen outline. */
 .lv-pulse {
@@ -761,6 +760,7 @@ option {
   .lv-scroll-hint,
   .lv-pulse { display: none; }
   .lv-grid { opacity: 0; }
+  .lv-scene { transition: none; }
 }
 .lv-track[data-flat] .lv-story-wrap,
 .lv-track[data-flat] .lv-card-col { height: auto; }

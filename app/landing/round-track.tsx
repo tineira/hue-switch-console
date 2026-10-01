@@ -50,21 +50,6 @@ function stepAt(p: number, tryMode: boolean): Step {
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Pre-rendered first frame (reduced motion: the finished frame) shown until WebGL draws.
-function Placeholder({ scheme }: { scheme: "dark" | "light" }) {
-  return (
-    <picture className={`lv-only-${scheme}`}>
-      <source media="(prefers-reduced-motion: reduce)" srcSet={`/landing/round-final-${scheme}.png`} />
-      <img
-        src={`/landing/round-first-${scheme}.png`}
-        alt=""
-        fetchPriority="high"
-        className="absolute inset-0 h-full w-full object-contain"
-      />
-    </picture>
-  );
-}
-
 export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) {
   const trackRef = useRef<HTMLElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -170,7 +155,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
   }, [onScroll]);
 
   // Load three.js and build the scene. The card is on screen at first paint, so this starts
-  // right after hydration; the placeholder image covers the wait.
+  // right after hydration; the card's grid alone covers the wait.
   useEffect(() => {
     if (!webglAvailable()) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- WebGL support is only known in the browser
@@ -343,19 +328,16 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
               <div ref={areaRef} className="lv-draw bg-cream">
                 <div ref={gridRef} aria-hidden="true" className="lv-grid absolute inset-0" />
                 <Room on={r.on} level={r.level} scene={page.scenes[r.scene]} hidden={!lit} lamp={false} />
-                {ready ? null : (
-                  <div aria-hidden="true">
-                    <Placeholder scheme="dark" />
-                    <Placeholder scheme="light" />
-                  </div>
-                )}
-                <canvas ref={lineRef} aria-hidden="true" className="absolute inset-0 block h-full w-full" />
-                <canvas ref={shadeRef} aria-hidden="true" className="absolute inset-0 block h-full w-full" style={{ opacity: 0 }} />
-                <svg
-                  ref={svgRef}
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 h-full w-full overflow-visible font-mono text-[13px] font-medium [&_text]:fill-foreground"
-                />
+                {/* Until the first WebGL frame the card shows only its grid (static, the same in
+                    every frame), so nothing moves when the scene arrives: it fades in. */}
+                <div aria-hidden="true" className={`lv-scene absolute inset-0${ready ? " lv-scene-ready" : ""}`}>
+                  <canvas ref={lineRef} className="absolute inset-0 block h-full w-full" />
+                  <canvas ref={shadeRef} className="absolute inset-0 block h-full w-full" style={{ opacity: 0 }} />
+                  <svg
+                    ref={svgRef}
+                    className="pointer-events-none absolute inset-0 h-full w-full overflow-visible font-mono text-[13px] font-medium [&_text]:fill-foreground"
+                  />
+                </div>
                 <div ref={pulseRef} aria-hidden="true" className={`lv-pulse ${showHint ? "opacity-100" : "opacity-0"}`} />
                 <div
                   ref={hintRef}
