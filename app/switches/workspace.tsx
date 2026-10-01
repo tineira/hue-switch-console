@@ -47,7 +47,8 @@ type Notice = { text: string; tone: "ok" | "muted" };
 
 type SaveResult = { ok: true; rev?: number } | { ok: false; error: string };
 
-const SAVED_TAIL = "The switch picks this up on its next check-in.";
+/** How long "On the switch" stays in the header after the switch takes a save. */
+const APPLIED_CHIP_MS = 8000;
 
 type SyncInfo = Pick<
   SwitchPublic,
@@ -282,7 +283,8 @@ export function SwitchesWorkspace({
   );
   const [editingMac, setEditingMac] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
+  // The switch saved last on this page and the rev it got, until the switch runs it.
+  const [savedAt, setSavedAt] = useState<{ mac: string; rev: number | null } | null>(null);
   // Only one gesture card open on the page at a time.
   const [openGesture, setOpenGesture] = useState<string | null>(null);
   // The switch the open cards, notice and rename form belong to. A tab or Back / Forward
@@ -339,6 +341,17 @@ export function SwitchesWorkspace({
     };
   }, []);
 
+  // Once the switch runs the saved rev, "On the switch" shows briefly, then the chip goes.
+  const savedInfo = savedAt ? sync[savedAt.mac] : undefined;
+  const savedApplied =
+    savedInfo?.config_status === "current" &&
+    (savedAt?.rev == null || savedInfo.rev >= savedAt.rev);
+  useEffect(() => {
+    if (!savedApplied) return;
+    const timer = window.setTimeout(() => setSavedAt(null), APPLIED_CHIP_MS);
+    return () => window.clearTimeout(timer);
+  }, [savedApplied]);
+
   // Ask before a reload, a tab close, or a link out of the switch pages loses drafts.
   // Tabs between switches keep them, so they do not ask.
   useEffect(() => {
@@ -378,6 +391,27 @@ export function SwitchesWorkspace({
 
   function syncFor(item: WorkspaceSwitch): SyncInfo {
     return sync[item.mac] ?? syncOf(item);
+  }
+
+  // Header chip for a saved config: waiting, on the switch, or not taken. Follows the sync
+  // poll, so it changes without a reload. A sync reply older than the save counts as waiting.
+  function configChip(item: WorkspaceSwitch): { text: string; className: string } | null {
+    const info = syncFor(item);
+    const saved = savedAt?.mac === item.mac ? savedAt : null;
+    const status =
+      saved?.rev != null && info.rev < saved.rev ? "pending" : info.config_status;
+    switch (status) {
+      case "pending":
+        return { text: "Waiting for switch", className: "bg-warn-soft text-warn" };
+      case "not_applied":
+        return { text: "Not applied", className: "bg-danger-soft text-danger" };
+      case "ahead":
+        return { text: "Ahead", className: "bg-warn-soft text-warn" };
+      case "current":
+        return saved ? { text: "On the switch", className: "bg-ok-soft text-ok" } : null;
+      default:
+        return null;
+    }
   }
 
   function notSeenMin(item: WorkspaceSwitch): number | null {
@@ -531,6 +565,7 @@ export function SwitchesWorkspace({
     showNotice(null);
     try {
       let lastRev: number | undefined;
+      let selectedRev: number | null = null;
       for (const item of items) {
         const result = await saveSwitch(item);
         if (!result.ok) {
@@ -538,14 +573,13 @@ export function SwitchesWorkspace({
           return;
         }
         lastRev = result.rev;
+        if (item.mac === selected?.mac) selectedRev = result.rev ?? null;
       }
       setOpenGesture(null);
-      if (selected) setSavedAt(selected.mac);
+      if (selected) setSavedAt({ mac: selected.mac, rev: selectedRev });
+      // Neutral on purpose: saved is not applied. The header chip follows the switch.
       showNotice(
-        items.length > 1
-          ? `Saved ${items.length} switches. Each picks this up on its next check-in.`
-          : `Saved · rev ${lastRev}. ${SAVED_TAIL}`,
-        "ok",
+        items.length > 1 ? `Saved ${items.length} switches.` : `Saved · rev ${lastRev}.`,
       );
       const next = await fetchSync();
       if (next) setSync(next);
@@ -927,11 +961,19 @@ export function SwitchesWorkspace({
                   <span className="rounded-full bg-filament-soft px-2 py-0.5 text-[11px] font-medium text-filament">
                     Unsaved
                   </span>
-                ) : savedAt === selected.mac ? (
-                  <span className="rounded-full bg-ok-soft px-2 py-0.5 text-[11px] font-medium text-ok">
-                    Saved
-                  </span>
-                ) : null}
+                ) : (
+                  (() => {
+                    const chip = configChip(selected);
+                    return chip ? (
+                      <span
+                        role="status"
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${chip.className}`}
+                      >
+                        {chip.text}
+                      </span>
+                    ) : null;
+                  })()
+                )}
               </h2>
               <div className="flex items-center gap-2">
                 <UpdateActions
