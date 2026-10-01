@@ -12,8 +12,8 @@ The switches talk to the Hue Bridge over its local API (not Zigbee). Your Wi-Fi 
 ## Pages
 
 - [Home](https://hue.tineira.com/): what the console is and how setup works
-- [How-to: Round](https://hue.tineira.com/how-to?product=round): what to buy and how to assemble a Round switch, setting it up, everyday tasks, and what each screen means
-- [How-to: Simple](https://hue.tineira.com/how-to?product=simple): what to buy and how to wire a Simple switch (on USB-C or inside a wall box), setting it up, everyday tasks, and what each LED blink means
+- How-to, Round switch: [build it](https://hue.tineira.com/how-to?product=round&topic=build) (what to buy and how to assemble it), [set it up](https://hue.tineira.com/how-to?product=round&topic=setup), [everyday tasks](https://hue.tineira.com/how-to?product=round&topic=tasks), [reading the screen](https://hue.tineira.com/how-to?product=round&topic=status)
+- How-to, Simple switch: build it by [trying it on USB](https://hue.tineira.com/how-to?product=simple&topic=build&level=try), as a [button box on USB-C](https://hue.tineira.com/how-to?product=simple&topic=build&level=box) or [inside a wall box](https://hue.tineira.com/how-to?product=simple&topic=build&level=wall); [set it up](https://hue.tineira.com/how-to?product=simple&topic=setup), [everyday tasks](https://hue.tineira.com/how-to?product=simple&topic=tasks), [reading the LED](https://hue.tineira.com/how-to?product=simple&topic=status)
 - [Changelog](https://hue.tineira.com/changelog): what changed in the console and each switch's firmware
 - [Privacy](https://hue.tineira.com/privacy): what the console stores, why, and how to delete it
 - [Credits](https://hue.tineira.com/credits): services, hardware and open-source software it is built on

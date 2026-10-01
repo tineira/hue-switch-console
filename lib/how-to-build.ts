@@ -47,7 +47,6 @@ export type Pic = ({ illo: IlloId } | { editor: "boot" | "add" }) & { alt: strin
 export const HARDWARE_README = "https://github.com/tineira/hue-simple-switch/blob/main/hardware/README.md";
 
 // Anchors inside the Build section. Any of them in the URL opens it.
-export const BUILD_ANCHORS = ["build", "buy", "assemble", "try", "wire", "in-wall", "install"] as const;
 
 export type BuyItem = {
   name: string;

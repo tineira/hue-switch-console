@@ -294,7 +294,7 @@ export function SimpleChannelsEditor({
             onPick={pickOnBoard}
           />
           <Link
-            href="/how-to?product=simple#status"
+            href="/how-to?product=simple&topic=status"
             className="-mt-2 self-center text-xs text-filament underline underline-offset-2"
           >
             What the LED shows

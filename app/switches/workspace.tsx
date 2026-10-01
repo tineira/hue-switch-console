@@ -1043,7 +1043,7 @@ export function SwitchesWorkspace({
                 <dt className="text-muted">{round ? "Screen" : "Status light"}</dt>
                 <dd>
                   <Link
-                    href={`/how-to?product=${round ? "round" : "simple"}#status`}
+                    href={`/how-to?product=${round ? "round" : "simple"}&topic=status`}
                     className="text-filament underline underline-offset-2"
                   >
                     {round ? "What the screen shows" : "What the LED shows"}

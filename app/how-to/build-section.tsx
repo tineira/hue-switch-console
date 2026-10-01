@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { EditorShot } from "@/app/how-to/editor-shot";
 import { Illo } from "@/app/how-to/illo/illo";
 import { Rich } from "@/app/rich-text";
 import { PRODUCT_INFO, type Product } from "@/lib/how-to";
+import type { LevelId } from "@/lib/how-to-nav";
 import {
   BOX_BUY,
   BOX_KIT,
   BOX_STEPS,
-  BUILD_ANCHORS,
   HARDWARE_README,
   INPUT_EXPLAINED,
   NEVER,
@@ -29,30 +29,11 @@ import {
   WALL_REQUIREMENTS,
   buildSummary,
   type BuyItem,
-  type Level,
   type Pic,
 } from "@/lib/how-to-build";
 
 const SELECTED = "border-filament shadow-[0_0_0_1px_var(--filament)]";
 const CARD = "rounded-xl border border-line bg-cream";
-
-type LevelId = Level["id"];
-
-// Which Simple level an anchor belongs to.
-function levelFor(hash: string): LevelId | null {
-  if (hash === "try") return "try";
-  if (hash === "wire" || hash === "resistors") return "box";
-  if (hash === "in-wall" || hash === "install") return "wall";
-  return null;
-}
-
-function currentHash(): string {
-  return window.location.hash.slice(1);
-}
-
-function isBuildAnchor(hash: string): boolean {
-  return (BUILD_ANCHORS as readonly string[]).includes(hash) || hash === "resistors";
-}
 
 function Sub({ id, title, lead, children }: { id?: string; title: string; lead?: ReactNode; children: ReactNode }) {
   return (
@@ -194,7 +175,8 @@ function RoundBuild() {
   );
 }
 
-function LevelPicker({ level, onChoose }: { level: LevelId; onChoose: (id: LevelId) => void }) {
+// The third choice on /how-to, under the topics, once Simple and Build it are picked.
+export function LevelPicker({ level, onChoose }: { level: LevelId; onChoose: (id: LevelId) => void }) {
   return (
     <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="How you'll build it">
       {SIMPLE_LEVELS.map((item) => {
@@ -451,79 +433,16 @@ function InWall() {
   );
 }
 
-function SimpleBuild({ level, onLevel }: { level: LevelId; onLevel: (id: LevelId) => void }) {
+// The build guide for the chosen switch, and for the Simple the chosen build type (picked above
+// it, in the guide's third row).
+export function BuildSection({ product, level }: { product: Product; level: LevelId }) {
   return (
-    <>
-      <LevelPicker level={level} onChoose={onLevel} />
-      {level === "try" ? <TryIt /> : level === "box" ? <ButtonBox /> : <InWall />}
-    </>
-  );
-}
-
-// Starts closed: most readers already have a built switch. Any Build anchor in the URL opens it
-// (and picks the Simple level the anchor belongs to), then scrolls there once it exists.
-export function BuildSection({ product }: { product: Product }) {
-  const [open, setOpen] = useState(false);
-  // B by default: its first two steps are A, and it's what most readers came for.
-  const [level, setLevel] = useState<LevelId>("box");
-
-  // The anchor to scroll to once the section (and the right level) has rendered. The browser's
-  // own jump happens before it exists.
-  const target = useRef<string | null>(null);
-
-  const land = useCallback(() => {
-    const id = target.current;
-    const el = id ? document.getElementById(id) : null;
-    if (!el) return;
-    target.current = null;
-    el.scrollIntoView();
-  }, []);
-
-  useEffect(() => {
-    function follow() {
-      const hash = currentHash();
-      if (!isBuildAnchor(hash)) return;
-      target.current = hash;
-      setOpen(true);
-      const l = levelFor(hash);
-      if (l) setLevel(l);
-      // Already open on the right level: nothing re-renders, so land on the next frame.
-      requestAnimationFrame(land);
-    }
-    follow();
-    window.addEventListener("hashchange", follow);
-    return () => window.removeEventListener("hashchange", follow);
-  }, [land]);
-
-  useEffect(land, [open, level, land]);
-
-  const bodyId = "build-body";
-
-  return (
-    <section id="build" className="flex scroll-mt-6 flex-col gap-4">
+    <section id="build" className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-medium">Build a {PRODUCT_INFO[product].name}</h2>
         <p className="text-sm text-muted">{buildSummary(product)}</p>
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={bodyId}
-          onClick={() => setOpen(!open)}
-          className="self-start rounded-md border border-line bg-cream px-3 py-1.5 text-sm font-medium hover:border-filament"
-        >
-          {open ? "Hide the build guide" : "Show the build guide"}
-        </button>
       </div>
-      {open ? (
-        <div id={bodyId} className="flex flex-col gap-8">
-          {product === "round" ? <RoundBuild /> : <SimpleBuild level={level} onLevel={setLevel} />}
-          <a href="#setup" className="self-start text-sm text-filament underline underline-offset-2">
-            {product === "simple" && level === "wall"
-              ? "Step 1 of Install it is the setup below ↓"
-              : "Built? Set it up next ↓"}
-          </a>
-        </div>
-      ) : null}
+      {product === "round" ? <RoundBuild /> : level === "try" ? <TryIt /> : level === "box" ? <ButtonBox /> : <InWall />}
     </section>
   );
 }

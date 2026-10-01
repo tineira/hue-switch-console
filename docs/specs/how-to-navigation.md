@@ -2,7 +2,7 @@
 
 Console-only spec. No device endpoint, payload, NVS key or installer changes. Process: `AGENTS.md`.
 
-**Status:** approved (2026-09-30), not started
+**Status:** in progress. Implemented on branch `howto-nav`; not on production yet.
 
 Prototype (real 3D renders and guide content, navigation only): https://claude.ai/artifact/7Y33Hzv9HivHxeA8eXtenP
 
@@ -91,14 +91,14 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 ### Console (`hue-switch-console`)
 
 - [x] User approves this spec and the prototype
-- [ ] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned, Simple zoomed with its LED on the heartbeat
+- [x] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned, Simple zoomed with its LED on the heartbeat
 - [ ] Later, separate change: dedicated monochrome renders, Round display off (§2.7)
-- [ ] Stored-switch logic removed (§2.4)
-- [ ] `HowToGuide`: three tiers, compact cards after a choice, topic row, Simple level row moved up from `BuildSection`
-- [ ] Query-string state, server-rendered topic, per-topic metadata and canonical, sitemap entries
-- [ ] Old-hash rewrite (§2.5) and in-app links updated
-- [ ] "Next" links at the end of Build and Set up
-- [ ] `docs/specs/finished/public-how-to-changelog.md` D3 and `how-to-guide.md` notes updated, or point to this spec
+- [x] Stored-switch logic removed (§2.4)
+- [x] `HowToGuide`: three tiers, compact cards after a choice, topic row, Simple level row moved up from `BuildSection`
+- [x] Query-string state, server-rendered topic, per-topic metadata and canonical, sitemap entries
+- [x] Old-hash rewrite (§2.5) and in-app links updated
+- [x] "Next" links at the end of Build and Set up
+- [x] `docs/specs/finished/public-how-to-changelog.md` D3 and `how-to-guide.md` notes updated, or point to this spec
 - [ ] Checked on production at desktop and phone width, light and dark (Playwright on localhost is not used for this page's checks per `AGENTS.md`; `/how-to` is public, so production is the check)
 
 ## 5. Decisions

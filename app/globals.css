@@ -504,6 +504,13 @@ option {
     0 0 calc(var(--d) * 3) calc(var(--d) * 1) rgb(255 138 31 / 35%);
 }
 
+/* The Simple's LED on its /how-to card: the working heartbeat (led-heart above), or lit with
+   reduced motion. */
+.card-led-heart { opacity: 0; animation: led-heart 3000ms step-end infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .card-led-heart { animation: none; opacity: 1; }
+}
+
 /* The board arrives once rendered: a short fade in, nothing with reduced motion. */
 .led-board-in,
 .illo-in { animation: led-board-in 150ms ease-out; }
