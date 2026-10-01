@@ -1,5 +1,5 @@
 // Where a reader is on /how-to: switch, then topic, then (Simple build only) build type. All of
-// it lives in the query string, so every view has its own URL (docs/specs/how-to-navigation.md).
+// it lives in the query string, so every view has its own URL (docs/specs/finished/how-to-navigation.md).
 
 import { PRODUCTS, PRODUCT_INFO, isProduct, type Product } from "@/lib/how-to";
 import { SIMPLE_LEVELS, type Level } from "@/lib/how-to-build";

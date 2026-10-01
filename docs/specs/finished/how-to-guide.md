@@ -2,7 +2,7 @@
 
 Console-only spec. Process: `AGENTS.md` → "Cross-repo changes" (only the spec and console steps apply).
 
-**Status:** done. Pushed to production; the open questions are answered (§9). The page's navigation (product picker, "On this page" list, one long scroll) was later replaced by `docs/specs/how-to-navigation.md`.
+**Status:** done. Pushed to production; the open questions are answered (§9). The page's navigation (product picker, "On this page" list, one long scroll) was later replaced by `docs/specs/finished/how-to-navigation.md`.
 
 Design reference: `docs/specs/finished/design_handoff_how_to_guide/How-to Guide.dc.html` (Claude Design handoff, Ember theme). The design is the reference for layout, copy and behaviour. Colours in it are Ember literals: the code uses theme tokens (§6).
 

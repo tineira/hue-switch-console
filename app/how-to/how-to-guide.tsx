@@ -469,7 +469,7 @@ function afterBuild(product: Product, level: HowTo["level"]): Topic {
 
 // Switch, then topic, then (Simple build) build type. The query string holds all three
 // (lib/how-to-nav.ts); choosing updates it in place, so the server renders the same view for the
-// same URL and Back steps through topics (docs/specs/how-to-navigation.md).
+// same URL and Back steps through topics (docs/specs/finished/how-to-navigation.md).
 export function HowToGuide({ version }: { version: string | null }) {
   const params = useSearchParams();
   const view = readHowTo((key) => params.get(key));
