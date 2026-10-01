@@ -33,14 +33,19 @@ Text below is the proposed wording. "Why" and "If it goes wrong" are the disclos
 
 #### 1. Connect the board
 
-- **Do:** Plug the XIAO into this computer with a USB-C cable, then click **Connect** and pick it in the list Chrome shows.
-- **Illustration:** render of the XIAO (C6 or S3, from the product picked on the page) with the cable going in; next to it an HTML mock of Chrome's port picker with one highlighted XIAO entry.
-- **Port picker filter:** `requestPort()` gets `filters` for the Seeed (`0x2886`) and Espressif (`0x303a`) vendor IDs, so the list normally shows only XIAOs. A **My board isn't in the list** link reopens the picker without filters.
+- **Do:** Plug the XIAO into this computer with a USB-C cable, then click **Connect**. In the list Chrome shows, pick **USB JTAG/serial debug unit** (on Windows it ends in a port number such as `(COM3)`), then click Connect.
+- **Today's list is not just the XIAO.** Chrome lists every serial port it can see, Bluetooth ones included. On the maintainer's PC (2026-10-01) it showed four entries: a pair of Bluetooth headphones, `USB JTAG/serial debug unit (COM3)`, `JL_SPP (COM5)` and `Bluetooth Peripheral Device (COM6)`. The step text must name the entry to pick and say what the others are:
+  - Entries with "Bluetooth" or a device name (headphones, phones, `…_SPP`) are Bluetooth devices. They are not the board.
+  - "Paired" after an entry is Chrome's note that this site was allowed to use that port before. It does not say which one is the board.
+  - If you are unsure, unplug the board: the entry that disappears is the board.
+- **Illustration:** render of the XIAO (C6 or S3, from the product picked on the page) with the cable going in; next to it an HTML mock of Chrome's port picker with several entries, Bluetooth ones included, and `USB JTAG/serial debug unit (COM3)` highlighted with a numbered balloon.
+- **Port picker filter (to try):** `requestPort()` gets `filters` for the Seeed (`0x2886`) and Espressif (`0x303a`) USB vendor IDs. Bluetooth ports have no USB vendor ID, so they should drop out and leave only the board. Verify on the maintainer's PC before relying on it. The text still names the entry to pick, because the filter can fail and a **My board isn't in the list** link reopens the picker without filters.
+- **Entry name per board:** the C6 shows as `USB JTAG/serial debug unit` (the chip's built-in USB). Check what the Round's S3 shows, both factory-fresh and on our firmware, and on macOS, and name each in the text.
 - **Board:** detection names the chip (`XIAO ESP32-C6`) and product. The manual C6/S3 choice appears only when the port did not identify the board, with a render of each so the person can compare with the one in their hand.
 - **Why:** A web page can only talk to a USB device you pick yourself. Chrome asks every time, and the page sees nothing else on your computer.
 - **If it goes wrong:**
-  - The list is empty: the cable may be charge-only (many are). Try another cable or another USB port.
-  - You picked the wrong device: nothing is written. Detect finds no XIAO and asks you to try again. Mice and keyboards are not serial ports and never appear in this list.
+  - *The board isn't in the list:* the cable may be charge-only (many are). Try another cable or another USB port.
+  - *You picked the wrong entry:* nothing is sent to that device's firmware and nothing changes on it. The page finds no XIAO there and asks you to pick again.
 
 #### 2. Install the firmware
 
@@ -98,7 +103,7 @@ All are renders of 3D models in the existing `app/how-to/illo` system, one per s
 
 | Step | Scene |
 | --- | --- |
-| 1 | XIAO (C6 / S3 kit) with a USB-C cable plugged in; HTML mock of Chrome's port picker |
+| 1 | XIAO (C6 / S3 kit) with a USB-C cable plugged in; HTML mock of Chrome's port picker with Bluetooth entries and the board's entry highlighted |
 | 2 | Board seen from the USB end, numbered balloons on BOOT and RESET (Simple); plugged Round kit |
 | 3, 4 | `StateVisual` of the resulting LED or screen state |
 | 5 | **New:** Hue Bridge model, numbered balloon on the link button, press cue |
@@ -121,7 +126,9 @@ The step texts, illustrations and "why" live in one module (`lib/setup-steps.ts`
 
 - [ ] Step data module (titles, texts, why, troubleshooting, illustration ids) shared by `/setup` and How-to
 - [ ] `/setup` stepper replacing Detect / Setup / identity / Actions; Maintenance disclosure
-- [ ] `lib/web-setup/serial.ts`: vendor-ID filters plus the unfiltered fallback
+- [ ] Step 1 names the entry to pick (`USB JTAG/serial debug unit` on the C6) and explains the other entries
+- [ ] `lib/web-setup/serial.ts`: vendor-ID filters plus the unfiltered fallback, checked on the maintainer's PC (Bluetooth entries gone?)
+- [ ] Port entry names recorded for the Round (factory-fresh and our firmware) and on macOS
 - [ ] Step 2: pre-install button sequence with numbered render; "can't break it" box; progress and "what you'll see"
 - [ ] Hue Bridge 3D model and the pairing scene
 - [ ] BOOT/RESET balloon scene for the Simple, plugged scene for the Round
@@ -133,6 +140,6 @@ The step texts, illustrations and "why" live in one module (`lib/setup-steps.ts`
 ## 5. Open questions
 
 1. **Round pairing window.** The Simple keeps trying for 90 s (`kPairTimeoutMs`). I haven't found the Round's value yet. Recommendation: read it from the Round firmware during implementation; if it differs, step 5 says each product's own number.
-2. **Factory USB IDs.** I haven't checked which vendor ID a factory-fresh XIAO C6 or S3 shows before our firmware is on it. Recommendation: keep both vendor-ID filters plus the unfiltered fallback, and confirm on the next new board you plug in.
+2. **Factory USB IDs and port names.** I haven't checked which vendor ID and port name a factory-fresh XIAO C6 or S3 shows before our firmware is on it, or what the Round shows. Recommendation: keep both vendor-ID filters plus the unfiltered fallback, always name the entry in the text, and confirm on the next new board you plug in.
 3. **Bridge generation.** Recommendation: model the square Bridge (v2), the one most people own. A Bridge Pro look can come later if people ask.
 4. **How-to "Set up" section.** Recommendation: shorten it to an overview plus a link (§2.4) rather than removing it, because How-to is public and people read it before buying.
