@@ -14,7 +14,7 @@ Today `/how-to` shows a small product picker, an "On this page" list and all fou
 
 ### 2.1 Three tiers of choice
 
-1. **Switch.** Two large cards side by side, Round and Simple, each with a render from the 3D board models (`app/how-to/illo`, same style as the build guide; see the memory on illustrations). Before a switch is chosen, nothing else shows below the cards.
+1. **Switch.** Two large cards side by side, Round and Simple, each with a dedicated render of its board (§2.7). Every visit to bare `/how-to` starts here with nothing chosen and nothing else below the cards.
 2. **Topic.** Once a switch is chosen, the cards shrink to a compact row (small render + name + blurb, selected one outlined) and four topic buttons appear under them, as wide in total as the cards:
    - Round: **Build it** · **Set up** · **Everyday tasks** · **Reading the screen**
    - Simple: **Build it** · **Set up** · **Everyday tasks** · **Reading the LED**
@@ -47,14 +47,9 @@ Every choice is in the query string, rendered on the server:
 - The server renders the chosen topic's content, so every topic URL is a full page for search. Canonical is the URL with its `product` and `topic` (and `level`). `sitemap.ts` lists all 2 × 4 topic URLs plus the three Simple levels.
 - Metadata description per product and topic.
 
-### 2.4 Remembered switch
+### 2.4 No remembered switch
 
-The page keeps storing the last chosen switch (`hsw-howto-product`). A visit to bare `/how-to`:
-
-- First visit (nothing stored): the two large cards, nothing chosen.
-- Returning visitor: their switch preselected (compact cards and topic row shown), no topic chosen.
-
-A `?product=` in the URL wins over the stored choice, as today.
+Everyone starts on the big cards. The page stops reading and writing the stored choice (`hsw-howto-product`, `HOWTO_PRODUCT_KEY` in `lib/how-to.ts`) and the client-side switch that followed it. The server-rendered page and the first client frame are then always the same, which also removes today's one-frame flash of Round for Simple readers. A URL with `?product=` (and `topic`, `level`) opens directly on that choice.
 
 ### 2.5 Old links
 
@@ -73,7 +68,17 @@ The hash is only seen in the browser, so the client rewrites the URL to the new 
 
 ### 2.6 Small screens
 
-At 375 px: product cards side by side (large: render on top, name and blurb under it; compact: 64 px render + name only). Topics 2 × 2. Levels stacked. No horizontal scroll.
+At 375 px: product cards side by side (large: render on top, name and blurb under it; compact after a choice: 64 px render + name only). Topics 2 × 2. Levels stacked. No horizontal scroll.
+
+### 2.7 Product card pictures
+
+One new still per product, rendered from the 3D board models in the line style of the landing's Simple board drawing (`app/landing/simple-render.ts`, iso camera): part faces filled with the page colour, crease edges and a 1 px silhouette in the foreground colour, on the card's background.
+
+- **No callouts** and **no tone colours**: no orange pads, no glows, no labels. The drawing is monochrome in the theme's foreground colour, so it reads the same in every theme.
+- **Simple:** the XIAO ESP32-C6 with its pin headers, same angle as the landing drawing.
+- **Round:** the Round Display with the XIAO ESP32-S3 under it, at a matching angle, **display off** (the screen a plain dark face, no dial, no ring).
+- Same camera framing and drawn size for both, so the two cards line up.
+- Rendered once per theme, client-side, like the other stills (`renderOnce` in `app/how-to/illo/illo.tsx`), with the card's text-only fallback when WebGL is missing.
 
 ## 3. Compatibility
 
@@ -85,7 +90,8 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 ### Console (`hue-switch-console`)
 
 - [ ] User approves this spec and the prototype
-- [ ] Product card renders: one scene per product added to `app/how-to/illo/scenes.ts` (or reuse `round-done` / `simple-led`, as the prototype does)
+- [ ] Product card renders (§2.7): monochrome, no callouts, Round display off
+- [ ] Stored-switch logic removed (§2.4)
 - [ ] `HowToGuide`: three tiers, compact cards after a choice, topic row, Simple level row moved up from `BuildSection`
 - [ ] Query-string state, server-rendered topic, per-topic metadata and canonical, sitemap entries
 - [ ] Old-hash rewrite (§2.5) and in-app links updated
@@ -93,7 +99,11 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 - [ ] `docs/specs/finished/public-how-to-changelog.md` D3 and `how-to-guide.md` notes updated, or point to this spec
 - [ ] Checked on production at desktop and phone width, light and dark (Playwright on localhost is not used for this page's checks per `AGENTS.md`; `/how-to` is public, so production is the check)
 
-## 5. Open questions
+## 5. Decisions
 
-1. **Product card pictures.** The prototype uses the existing `round-done` (assembled Round on its cable) and `simple-led` (XIAO with the LED lit). *Recommendation:* keep them for v1. Make dedicated hero scenes (no cable, three-quarter view) only if the cards look busy at full size.
-2. **Big cards for a returning visitor.** Recommended: returning visitors get the compact cards with their switch selected (§2.4). The alternative is always starting with the big cards and nothing selected, which costs a click but makes the start screen identical for everyone.
+1. **Product card pictures** (2026-09-30): dedicated renders in the landing board-drawing style, without callouts or colours, Round display off (§2.7). The prototype still shows the build-guide scenes `round-done` and `simple-led` as placeholders.
+2. **Start screen** (2026-09-30): big cards for everyone, nothing preselected (§2.4).
+
+## 6. Open questions
+
+None.
