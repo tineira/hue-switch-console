@@ -12,7 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-10-01
 
-- **Changelog by switch.** The changelog starts with three cards, Round, Simple and Console, each showing its latest version, and opens one at a time, as How-to does. Each has its own link, and links to a firmware version from Switches still open on that version.
+- **Changelog by switch.** The changelog has three cards, Round, Simple and Console, each showing its latest version, and shows one at a time. It opens on Console. Each has its own link, and links to a firmware version from Switches still open on that version.
 - **Setup moved into Switches.** It is no longer a tab at the top. On Switches, **Set up over USB** (it was **Add a switch**) opens it to add, fix or reinstall a switch. Each switch's details (ⓘ) have **Fix or reinstall over USB**, and a switch that has gone offline links straight to it. Setup has a link back to Switches.
 - **Accents on the Round.** Page names keep ñ, á, é, í, ó, ú, ü, ç, ¿, ¡ and the other letters the Round's screen can draw, so `Niños` stays `Niños`. Capital Á, Í, Ó and Ú, and letters such as Ł, still show as the plain letter, and emoji are left out. The name field shows exactly what the circle will. The Round shows these letters from its next firmware release; until you update, it shows the plain letters as before.
 

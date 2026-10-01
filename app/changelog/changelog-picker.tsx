@@ -29,18 +29,23 @@ function ConsolePicture() {
   );
 }
 
-// Round, Simple, Console: big cards until one is picked, then a compact row, as on /how-to.
-// Each card is a link (`?product=`), so the server renders the picked changelog.
-export function ChangelogPicker({ cards, selected }: { cards: ChangelogCard[]; selected: ChangelogId | null }) {
-  const compact = selected !== null;
+// Round, Simple, Console as a row of cards, like the compact row on /how-to. Each card is a link
+// (`?product=`), so the server renders the picked changelog; with none picked it is the console's.
+export function ChangelogPicker({ cards, selected }: { cards: ChangelogCard[]; selected: ChangelogId }) {
   const router = useRouter();
 
   // Links from before the picker (/changelog#round-0.5.28, #simple) name the changelog in the hash.
+  // A console hash already lands on the console's changelog.
   useEffect(() => {
-    if (selected) return;
-    const hash = window.location.hash.slice(1);
-    const id = CHANGELOG_IDS.find((name) => hash === name || hash.startsWith(`${name}-`));
-    if (id) router.replace(changelogHref(id, hash === id ? undefined : hash));
+    if (selected !== "console") return;
+    function follow() {
+      const hash = window.location.hash.slice(1);
+      const id = CHANGELOG_IDS.find((name) => name !== "console" && (hash === name || hash.startsWith(`${name}-`)));
+      if (id) router.replace(changelogHref(id, hash === id ? undefined : hash));
+    }
+    follow();
+    window.addEventListener("hashchange", follow);
+    return () => window.removeEventListener("hashchange", follow);
   }, [selected, router]);
 
   return (
@@ -53,21 +58,19 @@ export function ChangelogPicker({ cards, selected }: { cards: ChangelogCard[]; s
             href={changelogHref(id)}
             scroll={false}
             aria-current={on ? "page" : undefined}
-            className={`flex min-w-0 touch-manipulation overflow-hidden rounded-xl border bg-cream text-left ${
-              compact ? "flex-row items-center" : "flex-col"
-            } ${on ? SELECTED : "border-line hover:border-muted"}`}
+            className={`flex min-w-0 touch-manipulation flex-row items-center overflow-hidden rounded-xl border bg-cream text-left ${
+              on ? SELECTED : "border-line hover:border-muted"
+            }`}
           >
             <span
-              className={`relative aspect-[16/10] shrink-0 bg-background ${
-                compact ? "hidden w-[92px] self-stretch border-r border-line sm:block" : "w-full border-b border-line"
-              }`}
+              className="relative hidden aspect-[16/10] w-[92px] shrink-0 self-stretch border-r border-line bg-background sm:block"
             >
-              <span className={`absolute ${compact ? "inset-[8%]" : "inset-x-[8%] inset-y-[10%]"}`}>
+              <span className="absolute inset-[8%]">
                 {id === "console" ? <ConsolePicture /> : <ProductPicture product={id} />}
               </span>
             </span>
-            <span className={`flex min-w-0 flex-col gap-0.5 ${compact ? "px-3 py-2" : "px-3 pt-2.5 pb-3 sm:px-3.5"}`}>
-              <span className={`font-semibold ${compact ? "text-sm" : "text-[15px]"} ${on ? "text-filament" : ""}`}>
+            <span className="flex min-w-0 flex-col gap-0.5 px-3 py-2">
+              <span className={`text-sm font-semibold ${on ? "text-filament" : ""}`}>
                 {title}
               </span>
               {latest ? (

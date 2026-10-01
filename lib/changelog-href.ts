@@ -1,6 +1,7 @@
 const VERSION = /^\d+\.\d+\.\d+$/;
 
 // /changelog shows one changelog at a time, named by `?product=`; the order is the picker's.
+// With none named it shows the console's, so the console's address is plain /changelog.
 export const CHANGELOG_IDS = ["round", "simple", "console"] as const;
 export type ChangelogId = (typeof CHANGELOG_IDS)[number];
 
@@ -9,7 +10,8 @@ export function isChangelogId(value: unknown): value is ChangelogId {
 }
 
 export function changelogHref(id: ChangelogId, hash?: string): string {
-  return `/changelog?product=${id}${hash ? `#${hash}` : ""}`;
+  const query = id === "console" ? "" : `?product=${id}`;
+  return `/changelog${query}${hash ? `#${hash}` : ""}`;
 }
 
 export function firmwareChangelogHref(

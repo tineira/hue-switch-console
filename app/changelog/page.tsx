@@ -21,18 +21,19 @@ export const dynamic = "force-dynamic";
 
 const DESCRIPTION = "What changed in Hue Switch Console and the Round and Simple switch firmware.";
 
-function picked(value: unknown): ChangelogId | null {
-  return isChangelogId(value) ? value : null;
+// No `?product=` (or an unknown one) opens the console's changelog.
+function picked(value: unknown): ChangelogId {
+  return isChangelogId(value) ? value : "console";
 }
 
 // Each changelog has its own URL (`?product=`), so search lists them apart.
 export async function generateMetadata({ searchParams }: PageProps<"/changelog">): Promise<Metadata> {
   const id = picked((await searchParams).product);
-  if (!id) return { title: "Changelog", description: DESCRIPTION, alternates: { canonical: "/changelog" } };
-  const name = id === "console" ? "Console" : id === "round" ? "Round switch" : "Simple switch";
+  if (id === "console") return { title: "Changelog", description: DESCRIPTION, alternates: { canonical: "/changelog" } };
+  const name = id === "round" ? "Round switch" : "Simple switch";
   return {
     title: `${name} changelog`,
-    description: `What changed in the ${id === "console" ? "Hue Switch Console" : `${name} firmware`}.`,
+    description: `What changed in the ${name} firmware.`,
     alternates: { canonical: changelogHref(id) },
   };
 }
@@ -77,7 +78,7 @@ function latest(section: ChangelogSection): string | null {
   return section.entries[0]?.heading ?? null;
 }
 
-function ChangelogContent({ doc, selected }: { doc: ChangelogDoc; selected: ChangelogId | null }) {
+function ChangelogContent({ doc, selected }: { doc: ChangelogDoc; selected: ChangelogId }) {
   const cards: ChangelogCard[] = CHANGELOG_IDS.flatMap((id) => {
     const section = doc.sections.find((s) => s.id === id);
     return section ? [{ id, title: section.title, latest: latest(section) }] : [];
@@ -119,9 +120,7 @@ function ChangelogContent({ doc, selected }: { doc: ChangelogDoc; selected: Chan
             ))}
           </div>
         </section>
-      ) : (
-        <p className="py-2 text-center text-sm text-muted">Pick one to see what changed.</p>
-      )}
+      ) : null}
     </>
   );
 }
