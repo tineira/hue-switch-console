@@ -240,7 +240,7 @@ The disc in Ready has **no** help sentences. Only name, scene if any, dots, ring
 | Page without recipes | page name | (nothing) |
 | Several pages | name + dots (filled = active) | scene if applicable |
 
-Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. Characters: ASCII plus the circle set (ñ, á, é, í, ó, ú, ü, ç, ¿, ¡ and the other letters the built-in font has; list in `docs/specs/round-accented-names.md` §2); other accented letters fold to the plain letter (Á → A, Ł → L), emoji are dropped. No line breaks.
+Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. Characters: ASCII plus the circle set (ñ, á, é, í, ó, ú, ü, ç, ¿, ¡ and the other letters the built-in font has; list in `docs/specs/finished/round-accented-names.md` §2); other accented letters fold to the plain letter (Á → A, Ł → L), emoji are dropped. No line breaks.
 
 System states (English, one line): `Wi-Fi...`, `No Wi-Fi`, `No Bridge`, `Press Bridge button`, `Token rejected`. They are not pages.
 

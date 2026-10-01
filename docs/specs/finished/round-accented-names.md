@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** in progress (approved 2026-10-01; console done, Round firmware pending)
+**Status:** done 2026-10-01. Console live since `bd1caba` (follow-up `11a920c`); Round 0.6.5 released (tineira/hue-round-switch#25), made current, and checked on a board by the user ("Baño" shows correctly).
 
 ## 1. What and why
 
@@ -70,15 +70,15 @@ No endpoint or payload field changes. The meaning of two existing fields widens:
 - [x] `foldForCircle` in `lib/pages.ts` and `ROUND_CIRCLE_CHARS` in `lib/round-themes.ts`; page-name input and default names use it
 - [x] `docs/device-api.md` and `docs/round-pages.md` updated in the same commit
 - [x] `docs/changelog.md` entry
-- [ ] Deployed; checked on production (type `Niños` and `Ángel` in a page name: they stay `Niños` and become `Angel`)
+- [x] Deployed; checked on production (type `Niños` and `Ángel` in a page name: they stay `Niños` and become `Angel`)
 
 ### Round (`hue-round-switch`)
 
 - [x] `circleFold`/`circleFoldClip`, bigger name buffers, UTF-8 → CP437 at draw time
-- [ ] Host tests in `tests/host/test_json.cpp` (written; must pass in CI on the pull request)
+- [x] Host tests in `tests/host/test_json.cpp` (pass in CI)
 - [x] `FIRMWARE_VERSION` bumped to 0.6.5; `CHANGELOG.md` entry (user-facing: names keep ñ and accents)
-- [ ] Release uploaded; `/firmware/round/manifest.json` shows the new version
-- [ ] Tested on a board by the user: a page named `Niños` and a scene with an accent are readable at both text sizes
+- [x] Release uploaded; `/firmware/round/manifest.json` shows the new version
+- [x] Tested on a board by the user: a page named `Niños` and a scene with an accent are readable at both text sizes
 
 ### Simple (`hue-simple-switch`)
 
