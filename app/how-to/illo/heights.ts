@@ -18,7 +18,7 @@ export const ILLO_HEIGHT: Record<IlloId, number> = {
   "simple-boot": 440,
   "simple-buttons": 440,
   "round-plug": 220,
-  "hue-bridge": 440,
+  "hue-bridge": 434,
   "simple-kit-box": 307,
   "simple-wires": 440,
   "simple-switch": 440,

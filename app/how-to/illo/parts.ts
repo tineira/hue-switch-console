@@ -27,8 +27,7 @@ export type Tone =
   | "gold"
   | "tin"
   | "lit"
-  | "screen"
-  | "skin";
+  | "screen";
 
 const MAT = new THREE.MeshBasicMaterial();
 
@@ -201,38 +200,97 @@ export function hueBridge(): THREE.Group {
   // Network and power sockets on the back, the network cable lying on the table.
   g.add(at(mesh(box(16, 13, 2)), -10, 9, -w / 2 - 1));
   g.add(at(mesh(cyl(3, 2, 24).rotateX(Math.PI / 2), undefined, true), 18, 9, -w / 2 - 1));
-  g.add(wire([[-10, 9, -w / 2 - 2], [-10, 7, -w / 2 - 14], [-18, 2, -w / 2 - 26], [-40, 1.5, -w / 2 - 34], [-90, 1.5, -w / 2 - 38]], "neutral", 2.4));
+  g.add(wire([[-10, 9, -w / 2 - 2], [-10, 7, -w / 2 - 14], [-18, 2, -w / 2 - 26], [-40, 1.5, -w / 2 - 34], [-90, 1.5, -w / 2 - 38]], "switched", 2.4));
   return g;
 }
 
 /**
- * A finger pressing down, its tip at the origin: the end joint rises steeply, the next one leans
- * back toward -z, and the back of the hand goes on out of the picture. For a press cue that reads
- * at any size, instead of an arrow.
+ * A hand pressing a button with its index finger, the fingertip's pad on the origin, in the
+ * boards' line style (page-colour fill, outlines): the finger comes in from +x, the other three
+ * fingers curl under it toward -z, the thumb lies on the near side (+z), and the back of the hand
+ * and the wrist go on out of the picture. Nails are thin outlined shells; knuckle creases are
+ * short arcs on the back of the finger. For a press cue that reads at any size.
  */
-export function pressingFinger(): THREE.Group {
+export function pressingHand(): THREE.Group {
   const g = new THREE.Group();
-  const R = 7.5;
+  const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+  const UP = V(0, 1, 0);
+  // The back of a finger along d: up, made square to d.
+  const back = (d: THREE.Vector3) => UP.clone().addScaledVector(d, -UP.dot(d)).normalize();
+
   // A finger segment of radius r from a to b, rounded at both ends.
   const segment = (a: THREE.Vector3, b: THREE.Vector3, r: number) => {
-    const len = a.distanceTo(b);
-    const m = mesh(new THREE.CapsuleGeometry(r, len, 8, 24), "skin", true);
+    const m = mesh(new THREE.CapsuleGeometry(r, a.distanceTo(b), 8, 24), undefined, true);
     m.position.copy(a).add(b).multiplyScalar(0.5);
-    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
-    return m;
+    m.quaternion.setFromUnitVectors(UP, b.clone().sub(a).normalize());
+    g.add(m);
   };
-  const tip = new THREE.Vector3(0, R, 0);
-  const knuckle1 = new THREE.Vector3(6, 34, -12);
-  const knuckle2 = new THREE.Vector3(14, 58, -42);
-  const wrist = new THREE.Vector3(30, 80, -110);
-  g.add(segment(tip, knuckle1, R));
-  g.add(segment(knuckle1, knuckle2, R + 0.6));
-  g.add(segment(knuckle2, wrist, R + 1.2));
-  // The back of the hand beside the finger, toward the wrist.
-  const palm = mesh(new THREE.CapsuleGeometry(16, 60, 8, 24), "skin", true);
-  palm.position.set(34, 74, -88);
-  palm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wrist.clone().sub(knuckle2).normalize());
+  const chain = (pts: THREE.Vector3[], r: number[]) => {
+    for (let i = 0; i < pts.length - 1; i++) segment(pts[i], pts[i + 1], r[i]);
+  };
+  // A nail: a thin oval plate on the back of the segment a→b, near a (the tip). Not smooth, so
+  // its rim draws as a crisp line, like a part's edge.
+  const nail = (a: THREE.Vector3, b: THREE.Vector3, r: number, len: number) => {
+    const d = b.clone().sub(a).normalize();
+    const n = back(d);
+    const s = d.clone().cross(n);
+    const m = mesh(cyl(1, 1, 28));
+    m.scale.set(r * 0.62, 1.2, len);
+    m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(s, n, d));
+    m.position.copy(a).addScaledVector(d, len * 0.8).addScaledVector(n, r * 0.78);
+    g.add(m);
+  };
+  // Creases: two short arcs over the back of a knuckle at k, across the finger direction d.
+  const creases: number[] = [];
+  const crease = (k: THREE.Vector3, d: THREE.Vector3, r: number) => {
+    const n = back(d);
+    const s = d.clone().cross(n);
+    for (const off of [-1.4, 1.4]) {
+      const c = k.clone().addScaledVector(d, off);
+      for (let i = 0; i < 8; i++) {
+        const p = (t: number) => {
+          const a = -0.6 + (1.2 * t) / 8;
+          return c.clone().addScaledVector(n, r * 1.01 * Math.cos(a)).addScaledVector(s, r * 1.01 * Math.sin(a));
+        };
+        creases.push(...p(i).toArray(), ...p(i + 1).toArray());
+      }
+    }
+  };
+
+  // Index finger: pad on the origin, rising to the knuckle.
+  const R = 7;
+  const index = [V(3, R, 0), V(15, 17, -1), V(33, 28, -2), V(58, 38, -4)];
+  chain(index, [R, R + 0.4, R + 0.9]);
+  nail(index[0], index[1], R, 6.5);
+  crease(index[1], index[1].clone().sub(index[0]).normalize(), R + 0.4);
+  crease(index[2], index[2].clone().sub(index[1]).normalize(), R + 0.9);
+
+  // Middle, ring and little finger, curled under the palm behind the index.
+  [0, 1, 2].forEach((i) => {
+    const z = -15 - i * 13;
+    const r = R + 0.4 - i * 0.5;
+    chain([V(60 + i * 3, 36 - i, z), V(46 + i * 3, 26 - i, z - 1), V(48 + i * 3, 13, z - 2), V(58 + i * 3, 10, z - 2)], [r, r, r - 0.4]);
+  });
+
+  // Thumb on the near side, its tip beside the index finger.
+  const thumb = [V(40, 19, 15), V(54, 22, 19), V(78, 32, 17)];
+  chain(thumb, [R + 0.6, R + 1.4]);
+  nail(thumb[0], thumb[1], R + 0.6, 5.5);
+  crease(thumb[1], thumb[1].clone().sub(thumb[0]).normalize(), R + 1.4);
+
+  // Back of the hand and the wrist, out of the picture.
+  const palm = mesh(new THREE.SphereGeometry(1, 40, 24), undefined, true);
+  palm.scale.set(40, 15, 32);
+  palm.rotation.z = 0.42;
+  palm.position.set(90, 45, -12);
+  palm.name = "hand_back";
   g.add(palm);
+  segment(V(110, 56, -12), V(175, 78, -14), 22);
+
+  // The creases ride on a speck of a mesh at the hand's origin (render.ts draws userData.lines).
+  const carrier = mesh(box(0.01, 0.01, 0.01), undefined, true);
+  carrier.userData.lines = new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(creases, 3));
+  g.add(carrier);
   return g;
 }
 

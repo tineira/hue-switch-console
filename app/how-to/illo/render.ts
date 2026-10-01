@@ -68,7 +68,6 @@ const TONES: Record<string, string> = {
   gold: "#c9a64b",
   // Solder.
   tin: "#b9bec6",
-  skin: "#e0b08a",
 };
 
 function colour(tone: string): string {

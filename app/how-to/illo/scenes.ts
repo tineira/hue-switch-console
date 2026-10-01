@@ -13,7 +13,7 @@ import {
   ceramicCap,
   enclosure,
   hueBridge,
-  pressingFinger,
+  pressingHand,
   joint,
   leverConnector,
   leverEntry,
@@ -367,16 +367,18 @@ function simpleButtons(): SceneDef {
   };
 }
 
-// Set up over USB, pairing step: a finger on the Bridge's link button. One short callout, so
+// Set up over USB, pairing step: a hand pressing the Bridge's link button. One short callout, so
 // the Bridge fills the frame and the label stays readable where the picture is shown small.
 function hueBridgePress(): SceneDef {
   const b = hueBridge();
-  const f = at(pressingFinger(), 2, BRIDGE.button[1], 2);
+  const f = at(pressingHand(), 0, BRIDGE.button[1], 0);
+  // In from the right and a little behind, beside the Bridge in the wide frame.
+  f.rotation.y = 0.3;
   return {
     root: group(b, f),
     dir: [0.3, 1.25, 1.2],
-    // The Bridge itself; the hand and the cable run out of the picture.
-    fit: [b.getObjectByName("bridge_body")!],
+    // The Bridge and the hand up to its back; the wrist and the cable run out of the picture.
+    fit: [b.getObjectByName("bridge_body")!, f.getObjectByName("hand_back")!],
     pad: 1.02,
     notes: [balloon(1, "Link button", b, [-14, BRIDGE.button[1], 10], "left")],
   };
