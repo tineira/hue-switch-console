@@ -15,7 +15,7 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - **English everywhere**, in all three repos: product UI (labels, errors, auth emails), docs, specs, READMEs, code comments, commit messages. Do not write new Spanish; translate Spanish you touch.
 - Topology arrives from the LAN (switch or `push-from-bridge`); this app never calls the Hue Bridge.
 - Secrets stay in `.env.local` — never commit it.
-- Docs-only pushes (`docs/`, `*.md`, except `docs/changelog.md`) skip the Vercel build; `[skip deploy]` in a commit message skips any push (README, "Docs-only pushes"). In the firmware repos the release workflow skips docs too, and the tag is `[skip ci]`.
+- Docs-only pushes (`docs/`, `*.md`, except `docs/changelog.md`) skip the Vercel build; `[skip deploy]` in a commit message skips any push (README, "Docs-only pushes"). In the firmware repos the release workflow skips docs too, and the tag is `[skip ci]`. A tag counts anywhere in the message, body included: never write one out unless you mean it (describe it as "the skip tag").
 - Do not mix this tree with the Arduino sketchbook that holds the firmware repos.
 - Read `docs/definitions.md` before implementing.
 - Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
