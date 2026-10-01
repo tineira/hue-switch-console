@@ -71,7 +71,8 @@ function bridge(): Model {
     bevelEnabled: true,
     bevelThickness: B,
     bevelSize: B,
-    bevelSegments: 8,
+    // Two segments: 45° steps, so the soft edge draws as two crease lines round the top and bottom.
+    bevelSegments: 2,
     curveSegments: 32,
   });
   // Shape (x, y) → world (x, z); the extrusion runs up from y = 0.
@@ -88,8 +89,8 @@ function bridge(): Model {
   add(new THREE.CylinderGeometry(1.4, 1.4, 1.4, 24).rotateX(Math.PI / 2), 16, 11, -S / 2 - 0.1);
   return {
     root,
-    dir: new THREE.Vector3(-0.9, 1.15, -1.1),
-    marks: { button: [6, H + 1.4, -12], ethernet: [-12, 13, -S / 2 - 0.5], center: [0, H / 2, 0] },
+    // From the front, where the status lights are.
+    dir: new THREE.Vector3(0.75, 1.15, 1.1),
   };
 }
 
@@ -122,8 +123,13 @@ function bulbGeometries() {
   };
 }
 
+/** Glass colours of the three lit bulbs, warm white, pink and blue. */
+export const BULB_COLORS = ["#ffd9a0", "#ffc2dc", "#c9d8ff"];
+
 function lights(): Model {
   const { root, add } = group("Hue_Bulbs");
+  const globes: THREE.Mesh[] = [];
+  const lit = BULB_COLORS.map((c) => new THREE.MeshBasicMaterial({ color: c }));
   const geo = bulbGeometries();
   const at: [number, number][] = [[-70, 10], [0, -8], [70, 10]];
   const marks: Record<string, [number, number, number]> = {};
@@ -131,12 +137,19 @@ function lights(): Model {
     const b = new THREE.Group();
     b.position.set(x, 0, z);
     root.add(b);
-    add(geo.globe, 0, 0, 0, b);
+    globes.push(add(geo.globe, 0, 0, 0, b));
     add(geo.collar, 0, 0, 0, b);
     add(geo.cap, 0, 0, 0, b);
     marks[`bulb${i}`] = [x, 78, z];
   });
-  return { root, dir: new THREE.Vector3(0.35, 0.55, 1), marks };
+  return {
+    root,
+    dir: new THREE.Vector3(0.35, 0.55, 1),
+    marks,
+    // The glass keeps its outline but is filled with its light colour, in either theme.
+    after: () => globes.forEach((g, i) => (g.material = lit[i])),
+    dispose: () => lit.forEach((m) => m.dispose()),
+  };
 }
 
 function xiao(): Model {

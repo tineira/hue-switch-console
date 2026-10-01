@@ -12,7 +12,7 @@ const H = 230;
 const GRID =
   "[background-position:center] [background-image:repeating-linear-gradient(0deg,var(--line)_0_1px,transparent_1px_24px),repeating-linear-gradient(90deg,var(--line)_0_1px,transparent_1px_24px)]";
 
-// Hue-ish glow colours behind the three bulbs.
+// Glow behind each bulb, a stronger shade of its glass colour (BULB_COLORS).
 const GLOWS = ["#ffb35c", "#ff6fa8", "#7fa8ff"];
 
 /** Renders `kinds` once the box is near the viewport, and again on resize or theme change. Each
@@ -82,46 +82,10 @@ function Img({ src, className = "" }: { src: string; className?: string }) {
 function BridgeArt() {
   const { ref, stills } = useStills(["bridge"]);
   const s = stills?.[0];
-  const fg = "var(--foreground)";
   return (
     <div ref={ref} className="absolute inset-0">
-      {s ? (
-        <>
-          <Img src={s.src} />
-          <svg viewBox={`0 0 ${s.w} ${s.h}`} className="absolute inset-0 h-full w-full overflow-visible font-mono text-[11px]">
-            <Callout at={s.points.button} to={[s.w - 14, 26]} anchor="end" label="Link button" fg={fg} />
-            <Callout at={s.points.ethernet} to={[14, s.h - 18]} anchor="start" label="Ethernet to router" fg={fg} />
-          </svg>
-        </>
-      ) : null}
+      {s ? <Img src={s.src} /> : null}
     </div>
-  );
-}
-
-function Callout({
-  at,
-  to,
-  anchor,
-  label,
-  fg,
-}: {
-  at: [number, number];
-  to: [number, number];
-  anchor: "start" | "end";
-  label: string;
-  fg: string;
-}) {
-  // Label on a short shelf, then one straight leader to the part.
-  const shelf: [number, number] = [anchor === "end" ? to[0] - label.length * 6.6 - 8 : to[0] + label.length * 6.6 + 8, to[1] + 6];
-  return (
-    <g>
-      <text x={to[0]} y={to[1]} textAnchor={anchor} dominantBaseline="middle" fill={fg}>
-        {label}
-      </text>
-      <line x1={to[0]} y1={to[1] + 6} x2={shelf[0]} y2={shelf[1]} stroke={fg} strokeWidth={1} />
-      <line x1={shelf[0]} y1={shelf[1]} x2={at[0]} y2={at[1]} stroke={fg} strokeWidth={1} />
-      <circle cx={at[0]} cy={at[1]} r={2} fill={fg} />
-    </g>
   );
 }
 
@@ -206,7 +170,7 @@ function WifiBadge() {
 const CARDS: { label: string; title: string; text: ReactNode; art: () => ReactNode }[] = [
   {
     label: "01 · Bridge",
-    title: "A Hue Bridge",
+    title: "A Philips Hue Bridge or Hue Bridge Pro",
     text: "Plugged into your router. The switch talks to it over your home network, so bulbs paired only by Bluetooth won't work.",
     art: () => <BridgeArt />,
   },
