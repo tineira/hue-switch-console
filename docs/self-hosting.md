@@ -5,7 +5,7 @@ How to run your own Hue Switch Console and set up switches that talk to it inste
 A self-hosted console is the same code as the hosted one. You need:
 
 - A Postgres database.
-- A place to run a Next.js app: Vercel, or any machine with Node 20.9 or newer (a home server, a Raspberry Pi 4 or 5).
+- A place to run a Next.js app: Vercel, or any machine with Node 24 (a home server, a Raspberry Pi 4 or 5).
 - An address your switches can reach, and a way to open **Setup** in Chrome or Edge (see [Pick how switches reach the console](#2-pick-how-switches-reach-the-console)).
 - Firmware for your switches: imported from the hosted console, or built by your own fork.
 
