@@ -339,7 +339,7 @@ Simple switch (firmware ≥ 0.3.0):
   listed does nothing. `kind` is `maintained` (wall switch) or `momentary`
   (push button); the user picks it, not the firmware.
 - `flip` (`maintained` only) is `"toggle"` when each flip of the lever toggles
-  the target, whichever way it moves (`docs/specs/toggle-on-flip.md`). A wall
+  the target, whichever way it moves (`docs/specs/finished/toggle-on-flip.md`). A wall
   switch in set mode (closed = on, open = off) leaves the field out, so its
   payload is the same as before the field existed. Firmware treats a missing
   or unknown `flip` as set mode. Toggle-mode timing is in

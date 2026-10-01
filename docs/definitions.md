@@ -27,7 +27,7 @@ The **display name** is edited by the user in the console (`switches.label`); it
 
 **Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/specs/finished/simple-channel-types.md`); both use the same wiring:
 
-- `maintained` — UI *Wall switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states). Its **Flip** setting (`flip`) is `toggle` (UI *Each flip toggles the lights*, the default for a new wall switch) or `set` (UI *The lever sets on or off*). Spec: `docs/specs/toggle-on-flip.md`.
+- `maintained` — UI *Wall switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states). Its **Flip** setting (`flip`) is `toggle` (UI *Each flip toggles the lights*, the default for a new wall switch) or `set` (UI *The lever sets on or off*). Spec: `docs/specs/finished/toggle-on-flip.md`.
 - `momentary` — UI *Push button*: press and release.
 
 Channels (declared by the firmware; closed = GPIO to GND, `INPUT_PULLUP`):

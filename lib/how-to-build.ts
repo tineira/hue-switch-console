@@ -388,7 +388,7 @@ export const BOX_STEPS: PicStep[] = [
 export const INPUT_EXPLAINED =
   "Each of **D0** to **D5** reads one contact. One side of the switch goes to its pin, the other side to **GND**. Closed means pressed, or on. The board doesn't know what's on a pin until you tell it on Switches: **Wall switch** (stays on or off) or **Push button** (press and release).";
 
-// A wall switch with Flip set to toggle ignores the lever position (docs/specs/toggle-on-flip.md),
+// A wall switch with Flip set to toggle ignores the lever position (docs/specs/finished/toggle-on-flip.md),
 // so two of them on one room never disagree.
 export const STAIRCASE =
   "**Two switches for one lamp** (a staircase or hallway pair, also called two-way or 3-way): put one board in each switch housing. On Switches, set each input to **Wall switch** with **Flip** on **Each flip toggles the lights**, and pick the same room or zone on both. Either switch then turns the lights on or off, whichever way its lever sits. An old 3-way switch is wired as a plain contact: its common terminal plus one of the other two.";

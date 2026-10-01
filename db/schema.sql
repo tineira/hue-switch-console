@@ -150,7 +150,7 @@ alter table simple_channels add column if not exists double_click jsonb;
 -- Console-only switch name (docs/specs/simple-editor-v2.md §2). Never sent to the board.
 alter table simple_channels add column if not exists label text;
 
--- What a wall switch's lever does (docs/specs/toggle-on-flip.md): 'set' = closed on, open off;
+-- What a wall switch's lever does (docs/specs/finished/toggle-on-flip.md): 'set' = closed on, open off;
 -- 'toggle' = each flip toggles the target. Always 'set' on a push button.
 alter table simple_channels add column if not exists flip text not null default 'set' check (flip in ('set', 'toggle'));
 

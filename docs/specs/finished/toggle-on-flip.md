@@ -2,7 +2,7 @@
 
 Cross-repo spec. Process: `AGENTS.md` → "Cross-repo changes".
 
-**Status:** approved
+**Status:** done. Console deployed and Simple 0.8.0 made current on 2026-09-30; tested on the wall by the user on 2026-10-01.
 
 ## 1. What and why
 
@@ -91,7 +91,7 @@ There is one user today, so the console carries **no** old-firmware path: no ver
 - [x] How-to guide copy for Toggle switch mentions the Flip choice
 - [x] `docs/device-api.md` and `docs/definitions.md` updated in the same commit as the API change
 - [x] `docs/changelog.md` entry
-- [ ] Deployed; checked on production
+- [x] Deployed; checked on production
 
 ### Round (`hue-round-switch`)
 
@@ -102,11 +102,11 @@ Not affected.
 - [x] Parse `flip` in `channels[]` (`recipes.h`); unknown values = set
 - [x] Toggle-mode state machine (`channels.h`): §2.4 rules 1–3 and 6 (prime on a `flip` change)
 - [x] Worker queue (`hue_worker.h`): §2.4 rules 4–5 for toggle-mode channels
-- [ ] Host tests for the state machine and the queue rules (written; they first run in the firmware pull request's CI)
+- [x] Host tests for the state machine and the queue rules (pass in CI, hue-simple-switch#33)
 - [x] `FIRMWARE_VERSION` 0.8.0
 - [x] `CHANGELOG.md` entry (user-facing wording)
-- [ ] Release uploaded; `/firmware/simple/manifest.json` shows 0.8.0
-- [ ] Tested on a board by the user: single flips both ways, quick flick both ways with and without scenes, two boards on one room, power cycle with lights on
+- [x] Release uploaded; `/firmware/simple/manifest.json` shows 0.8.0
+- [x] Tested on a board by the user: single flips both ways, quick flick both ways with and without scenes, two boards on one room, power cycle with lights on
 
 ## 5. Decisions
 

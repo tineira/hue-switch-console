@@ -13,7 +13,7 @@ import {
 } from "@/lib/simple-channels";
 import type { Channel, PageGroup, TopologySnapshot } from "@/lib/types";
 
-// docs/specs/toggle-on-flip.md
+// docs/specs/finished/toggle-on-flip.md
 
 const snapshot: TopologySnapshot = {
   receivedAt: "2026-09-30T00:00:00.000Z",

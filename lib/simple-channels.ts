@@ -50,7 +50,7 @@ export function kindLabel(kind: ChannelKind): string {
   return kind === "momentary" ? "Push button" : "Wall switch";
 }
 
-/** A new wall switch toggles on each flip (docs/specs/toggle-on-flip.md); a push button has no flip. */
+/** A new wall switch toggles on each flip (docs/specs/finished/toggle-on-flip.md); a push button has no flip. */
 export function defaultFlip(kind: ChannelKind): SimpleFlip {
   return kind === "maintained" ? "toggle" : "set";
 }
