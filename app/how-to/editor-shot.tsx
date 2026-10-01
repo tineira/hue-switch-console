@@ -10,6 +10,10 @@ import type { Channel, Room, SimpleChannelConfig, TopologySnapshot } from "@/lib
 // the guide's column. Not interactive: it is a picture that never goes out of date.
 
 const WIDTH = 940;
+// The editor's height at WIDTH in each state, so the box has its final size from the first
+// paint. Text rendering moves it by a pixel or two between browsers; in development a bigger
+// mismatch logs an error naming the number to update.
+const HEIGHT: Record<"boot" | "add", number> = { boot: 606, add: 669 };
 
 const CHANNELS: Channel[] = [
   { id: BOOT_CHANNEL_ID, gpio: 9, label: "BOOT" },
@@ -45,31 +49,34 @@ const STATES: Record<"boot" | "add", { configs: SimpleChannelConfig[]; initial: 
 export function EditorShot({ state, alt }: { state: "boot" | "add"; alt: string }) {
   const box = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ scale: 1, height: 0 });
+  const [scale, setScale] = useState<number | null>(null);
 
   useEffect(() => {
     const b = box.current, i = inner.current;
     if (!b || !i) return;
     const measure = () => {
-      const scale = Math.min(1, b.clientWidth / WIDTH);
-      setFit({ scale, height: i.offsetHeight * scale });
+      setScale(Math.min(1, b.clientWidth / WIDTH));
+      if (process.env.NODE_ENV !== "production" && Math.abs(i.offsetHeight - HEIGHT[state]) > 4)
+        console.error(`EditorShot ${state}: ${i.offsetHeight} px tall at ${WIDTH}; set HEIGHT.${state} = ${i.offsetHeight} in editor-shot.tsx`);
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(b);
     ro.observe(i);
     return () => ro.disconnect();
-  }, []);
+  }, [state]);
 
   const { configs, initial } = STATES[state];
   return (
-    <div ref={box} role="img" aria-label={alt} className="relative w-full overflow-hidden" style={{ height: fit.height || undefined }}>
+    <div ref={box} role="img" aria-label={alt} className="relative w-full overflow-hidden" style={{ aspectRatio: `${WIDTH} / ${HEIGHT[state]}` }}>
+      {/* Hidden until the scale is known (the first paint can't know the column's width), then
+          a short fade in; the box around it already has its final size. */}
       <div
         ref={inner}
         inert
         aria-hidden="true"
-        className="absolute left-0 top-0 overflow-hidden rounded-xl border border-line bg-cream"
-        style={{ width: WIDTH, transform: `scale(${fit.scale})`, transformOrigin: "top left" }}
+        className={`absolute left-0 top-0 overflow-hidden rounded-xl border border-line bg-cream${scale === null ? " opacity-0" : " illo-in"}`}
+        style={{ width: WIDTH, transform: `scale(${scale ?? 1})`, transformOrigin: "top left" }}
       >
         <div className="flex items-center justify-between px-5 py-3.5">
           <span className="text-base font-semibold">Simple switch</span>
