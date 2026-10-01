@@ -293,7 +293,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                 n="→"
                 name="Put it together"
                 text="What to buy and how the three parts plug together, no soldering."
-                href="/how-to?product=round#assemble"
+                href="/how-to?product=round&topic=build#assemble"
                 linkLabel="Build guide →"
                 dim={tryMode}
               />

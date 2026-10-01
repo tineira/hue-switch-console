@@ -4,41 +4,29 @@ import { Shell } from "@/app/shell";
 import { HowToGuide } from "@/app/how-to/how-to-guide";
 import { getSessionUser } from "@/lib/auth";
 import { currentVersion } from "@/lib/firmware";
-import { isProduct } from "@/lib/how-to";
+import { howToDescription, howToHref, howToTitle, readHowTo } from "@/lib/how-to-nav";
 
 export const dynamic = "force-dynamic";
 
-const DESCRIPTION = {
-  round: "Set up a Round switch for Philips Hue, change what it does, and read what its screen shows.",
-  simple: "Set up a Simple switch for Philips Hue, change what it does, and read what its LED shows.",
-};
-
-// The server renders one product, so each ?product= URL is its own page for search
-// (docs/specs/finished/public-how-to-changelog.md D3). Bare /how-to renders Round.
+// The server renders the view the query string names (switch, topic, Simple build type), so each
+// one is its own page for search (docs/specs/how-to-navigation.md §2.3).
 export async function generateMetadata({ searchParams }: PageProps<"/how-to">): Promise<Metadata> {
-  const { product } = await searchParams;
-  const id = product === "simple" ? "simple" : "round";
+  const params = await searchParams;
+  const view = readHowTo((key) => params[key]);
   return {
-    title: "How-to",
-    description: DESCRIPTION[id],
-    alternates: { canonical: `/how-to?product=${id}` },
+    title: howToTitle(view),
+    description: howToDescription(view),
+    alternates: { canonical: howToHref(view) },
   };
 }
 
 // Public: signed-out visitors get the same guide (docs/specs/finished/public-how-to-changelog.md §4.2).
-export default async function HowToPage({ searchParams }: PageProps<"/how-to">) {
+export default async function HowToPage() {
   const user = await getSessionUser().catch(() => null);
-  const { product } = await searchParams;
   // The Round's Wi-Fi screen shows the firmware version; this one is what /setup flashes now.
   const version = await currentVersion("round").catch(() => null);
 
-  const guide = (
-    <HowToGuide
-      version={version}
-      initial={isProduct(product) ? product : "round"}
-      fromQuery={isProduct(product)}
-    />
-  );
+  const guide = <HowToGuide version={version} />;
 
   if (user) return <Shell email={user.email}>{guide}</Shell>;
   return <PublicFrame wide>{guide}</PublicFrame>;

@@ -5,8 +5,6 @@ export type Product = "round" | "simple";
 
 export const PRODUCTS: Product[] = ["round", "simple"];
 
-export const HOWTO_PRODUCT_KEY = "hsw-howto-product";
-
 export function isProduct(value: unknown): value is Product {
   return value === "round" || value === "simple";
 }

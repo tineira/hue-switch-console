@@ -1,22 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { BuildSection } from "@/app/how-to/build-section";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { BuildSection, LevelPicker } from "@/app/how-to/build-section";
+import { ProductPicture } from "@/app/how-to/product-picture";
 import { StateVisual } from "@/app/how-to/visuals";
 import { Rich } from "@/app/rich-text";
 import {
-  HOWTO_PRODUCT_KEY,
   NEEDS,
   PRODUCT_INFO,
   PRODUCTS,
-  isProduct,
   setupSteps,
   statuses,
   tasks,
   type Product,
   type Status,
 } from "@/lib/how-to";
+import {
+  DEFAULT_LEVEL,
+  TOPICS,
+  fromOldAnchor,
+  howToHref,
+  howToTitle,
+  readHowTo,
+  topicHint,
+  topicLabel,
+  type HowTo,
+  type Topic,
+} from "@/lib/how-to-nav";
 
 const SELECTED = "border-filament shadow-[0_0_0_1px_var(--filament)]";
 const GROUP_LABEL = "text-[10px] font-medium uppercase tracking-[0.14em] text-muted";
@@ -36,15 +48,17 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
+// First row: the two switches. Big cards until one is picked, then a compact row.
 function ProductPicker({
   product,
   onChoose,
 }: {
-  product: Product;
+  product: Product | null;
   onChoose: (id: Product) => void;
 }) {
+  const compact = product !== null;
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Which switch">
+    <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="Which switch">
       {PRODUCTS.map((id) => {
         const info = PRODUCT_INFO[id];
         const selected = id === product;
@@ -55,20 +69,61 @@ function ProductPicker({
             role="radio"
             aria-checked={selected}
             onClick={() => onChoose(id)}
-            className={`flex min-h-11 flex-[1_1_240px] touch-manipulation items-center gap-3 rounded-xl border bg-cream px-3.5 py-3 text-left sm:max-w-[332px] ${
-              selected ? SELECTED : "border-line"
-            }`}
+            className={`flex min-w-0 touch-manipulation overflow-hidden rounded-xl border bg-cream text-left ${
+              compact ? "flex-row items-center" : "flex-col"
+            } ${selected ? SELECTED : "border-line hover:border-muted"}`}
           >
             <span
-              aria-hidden="true"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-background"
+              className={`relative aspect-[16/10] shrink-0 bg-background ${
+                compact ? "w-16 self-stretch border-r border-line sm:w-[92px]" : "w-full border-b border-line"
+              }`}
             >
-              <StateVisual visual={info.visual} label="" size={40} version={null} />
+              <span className={`absolute ${compact ? "inset-[8%]" : "inset-x-[8%] inset-y-[10%]"}`}>
+                <ProductPicture product={id} />
+              </span>
             </span>
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-sm font-semibold">{info.name}</span>
-              <span className="text-xs text-muted">{info.blurb}</span>
+            <span className={`flex min-w-0 flex-col gap-0.5 ${compact ? "px-3 py-2" : "px-3.5 pt-3 pb-3.5"}`}>
+              <span className={`font-semibold ${compact ? "text-sm" : "text-[15px]"}`}>{info.name}</span>
+              <span className={`text-xs text-muted ${compact ? "hidden sm:block" : ""}`}>{info.blurb}</span>
             </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Second row: what to do with that switch. Tabs rather than cards, so the rows read as navigation.
+function TopicPicker({
+  product,
+  topic,
+  onChoose,
+}: {
+  product: Product;
+  topic: Topic | null;
+  onChoose: (id: Topic) => void;
+}) {
+  return (
+    <div
+      className="grid grid-cols-2 gap-2 min-[600px]:grid-cols-4"
+      role="radiogroup"
+      aria-label="What you want to do"
+    >
+      {TOPICS.map((id) => {
+        const on = id === topic;
+        return (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChoose(id)}
+            className={`flex min-w-0 touch-manipulation flex-col gap-0.5 rounded-[10px] border px-3 py-2.5 text-left ${
+              on ? "border-filament bg-filament-soft" : "border-line hover:bg-cream"
+            }`}
+          >
+            <span className={`text-[13.5px] font-semibold ${on ? "text-filament" : ""}`}>{topicLabel(product, id)}</span>
+            <span className="text-[11.5px] leading-snug text-muted">{topicHint(product, id)}</span>
           </button>
         );
       })}
@@ -317,14 +372,31 @@ function StatusDetail({
   );
 }
 
+function subscribeHash(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+
+function readHash() {
+  return window.location.hash.slice(1);
+}
+
 function StatusSection({ product, version }: { product: Product; version: string | null }) {
   const items = statuses(product);
   const round = product === "round";
   const setupItems = items.filter((item) => item.group !== "bad");
   const badItems = items.filter((item) => item.group === "bad");
-  // People usually arrive here when something is wrong.
-  const [pick, setPick] = useState(badItems[0]?.key ?? items[0].key);
+  // A link to one state (#status-<key>) selects it; otherwise people usually arrive here when
+  // something is wrong. A tile click wins over both.
+  const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
+  const linked = hash.startsWith("status-") ? items.find((item) => `status-${item.key}` === hash)?.key : undefined;
+  const [chosen, setPick] = useState<string | null>(null);
+  const pick = chosen ?? linked ?? badItems[0]?.key ?? items[0].key;
   const sel = items.find((item) => item.key === pick) ?? items[0];
+
+  useEffect(() => {
+    if (linked) document.getElementById(`status-${linked}`)?.scrollIntoView();
+  }, [linked]);
 
   return (
     <section id="status" className="flex scroll-mt-6 flex-col gap-4">
@@ -377,102 +449,129 @@ function StatusSection({ product, version }: { product: Product; version: string
   );
 }
 
-// Old links: /how-to#round and /how-to#simple pointed at the state catalogues.
-function legacyHash(): Product | null {
-  const hash = window.location.hash.slice(1);
-  return isProduct(hash) ? hash : null;
-}
-
-function readStored(): Product | null {
-  try {
-    const stored = localStorage.getItem(HOWTO_PRODUCT_KEY);
-    return isProduct(stored) ? stored : null;
-  } catch {
-    return null;
-  }
-}
-
-function subscribeStorage(onChange: () => void) {
-  window.addEventListener("storage", onChange);
-  return () => window.removeEventListener("storage", onChange);
-}
-
-// The server renders `initial` (the ?product= deep link, else round). Without a deep link the
-// client then switches to an old #round / #simple anchor or the stored choice, so a Simple
-// reader can see Round for one frame.
-export function HowToGuide({
-  version,
-  initial,
-  fromQuery,
-}: {
-  version: string | null;
-  initial: Product;
-  fromQuery: boolean;
-}) {
-  const [chosen, setChosen] = useState<Product | null>(null);
-  const remembered = useSyncExternalStore(
-    subscribeStorage,
-    () => legacyHash() ?? readStored(),
-    () => null,
+function NextTopic({ product, topic, onGo }: { product: Product; topic: Topic; onGo: (id: Topic) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onGo(topic)}
+      className="self-start text-sm font-medium text-filament underline underline-offset-2"
+    >
+      Next: {topicLabel(product, topic)} →
+    </button>
   );
-  const product = chosen ?? (fromQuery ? initial : (remembered ?? initial));
+}
+
+// Where Build leads: the Round and the in-wall board still need setting up; Try it and the
+// button box set the board up in their own first steps.
+function afterBuild(product: Product, level: HowTo["level"]): Topic {
+  return product === "simple" && level !== "wall" ? "tasks" : "setup";
+}
+
+// Switch, then topic, then (Simple build) build type. The query string holds all three
+// (lib/how-to-nav.ts); choosing updates it in place, so the server renders the same view for the
+// same URL and Back steps through topics (docs/specs/how-to-navigation.md).
+export function HowToGuide({ version }: { version: string | null }) {
+  const params = useSearchParams();
+  const view = readHowTo((key) => params.get(key));
+  const { product, topic, level } = view;
+  const topicsRef = useRef<HTMLDivElement>(null);
+  // An anchor to scroll to once the view it belongs to has rendered.
+  const pending = useRef<string | null>(null);
+
+  // Old links (/how-to?product=simple#status, #install, ...) pointed into one long page. On
+  // arrival the router may not be listening to history yet, so this goes through it.
+  const router = useRouter();
+  useEffect(() => {
+    function follow() {
+      const query = new URLSearchParams(window.location.search);
+      const old = fromOldAnchor(window.location.hash.slice(1), readHowTo((key) => query.get(key)));
+      if (!old) return;
+      if (old.hash && !old.hash.startsWith("status-")) pending.current = old.hash;
+      router.replace(howToHref(old.to, old.hash), { scroll: false });
+    }
+    follow();
+    window.addEventListener("hashchange", follow);
+    return () => window.removeEventListener("hashchange", follow);
+  }, [router]);
 
   useEffect(() => {
-    if (legacyHash()) document.getElementById("status")?.scrollIntoView();
-  }, []);
+    const id = pending.current;
+    const el = id ? document.getElementById(id) : null;
+    if (!el) return;
+    pending.current = null;
+    el.scrollIntoView();
+  }, [product, topic, level]);
 
-  function choose(id: Product) {
-    setChosen(id);
-    try {
-      localStorage.setItem(HOWTO_PRODUCT_KEY, id);
-    } catch {}
+  // Choosing doesn't reload the page, so the tab title follows here; the server sets it on load.
+  const title = howToTitle(view);
+  useEffect(() => {
+    const suffix = document.title.split(" · ").slice(1).join(" · ");
+    document.title = suffix ? `${title} · ${suffix}` : title;
+  }, [title]);
+
+  function go(next: HowTo, mode: "push" | "replace" = "push") {
+    const href = howToHref(next);
+    if (mode === "push") window.history.pushState(null, "", href);
+    else window.history.replaceState(null, "", href);
   }
 
-  const round = product === "round";
+  function chooseProduct(id: Product) {
+    if (id !== product) go({ product: id, topic, level: DEFAULT_LEVEL });
+  }
+
+  function chooseTopic(id: Topic) {
+    if (product && id !== topic) go({ product, topic: id, level: DEFAULT_LEVEL });
+  }
+
+  function nextTopic(id: Topic) {
+    chooseTopic(id);
+    topicsRef.current?.scrollIntoView({ block: "start" });
+  }
 
   return (
-    <>
-      <section className="flex max-w-2xl flex-col gap-2">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+      <section className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">How-to</h1>
         <p className="text-sm text-muted">
-          Build a switch, set it up, change what it does, and read what it&apos;s telling you.
-          Pick your switch and the guide shows only what applies to it.
+          Build a switch, set it up, change what it does, and read what it&apos;s telling you. Pick your
+          switch to start.
         </p>
       </section>
 
-      <ProductPicker product={product} onChoose={choose} />
+      <ProductPicker product={product} onChoose={chooseProduct} />
 
-      <div className="flex flex-col gap-10 lg:flex-row lg:items-start">
-        <nav
-          aria-label="On this page"
-          className="flex flex-col gap-1 text-sm lg:sticky lg:top-6 lg:w-44 lg:shrink-0"
-        >
-          <p className={`mb-1.5 ${GROUP_LABEL}`}>On this page</p>
-          {[
-            ["#build", "Build it"],
-            ["#setup", "Set up a switch"],
-            ["#tasks", "Everyday tasks"],
-            ["#status", round ? "Reading the screen" : "Reading the LED"],
-          ].map(([href, label], i) => (
-            <a
-              key={href}
-              href={href}
-              className="flex gap-2.5 rounded-md px-2 py-1.5 hover:bg-cream"
-            >
-              <span className="text-muted tabular-nums">{i + 1}</span>
-              {label}
-            </a>
-          ))}
-        </nav>
-
-        {/* Keyed by product so the task list and status selection reset on a switch. */}
-        <div key={product} className="flex min-w-0 max-w-2xl flex-1 flex-col gap-14">
-          <BuildSection product={product} />
-          <SetupSection product={product} version={version} />
-          <TasksSection product={product} />
-          <StatusSection product={product} version={version} />
+      {product ? (
+        <div ref={topicsRef} className="scroll-mt-6">
+          <TopicPicker product={product} topic={topic} onChoose={chooseTopic} />
         </div>
-      </div>
-    </>
+      ) : null}
+
+      {product === "simple" && topic === "build" ? (
+        <LevelPicker level={level} onChoose={(id) => go({ product, topic, level: id }, "replace")} />
+      ) : null}
+
+      {product && !topic ? <p className="py-2 text-center text-sm text-muted">Pick what you want to do.</p> : null}
+
+      {product && topic ? (
+        // Keyed by view, so the task list and status selection start fresh on each.
+        <div key={`${product}-${topic}-${level}`} className="flex flex-col gap-8 border-t border-line pt-6">
+          {topic === "build" ? (
+            <>
+              <BuildSection product={product} level={level} />
+              <NextTopic product={product} topic={afterBuild(product, level)} onGo={nextTopic} />
+            </>
+          ) : topic === "setup" ? (
+            <>
+              <SetupSection product={product} version={version} />
+              <NextTopic product={product} topic="tasks" onGo={nextTopic} />
+            </>
+          ) : topic === "tasks" ? (
+            <TasksSection product={product} />
+          ) : (
+            <StatusSection product={product} version={version} />
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
