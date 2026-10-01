@@ -74,6 +74,7 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 
 **v1: the existing build-guide stills.** Round uses `round-done` (the assembled Round on its cable), Simple uses `simple-led` (the XIAO on its cable with the LED lit), rendered without their callout overlay.
 
+- Simple is zoomed in on the board: the crop keeps the lower ~70 % of the drawing and trims the top of the cable. Its LED shows the working state (short flash every 3 s, the `led-heart` timing in `app/globals.css`), using only the glow from the scene's overlay. With reduced motion it stays lit.
 - Each still is cropped to its drawn bounds, since the scenes leave margin for callouts, and drawn with `object-fit: contain` in a fixed 16 : 10 picture box with the same inner padding on both cards. The two pictures then come out the same size, and the line between picture and text sits at the same height on both cards.
 - Rendered once per theme, client-side, like the other stills (`renderOnce` in `app/how-to/illo/illo.tsx`), with a text-only fallback when WebGL is missing.
 
@@ -89,7 +90,7 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 ### Console (`hue-switch-console`)
 
 - [ ] User approves this spec and the prototype
-- [ ] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned
+- [ ] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned, Simple zoomed with its LED on the heartbeat
 - [ ] Later, separate change: dedicated monochrome renders, Round display off (§2.7)
 - [ ] Stored-switch logic removed (§2.4)
 - [ ] `HowToGuide`: three tiers, compact cards after a choice, topic row, Simple level row moved up from `BuildSection`
