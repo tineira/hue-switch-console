@@ -1,25 +1,41 @@
+import type { Metadata } from "next";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { ChangelogPicker, type ChangelogCard } from "@/app/changelog/changelog-picker";
 import { ChangelogItemText } from "@/app/changelog-item";
 import { PublicFrame } from "@/app/public-frame";
 import { Rich } from "@/app/rich-text";
 import { Shell } from "@/app/shell";
 import { getSessionUser } from "@/lib/auth";
+import { CHANGELOG_IDS, changelogHref, isChangelogId, type ChangelogId } from "@/lib/changelog-href";
 import {
   notesToItems,
   parseChangelog,
   type ChangelogDoc,
   type ChangelogEntry,
+  type ChangelogSection,
 } from "@/lib/changelog-parse";
 import { listReleaseNotes, parseProductId } from "@/lib/firmware";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Changelog",
-  description: "What changed in Hue Switch Console and the Round and Simple switch firmware.",
-  alternates: { canonical: "/changelog" },
-};
+const DESCRIPTION = "What changed in Hue Switch Console and the Round and Simple switch firmware.";
+
+function picked(value: unknown): ChangelogId | null {
+  return isChangelogId(value) ? value : null;
+}
+
+// Each changelog has its own URL (`?product=`), so search lists them apart.
+export async function generateMetadata({ searchParams }: PageProps<"/changelog">): Promise<Metadata> {
+  const id = picked((await searchParams).product);
+  if (!id) return { title: "Changelog", description: DESCRIPTION, alternates: { canonical: "/changelog" } };
+  const name = id === "console" ? "Console" : id === "round" ? "Round switch" : "Simple switch";
+  return {
+    title: `${name} changelog`,
+    description: `What changed in the ${id === "console" ? "Hue Switch Console" : `${name} firmware`}.`,
+    alternates: { canonical: changelogHref(id) },
+  };
+}
 
 // Console entries live in docs/changelog.md; Round and Simple entries arrive with each firmware upload.
 async function loadChangelog() {
@@ -56,7 +72,17 @@ function EntryHeading({ entry }: { entry: ChangelogEntry }) {
   );
 }
 
-function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
+// The newest entry's heading, for its card: a firmware version, or the console's day.
+function latest(section: ChangelogSection): string | null {
+  return section.entries[0]?.heading ?? null;
+}
+
+function ChangelogContent({ doc, selected }: { doc: ChangelogDoc; selected: ChangelogId | null }) {
+  const cards: ChangelogCard[] = CHANGELOG_IDS.flatMap((id) => {
+    const section = doc.sections.find((s) => s.id === id);
+    return section ? [{ id, title: section.title, latest: latest(section) }] : [];
+  });
+  const section = doc.sections.find((s) => s.id === selected);
   return (
     <>
       <section className="flex flex-col gap-3">
@@ -66,21 +92,12 @@ function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
             <Rich text={paragraph} />
           </p>
         ))}
-        <p className="flex gap-4 text-sm">
-          {doc.sections.map((section) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              className="font-medium text-filament hover:underline"
-            >
-              {section.title}
-            </a>
-          ))}
-        </p>
       </section>
 
-      {doc.sections.map((section) => (
-        <section key={section.id} id={section.id} className="flex scroll-mt-8 flex-col gap-4">
+      <ChangelogPicker cards={cards} selected={selected} />
+
+      {section ? (
+        <section key={section.id} id={section.id} className="flex scroll-mt-8 flex-col gap-4 border-t border-line pt-6">
           <h2 className="text-lg font-medium">{section.title}</h2>
           {section.intro.map((paragraph) => (
             <p key={paragraph} className="max-w-2xl text-sm text-muted">
@@ -102,26 +119,29 @@ function ChangelogContent({ doc }: { doc: ChangelogDoc }) {
             ))}
           </div>
         </section>
-      ))}
+      ) : (
+        <p className="py-2 text-center text-sm text-muted">Pick one to see what changed.</p>
+      )}
     </>
   );
 }
 
 // Public: signed-out visitors get the same page (docs/specs/finished/public-how-to-changelog.md §4.3).
-export default async function ChangelogPage() {
+export default async function ChangelogPage({ searchParams }: PageProps<"/changelog">) {
+  const selected = picked((await searchParams).product);
   const user = await getSessionUser({ allowPending: true }).catch(() => null);
   const doc = await loadChangelog();
 
   if (user) {
     return (
       <Shell email={user.email}>
-        <ChangelogContent doc={doc} />
+        <ChangelogContent doc={doc} selected={selected} />
       </Shell>
     );
   }
   return (
     <PublicFrame>
-      <ChangelogContent doc={doc} />
+      <ChangelogContent doc={doc} selected={selected} />
     </PublicFrame>
   );
 }
