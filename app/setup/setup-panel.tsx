@@ -84,6 +84,10 @@ const PAIR_PROMPT = "Press the button on the Hue Bridge.";
 const PAIR_MS = 90_000;
 const PICK_PORT = "Choose the board's port in the window Chrome opened.";
 const READING = "Reading the board…";
+// Chrome says "An unknown system error has occurred" when the port vanishes while it opens: a
+// board with nothing in flash restarts over and over, and its USB port drops each time.
+const PORT_WONT_OPEN =
+  "The page couldn't open the board's port. A board with no firmware keeps restarting, so its port comes and goes. Hold BOOT, tap RESET, let go, and click Connect again; or carry on with Install, which asks for the same buttons. If another program has the port open (the Arduino IDE's Serial Monitor, for example), close it first.";
 const CLEAR_CONFIRM =
   "This forgets Wi-Fi, the console token, the Hue link, and saved recipes or pages. The firmware stays.";
 
@@ -470,12 +474,12 @@ export function SetupPanel({
           } catch {
             /* open failed before streams were usable */
           }
-          if (usb.kind === "bootloader") {
-            setError(errorMessage(err));
-            if (gen === detectGen.current) setStatus(null);
-            return;
-          }
-          throw err;
+          if (gen !== detectGen.current) return;
+          appendUsbLog(`open failed: ${errorMessage(err)}`);
+          setError(PORT_WONT_OPEN);
+          setStatus(null);
+          if (!knownBoard) void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
+          return;
         }
         if (gen !== detectGen.current) return;
         portRef.current = session.port;
@@ -510,6 +514,10 @@ export function SetupPanel({
           const mgen = ++manifestGen.current;
           void loadManifestFor(spec, mgen);
         }
+        // Nothing answered to say which XIAO: start from the switch picked on the page.
+        if (!knownBoard && !chip) void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
+      } else if (usb.kind === "other") {
+        void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
       }
       if (gen === detectGen.current) setStatus(null);
     } catch (err) {
@@ -1081,8 +1089,10 @@ export function SetupPanel({
     detected?.consoleRecord && card?.mac ? `/switches/${card.mac}` : "/switches";
   const sessionAlive = Boolean(detected?.cdc);
 
+  // 303A:1001 is any XIAO's built-in USB, so "Bootloader" would mislead until the chip answers.
   const boardTitle = detected
-    ? (sketchTitle(learnedChip(detected.improv, detected.huesta)) ?? detected.usb.title)
+    ? (sketchTitle(learnedChip(detected.improv, detected.huesta)) ??
+      (detected.usb.kind === "bootloader" ? "XIAO" : detected.usb.title))
     : null;
 
   const feedback = (
@@ -1300,8 +1310,9 @@ export function SetupPanel({
       {actions.askBoard ? (
         <div className="flex flex-col gap-2">
           <p className="text-muted">
-            This port doesn&apos;t say which XIAO it is. Pick the switch you are setting up. If the
-            chip turns out to be the other one, nothing is written.
+            This port doesn&apos;t say which XIAO it is, so the page starts from the switch you
+            picked in step 1. Change it if this is the other one. If the chip turns out not to
+            match, nothing is written.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {([

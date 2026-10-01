@@ -48,6 +48,7 @@ export function guideSteps(product: Product): GuideStep[] {
       why: "A web page can only talk to a USB device you pick yourself. Chrome asks every time, and the page sees nothing else on your computer.",
       trouble: [
         "**The board isn't in the list:** the cable may be charge-only (many are). Try another cable or another USB port.",
+        "**The page can't open the port:** a board with no firmware restarts over and over, so its port comes and goes. Hold **BOOT**, tap **RESET**, let go, and click **Connect** again. Close any other program using the port, such as the Arduino IDE's Serial Monitor.",
         `**Other entries, after My board isn't in the list:** entries with "Bluetooth" or a device name (headphones, phones, \`…_SPP\`) are Bluetooth devices, not the board. "Paired" only means this site used that port before.`,
         "**Not sure which one?** Unplug the board and click Connect again: the entry that disappeared is the board.",
         "**You picked the wrong entry:** nothing is sent to that device and nothing changes on it. The page finds no XIAO there and asks you to pick again.",
