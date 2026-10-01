@@ -120,6 +120,14 @@ See [`docs/device-api.md`](docs/device-api.md). Short version:
 
 Firmware TLS against `https://hue.tineira.com` must **verify** the certificate.
 
+## Docs-only pushes
+
+Vercel skips the build when everything since the last successful deployment is
+docs (`docs/`, `*.md`), or when the commit message has `[skip deploy]`
+(`vercel.json` `ignoreCommand`, `scripts/vercel-ignore.sh`). `docs/changelog.md`
+still deploys, since `/changelog` reads it. The firmware repos do the same for
+their release workflow; there the manual tag is `[skip ci]`.
+
 ## Firmware release pipeline
 
 A push to `main` in a firmware repo uploads a **release candidate** to the
