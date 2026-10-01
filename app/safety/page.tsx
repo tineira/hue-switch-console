@@ -17,7 +17,7 @@ const CONTACT = "privacy@tineira.com";
 const STATUSES: DesignStatus[] = ["experimental", "maintainer", "community"];
 
 // Public, on every console: it is about the designs, not the operator
-// (docs/specs/terms-and-safety.md §2.1, §2.6.1).
+// (docs/specs/finished/terms-and-safety.md §2.1, §2.6.1).
 export default function SafetyPage() {
   return (
     <LegalFrame>

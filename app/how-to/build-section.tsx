@@ -165,7 +165,7 @@ function Buy({ kit, items }: { kit: Pic; items: BuyItem[] }) {
 }
 
 // How proven this design is, and for low-voltage builds the one rule that keeps them low voltage
-// (docs/specs/terms-and-safety.md §2.5).
+// (docs/specs/finished/terms-and-safety.md §2.5).
 function StatusNote({ status, mains }: { status: DesignStatus; mains?: boolean }) {
   return (
     <div className={`flex flex-col gap-1.5 px-4 py-3 text-sm ${CARD}`}>

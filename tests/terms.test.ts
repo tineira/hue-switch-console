@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hasTerms, operatorTermsUrl, requiredDocuments, SAFETY_VERSION, termsVersion } from "@/lib/terms";
 
-// Which documents a console asks for (docs/specs/terms-and-safety.md §2.1, §2.2).
+// Which documents a console asks for (docs/specs/finished/terms-and-safety.md §2.1, §2.2).
 
 afterEach(() => {
   vi.unstubAllEnvs();

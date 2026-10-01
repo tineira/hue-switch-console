@@ -87,7 +87,7 @@ export default async function AdminAccountsPage({
     currentSignupMode(),
   ]);
   const waitlistOn = mode === "invite" || mode === "waitlist";
-  // Which Safety and Terms versions each account accepted (docs/specs/terms-and-safety.md §2.4).
+  // Which Safety and Terms versions each account accepted (docs/specs/finished/terms-and-safety.md §2.4).
   const accepted = await acceptedVersions(accounts.rows.map((a) => a.id));
   const required = requiredDocuments();
   const defaults = defaultLimits();

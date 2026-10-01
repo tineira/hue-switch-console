@@ -2,7 +2,7 @@ import { PublicFrame } from "@/app/public-frame";
 import { Shell } from "@/app/shell";
 import { getSessionUser } from "@/lib/auth";
 
-// Shared by /safety and /terms (docs/specs/terms-and-safety.md §2.1).
+// Shared by /safety and /terms (docs/specs/finished/terms-and-safety.md §2.1).
 
 export function LegalSection({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (

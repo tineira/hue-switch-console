@@ -15,7 +15,7 @@ export const metadata = {
 };
 
 // Every signed-in page sends here until the current Safety notice and Terms are accepted
-// (docs/specs/terms-and-safety.md §2.4). A plain frame: the app's navigation would only lead back.
+// (docs/specs/finished/terms-and-safety.md §2.4). A plain frame: the app's navigation would only lead back.
 export default async function AcceptPage({ searchParams }: PageProps<"/accept">) {
   const params = await searchParams;
   const next = safeReturnPath(typeof params.next === "string" ? params.next : null);

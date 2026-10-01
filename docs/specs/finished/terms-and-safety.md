@@ -2,7 +2,7 @@
 
 Cross-repo spec, but not a contract change: no endpoint, payload or NVS key moves. Process: `AGENTS.md` → "Cross-repo changes" (spec first, the user approves, then each repo's checklist).
 
-**Status:** approved 2026-09-30 by the user (all of §5 decided). Implemented and merged 2026-09-30 in all three repos. The user chose to ship before the lawyer review (§5, question 1), which follows later; fold its edits in and bump `SAFETY_VERSION` / the Terms version if they change the meaning.
+**Status:** approved 2026-09-30 by the user (all of §5 decided). Done 2026-09-30: implemented in all three repos, deployed, and checked on production by the user (accepted on `/accept`, back to the page they were going to). The user chose to ship before the lawyer review (§5, question 1), which follows later; fold its edits in and bump `SAFETY_VERSION` / the Terms version if they change the meaning.
 
 ## 1. What and why
 
@@ -146,7 +146,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 
 ### Console (`hue-switch-console`)
 
-- [ ] Lawyer review of §2.6 done and edits folded in (the user arranges it; §5, question 1)
+- [ ] Lawyer review of §2.6 done and edits folded in (the user arranges it; §5, question 1). **Still open:** deferred by the user; the one item left.
 - [x] `terms_acceptances` table in `db/schema.sql`
 - [x] `lib/terms.ts`: versions, `TERMS_VERSION` env override, `pendingDocuments`
 - [x] `/safety` page (every console), with `#status`
@@ -158,7 +158,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 - [x] `/how-to`: status chips, expanded mains box, "test, don't trust colors" step, illustration caption, low-voltage line
 - [x] `README.md`: env table (`TERMS_URL`, `TERMS_VERSION`), a Safety section linking `/safety`
 - [x] `docs/changelog.md` entry
-- [ ] Deployed; checked on production (sign in with an existing account, see `/accept`, accept, land where you were going)
+- [x] Deployed; checked on production (sign in with an existing account, see `/accept`, accept, land where you were going)
 
 ### Simple (`hue-simple-switch`)
 
@@ -173,7 +173,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 
 ### Cleanup
 
-- [ ] Spec moved to `docs/specs/finished/` once all boxes are ticked
+- [x] Spec moved to `docs/specs/finished/` once all boxes are ticked
 
 ## 5. Decisions
 

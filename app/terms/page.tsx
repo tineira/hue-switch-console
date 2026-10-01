@@ -17,7 +17,7 @@ const CONTACT = "privacy@tineira.com";
 const LINK = "underline underline-offset-4";
 
 // The hosted console's Terms of Use. A self-hosted console sends /terms to its operator's
-// TERMS_URL, or has none (docs/specs/terms-and-safety.md §2.1, §2.6.2).
+// TERMS_URL, or has none (docs/specs/finished/terms-and-safety.md §2.1, §2.6.2).
 export default function TermsPage() {
   if (!isHostedConsole()) {
     const url = operatorTermsUrl();

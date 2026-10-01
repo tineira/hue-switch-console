@@ -1,5 +1,5 @@
 // Under the sign-in and waitlist forms. It only informs; acceptance happens on /accept
-// (docs/specs/terms-and-safety.md §2.4).
+// (docs/specs/finished/terms-and-safety.md §2.4).
 export function AcceptanceLine({ termsHref }: { termsHref: string | null }) {
   const link = "underline underline-offset-4 hover:text-foreground";
   return (

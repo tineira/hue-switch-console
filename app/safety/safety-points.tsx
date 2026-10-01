@@ -1,5 +1,5 @@
 // The core of the Safety notice, shown in full on /safety and again on /accept
-// (docs/specs/terms-and-safety.md §2.6.1).
+// (docs/specs/finished/terms-and-safety.md §2.6.1).
 export const SAFETY_POINTS: { lead: string; body: string }[] = [
   {
     lead: "Mains electricity can kill or start a fire.",

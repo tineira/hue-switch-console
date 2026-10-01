@@ -16,7 +16,7 @@ import { pendingDocuments, type TermsDocument } from "@/lib/terms";
 export type SessionUser = {
   id: string;
   email?: string;
-  /** Documents still to accept (docs/specs/terms-and-safety.md §2.4); empty once accepted. */
+  /** Documents still to accept (docs/specs/finished/terms-and-safety.md §2.4); empty once accepted. */
   pending: TermsDocument[];
 };
 

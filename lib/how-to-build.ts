@@ -158,7 +158,7 @@ export const ROUND_ASSEMBLE: AssembleStep[] = [
   },
 ];
 
-/** How proven a design is (docs/specs/terms-and-safety.md §2.5). /safety#status explains each. */
+/** How proven a design is (docs/specs/finished/terms-and-safety.md §2.5). /safety#status explains each. */
 export type DesignStatus = "experimental" | "maintainer" | "community";
 
 export const DESIGN_STATUS_LABEL: Record<DesignStatus, string> = {

@@ -2,7 +2,7 @@ import { isHostedConsole } from "@/lib/account-config";
 import { sql } from "@/lib/sql";
 
 // The Safety notice and Terms of Use, and who has accepted which version
-// (docs/specs/terms-and-safety.md §2.2–§2.4).
+// (docs/specs/finished/terms-and-safety.md §2.2–§2.4).
 
 export type TermsDocument = "safety" | "terms";
 

@@ -247,7 +247,7 @@ The Simple switch has an in-wall build on mains voltage. The designs are uncerti
 and some are unproven. Read the Safety notice (`/safety` on any console, or
 [hue.tineira.com/safety](https://hue.tineira.com/safety)) before you build anything.
 Every account accepts it, and on hue.tineira.com the Terms, before using the console
-(`docs/specs/terms-and-safety.md`).
+(`docs/specs/finished/terms-and-safety.md`).
 
 ## Contributing
 
