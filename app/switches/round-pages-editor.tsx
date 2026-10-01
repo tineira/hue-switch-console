@@ -280,7 +280,7 @@ export function RoundPagesEditor({
                 Preview · lights {previewOn ? "on" : "off"}
               </button>
               <Link
-                href="/how-to?product=round#status"
+                href="/how-to?product=round&topic=status"
                 className="text-xs text-filament underline underline-offset-2"
               >
                 What the screen shows

@@ -2,7 +2,7 @@
 
 Console-only spec. No device endpoint, payload, NVS key or installer changes. Process: `AGENTS.md`.
 
-**Status:** approved (2026-09-30), not started
+**Status:** done. On production since 2026-09-30.
 
 Prototype (real 3D renders and guide content, navigation only): https://claude.ai/artifact/7Y33Hzv9HivHxeA8eXtenP
 
@@ -14,7 +14,7 @@ Today `/how-to` shows a small product picker, an "On this page" list and all fou
 
 ### 2.1 Three tiers of choice
 
-1. **Switch.** Two large cards side by side, Round and Simple, each with a dedicated render of its board (§2.7). Every visit to bare `/how-to` starts here with nothing chosen and nothing else below the cards.
+1. **Switch.** Two large cards side by side, Round and Simple, each with a render of its board (§2.7). Every visit to bare `/how-to` starts here with nothing chosen and nothing else below the cards.
 2. **Topic.** Once a switch is chosen, the cards shrink to a compact row (small render + name + blurb, selected one outlined) and four topic buttons appear under them, as wide in total as the cards:
    - Round: **Build it** · **Set up** · **Everyday tasks** · **Reading the screen**
    - Simple: **Build it** · **Set up** · **Everyday tasks** · **Reading the LED**
@@ -72,14 +72,14 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 
 ### 2.7 Product card pictures
 
-**v1: the existing build-guide stills.** Round uses `round-done` (the assembled Round on its cable), Simple uses `simple-led` (the XIAO on its cable with the LED lit), rendered without their callout overlay.
+**The existing build-guide stills.** Round uses `round-done` (the assembled Round on its cable), Simple uses `simple-led` (the XIAO on its cable with the LED lit), rendered without their callout overlay.
 
 - Simple is zoomed in on the board: the crop keeps the lower ~70 % of the drawing and trims the top of the cable. Its LED shows the working state (short flash every 3 s, the `led-heart` timing in `app/globals.css`), using only the glow from the scene's overlay. With reduced motion it stays lit.
 - Each still is cropped to its drawn bounds, since the scenes leave margin for callouts, and drawn with `object-fit: contain` in a fixed 16 : 10 picture box with the same inner padding on both cards. The two pictures then come out the same size, and the line between picture and text sits at the same height on both cards.
 - Rendered once per theme, client-side, like the other stills (`renderOnce` in `app/how-to/illo/illo.tsx`), with a text-only fallback when WebGL is missing.
 - Same loading behavior as the guide pictures since `355febc`: the 16 : 10 box is there from the first paint, empty (no "Drawing…"), and the picture fades in over 150 ms (no fade with reduced motion). The fixed box means the cards never change height, and the crop doesn't need an entry in `app/how-to/illo/heights.ts`.
 
-**Later: dedicated renders**, done as a separate change once v1 ships. Same line style as the landing's Simple board drawing (`app/landing/simple-render.ts`, iso camera), monochrome with no callouts or tone colours. Simple shows the XIAO ESP32-C6 with its pin headers. Round shows the Round Display on the XIAO ESP32-S3 at a matching angle, with the display off. They fill the same box, so the layout doesn't change.
+Dedicated monochrome renders (Round display off) were considered and dropped: the user kept these stills (2026-09-30).
 
 ## 3. Compatibility
 
@@ -91,19 +91,18 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 ### Console (`hue-switch-console`)
 
 - [x] User approves this spec and the prototype
-- [ ] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned, Simple zoomed with its LED on the heartbeat
-- [ ] Later, separate change: dedicated monochrome renders, Round display off (§2.7)
-- [ ] Stored-switch logic removed (§2.4)
-- [ ] `HowToGuide`: three tiers, compact cards after a choice, topic row, Simple level row moved up from `BuildSection`
-- [ ] Query-string state, server-rendered topic, per-topic metadata and canonical, sitemap entries
-- [ ] Old-hash rewrite (§2.5) and in-app links updated
-- [ ] "Next" links at the end of Build and Set up
-- [ ] `docs/specs/finished/public-how-to-changelog.md` D3 and `how-to-guide.md` notes updated, or point to this spec
-- [ ] Checked on production at desktop and phone width, light and dark (Playwright on localhost is not used for this page's checks per `AGENTS.md`; `/how-to` is public, so production is the check)
+- [x] Product card pictures (§2.7): `round-done` / `simple-led` cropped into the same box, dividers aligned, Simple zoomed with its LED on the heartbeat
+- [x] Stored-switch logic removed (§2.4)
+- [x] `HowToGuide`: three tiers, compact cards after a choice, topic row, Simple level row moved up from `BuildSection`
+- [x] Query-string state, server-rendered topic, per-topic metadata and canonical, sitemap entries
+- [x] Old-hash rewrite (§2.5) and in-app links updated
+- [x] "Next" links at the end of Build and Set up
+- [x] `docs/specs/finished/public-how-to-changelog.md` D3 and `how-to-guide.md` notes updated, or point to this spec
+- [x] Checked on production at desktop and phone width, light and dark (Playwright on localhost is not used for this page's checks per `AGENTS.md`; `/how-to` is public, so production is the check)
 
 ## 5. Decisions
 
-1. **Product card pictures** (2026-09-30): start with the build-guide stills `round-done` and `simple-led`, scaled to the same size with the card dividers aligned. Dedicated monochrome renders (Round display off) come later (§2.7).
+1. **Product card pictures** (2026-09-30): the build-guide stills `round-done` and `simple-led`, scaled to the same size with the card dividers aligned (§2.7). Dedicated monochrome renders were dropped; these stay.
 2. **Start screen** (2026-09-30): big cards for everyone, nothing preselected (§2.4).
 
 ## 6. Open questions

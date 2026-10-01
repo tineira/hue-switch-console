@@ -68,8 +68,39 @@ export function solder(x: number, y: number, z: number, r = 0.95): THREE.Mesh {
 // ---------------------------------------------------------------------------- small parts
 
 /** A slim USB-C cable: metal tongue at z 0..6.6 (the part that goes in), overmould, then the cable. */
+/** A stadium outline: straight sides 2·hx long, ends of radius r, centred on the origin. */
+function roundedRect(hx: number, r: number): THREE.Shape {
+  const sh = new THREE.Shape();
+  sh.moveTo(-hx, -r);
+  sh.lineTo(hx, -r);
+  sh.absarc(hx, 0, r, -Math.PI / 2, Math.PI / 2, false);
+  sh.lineTo(-hx, r);
+  sh.absarc(-hx, 0, r, Math.PI / 2, Math.PI * 1.5, false);
+  return sh;
+}
+
+/** A closed outline at depth z, as line-segment pairs for `userData.lines` (render.ts). */
+function ring(shape: THREE.Shape, z: number): THREE.BufferGeometry {
+  const pts = shape.getPoints(24);
+  const seg: number[] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    seg.push(a.x, a.y, z, b.x, b.y, z);
+  }
+  return new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(seg, 3));
+}
+
+/**
+ * A USB-C cable, plug along +z from the socket's mouth at z = 6.6 (callers place it there): the
+ * metal tongue in the socket, then the overmold a hair in front of the mouth so the socket's own
+ * front edge shows between them.
+ */
 export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE.Group {
   const g = new THREE.Group();
+  const MOUTH = 6.6;
+  const GAP = 0.2; // mouth to the tip of the overmold's end bevel
+  const BEVEL = 0.4;
   const shell = new THREE.Shape();
   const r = 1.25, hx = 4.15 - r;
   shell.moveTo(-hx, -r);
@@ -77,7 +108,7 @@ export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE
   shell.absarc(hx, 0, r, -Math.PI / 2, Math.PI / 2, false);
   shell.lineTo(-hx, r);
   shell.absarc(-hx, 0, r, Math.PI / 2, Math.PI * 1.5, false);
-  const tongue = new THREE.ExtrudeGeometry(shell, { depth: 6.6, bevelEnabled: false, curveSegments: 12 });
+  const tongue = new THREE.ExtrudeGeometry(shell, { depth: MOUTH + GAP, bevelEnabled: false, curveSegments: 12 });
   g.add(mesh(tongue));
   const body = new THREE.Shape();
   const R = 2.3, HX = 4.5 - R;
@@ -86,9 +117,15 @@ export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE
   body.absarc(HX, 0, R, -Math.PI / 2, Math.PI / 2, false);
   body.lineTo(-HX, R);
   body.absarc(-HX, 0, R, Math.PI / 2, Math.PI * 1.5, false);
-  const over = new THREE.ExtrudeGeometry(body, { depth: 13, bevelEnabled: true, bevelSize: 0.4, bevelThickness: 0.4, bevelSegments: 2, curveSegments: 16 });
-  g.add(at(mesh(over, undefined, true), 0, 0, 6.6));
-  g.add(wire([[0, 0, 19.5], [0, 0, 26], ...bend], "switched", 1.2));
+  const over = new THREE.ExtrudeGeometry(body, { depth: 13, bevelEnabled: true, bevelSize: BEVEL, bevelThickness: BEVEL, bevelSegments: 2, curveSegments: 16 });
+  const front = MOUTH + GAP + BEVEL;
+  const overmold = at(mesh(over, undefined, true), 0, 0, front);
+  // Smooth, so no crease lines; but where the plug meets the XIAO its silhouette falls behind
+  // the board, and nothing would separate the two. Draw the ring where the end bevel meets the
+  // sides (the outline grown by the bevel, at z = 0).
+  overmold.userData.lines = ring(roundedRect(HX, R + BEVEL), 0);
+  g.add(overmold);
+  g.add(wire([[0, 0, front + 13], [0, 0, 26], ...bend], "switched", 1.2));
   return g;
 }
 
@@ -395,6 +432,28 @@ export function leverConnector(n: number): THREE.Group {
 /** Wire entry of pole `i` of a lever connector, in its local coords; `d` mm out from it. */
 export function leverEntry(n: number, i: number, d = 0): [number, number, number] {
   return [-8.5 - d, 3.2, (i - (n - 1) / 2) * 5.8];
+}
+
+/**
+ * A two-pole voltage tester lying flat, facing +z: the display unit on the left with its probe
+ * tip pointing left, the second probe on the right with its tip pointing right, the coiled lead
+ * between them hanging below. About 160 mm across.
+ */
+export function voltageTester(): THREE.Group {
+  const g = new THREE.Group();
+  const along = (r: number, len: number) => cyl(r, len, 24).rotateZ(Math.PI / 2);
+  // Display unit: body, screen, finger guard, tip.
+  g.add(at(mesh(box(66, 24, 12), "soft"), -40, 0, 0));
+  g.add(at(mesh(box(26, 12, 0.6), "black"), -34, 2, 6.2));
+  g.add(at(mesh(along(8, 2), undefined, true), -74, 0, 0));
+  g.add(at(mesh(along(1.1, 14), "tin", true), -82, 0, 0));
+  // Second probe: handle, guard, tip.
+  g.add(at(mesh(along(6, 48), "soft", true), 44, 0, 0));
+  g.add(at(mesh(along(8, 2), undefined, true), 69, 0, 0));
+  g.add(at(mesh(along(1.1, 14), "tin", true), 77, 0, 0));
+  // The lead from the unit's back end to the probe's, sagging below.
+  g.add(wire([[-7, -4, 0], [-2, -16, 0], [6, -22, 0], [14, -16, 0], [20, -4, 0]], "switched", 1.6));
+  return g;
 }
 
 /** A DIN-rail breaker, lever up (on) or down (off), front toward +z. */

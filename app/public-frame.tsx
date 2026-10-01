@@ -5,7 +5,7 @@ const SIGN_IN =
   "rounded-md border border-line bg-background px-4 py-2 text-sm font-medium hover:border-filament";
 
 // Page frame for signed-out visitors on public pages; signed-in users get Shell instead
-// (docs/specs/finished/public-how-to-changelog.md §4.1). `wide` fits How-to's side nav.
+// (docs/specs/finished/public-how-to-changelog.md §4.1). `wide` gives How-to room for its centered column.
 export function PublicFrame({ wide, children }: { wide?: boolean; children: React.ReactNode }) {
   return (
     <main
