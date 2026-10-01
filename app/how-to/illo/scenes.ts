@@ -873,7 +873,8 @@ function wallScene(o: WallOpts) {
   w(drop([lamp[0] + 2.5, lamp[1], lamp[2]], 27, eConn, 2, 1), "earth");
 
   if (o.before) {
-    w([sup, [-24, 20, -10], [-30, 6, 30], ...intoMech("l")], "live");
+    // Round the plate's edge (local x -40) to the terminal side, not through the plate.
+    w([sup, [-24, 20, -10], inScene(mech, [-47, 22, -5]), inScene(mech, [-34, 18, -24]), ...intoMech("l")], "live");
     w([lamp, [-4, 16, 4], [-10, -8, 30], [-36, -10, 62], ...intoMech("sl")], "switched");
   } else if (lConn) {
     w(drop(sup, -30.5, lConn, nL, 0), "live");
@@ -939,7 +940,7 @@ function wallBefore(labels: boolean): SceneDef {
   const s = wallScene({ before: true, lamp: !labels });
   const notes: Note[] = labels
     ? [
-        note("Permanent live (L)", s.root, [-30, 8, 0], "left"),
+        note("Permanent live (L)", s.mech, [-34, 18, -24], "left"),
         note("Switched live, to lamp", s.root, [-10, 6, 6], "left"),
         note("Neutrals (N), joined", s.nConn, [0, 8, 0], "right"),
         note("Earths, joined", s.eConn, [0, 8, 0], "right"),
