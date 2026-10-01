@@ -252,7 +252,7 @@ export async function createRoundScene(
       for (const sx of [-1, 1])
         for (const sz of [-1, 1]) {
           const x = sx * 7.62, z = sz * 7.62;
-          seg(toPx(line.disp, x, 0, 1.5 + z), toPx(line.hdr, x, 11.5, z));
+          seg(toPx(line.disp, x, 0, HDR_Z + z), toPx(line.hdr, x, 11.5, z));
           seg(toPx(line.hdr, x, 0, z), toPx(line.xiao, -x, 0, z));
         }
       seg(toPx(line.ant, 0, 1.4, 32.5), toPx(line.xiao, 3.8, 2.45, -9.0));
