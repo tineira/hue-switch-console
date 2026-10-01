@@ -22,6 +22,8 @@ Today `/how-to` shows a small product picker, an "On this page" list and all fou
    Each button carries a short second line (e.g. "Firmware, Wi-Fi, Bridge"). One row of four on desktop, 2 × 2 under 600 px. They look like tabs, not cards, so the three tiers read as navigation, not three wizards.
 3. **Build type** (Simple + Build it only). Today's three level cards (A Try it, B Button box on USB-C, C In the wall) appear under the topics. Default B, as today. Round's Build it shows its guide directly.
 
+   **Design status chips** (`docs/specs/terms-and-safety.md` §2.5): each Simple level card carries its build's status chip next to its name, and Round's chip sits next to its build heading. The chips also stay on the install sections, as that spec says. Whichever of the two specs ships second puts the chips in these places.
+
 Until a topic is chosen, the area under the topics shows one muted line: "Pick what you want to do." Switching product keeps the topic, so a reader can compare the two switches on the same topic. The Simple level resets to B when it no longer applies.
 
 ### 2.2 Content
@@ -77,12 +79,14 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 - Simple is zoomed in on the board: the crop keeps the lower ~70 % of the drawing and trims the top of the cable. Its LED shows the working state (short flash every 3 s, the `led-heart` timing in `app/globals.css`), using only the glow from the scene's overlay. With reduced motion it stays lit.
 - Each still is cropped to its drawn bounds, since the scenes leave margin for callouts, and drawn with `object-fit: contain` in a fixed 16 : 10 picture box with the same inner padding on both cards. The two pictures then come out the same size, and the line between picture and text sits at the same height on both cards.
 - Rendered once per theme, client-side, like the other stills (`renderOnce` in `app/how-to/illo/illo.tsx`), with a text-only fallback when WebGL is missing.
+- Same loading behavior as the guide pictures since `355febc`: the 16 : 10 box is there from the first paint, empty (no "Drawing…"), and the picture fades in over 150 ms (no fade with reduced motion). The fixed box means the cards never change height, and the crop doesn't need an entry in `app/how-to/illo/heights.ts`.
 
 **Later: dedicated renders**, done as a separate change once v1 ships. Same line style as the landing's Simple board drawing (`app/landing/simple-render.ts`, iso camera), monochrome with no callouts or tone colours. Simple shows the XIAO ESP32-C6 with its pin headers. Round shows the Round Display on the XIAO ESP32-S3 at a matching angle, with the display off. They fill the same box, so the layout doesn't change.
 
 ## 3. Compatibility
 
 - No device or firmware impact.
+- `docs/specs/terms-and-safety.md` (draft) also changes `/how-to`: status chips, the expanded mains box, the "test, don't trust colors" step, the illustration caption and the low-voltage line. Apart from the chips (§2.1), all of that lives inside the Build content, which this spec doesn't change, so either spec can ship first.
 - Old URLs are redirected client-side as in §2.5. Search engines see the `?product=` canonicals today, and those keep working.
 
 ## 4. Checklist
@@ -90,6 +94,7 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 ### Console (`hue-switch-console`)
 
 - [x] User approves this spec and the prototype
+- [ ] Design status chips on the level cards and Round's build heading, if `terms-and-safety.md` has shipped (§2.1)
 - [ ] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned, Simple zoomed with its LED on the heartbeat
 - [ ] Later, separate change: dedicated monochrome renders, Round display off (§2.7)
 - [ ] Stored-switch logic removed (§2.4)
