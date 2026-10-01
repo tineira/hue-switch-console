@@ -72,13 +72,12 @@ At 375 px: product cards side by side (large: render on top, name and blurb unde
 
 ### 2.7 Product card pictures
 
-One new still per product, rendered from the 3D board models in the line style of the landing's Simple board drawing (`app/landing/simple-render.ts`, iso camera): part faces filled with the page colour, crease edges and a 1 px silhouette in the foreground colour, on the card's background.
+**v1: the existing build-guide stills.** Round uses `round-done` (the assembled Round on its cable), Simple uses `simple-led` (the XIAO on its cable with the LED lit), rendered without their callout overlay.
 
-- **No callouts** and **no tone colours**: no orange pads, no glows, no labels. The drawing is monochrome in the theme's foreground colour, so it reads the same in every theme.
-- **Simple:** the XIAO ESP32-C6 with its pin headers, same angle as the landing drawing.
-- **Round:** the Round Display with the XIAO ESP32-S3 under it, at a matching angle, **display off** (the screen a plain dark face, no dial, no ring).
-- Same camera framing and drawn size for both, so the two cards line up.
-- Rendered once per theme, client-side, like the other stills (`renderOnce` in `app/how-to/illo/illo.tsx`), with the card's text-only fallback when WebGL is missing.
+- Each still is cropped to its drawn bounds, since the scenes leave margin for callouts, and drawn with `object-fit: contain` in a fixed 16 : 10 picture box with the same inner padding on both cards. The two pictures then come out the same size, and the line between picture and text sits at the same height on both cards.
+- Rendered once per theme, client-side, like the other stills (`renderOnce` in `app/how-to/illo/illo.tsx`), with a text-only fallback when WebGL is missing.
+
+**Later: dedicated renders**, done as a separate change once v1 ships. Same line style as the landing's Simple board drawing (`app/landing/simple-render.ts`, iso camera), monochrome with no callouts or tone colours. Simple shows the XIAO ESP32-C6 with its pin headers. Round shows the Round Display on the XIAO ESP32-S3 at a matching angle, with the display off. They fill the same box, so the layout doesn't change.
 
 ## 3. Compatibility
 
@@ -90,7 +89,8 @@ One new still per product, rendered from the 3D board models in the line style o
 ### Console (`hue-switch-console`)
 
 - [ ] User approves this spec and the prototype
-- [ ] Product card renders (§2.7): monochrome, no callouts, Round display off
+- [ ] Product card pictures (§2.7 v1): `round-done` / `simple-led` cropped into the same box, dividers aligned
+- [ ] Later, separate change: dedicated monochrome renders, Round display off (§2.7)
 - [ ] Stored-switch logic removed (§2.4)
 - [ ] `HowToGuide`: three tiers, compact cards after a choice, topic row, Simple level row moved up from `BuildSection`
 - [ ] Query-string state, server-rendered topic, per-topic metadata and canonical, sitemap entries
@@ -101,7 +101,7 @@ One new still per product, rendered from the 3D board models in the line style o
 
 ## 5. Decisions
 
-1. **Product card pictures** (2026-09-30): dedicated renders in the landing board-drawing style, without callouts or colours, Round display off (§2.7). The prototype still shows the build-guide scenes `round-done` and `simple-led` as placeholders.
+1. **Product card pictures** (2026-09-30): start with the build-guide stills `round-done` and `simple-led`, scaled to the same size with the card dividers aligned. Dedicated monochrome renders (Round display off) come later (§2.7).
 2. **Start screen** (2026-09-30): big cards for everyone, nothing preselected (§2.4).
 
 ## 6. Open questions
