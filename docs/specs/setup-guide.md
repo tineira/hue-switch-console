@@ -38,7 +38,7 @@ Text below is the proposed wording. "Why" and "If it goes wrong" are the disclos
   - Entries with "Bluetooth" or a device name (headphones, phones, `…_SPP`) are Bluetooth devices. They are not the board.
   - "Paired" after an entry is Chrome's note that this site was allowed to use that port before. It does not say which one is the board.
   - If you are unsure, unplug the board: the entry that disappears is the board.
-- **Illustration:** render of the XIAO (C6 or S3, from the product picked on the page) with the cable going in; next to it an HTML mock of Chrome's port picker with several entries, Bluetooth ones included, and `USB JTAG/serial debug unit (COM3)` highlighted with a numbered balloon.
+- **Illustration:** render of the XIAO (C6 or S3, from the product picked on the page) with the cable going in; next to it an HTML mock of Chrome's port picker with its one entry, `USB JTAG/serial debug unit (COM3)`, marked with a numbered balloon. **Decided after the filter check:** the filtered list shows only the board, so the mock does too; the other entries are explained under If it goes wrong, for the unfiltered list.
 - **Port picker filter (to try):** `requestPort()` gets `filters` for the Seeed (`0x2886`) and Espressif (`0x303a`) USB vendor IDs. Bluetooth ports have no USB vendor ID, so they should drop out and leave only the board. Verify on the maintainer's PC before relying on it. The text still names the entry to pick, because the filter can fail and a **My board isn't in the list** link reopens the picker without filters.
 - **Entry name per board:** the C6 shows as `USB JTAG/serial debug unit` (the chip's built-in USB). Check what the Round's S3 shows, both factory-fresh and on our firmware, and on macOS, and name each in the text.
 - **Board:** detection names the chip (`XIAO ESP32-C6`) and product. The manual C6/S3 choice appears only when the port did not identify the board, with a render of each so the person can compare with the one in their hand.
@@ -103,7 +103,7 @@ All are renders of 3D models in the existing `app/how-to/illo` system, one per s
 
 | Step | Scene |
 | --- | --- |
-| 1 | XIAO (C6 / S3 kit) with a USB-C cable plugged in; HTML mock of Chrome's port picker with Bluetooth entries and the board's entry highlighted |
+| 1 | XIAO (C6 / S3 kit) with a USB-C cable plugged in; HTML mock of Chrome's port picker with the board's entry marked |
 | 2 | Board seen from the USB end, numbered balloons on BOOT and RESET (Simple); plugged Round kit |
 | 3, 4 | `StateVisual` of the resulting LED or screen state |
 | 5 | **New:** Hue Bridge model, numbered balloon on the link button, press cue |
@@ -128,7 +128,7 @@ The step texts, illustrations and "why" live in one module (`lib/setup-steps.ts`
 - [x] `/setup` stepper replacing Detect / Setup / identity / Actions; Maintenance disclosure
 - [x] Step 1 names the entry to pick (`USB JTAG/serial debug unit` on the C6) and explains the other entries
 - [x] `lib/web-setup/serial.ts`: vendor-ID filters plus the unfiltered fallback
-- [ ] Filter checked on the maintainer's PC: only the board listed, Bluetooth entries gone
+- [x] Filter checked on the maintainer's PC: only the board listed, Bluetooth entries gone (2026-10-01)
 - [ ] Port entry names recorded for the Round (factory-fresh and our firmware) and on macOS
 - [x] Step 2: pre-install button sequence with numbered render; "can't break it" box; progress and "what you'll see"
 - [x] Hue Bridge 3D model and the pairing scene

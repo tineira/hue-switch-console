@@ -169,13 +169,13 @@ export function ButtonSteps({ items }: { items: { n?: number; text: string }[] }
   );
 }
 
-// What Chrome's port window looked like on the maintainer's PC (docs/specs/setup-guide.md §2.2
-// step 1): Bluetooth ports listed next to the board.
-const OTHER_PORTS = ["Bluetooth headphones", "JL_SPP (COM5)", "Bluetooth Peripheral Device (COM6)"];
-
-/** A drawing of Chrome's serial port window with the board's entry marked ①. */
+/**
+ * A drawing of Chrome's serial port window with the board's entry marked ①. Connect asks for
+ * XIAO vendor ids only, so the board is the one entry (checked on the maintainer's PC, where
+ * three Bluetooth ports dropped out).
+ */
 export function PortPickerMock() {
-  const rows = [OTHER_PORTS[0], `${PORT_NAME} (COM3)`, OTHER_PORTS[1], OTHER_PORTS[2]];
+  const rows = [`${PORT_NAME} (COM3)`];
   return (
     <figure className="flex min-w-0 flex-col gap-2">
       <div
@@ -185,7 +185,7 @@ export function PortPickerMock() {
         <p className="mb-2 text-[13px] font-semibold">This site wants to connect to a serial port</p>
         <ul className="flex flex-col rounded-md border border-line p-1 text-[12.5px]">
           {rows.map((row, i) => {
-            const board = i === 1;
+            const board = i === 0;
             return (
               <li
                 key={row}
@@ -208,7 +208,7 @@ export function PortPickerMock() {
         <Balloon n={1} />
         <span>
           <span className="font-medium text-foreground">{PORT_NAME}</span> is the board. On Windows it
-          ends in a port number such as (COM3). Other entries are usually Bluetooth devices.
+          ends in a port number such as (COM3).
         </span>
       </figcaption>
     </figure>
