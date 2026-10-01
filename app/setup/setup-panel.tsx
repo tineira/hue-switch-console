@@ -84,10 +84,10 @@ const PAIR_PROMPT = "Press the button on the Hue Bridge.";
 const PAIR_MS = 90_000;
 const PICK_PORT = "Choose the board's port in the window Chrome opened.";
 const READING = "Reading the board…";
-// Chrome says "An unknown system error has occurred" when the port vanishes while it opens: a
-// board with nothing in flash restarts over and over, and its USB port drops each time.
+// Chrome says "An unknown system error has occurred" when the port vanishes while it is opened
+// or read: a board with nothing in flash restarts over and over, and its USB port drops each time.
 const PORT_WONT_OPEN =
-  "The page couldn't open the board's port. A board with no firmware keeps restarting, so its port comes and goes. Hold BOOT, tap RESET, let go, and click Connect again; or carry on with Install, which asks for the same buttons. If another program has the port open (the Arduino IDE's Serial Monitor, for example), close it first.";
+  "The page couldn't read the board. A board with no firmware keeps restarting, so its port comes and goes. Hold BOOT, tap RESET, let go, and click Connect again; or carry on with Install, which asks for the same buttons. If another program has the port open (the Arduino IDE's Serial Monitor, for example), close it first.";
 const CLEAR_CONFIRM =
   "This forgets Wi-Fi, the console token, the Hue link, and saved recipes or pages. The firmware stays.";
 
@@ -426,9 +426,13 @@ export function SetupPanel({
     setStatus(PICK_PORT);
     setPanel("none");
     setOpenStep(null);
+    // Whether a port was picked, and whether its USB id named the board.
+    let picked = false;
+    let identified = false;
     try {
       const port = await requestSerialPort(all);
       if (gen !== detectGen.current) return;
+      picked = true;
       await closeSession();
       if (gen !== detectGen.current) return;
       portRef.current = port;
@@ -442,6 +446,7 @@ export function SetupPanel({
       const info = port.getInfo();
       const usb = identifyUsb(info.usbVendorId, info.usbProductId);
       const knownBoard = usb.kind === "c6" || usb.kind === "s3";
+      identified = knownBoard;
       const probe = knownBoard || usb.kind === "bootloader";
       setDetected({
         usb,
@@ -522,8 +527,23 @@ export function SetupPanel({
       if (gen === detectGen.current) setStatus(null);
     } catch (err) {
       if (gen !== detectGen.current) return;
-      setError(errorMessage(err));
       setStatus(null);
+      if (!picked) {
+        setError(errorMessage(err));
+        return;
+      }
+      // The port was picked but reading it failed: most often a board with nothing in flash
+      // restarting under the read (Chrome: "An unknown system error has occurred").
+      appendUsbLog(`read failed: ${errorMessage(err)}`);
+      // Release the port so Install can open it again.
+      try {
+        await closeSession();
+      } catch {
+        /* already gone */
+      }
+      setDetected((prev) => (prev ? { ...prev, cdc: false } : prev));
+      setError(PORT_WONT_OPEN);
+      if (!identified) void chooseBoard(chosenProduct === "round" ? "s3" : "c6");
     } finally {
       if (gen === detectGen.current) setBusy(false);
     }
