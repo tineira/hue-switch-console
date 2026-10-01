@@ -2,7 +2,7 @@
 
 Cross-repo spec, but not a contract change: no endpoint, payload or NVS key moves. Process: `AGENTS.md` → "Cross-repo changes" (spec first, the user approves, then each repo's checklist).
 
-**Status:** approved 2026-09-30 by the user (§5 decided, except the country in question 2). Not implemented.
+**Status:** approved 2026-09-30 by the user (all of §5 decided). Not implemented.
 
 ## 1. What and why
 
@@ -92,7 +92,7 @@ The gate does not reach someone who reads a guide and never signs up. So:
 
 ### 2.6 Draft texts
 
-Plain language, short sentences, written for an international audience. To be reviewed by a lawyer (§5, question 1). `<COUNTRY>` is filled in from §5.
+Plain language, short sentences, written for an international audience. To be reviewed by a lawyer (§5, question 1). The lawyer is Chilean (§5, question 2) and checks the no-warranty and liability clauses against Chile's consumer protection law (Ley 19.496), which limits what a provider can disclaim.
 
 #### 2.6.1 Safety notice (`/safety`)
 
@@ -113,7 +113,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 
 #### 2.6.2 Terms of Use (`/terms`, hosted console only)
 
-> **1. Who we are.** Hue Switch Console at hue.tineira.com is a free, non-commercial service run by Tomas Neira, an individual, from `<COUNTRY>`. Contact: privacy@tineira.com.
+> **1. Who we are.** Hue Switch Console at hue.tineira.com is a free, non-commercial service run by Tomas Neira, an individual, from Chile. Contact: privacy@tineira.com.
 >
 > **2. Accepting these terms.** You accept these Terms and the Safety notice when you create an account. You must be at least 18. If you do not accept them, do not use the console.
 >
@@ -133,7 +133,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 >
 > **10. Ending.** You can delete your account at any time from Account. We may end the service with reasonable notice where possible.
 >
-> **11. Law.** These Terms are governed by the laws of `<COUNTRY>`, without taking away protections the law of your own country gives you as a consumer.
+> **11. Law.** These Terms are governed by the laws of Chile, without taking away protections the law of your own country gives you as a consumer.
 
 ## 3. Compatibility
 
@@ -180,7 +180,7 @@ The page then has: `#status` (the three statuses from §2.5), a short "If someth
 Decided by the user on 2026-09-30.
 
 1. **Lawyer review:** yes, once, before launch. The user arranges it; the console ships the texts only after it.
-2. **Contact:** `privacy@tineira.com`. **Country for governing law (§2.6.2): still open.** Fill in `<COUNTRY>` once the user names it.
+2. **Contact:** `privacy@tineira.com`. **Governing law (§2.6.2):** Chile, where the maintainer lives. The lawyer review in question 1 is done in Chile.
 3. **Starting status:** Round on USB `maintainer`; Simple try-it and button box `maintainer`; Simple in-wall carrier board `experimental` until the user has built and installed one.
 4. **Hardware license:** `hue-simple-switch/hardware/` moves to CERN-OHL-P-2.0; firmware stays MIT. `<HARDWARE LICENSE>` in §2.6.2 is CERN-OHL-P-2.0.
 5. **Minimum age:** 18.
