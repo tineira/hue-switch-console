@@ -170,45 +170,47 @@ export function ButtonSteps({ items }: { items: { n?: number; text: string }[] }
 }
 
 /**
- * A drawing of Chrome's serial port window with the board's entry marked ①. Connect asks for
+ * A picture of Chrome's serial port window with the board's entry marked ①: Connect asks for
  * XIAO vendor ids only, so the board is the one entry (checked on the maintainer's PC, where
- * three Bluetooth ports dropped out).
+ * three Bluetooth ports dropped out). Drawn as an example in a dashed frame, in Chrome's greys
+ * rather than the console's colours, small, with a drawn pointer and no pointer events, so it
+ * doesn't pass for a dialog you can click (a person tried its Connect).
  */
 export function PortPickerMock() {
-  const rows = [`${PORT_NAME} (COM3)`];
   return (
     <figure className="flex min-w-0 flex-col gap-2">
-      <div
-        aria-hidden="true"
-        className="rounded-xl border border-line bg-background p-3 shadow-sm select-none"
-      >
-        <p className="mb-2 text-[13px] font-semibold">This site wants to connect to a serial port</p>
-        <ul className="flex flex-col rounded-md border border-line p-1 text-[12.5px]">
-          {rows.map((row, i) => {
-            const board = i === 0;
-            return (
-              <li
-                key={row}
-                className={`flex items-center justify-between gap-2 rounded px-2 py-1.5 ${
-                  board ? "bg-filament-soft font-medium text-foreground" : "text-muted"
-                }`}
-              >
-                <span className="min-w-0 truncate">{row}</span>
-                {board ? <Balloon n={1} /> : null}
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-2.5 flex justify-end gap-2 text-[12px]">
-          <span className="rounded-full bg-filament px-3 py-1 font-medium text-filament-ink">Connect</span>
-          <span className="rounded-full border border-line px-3 py-1">Cancel</span>
+      <div className="pointer-events-none flex flex-col gap-2 rounded-xl border border-dashed border-line p-3 select-none">
+        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted">
+          Example: what Chrome shows
+        </span>
+        <div aria-hidden="true" className="mx-2 rounded-lg bg-[#3c3c3c] p-2.5 text-[#e3e3e3] shadow-md">
+          <p className="mb-1.5 text-[11px] font-medium">This site wants to connect to a serial port</p>
+          <div className="relative rounded border border-[#5f5f5f] p-1 text-[11px]">
+            <div className="flex items-center justify-between gap-2 rounded bg-[#4a4a4a] px-1.5 py-1">
+              <span className="min-w-0 truncate">{PORT_NAME} (COM3)</span>
+              <Balloon n={1} />
+            </div>
+            <svg
+              viewBox="0 0 16 22"
+              width="12"
+              height="17"
+              className="absolute top-4 right-9 drop-shadow"
+            >
+              <path d="M1 1v17l4.5-4 3 7 2.6-1.1-3-6.9H14Z" fill="#fff" stroke="#000" strokeWidth="1.2" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="mt-2 flex justify-end gap-1.5 text-[10px]">
+            <span className="rounded-full border border-[#5f5f5f] px-2.5 py-0.5">Connect</span>
+            <span className="rounded-full border border-[#5f5f5f] px-2.5 py-0.5">Cancel</span>
+          </div>
         </div>
       </div>
       <figcaption className="flex items-start gap-1.5 text-xs text-muted">
         <Balloon n={1} />
         <span>
-          <span className="font-medium text-foreground">{PORT_NAME}</span> is the board. On Windows it
-          ends in a port number such as (COM3).
+          After you click <span className="font-medium text-foreground">Connect</span> here, Chrome
+          opens a window like this. Pick <span className="font-medium text-foreground">{PORT_NAME}</span>
+          {" "}and click Connect in that window. On Windows it ends in a port number such as (COM3).
         </span>
       </figcaption>
     </figure>
