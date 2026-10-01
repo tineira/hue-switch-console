@@ -91,8 +91,16 @@ function ring(shape: THREE.Shape, z: number): THREE.BufferGeometry {
   return new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(seg, 3));
 }
 
+/**
+ * A USB-C cable, plug along +z from the socket's mouth at z = 6.6 (callers place it there): the
+ * metal tongue in the socket, then the overmold a hair in front of the mouth so the socket's own
+ * front edge shows between them.
+ */
 export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE.Group {
   const g = new THREE.Group();
+  const MOUTH = 6.6;
+  const GAP = 0.2; // mouth to the tip of the overmold's end bevel
+  const BEVEL = 0.4;
   const shell = new THREE.Shape();
   const r = 1.25, hx = 4.15 - r;
   shell.moveTo(-hx, -r);
@@ -100,7 +108,7 @@ export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE
   shell.absarc(hx, 0, r, -Math.PI / 2, Math.PI / 2, false);
   shell.lineTo(-hx, r);
   shell.absarc(-hx, 0, r, Math.PI / 2, Math.PI * 1.5, false);
-  const tongue = new THREE.ExtrudeGeometry(shell, { depth: 6.6, bevelEnabled: false, curveSegments: 12 });
+  const tongue = new THREE.ExtrudeGeometry(shell, { depth: MOUTH + GAP, bevelEnabled: false, curveSegments: 12 });
   g.add(mesh(tongue));
   const body = new THREE.Shape();
   const R = 2.3, HX = 4.5 - R;
@@ -109,14 +117,15 @@ export function usbCable(bend: [number, number, number][] = [[0, 0, 60]]): THREE
   body.absarc(HX, 0, R, -Math.PI / 2, Math.PI / 2, false);
   body.lineTo(-HX, R);
   body.absarc(-HX, 0, R, Math.PI / 2, Math.PI * 1.5, false);
-  const over = new THREE.ExtrudeGeometry(body, { depth: 13, bevelEnabled: true, bevelSize: 0.4, bevelThickness: 0.4, bevelSegments: 2, curveSegments: 16 });
-  const overmold = at(mesh(over, undefined, true), 0, 0, 6.6);
+  const over = new THREE.ExtrudeGeometry(body, { depth: 13, bevelEnabled: true, bevelSize: BEVEL, bevelThickness: BEVEL, bevelSegments: 2, curveSegments: 16 });
+  const front = MOUTH + GAP + BEVEL;
+  const overmold = at(mesh(over, undefined, true), 0, 0, front);
   // Smooth, so no crease lines; but where the plug meets the XIAO its silhouette falls behind
   // the board, and nothing would separate the two. Draw the ring where the end bevel meets the
   // sides (the outline grown by the bevel, at z = 0).
-  overmold.userData.lines = ring(roundedRect(HX, R + 0.4), 0);
+  overmold.userData.lines = ring(roundedRect(HX, R + BEVEL), 0);
   g.add(overmold);
-  g.add(wire([[0, 0, 19.5], [0, 0, 26], ...bend], "switched", 1.2));
+  g.add(wire([[0, 0, front + 13], [0, 0, 26], ...bend], "switched", 1.2));
   return g;
 }
 
