@@ -43,13 +43,13 @@ Both are rendered into two stacked transparent canvases (alpha, clear alpha 0), 
 | p | What happens |
 |---|---|
 | 0 – 0.10 | Exploded line drawing, balloons and dashed guides visible |
-| 0.10 – 0.40 | Antenna rises to the U.FL jack |
 | 0.12 – 0.30 | Balloons fade out |
-| 0.22 – 0.50 | Headers drop through the XIAO |
+| 0.10 – 0.32 | Headers drop through the XIAO |
+| 0.28 – 0.50 | Antenna rises to the U.FL jack |
 | 0.30 – 0.55 | Dashed guides fade out |
 | 0.30 – 0.72 | Line → shaded cross-fade (`tS`) |
 | 0.35 – 0.82 | Camera direction eases from (1, 0.78, 1.15) to (0, 1, 0.55), both normalised |
-| 0.40 – 0.68 | Display comes down onto the headers |
+| 0.46 – 0.72 | Display comes down onto the headers |
 | 0.55 – 0.90 | Framing narrows from all parts to display + XIAO; the antenna tail may run off the left edge |
 | 0.80 – 0.88 | Screen wakes: `emissiveIntensity` goes 0 → 1, showing the **off** dial |
 | 0.30 – 0.72 | Grid fades out along with the line canvas |
@@ -69,9 +69,9 @@ Project each part-local anchor point (mm) to canvas pixels every frame. The ball
 
 | No. | Part | Anchor (local mm) | Offset (px) |
 |---|---|---|---|
-| 1 | display | (−15.5, 7.3, 9.1) | (−54, −40) |
-| 2 | xiao | (−8.9, 0.6, 7.0) | (64, 34) |
-| 3 | antenna | (0, 0.2, −23.5) | (0, 58) |
+| 1 | xiao | (−8.9, 0.6, 7.0) | (64, 34) |
+| 2 | antenna | (0, 0.2, −23.5) | (0, 58) |
+| 3 | display | (−15.5, 7.3, 9.1) | (−54, −40) |
 
 - Balloon style is the same as today: a 28 px circle, 1.5 px `--foreground` stroke, `--cream` fill, Geist Mono 13 px number. The leader line is 1 px `--foreground` with a 2 px dot at the anchor.
 - Guides: dashed `5 4`, 1 px `--muted`. They connect:

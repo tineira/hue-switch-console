@@ -16,19 +16,19 @@ type Step = null | 1 | 2 | 3 | "wake" | "try";
 
 const CAPTIONS: Record<string, ReactNode> = {
   none: "Scroll to put it together",
-  3: (
+  1: (
     <>
-      <b className="font-normal text-filament">3</b> · Antenna clicks into the U.FL jack
+      <b className="font-normal text-filament">1</b> · Pin headers go through the XIAO
     </>
   ),
   2: (
     <>
-      <b className="font-normal text-filament">2</b> · Pin headers go through the XIAO
+      <b className="font-normal text-filament">2</b> · Antenna clicks into the U.FL jack
     </>
   ),
-  1: (
+  3: (
     <>
-      <b className="font-normal text-filament">1</b> · Round Display comes down onto the pins
+      <b className="font-normal text-filament">3</b> · Round Display comes down onto the pins
     </>
   ),
   wake: "Screen wakes up…",
@@ -39,12 +39,14 @@ const CAPTIONS: Record<string, ReactNode> = {
   ),
 };
 
+// Parts are listed in build order, so the highlight walks down the list as the page scrolls
+// down. Each step lights while its part moves (round-scene's pose()).
 function stepAt(p: number, tryMode: boolean): Step {
   if (tryMode) return "try";
   if (p < 0.08) return null;
-  if (p < 0.36) return 3;
-  if (p < 0.52) return 2;
-  if (p < 0.78) return 1;
+  if (p < 0.3) return 1;
+  if (p < 0.48) return 2;
+  if (p < 0.78) return 3;
   return "wake";
 }
 
@@ -286,7 +288,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                   key={part.name}
                   n={String(i + 1)}
                   {...part}
-                  active={step === i + 1 || step === "wake"}
+                  active={step === i + 1}
                 />
               ))}
               <PartRow
@@ -295,6 +297,7 @@ export function RoundTrack({ hero, parts }: { hero: ReactNode; parts: Part[] }) 
                 text="What to buy and how the three parts plug together, no soldering."
                 href="/how-to?product=round&topic=build#assemble"
                 linkLabel="Build guide →"
+                active={step === "wake"}
                 dim={tryMode}
               />
               {noGL ? null : (

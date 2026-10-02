@@ -113,12 +113,8 @@ const FACTS: { title: string; text: ReactNode }[] = [
   },
 ];
 
+// Build order: the landing's scroll assembly lights these rows 1 → 2 → 3.
 const ROUND_PARTS: Part[] = [
-  {
-    name: "Round Display for XIAO",
-    text: "1.28″ round touch screen, 240 × 240, on a 39 mm board. The XIAO plugs into the sockets on its back.",
-    href: "https://www.seeedstudio.com/Seeed-Studio-Round-Display-for-XIAO-p-5638.html",
-  },
   {
     name: "XIAO ESP32-S3",
     text: "21 × 17.8 mm, Wi-Fi and Bluetooth. Its USB-C port is how you install the firmware the first time.",
@@ -127,6 +123,11 @@ const ROUND_PARTS: Part[] = [
   {
     name: "2.4 GHz antenna",
     text: "Comes with the XIAO. Plug it in: without it the screen says “No Wi-Fi”.",
+  },
+  {
+    name: "Round Display for XIAO",
+    text: "1.28″ round touch screen, 240 × 240, on a 39 mm board. The XIAO plugs into the sockets on its back.",
+    href: "https://www.seeedstudio.com/Seeed-Studio-Round-Display-for-XIAO-p-5638.html",
   },
 ];
 

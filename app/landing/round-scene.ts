@@ -55,9 +55,9 @@ const POSE = {
 };
 
 const CALLS = [
-  { n: 1, part: "disp", at: [-15.5, 7.3, 9.1], off: [-54, -40] },
-  { n: 2, part: "xiao", at: [-8.9, 0.6, 7.0], off: [64, 34] },
-  { n: 3, part: "ant", at: [0, 0.2, -23.5], off: [0, 58] },
+  { n: 3, part: "disp", at: [-15.5, 7.3, 9.1], off: [-54, -40] },
+  { n: 1, part: "xiao", at: [-8.9, 0.6, 7.0], off: [64, 34] },
+  { n: 2, part: "ant", at: [0, 0.2, -23.5], off: [0, 58] },
 ] as const;
 
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
@@ -184,7 +184,8 @@ export async function createRoundScene(
   }
 
   function pose() {
-    const tA = ss(0.1, 0.4, p), tH = ss(0.22, 0.5, p), tD = ss(0.4, 0.68, p);
+    // Build order, one part after another: headers, antenna, display (round-track's stepAt).
+    const tH = ss(0.1, 0.32, p), tA = ss(0.28, 0.5, p), tD = ss(0.46, 0.72, p);
     for (const set of [shade, line]) {
       set.ant.position.y = lerp(POSE.ant.a, POSE.ant.b, tA) * MM;
       set.hdr.position.y = lerp(POSE.hdr.a, POSE.hdr.b, tH) * MM;

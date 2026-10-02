@@ -32,7 +32,7 @@ Removed from the current page:
   - **Story wrap**, `height: 340svh`, containing a `position: sticky; top: 0; height: 100svh` story block:
     - eyebrow "Round · 3 parts";
     - H3 "A touch screen that snaps onto a XIAO.";
-    - an `<ol>` with 1 Round Display, 2 XIAO ESP32-S3, 3 2.4 GHz antenna (current copy and links), plus a 4th row "→ Try it: Tap, double tap, drag the ring or swipe, right on the screen." Hide this row, and the phone caption's last line, when WebGL is unavailable.
+    - an `<ol>` in build order: 1 XIAO ESP32-S3, 2 2.4 GHz antenna, 3 Round Display (current copy and links), plus a 4th row "→ Try it: Tap, double tap, drag the ring or swipe, right on the screen." Hide this row, and the phone caption's last line, when WebGL is unavailable.
 - **Right column**: one sticky (`top: 0; height: 100svh`) wrapper holding the Round card. It stays pinned from the very top of the page, so visitors first see it beside the hero.
 - **Progress:**
   ```
@@ -45,10 +45,10 @@ Removed from the current page:
   | p | Active row |
   |---|---|
   | < 0.08 | none |
-  | 0.08 – 0.36 | 3 |
-  | 0.36 – 0.52 | 2 |
-  | 0.52 – 0.78 | 1 |
-  | 0.78 → Try-it | 1, 2 and 3 |
+  | 0.08 – 0.30 | 1 |
+  | 0.30 – 0.48 | 2 |
+  | 0.48 – 0.78 | 3 |
+  | 0.78 → Try-it | Put it together (on phones, which have no such row: 1, 2 and 3) |
   | Try-it mode | Try it |
 - **Scroll hint:** a pill at the bottom of the drawing area reading "Scroll to put it together ↓" (mono 11 px, uppercase, `--muted` on `--cream`, 1 px `--line` border). Shown while p < 0.02 and hidden under reduced motion.
 - **≤ 860 px:**
@@ -56,7 +56,7 @@ Removed from the current page:
   - The story wrap is hidden, and the card column gets `height: 220svh` instead (shorter than desktop so phone visitors reach the Simple card sooner; the animation still uses 70% of it).
   - Drawing area `max-height: 58svh`.
   - **The parts list still shows.** Render the same Round `<ol>` (the three parts with sizes and Seeed links; no "Try it" row) **below the pinned track**, unpinned, styled like the Simple card's list, with a "Round · 3 parts" header. The collapsed layouts (reduced motion, no WebGL) use this same list on phones.
-  - A one-line caption under the pinned card follows the steps: "Scroll to put it together", "3 · Antenna clicks into the U.FL jack", "2 · Pin headers go through the XIAO", "1 · Round Display comes down onto the pins", "Screen wakes up…", "→ Try it: touch the screen".
+  - A one-line caption under the pinned card follows the steps: "Scroll to put it together", "1 · Pin headers go through the XIAO", "2 · Antenna clicks into the U.FL jack", "3 · Round Display comes down onto the pins", "Screen wakes up…", "→ Try it: touch the screen".
 
 ## 3. Simple card
 - One card, grid `minmax(0,1fr) minmax(0,1.25fr)`, 1 px `--line` divider between the columns. On ≤ 860 px it stacks with the drawing first.

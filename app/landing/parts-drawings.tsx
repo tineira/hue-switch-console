@@ -119,12 +119,12 @@ export function RoundDrawing() {
   return (
     <DrawingScale>
       <Stage x={200} y={230}>
-        {/* 3. Antenna */}
+        {/* 2. Antenna */}
         <Slab w={110} h={36} radius={4} z={[-112, -110]}>
           <Abs style={{ inset: 7, border: "1px solid var(--muted)", borderRadius: 2 }} />
           <Abs style={{ left: 14, right: 40, top: 16, borderTop: "1px solid var(--muted)" }} />
         </Slab>
-        {/* 2. XIAO ESP32-S3 */}
+        {/* 1. XIAO ESP32-S3 */}
         <Slab w={126} h={107} radius={8} z={[-4.5, 0]}>
           <PadRow edge="top" />
           <PadRow edge="bottom" />
@@ -142,7 +142,7 @@ export function RoundDrawing() {
         </Slab>
         <Slab w={18} h={34} radius={6} x={-62} z={[1.5, 9]} topBorder="1.5px solid var(--filament)" />
         <Slab w={10} h={10} radius="50%" x={48} y={-26} z={[1, 4]} />
-        {/* 1. Display board, parts on its underside drawn dashed */}
+        {/* 3. Display board, parts on its underside drawn dashed */}
         <Slab w={234} h={234} radius="50%" z={[95.5, 100]}>
           {[
             { left: 62, top: 66, width: 110, height: 12 },
@@ -156,7 +156,7 @@ export function RoundDrawing() {
           <Abs style={{ left: 128, top: 112, width: 12, height: 12, border: "1px solid var(--foreground)", borderRadius: 1 }} />
           <Abs style={{ left: 110, top: 130, width: 8, height: 6, background: "var(--muted)", borderRadius: 1 }} />
         </Slab>
-        {/* 1. Glass with the brightness ring */}
+        {/* 3. Glass with the brightness ring */}
         <Slab w={234} h={234} radius="50%" z={[142.5, 150]}>
           <Abs
             className="rounded-full"
@@ -201,9 +201,9 @@ export function RoundDrawing() {
       <Abs style={{ left: 325, top: 107, width: 113, borderTop: "1px solid var(--foreground)" }} />
       <Abs style={{ left: 290, top: 230, width: 148, borderTop: "1px solid var(--foreground)" }} />
       <Abs style={{ left: 262, top: 320, width: 176, borderTop: "1px solid var(--foreground)" }} />
-      <Balloon top={93} n={1} />
-      <Balloon top={216} n={2} />
-      <Balloon top={306} n={3} />
+      <Balloon top={93} n={3} />
+      <Balloon top={216} n={1} />
+      <Balloon top={306} n={2} />
     </DrawingScale>
   );
 }
