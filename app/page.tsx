@@ -121,7 +121,7 @@ const ROUND_PARTS: Part[] = [
   },
   {
     name: "XIAO ESP32-S3",
-    text: "21 × 17.8 mm, Wi-Fi and Bluetooth. Its USB-C port is how you install the firmware.",
+    text: "21 × 17.8 mm, Wi-Fi and Bluetooth. Its USB-C port is how you install the firmware the first time.",
     href: "https://www.seeedstudio.com/XIAO-ESP32S3-p-5627.html",
   },
   {
@@ -146,8 +146,8 @@ const SIMPLE_PARTS: Part[] = [
 
 const STEPS = [
   {
-    title: "Install over USB",
-    text: "Plug the board into your computer and open Setup in Chrome or Edge. It installs the firmware and saves your Wi-Fi. Nothing to compile.",
+    title: "Install over USB, once",
+    text: "Plug the board into your computer and open Setup in Chrome or Edge. It installs the firmware and saves your Wi-Fi. Nothing to compile, and later updates come over Wi-Fi.",
   },
   {
     title: "Pair with your Bridge",
@@ -222,7 +222,7 @@ export default async function Home() {
       </h1>
       <p className="max-w-[34em] text-pretty text-[clamp(16px,1.5cqi,18px)] leading-[1.55] text-muted">
         Flash a Seeed Studio XIAO from Chrome or Edge, pair it with your Hue Bridge, and choose what each button
-        does. Presses go straight to the Bridge on your home network.
+        does. Presses go straight to the Bridge on your home network, and firmware updates arrive over Wi-Fi.
       </p>
       {waitlistForm ? (
         <LandingWaitlistForm

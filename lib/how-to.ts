@@ -200,9 +200,10 @@ export function tasks(product: Product): Task[] {
     {
       title: "Update the firmware",
       steps: [
-        "On Switches, a switch with newer firmware shows **Update to**. Click it.",
-        "Plug the board in, click **Connect** on Set up over USB, then **Update**.",
-        `Wi-Fi, the console link and its ${round ? "pages" : "buttons"} are kept.`,
+        "On Switches, a switch with newer firmware shows **Update to**. Click it to see what changes, then **Update now**.",
+        `The switch downloads it over Wi-Fi the next time it checks in, then restarts. No cable: the board stays in the wall. Its ${round ? "pages" : "buttons"}, Wi-Fi and Hue pairing are kept.`,
+        "Several switches on one Bridge behind? **Update all** next to the Bridge updates them together.",
+        "If an update fails, the switch keeps running the firmware it had. Click **Try again**.",
       ],
     },
     {
