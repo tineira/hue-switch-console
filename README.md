@@ -88,7 +88,7 @@ driver; for any other Postgres set `DATABASE_DRIVER=pg`.
 | Env var | Turns on |
 | --- | --- |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Emailed 6-digit codes, invites and notices. Password sign-in turns off. `EMAIL_FROM` e.g. `Hue Switch <codes@hue.tineira.com>` (domain verified in Resend) |
-| `SIGNUP_MODE` | `closed` (default), `invite`, `waitlist` or `open`. `/admin` can switch between `invite` and `waitlist` |
+| `SIGNUP_MODE` | `closed` (default), `invite`, `waitlist` or `open`: the starting mode. A mode saved in `/admin` → Settings wins over it. Without email the console is always `closed` |
 | `USER_CAP` | Seats (accounts plus unused invites) the `waitlist` mode fills automatically, until the admin saves a cap in `/admin` (default: no cap) |
 | `WAITLIST_EMAILS_PER_DAY` | Waitlist invites and confirmations a day, within `EMAIL_DAILY_CAP` (default 40) |
 | `RESEND_WEBHOOK_SECRET` | Resend webhook at `/api/webhooks/resend` (`email.bounced`, `email.complained`, `email.suppressed`): undeliverable addresses leave the waitlist |

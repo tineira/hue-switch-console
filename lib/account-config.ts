@@ -12,15 +12,16 @@ export function envValue(name: string): string | undefined {
   return process.env[name]?.trim() || undefined;
 }
 
-export type SignupMode = "closed" | "invite" | "waitlist" | "open";
+export const SIGNUP_MODES = ["closed", "invite", "waitlist", "open"] as const;
+export type SignupMode = (typeof SIGNUP_MODES)[number];
 
 export function isEmailConfigured(): boolean {
   return Boolean(envValue("RESEND_API_KEY") && envValue("EMAIL_FROM"));
 }
 
 /**
- * The mode set in env. The admin can switch between `invite` and `waitlist` in /admin, so pages
- * and the sign-up gate read `currentSignupMode()` (lib/waitlist.ts), which applies that choice.
+ * The mode set in env: the default until the admin saves one in /admin. Pages and the sign-up
+ * gate read `currentSignupMode()` (lib/console-settings.ts), which applies the saved choice.
  */
 export function signupMode(): SignupMode {
   // Without email there is no way to verify a new address.

@@ -12,6 +12,7 @@ The console has no version number. Each heading is the day the change went live.
 
 ### 2026-10-01
 
+- For people who run a console: **every sign-up mode is in `/admin`.** Settings now offers Waitlist, Invite, Open and Closed, so opening or closing sign-up no longer needs an env change and a redeploy. Switching to Open or Closed shows what changes and asks you to confirm. `SIGNUP_MODE` is only the starting mode, and a console without email stays Closed.
 - **Set up over USB, one step at a time.** Setup is now a guide: Connect, Install the firmware, Save Wi-Fi, Link to console, Pair with the Hue Bridge. Only the step you are on is open, with one button, a picture of what to do with your hands, what the board shows next, and **Why this step** and **If it goes wrong**. Finished steps fold into one line you can reopen; fixes and reinstalls moved under **Maintenance**.
 - **Picking the right port.** **Connect** asks Chrome to list only XIAO boards (Bluetooth ports no longer show up), and the page shows which entry to pick (**USB JTAG/serial debug unit**) and what the others are. **My board isn't in the list** shows every port.
 - **BOOT and RESET, shown before you need them.** A new Simple switch needs two buttons to take its first firmware. The install step shows where BOOT and RESET are and when to press them, on the page instead of in a pop-up, and says plainly that you can't break the XIAO this way. Pairing shows the Hue Bridge and its link button, and counts down while the board waits.

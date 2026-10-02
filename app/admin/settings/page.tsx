@@ -1,6 +1,12 @@
 import { AdminFrame, CARD, LIMIT_LABELS, Stat } from "@/app/admin/parts";
 import { WaitlistSettingsForm } from "@/app/admin/waitlist-settings-form";
-import { defaultLimits, emailDailyCap, signupMode, waitlistEmailsPerDay } from "@/lib/account-config";
+import {
+  defaultLimits,
+  emailDailyCap,
+  isEmailConfigured,
+  signupMode,
+  waitlistEmailsPerDay,
+} from "@/lib/account-config";
 import { LIMIT_KEYS } from "@/lib/admin";
 import { requireAdmin } from "@/lib/auth";
 import { currentSignupMode, currentUserCap, readSettings } from "@/lib/console-settings";
@@ -28,12 +34,26 @@ export default async function AdminSettingsPage() {
     <AdminFrame email={admin.email} active="settings">
       <section className={CARD}>
         <h2 className="text-lg font-medium">Sign-up</h2>
-        {envMode === "invite" || envMode === "waitlist" ? (
-          <WaitlistSettingsForm mode={mode === "waitlist" ? "waitlist" : "invite"} cap={cap} />
+        {isEmailConfigured() ? (
+          <>
+            <p className="text-sm text-muted">
+              Who can get an account.{" "}
+              {settings.signupMode ? (
+                <>
+                  The mode saved here wins over <code>SIGNUP_MODE</code> (<code>{envMode}</code>).
+                </>
+              ) : (
+                <>
+                  Until you save a mode here, <code>SIGNUP_MODE</code> decides (<code>{envMode}</code>).
+                </>
+              )}
+            </p>
+            <WaitlistSettingsForm mode={mode} cap={cap} />
+          </>
         ) : (
           <p className="text-sm text-muted">
-            <code>SIGNUP_MODE</code> is <code>{envMode}</code>. Set it to <code>waitlist</code> or{" "}
-            <code>invite</code> to use the waitlist.
+            Sign-up is closed: only the seeded account can sign in. Set <code>RESEND_API_KEY</code> and{" "}
+            <code>EMAIL_FROM</code> to let new people in.
           </p>
         )}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-4 border-t border-line pt-4">

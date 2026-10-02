@@ -301,12 +301,17 @@ create index if not exists auth_events_time_idx on auth_events (kind, created_at
 -- Waitlist with a user cap (docs/specs/finished/waitlist.md §2.8). invite_requests is the waitlist.
 create table if not exists console_settings (
   id boolean primary key default true check (id),                   -- one row
-  signup_mode text check (signup_mode in ('invite', 'waitlist')),   -- null: use SIGNUP_MODE
+  signup_mode text,                                                 -- null: use SIGNUP_MODE
   user_cap integer check (user_cap >= 0),                           -- null: use USER_CAP
   cap_alert_sent integer,                                           -- last alert sent (80 or 100); reset when the cap changes
   joins_total bigint not null default 0,
   updated_at timestamptz not null default now()
 );
+
+-- Every sign-up mode can be saved in /admin (2026-10-01); it used to allow only invite and waitlist.
+alter table console_settings drop constraint if exists console_settings_signup_mode_check;
+alter table console_settings add constraint console_settings_signup_mode_check
+  check (signup_mode in ('closed', 'invite', 'waitlist', 'open'));
 
 -- When the admin last dismissed each kind of Overview notice ("bounces", "refused"): ISO times.
 alter table console_settings add column if not exists notices_seen jsonb not null default '{}'::jsonb;

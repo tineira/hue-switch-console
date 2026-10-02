@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { dismissNotice, NOTICE_KINDS, type NoticeKind } from "@/lib/console-settings";
-import { signupMode } from "@/lib/account-config";
+import { currentSignupMode, dismissNotice, NOTICE_KINDS, type NoticeKind } from "@/lib/console-settings";
+import { isEmailConfigured, SIGNUP_MODES, type SignupMode } from "@/lib/account-config";
 import { deleteAccountById, setLimits, setSuspension } from "@/lib/admin";
 import { recordAdminEvent } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth";
@@ -118,17 +118,23 @@ export async function decideRequestAction(formData: FormData) {
 
 export type WaitlistSettingsState = { error?: string; saved?: boolean } | undefined;
 
-/** Mode (invite or waitlist) and the seat cap. Saving runs admission for any new seats. */
+/**
+ * Sign-up mode and the seat cap. Switching to `open` or `closed` needs `confirm` set to that
+ * mode, because it changes who can get an account. Saving runs admission for any new seats.
+ */
 export async function waitlistSettingsAction(
   _prev: WaitlistSettingsState,
   formData: FormData,
 ): Promise<WaitlistSettingsState> {
   const admin = await requireAdmin();
-  const env = signupMode();
-  if (env !== "invite" && env !== "waitlist") {
-    return { error: `SIGNUP_MODE is ${env}; the waitlist settings apply only to invite or waitlist.` };
+  if (!isEmailConfigured()) {
+    return { error: "Sign-up stays closed until email is set up (RESEND_API_KEY and EMAIL_FROM)." };
   }
-  const mode = formData.get("mode") === "waitlist" ? "waitlist" : "invite";
+  const mode = String(formData.get("mode") ?? "") as SignupMode;
+  if (!SIGNUP_MODES.includes(mode)) return { error: "Pick a sign-up mode." };
+  if ((mode === "open" || mode === "closed") && mode !== (await currentSignupMode())) {
+    if (formData.get("confirm") !== mode) return { error: `Confirm the switch to ${mode}.` };
+  }
   const raw = String(formData.get("cap") ?? "").trim();
   const cap = raw === "" ? null : Number(raw);
   if (cap !== null && (!Number.isInteger(cap) || cap < 0)) {

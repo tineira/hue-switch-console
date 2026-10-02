@@ -1,13 +1,13 @@
-import { signupMode, userCapFromEnv, type SignupMode } from "@/lib/account-config";
+import { isEmailConfigured, signupMode, userCapFromEnv, type SignupMode } from "@/lib/account-config";
 import { isDbConfigured } from "@/lib/env";
 import { sql } from "@/lib/sql";
 
 // Settings the admin changes in /admin without a redeploy (docs/specs/finished/waitlist.md §2.2).
-// Env gives the defaults; a saved value wins. Only `invite` and `waitlist` can be chosen here:
-// `closed` and `open` stay env-only.
+// Env gives the defaults; a saved value wins. Any sign-up mode can be saved, but without an email
+// provider the console stays `closed`, because nothing can verify a new address.
 
 export type ConsoleSettings = {
-  signupMode: "invite" | "waitlist" | null;
+  signupMode: SignupMode | null;
   userCap: number | null;
   capAlertSent: number | null;
   joinsTotal: number;
@@ -48,11 +48,10 @@ export async function readSettings(): Promise<ConsoleSettings> {
   }
 }
 
-/** The sign-up mode in effect: env, with the admin's `invite`/`waitlist` choice applied. */
+/** The sign-up mode in effect: the one saved in /admin, else `SIGNUP_MODE`. */
 export async function currentSignupMode(settings?: ConsoleSettings): Promise<SignupMode> {
-  const env = signupMode();
-  if (env !== "invite" && env !== "waitlist") return env;
-  return (settings ?? (await readSettings())).signupMode ?? env;
+  if (!isEmailConfigured()) return "closed";
+  return (settings ?? (await readSettings())).signupMode ?? signupMode();
 }
 
 /** The seat cap in effect, or null for no cap. */
@@ -61,7 +60,7 @@ export async function currentUserCap(settings?: ConsoleSettings): Promise<number
   return saved ?? userCapFromEnv();
 }
 
-export async function saveSettings(input: { signupMode?: "invite" | "waitlist"; userCap?: number | null }) {
+export async function saveSettings(input: { signupMode?: SignupMode; userCap?: number | null }) {
   const current = await readSettings();
   const mode = input.signupMode ?? current.signupMode;
   const cap = input.userCap === undefined ? current.userCap : input.userCap;

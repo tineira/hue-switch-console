@@ -258,7 +258,7 @@ If the user changes a recipe in the app, the switch learns about it on the poll.
 - Console chrome in English; **Hue names** (Living, Velador Tomás) are shown as they are.
 - Several topology POSTs for the same `bridgeid`: **last good snapshot wins**. A register without `rooms`/`scenes` (omitted) is a 400; it does not overwrite.
 - Revoked API key: the poll fails; recipes in NVS **keep** running on the LAN.
-- Sign-up follows `SIGNUP_MODE`: `closed` (only the seeded `USER_EMAIL`), `invite` (the admin approves each waitlist entry), `waitlist` (admitted automatically up to the seat cap) or `open`. A suspended account gets `403 account_suspended` on device calls; its NVS recipes keep running.
+- Sign-up mode: `closed` (only the seeded `USER_EMAIL`), `invite` (the admin approves each waitlist entry), `waitlist` (admitted automatically up to the seat cap) or `open`. The admin sets it in `/admin` → Settings; `SIGNUP_MODE` is the default until a mode is saved there. Switching to `open` or `closed` asks for confirmation first. Without an email provider the mode is always `closed`. A suspended account gets `403 account_suspended` on device calls; its NVS recipes keep running.
 - Orphan recipe (the `rid` is no longer in the snapshot): kept; the Hue PUT fails; the UI marks it stale.
 
 ## Two doors
@@ -320,7 +320,7 @@ Production host: `https://hue.tineira.com`. In Cloudflare, CNAME `hue` to the ta
 - HTTPS to `hue.tineira.com`: **verify** the certificate (Arduino bundle). `setInsecure()` only against the Hue Bridge.
 - Poll: without recipes ~1 min; with recipes at boot and every **1 h**. GPIO / finger never wait.
 - Orphan recipe: kept; the Hue PUT fails; the UI marks it stale.
-- Wall-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. Sign-up only as `SIGNUP_MODE` allows.
+- Wall-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. Sign-up only as the sign-up mode allows.
 - Minimal API:
   - Human (session cookie): sign in; CRUD API keys; GET topology; PATCH switch label; PUT channels (Simple) / PUT pages (Round).
   - Device (Bearer key): `POST /api/device/register`; `GET /api/device/config?mac=` (Simple: `rev`, `product`, `channels[]`, `recipes[]`; Round: `pages`, `pageId`, axis, timeout).
