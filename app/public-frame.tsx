@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageColumn } from "@/app/page-column";
 import { ThemePicker } from "@/app/theme-picker";
 
 const SIGN_IN =
@@ -20,7 +21,7 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
       </header>
-      {children}
+      <PageColumn>{children}</PageColumn>
     </main>
   );
 }

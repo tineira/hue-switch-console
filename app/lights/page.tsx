@@ -13,7 +13,7 @@ export default async function LightsPage() {
   const user = await requireSessionUser();
   const { bridges, switches } = await loadSwitchesView(user.id);
   return (
-    <Shell email={user.email}>
+    <Shell email={user.email} wide>
       <LightsView bridges={bridges} switches={switches} />
     </Shell>
   );
