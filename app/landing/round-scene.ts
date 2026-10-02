@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import "@/app/landing/three-console";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { RoundState } from "@/app/landing/demo-data";
 import {

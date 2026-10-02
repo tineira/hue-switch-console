@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import "@/app/landing/three-console";
 import { MM, cssVar, disposeTree } from "@/app/landing/round-model";
 
 // Still renders for the build guide, in the Switches board picture's style

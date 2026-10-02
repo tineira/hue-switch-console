@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import "@/app/landing/three-console";
 import {
   DIAL_SIZE,
   MM,

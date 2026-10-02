@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import "@/app/landing/three-console";
 import { MM, applyLineStyle, buildHeaders, buildXiao, cssVar, disposeTree, lineStyle } from "@/app/landing/round-model";
 
 // Still line drawings of the XIAO: render once into an image, work out the overlay from the
