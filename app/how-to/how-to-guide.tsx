@@ -551,7 +551,7 @@ export function HowToGuide({ version }: { version: string | null }) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <section className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">How-to</h1>
         <p className="text-sm text-muted">

@@ -29,5 +29,5 @@ export default async function HowToPage() {
   const guide = <HowToGuide version={version} />;
 
   if (user) return <Shell email={user.email}>{guide}</Shell>;
-  return <PublicFrame wide>{guide}</PublicFrame>;
+  return <PublicFrame>{guide}</PublicFrame>;
 }
