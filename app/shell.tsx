@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { AccountMenu } from "@/app/account-menu";
 import { NavLinks } from "@/app/nav-links";
-import { PageColumn } from "@/app/page-column";
 import { RefusedRegisterBanner } from "@/app/refused-register-banner";
 import { ThemePicker } from "@/app/theme-picker";
 import { isAdminEmail } from "@/lib/account-config";
@@ -9,14 +8,11 @@ import { isAdminEmail } from "@/lib/account-config";
 export function Shell({
   email,
   userId,
-  wide,
   children,
 }: {
   email?: string;
   /** Shows the refused-register banner for this account. */
   userId?: string;
-  /** Workspace page (Switches, Lights, Admin): content fills the frame instead of the reading column. */
-  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -34,7 +30,7 @@ export function Shell({
         </div>
       </header>
       {userId ? <RefusedRegisterBanner userId={userId} /> : null}
-      <PageColumn wide={wide}>{children}</PageColumn>
+      {children}
     </div>
   );
 }

@@ -17,7 +17,7 @@ export default async function SwitchesLayout({ children }: LayoutProps<"/switche
     listReleaseNotes("simple").catch(() => []),
   ]);
   return (
-    <Shell email={user.email} userId={user.id} wide>
+    <Shell email={user.email} userId={user.id}>
       <SwitchesArea
         bridges={bridges}
         switches={switches}

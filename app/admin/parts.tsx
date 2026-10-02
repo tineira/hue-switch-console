@@ -309,7 +309,7 @@ export async function AdminFrame({
     { id: "activity", href: "/admin/activity", label: "Activity" },
   ];
   return (
-    <Shell email={email} wide>
+    <Shell email={email}>
       <section className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
         <nav aria-label="Admin" className="flex flex-wrap gap-1 border-b border-line pb-2 text-sm">

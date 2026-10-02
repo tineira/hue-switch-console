@@ -49,7 +49,7 @@ function Contact() {
 
 function PrivacyContent() {
   return (
-    <article className="flex max-w-3xl flex-col gap-6">
+    <article className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Privacy</h1>
         <p className="text-sm text-muted">Last updated {UPDATED}.</p>
@@ -189,7 +189,7 @@ function SelfHostedPrivacy() {
   const email = process.env.CONTACT_EMAIL?.trim();
   const policy = process.env.PRIVACY_URL?.trim();
   return (
-    <article className="flex max-w-3xl flex-col gap-6">
+    <article className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Privacy</h1>
         <p className="text-sm text-muted">

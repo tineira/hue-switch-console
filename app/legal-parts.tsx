@@ -18,7 +18,7 @@ export function LegalSection({ id, title, children }: { id?: string; title: stri
 /** Public: Shell for a signed-in person (even one who still has to accept), else PublicFrame. */
 export async function LegalFrame({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser({ allowPending: true }).catch(() => null);
-  const body = <article className="flex max-w-3xl flex-col gap-6">{children}</article>;
+  const body = <article className="mx-auto flex w-full max-w-3xl flex-col gap-6">{children}</article>;
   if (user) return <Shell email={user.email}>{body}</Shell>;
   return <PublicFrame>{body}</PublicFrame>;
 }
