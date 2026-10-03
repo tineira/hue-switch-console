@@ -22,6 +22,14 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Firmware images are not in this tree. Firmware CI uploads each release to `POST /api/firmware/<product>`, and `/firmware/<product>/manifest.json` serves the current one from the database. The wizard version is that release, not a label you invent. Pipeline: `README.md`, "Firmware release pipeline".
 - Do **not** use local Playwright to verify login or `/setup`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
 
+## Git (human owns)
+
+- `git commit` / `git push` only on explicit request in that moment.
+- Local gate before a push (the real gate): `npm run lint`, `npm test`, `npx next typegen && npx tsc --noEmit`, and `npm run build`.
+- After a `git push` to `main`, the turn is done when the Vercel **production** deploy for that SHA is Ready (alias `hue.tineira.com`). Do **not** wait for GitHub Actions.
+- GitHub Actions `CI` is a backstop. Before your **next** push, check the latest `main` run. Red → fix first. Network flake → `gh run rerun <id> --failed` and move on.
+- Commits that touch no app code may use `[skip ci] [skip deploy]` (see docs-only / ignoreCommand above); when both skip, there is nothing to wait for.
+
 ## Parallel sessions
 
 Several Claude sessions can work in these repos at once. In the shared checkouts (this one and the firmware repos in the sketchbook), a branch switch moves every session's work onto that branch.
