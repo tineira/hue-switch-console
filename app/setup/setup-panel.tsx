@@ -8,7 +8,7 @@ import { notesBetween } from "@/lib/firmware-notes";
 import { UpdateNotes } from "@/app/update-notes";
 import { otaErrorText } from "@/lib/ota";
 import { formatMac } from "@/lib/mac";
-import { webSerialBlockedReason } from "@/lib/web-setup/browser";
+import { isDesktopLinux, webSerialBlockedReason } from "@/lib/web-setup/browser";
 import {
   classifyImprov,
   compareVersions,
@@ -48,7 +48,13 @@ import {
   type ProductId,
   type ProductSpec,
 } from "@/lib/web-setup/products";
-import { BytePort, reattachPort, requestSerialPort, sleep } from "@/lib/web-setup/serial";
+import {
+  BytePort,
+  PortRefusedError,
+  reattachPort,
+  requestSerialPort,
+  sleep,
+} from "@/lib/web-setup/serial";
 import { setupSteps, type Visual } from "@/lib/how-to";
 import {
   BEFORE_YOU_START,
@@ -89,6 +95,11 @@ const READING = "Reading the board…";
 // or read: a board with nothing in flash restarts over and over, and its USB port drops each time.
 const PORT_WONT_OPEN =
   "The page couldn't read the board. A board with no firmware keeps restarting, so its port comes and goes. Hold BOOT, tap RESET, let go, and click Connect again below; or carry on with Install, which asks for the same buttons. If another program has the port open (the Arduino IDE's Serial Monitor, for example), close it first.";
+// The board is plugged in and stays there, but the system won't let Chrome open its port.
+const PORT_REFUSED_LINUX =
+  "Chrome sees the board but Linux won't let it open the port. Add yourself to the group that owns it: sudo usermod -aG uucp $USER on Arch and Omarchy, or sudo usermod -aG dialout $USER on Debian, Ubuntu and Fedora. Then restart the computer (logging out may not be enough) and click Connect again. If another program has the port open (the Arduino IDE's Serial Monitor, for example), close it.";
+const PORT_REFUSED =
+  "Chrome sees the board but couldn't open its port. Another program probably has it open (the Arduino IDE's Serial Monitor, for example). Close it and click Connect again.";
 const CLEAR_CONFIRM =
   "This forgets Wi-Fi, the console token, the Hue link, and saved recipes or pages. The firmware stays.";
 
@@ -483,7 +494,11 @@ export function SetupPanel({
           }
           if (gen !== detectGen.current) return;
           appendUsbLog(`open failed: ${errorMessage(err)}`);
-          setError(PORT_WONT_OPEN);
+          if (err instanceof PortRefusedError) {
+            setError(isDesktopLinux() ? PORT_REFUSED_LINUX : PORT_REFUSED);
+          } else {
+            setError(PORT_WONT_OPEN);
+          }
           setStatus(null);
           if (!knownBoard) preselectBoard();
           return;
@@ -1144,7 +1159,9 @@ export function SetupPanel({
           role="alert"
         >
           {error}
-          {error === PORT_WONT_OPEN ? (
+          {error === PORT_WONT_OPEN ||
+          error === PORT_REFUSED_LINUX ||
+          error === PORT_REFUSED ? (
             <button
               type="button"
               disabled={Boolean(blocked) || busy}

@@ -8,6 +8,7 @@ const OPEN_OPTS = { baudRate: 115200, bufferSize: 8192 } as const;
 const REOPEN_MS = 10000;
 const POST_OPEN_WATCH_MS = 3000;
 const POST_REOPEN_SETUP_MS = 3000;
+const REFUSED_RETRY_MS = 1000;
 
 // Seeed and Espressif USB vendor ids: every XIAO port, its ROM bootloader included. Bluetooth
 // serial ports have no USB vendor id, so the filtered list leaves them out.
@@ -26,6 +27,17 @@ export async function requestSerialPort(all = false): Promise<SerialPort> {
       throw new Error("No serial port selected");
     }
     throw err instanceof Error ? err : new Error("Could not open a serial port");
+  }
+}
+
+/**
+ * The OS would not let Chrome open a port that is still plugged in: on Linux the user is not in
+ * the group that owns the tty, or another program holds the port.
+ */
+export class PortRefusedError extends Error {
+  constructor() {
+    super("The system refused to open the serial port");
+    this.name = "PortRefusedError";
   }
 }
 
@@ -160,9 +172,11 @@ export class BytePort {
       if (isAlreadyOpen(err)) {
         /* reuse an already-open handle */
       } else if (this.lost || isDeviceLost(err)) {
-        this.onLog?.("port lost");
-        await this.reopen();
-        return;
+        if (this.lost || !(await this.openAgainIfPresent(err))) {
+          this.onLog?.("port lost");
+          await this.reopen();
+          return;
+        }
       } else {
         throw err instanceof Error ? err : new Error("Could not open serial port");
       }
@@ -181,6 +195,27 @@ export class BytePort {
       return;
     }
     this.logHandle("open settled");
+  }
+
+  /**
+   * Chrome rejects open() with NetworkError both when the device drops mid-open and when the OS
+   * refuses it. A refused port stays connected and refuses again a moment later. True when the
+   * second open worked, false when the port is gone; throws PortRefusedError when refused again.
+   */
+  private async openAgainIfPresent(first: unknown): Promise<boolean> {
+    if (portConnected(this.port) !== true) return false;
+    this.onLog?.(`open refused: ${first instanceof Error ? first.message : String(first)}`);
+    await sleep(REFUSED_RETRY_MS);
+    if (this.lost || portConnected(this.port) !== true) return false;
+    try {
+      await this.port.open({ ...OPEN_OPTS, baudRate: this.baudRate });
+      return true;
+    } catch (err) {
+      if (isAlreadyOpen(err)) return true;
+      if (this.lost || portConnected(this.port) !== true) return false;
+      if (isDeviceLost(err)) throw new PortRefusedError();
+      throw err instanceof Error ? err : new Error("Could not open serial port");
+    }
   }
 
   /**
