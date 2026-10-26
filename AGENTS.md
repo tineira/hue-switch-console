@@ -21,8 +21,8 @@ Agent rules: https://github.com/tineira/agentic-os (read `README.md` first). Thi
 | Product copy language | en (all three repos; no new Spanish) |
 | Working language (docs, code, commits) | English |
 | Adversarial review | on (default; Tomas can override) — default pairs: see agentic-os `models/routing.md` |
-| Backlog / status | Linear project "Hue Switch" (team Tineria, `TIN`) |
-| Specs and decisions | Cross-repo specs in `docs/specs/` (from `docs/specs/TEMPLATE.md`); Notion page: [Hue Switch](https://app.notion.com/p/3eaa554c3c4081879979e0b6ae43593d) |
+| Backlog / status | Contributor-workable work: GitHub issues in each repo. Internal: Linear project "Hue Switch" (team Tineria, `TIN`). No backlog or status lists in docs |
+| Specs and decisions | Cross-repo contract changes: a public GitHub issue from the "Contract change" template (`.github/ISSUE_TEMPLATE/contract-change.md`). Console-only and product specs, decisions and review reports: the maintainer's internal tracker. No specs, plans or mockups in the repo (`docs/archive/` is frozen; `npm run lint` checks) |
 | Deploy | Vercel project "hue-switch-console", production on push to `main` (alias `hue.tineira.com`); docs-only pushes skip the build (`scripts/vercel-ignore.sh`) |
 | Database | Neon Postgres (`DATABASE_URL`; any Postgres with `DATABASE_DRIVER=pg`), shared by localhost and prod: no (use a development database) |
 | Migration commands | Schema in `db/schema.sql`, applied by the console at the first request; `npm run schema` regenerates `lib/generated/schema.ts` (commit both); `npm run migrate` applies it ahead of time |
@@ -40,7 +40,8 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Docs-only pushes (`docs/`, `*.md`, except `docs/changelog.md`) skip the Vercel build; `[skip deploy]` in a commit message skips any push (README, "Docs-only pushes"). In the firmware repos the release workflow skips docs too, and the tag is `[skip ci]`. A tag counts anywhere in the message, body included: never write one out unless you mean it (describe it as "the skip tag").
 - Do not mix this tree with the Arduino sketchbook that holds the firmware repos.
 - Read `docs/definitions.md` before implementing.
-- Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not spec. Delete them once folded into a real doc or implemented. Do not commit them.
+- `docs/` describes how shipped things work today. No `docs/specs/`, `docs/plans/`, `docs/prototypes/` or `docs/design/` (`scripts/check-docs-layout.mjs`, part of `npm run lint`); `docs/archive/` is frozen history, never added to.
+- Scratch notes (`docs/_audit-*.md`, `docs/_review-*.md`, other `_*.md` working dumps) are not docs. Delete them once folded into a real doc or implemented. Do not commit them.
 - Firmware images are not in this tree. Firmware CI uploads each release to `POST /api/firmware/<product>`, and `/firmware/<product>/manifest.json` serves the current one from the database. The wizard version is that release, not a label you invent. Pipeline: `README.md`, "Firmware release pipeline".
 - Do **not** use local Playwright to verify login or `/setup`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
 
@@ -84,7 +85,9 @@ Licensing: community open source. The console is `AGPL-3.0-only`. Every firmware
 Source of truth for anything a switch and the console both depend on:
 
 - `docs/device-api.md`: endpoints, auth, payloads, error codes.
+- `docs/usb-protocol.md`: what Setup and the firmware say over USB (Improv, `HUESET`, `HUEGET`, `HUEPAIR`, `HUECLR`, `HUEBOOT`), the NVS it writes, flashing.
 - `docs/definitions.md`: product model (recipes, channels, pages).
+- `docs/round-pages.md`: Round pages behavior and their poll fields.
 - `docs/changelog.md`: console release notes and each product intro. Firmware notes live in each firmware repo's `CHANGELOG.md` and arrive with the upload.
 - `/firmware/<product>/manifest.json`: what `/setup` flashes, the product's current uploaded release.
 
@@ -96,10 +99,10 @@ Switches share the **contract**, not code. Do not extract a library across all f
 
 A change is cross-repo if it touches a device endpoint, a payload field, NVS keys the console writes over USB (`HUESET`, Improv), or the installer. Order:
 
-1. **Spec.** `docs/specs/<feature>.md` from `docs/specs/TEMPLATE.md`, with a checklist per repo. The user approves it before code.
+1. **Proposal.** A public GitHub issue in this repo from the "Contract change" template (`.github/ISSUE_TEMPLATE/contract-change.md`): problem, contract change, per-repo impact, acceptance. The user approves it before code. Each repo's part is its own issue in that repo, linked from the proposal.
 2. **Console first, backward compatible.** Accept both old and new device behavior. Never ship a console that breaks boards already on the wall; they update by USB (or OTA, when it exists) on the user's schedule.
-3. **Update `docs/device-api.md`** in the same commit as the endpoint change.
+3. **Update the contract docs** (`docs/device-api.md`, `docs/usb-protocol.md`, …) in the same commit as the change.
 4. **Each firmware** adopts the change and bumps `FIRMWARE_VERSION`.
 5. **Retire the old path** only once no registered switch reports an older `firmware` (check `switches.firmware`), and only with the user's OK.
 
-One session per repo does that repo's checklist, reading that repo's AGENTS.md. A coordinating session (usually one in this repo) writes the spec, hands each repo its section, and ticks the checklist. It does not edit firmware trees itself unless the user says so. Flashing, USB and Web Serial are done by the user.
+One session per repo does that repo's issue, reading that repo's AGENTS.md. A coordinating session (usually one in this repo) writes the proposal issue, opens or links one issue per repo, and closes each as its repo ships. It does not edit firmware trees itself unless the user says so. Flashing, USB and Web Serial are done by the user.

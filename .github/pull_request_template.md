@@ -9,7 +9,7 @@
 ## Checklist
 
 - [ ] `npm run lint`, `npx tsc --noEmit` and `npm run build` pass
-- [ ] Device endpoint changed → `docs/device-api.md` updated in this PR
-- [ ] Contract change → approved spec in `docs/specs/`, and boards on older firmware keep working
+- [ ] Device endpoint or USB command changed → `docs/device-api.md` / `docs/usb-protocol.md` updated in this PR
+- [ ] Contract change → approved "Contract change" issue linked, and boards on older firmware keep working
 - [ ] User-visible change → entry in `docs/changelog.md`
 - [ ] English only; no secrets or real tokens

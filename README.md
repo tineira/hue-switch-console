@@ -15,9 +15,12 @@ Everything in the three repos is **English**: UI, docs, comments.
 This repo owns the contract the switches implement:
 
 - Device HTTP contract: [`docs/device-api.md`](docs/device-api.md).
+- USB protocol (Setup ↔ firmware): [`docs/usb-protocol.md`](docs/usb-protocol.md).
 - Product model: [`docs/definitions.md`](docs/definitions.md).
 - Round pages: [`docs/round-pages.md`](docs/round-pages.md).
-- Cross-repo changes: [`AGENTS.md`](AGENTS.md) ("Multi-repo") and [`docs/specs/TEMPLATE.md`](docs/specs/TEMPLATE.md).
+- Cross-repo changes: [`AGENTS.md`](AGENTS.md) ("Multi-repo") and the "Contract change" issue template.
+
+Shipped specs and prototypes are kept as history in [`docs/archive/`](docs/archive/README.md).
 
 Production host: `https://hue.tineira.com`.
 
@@ -76,8 +79,8 @@ Step by step: [`docs/self-hosting.md`](docs/self-hosting.md).
 ## Accounts and sign-in
 
 Sign-in is [Better Auth](https://www.better-auth.com) running inside the console on the
-same Postgres; there is no auth service to sign up for. Spec:
-[`docs/specs/finished/multi-user-accounts.md`](docs/specs/finished/multi-user-accounts.md).
+same Postgres; there is no auth service to sign up for. Design history:
+[`docs/archive/specs/multi-user-accounts.md`](docs/archive/specs/multi-user-accounts.md).
 
 **Self-hosting** needs only `DATABASE_URL`, `AUTH_SECRET`, `USER_EMAIL` and `USER_PASSWORD`.
 That gives one account with a password; sign-up stays closed. Neon is the default
@@ -158,8 +161,8 @@ Switches. Releases that were current before this rule existed count as released.
 `FIRMWARE_VERSION` in the firmware source is the version the wizard shows.
 Bumping it is what makes Setup offer **Update**. A rebuild without a bump is
 answered `409 version_exists`: the bins stay as they were (their URLs are cached
-forever) and only the notes are updated. Spec:
-[`docs/specs/finished/firmware-uploads.md`](docs/specs/finished/firmware-uploads.md).
+forever) and only the notes are updated. Design history:
+[`docs/archive/specs/firmware-uploads.md`](docs/archive/specs/firmware-uploads.md).
 
 The console checks every upload: all four parts, a `major.minor.patch` version,
 non-empty notes, and the chip id inside `bootloader.bin` / `firmware.bin`
@@ -172,14 +175,14 @@ board's one up to the release it installs. A bullet that starts with
 `Important: ` is shown first, with an "Important" label, on Setup and on
 `/changelog`. Use it for something the person must know or do before or right
 after updating (a button to press, a setting that resets), not for new
-features. Spec: [`docs/specs/finished/setup-update-notes.md`](docs/specs/finished/setup-update-notes.md).
+features. Design history: [`docs/archive/specs/setup-update-notes.md`](docs/archive/specs/setup-update-notes.md).
 
 Each upload also sends `credits`: the firmware repo's `THIRD_PARTY.json`, the
 third-party software linked into the image (core, ESP-IDF, every library
 pinned in `sketch.yaml`). Firmware CI fails when that file and `sketch.yaml`
 disagree. The console shows the current release's list on the public
 `/credits` page; the field is optional, and a re-upload of the same version
-replaces it. Spec: [`docs/specs/finished/credits.md`](docs/specs/finished/credits.md).
+replaces it. Design history: [`docs/archive/specs/credits.md`](docs/archive/specs/credits.md).
 
 ### Flash layout
 
@@ -255,11 +258,13 @@ The Simple switch has an in-wall build on mains voltage. The designs are uncerti
 and some are unproven. Read the Safety notice (`/safety` on any console, or
 [hue.tineira.com/safety](https://hue.tineira.com/safety)) before you build anything.
 Every account accepts it, and on hue.tineira.com the Terms, before using the console
-(`docs/specs/finished/terms-and-safety.md`).
+(`docs/archive/specs/terms-and-safety.md`).
 
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md). Bugs and ideas go in GitHub issues.
+
+Open work: GitHub issues.
 
 ## Sponsor
 

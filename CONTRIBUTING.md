@@ -10,13 +10,15 @@ Thanks for helping. The Hue switch project is three repos, and this one is the h
 
 Console bugs and ideas go here. A bug in how a switch behaves goes to that firmware's repo. If you are not sure which one, open it here.
 
+Open work: GitHub issues.
+
 Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Report problems to [conduct@tineira.com](mailto:conduct@tineira.com).
 
 ## Ground rules
 
 - **English everywhere:** UI text, docs, code comments, commit messages, issues.
-- **This repo owns the contract.** [`docs/device-api.md`](docs/device-api.md) (endpoints, payloads, error codes) and [`docs/definitions.md`](docs/definitions.md) (recipes, channels, pages) are what every switch implements. Firmware repos follow them; they do not redefine them.
-- **Contract changes start with a spec.** Anything that touches a device endpoint, a payload field, the NVS keys the console writes over USB (`HUESET`, Improv) or the installer is a cross-repo change. Open a "Contract change" issue first. If the idea is accepted, it becomes a spec in `docs/specs/` from [`TEMPLATE.md`](docs/specs/TEMPLATE.md), approved before any code.
+- **This repo owns the contract.** [`docs/device-api.md`](docs/device-api.md) (endpoints, payloads, error codes), [`docs/usb-protocol.md`](docs/usb-protocol.md) (what Setup says over USB), [`docs/definitions.md`](docs/definitions.md) (recipes, channels, pages) and [`docs/round-pages.md`](docs/round-pages.md) are what every switch implements. Firmware repos follow them; they do not redefine them.
+- **Contract changes start with an issue.** Anything that touches a device endpoint, a payload field, the NVS keys the console writes over USB (`HUESET`, Improv) or the installer is a cross-repo change. Open a "Contract change" issue and fill in its sections (problem, contract change, impact on the console, Round and Simple, acceptance). It is approved there before any code. Specs and mockups are not added to `docs/`; `docs/archive/` is frozen history.
 - **Never break switches already on the wall.** The console ships first and accepts both old and new device behavior. Boards update on their owner's schedule.
 - **The console never calls the Hue Bridge.** Topology arrives from the switch or `npm run push-from-bridge` on the LAN.
 - **No secrets in the tree.** Real values live in `.env.local`, which is gitignored.
@@ -62,7 +64,7 @@ Flashing and provisioning (`/setup`) use Web Serial. They need Chrome or Edge an
    npm run build
    ```
    `npm test` runs the unit tests in `tests/` (Vitest). They cover pure logic only, with no database or browser; add one when you change parsing or validation.
-4. If you change a device endpoint, update `docs/device-api.md` in the same commit.
+4. If you change a device endpoint or a USB command, update `docs/device-api.md` or `docs/usb-protocol.md` in the same commit.
 5. User-visible changes get an entry in [`docs/changelog.md`](docs/changelog.md).
 6. Say in the PR how you tested it, especially anything involving a real board or Bridge.
 
