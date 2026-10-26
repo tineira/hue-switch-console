@@ -22,7 +22,7 @@ Agent rules: https://github.com/tineira/agentic-os (read `README.md` first). Thi
 | Working language (docs, code, commits) | English |
 | Adversarial review | on (default; Tomas can override) — default pairs: see agentic-os `models/routing.md` |
 | Backlog / status | Linear project "Hue Switch" (team Tineria, `TIN`) |
-| Specs and decisions | Cross-repo specs in `docs/specs/` (from `docs/specs/TEMPLATE.md`); Notion page: TBD (Tomas) |
+| Specs and decisions | Cross-repo specs in `docs/specs/` (from `docs/specs/TEMPLATE.md`); Notion page: [Hue Switch](https://app.notion.com/p/3eaa554c3c4081879979e0b6ae43593d) |
 | Deploy | Vercel project "hue-switch-console", production on push to `main` (alias `hue.tineira.com`); docs-only pushes skip the build (`scripts/vercel-ignore.sh`) |
 | Database | Neon Postgres (`DATABASE_URL`; any Postgres with `DATABASE_DRIVER=pg`), shared by localhost and prod: no (use a development database) |
 | Migration commands | Schema in `db/schema.sql`, applied by the console at the first request; `npm run schema` regenerates `lib/generated/schema.ts` (commit both); `npm run migrate` applies it ahead of time |
