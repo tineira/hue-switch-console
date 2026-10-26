@@ -6,7 +6,7 @@ Contract for both switch firmwares, [`hue-round-switch`](https://github.com/tine
 
 ## Host and TLS
 
-`CONSOLE_URL` is the URL the installer wrote to the board (`HUESET url`): the `DEVICE_CONSOLE_URL` of the console that ran Setup (docs/specs/self-hosting.md §2.1). When that console does not set it, Setup writes `BETTER_AUTH_URL`, else the origin of the Setup page. Boards set up from the hosted console get:
+`CONSOLE_URL` is the URL the installer wrote to the board (`HUESET url`): the `DEVICE_CONSOLE_URL` of the console that ran Setup (docs/archive/specs/self-hosting.md §2.1). When that console does not set it, Setup writes `BETTER_AUTH_URL`, else the origin of the Setup page. Boards set up from the hosted console get:
 
 ```
 CONSOLE_URL=https://hue.tineira.com
@@ -14,9 +14,9 @@ CONSOLE_URL=https://hue.tineira.com
 
 A self-hosted console writes its own origin, such as `https://hue.example.org` or `http://192.168.1.20:3000`. Setup shows the URL before it writes it, and asks before it moves a board whose stored URL has another host (`HUEGET` `url`). The firmware has no compiled-in console URL; it reads the `console` NVS namespace only.
 
-History: the console URL and API key used to live in `config.h`. Product install (flash + Wi-Fi + token from Chrome) shipped; `docs/specs/finished/web-setup.md` is closed and deprecated. Setup (`/setup`, formerly Devices: detect, then those actions) is implemented; the spec is `docs/specs/finished/devices.md`. OTA: `docs/specs/finished/ota.md` (Simple) and `docs/specs/finished/ota-round.md` (Round). The console side is live; Simple firmware ≥ 0.6.0 and Round firmware ≥ 0.6.0 use it.
+The USB side (Improv, `HUESET`, `HUEGET` / `HUESTA`, `HUEPAIR`, `HUECLR`, `HUEBOOT`, the NVS the installer writes, flashing) is in [`usb-protocol.md`](usb-protocol.md). Setup (`/setup`) flashes and provisions boards from the browser; nothing is compiled into the firmware. OTA (below) is live for Simple firmware ≥ 0.6.0 and Round firmware ≥ 0.6.0; design history in `docs/archive/specs/ota.md` (Simple) and `docs/archive/specs/ota-round.md` (Round).
 
-Over `https://`, device TLS **must verify** the console certificate (Arduino ESP32 cert bundle, public CAs only; a private CA does not work, see docs/specs/self-hosting.md §2.4).
+Over `https://`, device TLS **must verify** the console certificate (Arduino ESP32 cert bundle, public CAs only; a private CA does not work, see docs/archive/specs/self-hosting.md §2.4).
 Do **not** call `setInsecure()` for `CONSOLE_URL`. `setInsecure()` is only for
 the Hue Bridge (self-signed).
 
@@ -41,7 +41,7 @@ the LAN.
 Human UI uses a Better Auth session cookie (`hsw.session_token`), obtained by
 Google, GitHub or an emailed code on the hosted console, or by a password on a
 self-hosted console without email. Sign-up and accounts:
-`docs/specs/finished/multi-user-accounts.md`. That cookie is **not** valid as a device
+`docs/archive/specs/multi-user-accounts.md`. That cookie is **not** valid as a device
 Bearer token.
 
 Errors are JSON: `{ "error": "<code>", "details"?: "…" }`.
@@ -204,7 +204,7 @@ Authorization: Bearer hsw_…
 `rev` is optional: the recipe revision stored in NVS, a non-negative decimal
 integer read at request time (`0` = nothing applied yet). The console records
 it to show whether the switch runs the saved config
-(`docs/specs/finished/config-sync.md`). Missing or malformed `rev` is ignored: no `400`,
+(`docs/archive/specs/config-sync.md`). Missing or malformed `rev` is ignored: no `400`,
 and the response is always a full `200`.
 
 `firmware` is the running `FIRMWARE_VERSION` (`major.minor.patch`). Simple
@@ -339,7 +339,7 @@ Simple switch (firmware ≥ 0.3.0):
   listed does nothing. `kind` is `maintained` (wall switch) or `momentary`
   (push button); the user picks it, not the firmware.
 - `flip` (`maintained` only) is `"toggle"` when each flip of the lever toggles
-  the target, whichever way it moves (`docs/specs/finished/toggle-on-flip.md`). A wall
+  the target, whichever way it moves (`docs/archive/specs/toggle-on-flip.md`). A wall
   switch in set mode (closed = on, open = off) leaves the field out, so its
   payload is the same as before the field existed. Firmware treats a missing
   or unknown `flip` as set mode. Toggle-mode timing is in
@@ -359,7 +359,7 @@ Simple switch (firmware ≥ 0.3.0):
 Simple firmware older than 0.3.0 gets `{ "rev": 12, "recipes": [] }`: it
 cannot run channel settings, so it does nothing until it is reflashed. Its
 old per-slot recipes were deleted when the console moved to channel types
-(`docs/specs/finished/simple-channel-types.md`).
+(`docs/archive/specs/simple-channel-types.md`).
 
 If the board is a Round Display (`product: "round"`), the payload is instead:
 
@@ -408,7 +408,7 @@ no `dimTarget`.
 
 `pages[].name` is UTF-8 (NFC), at most 12 characters: ASCII plus the letters
 the Round's 5×7 font can draw (ñ, á, é, í, ó, ú, ü, ç, ¿, ¡, …; the list is in
-`docs/specs/finished/round-accented-names.md` §2). Scene `name`s in
+`docs/archive/specs/round-accented-names.md` §2). Scene `name`s in
 `targets[]` are the Hue names as they are. Round firmware ≥ 0.6.5 keeps those
 letters and folds anything else to the plain letter or drops it. Older Round
 firmware folds every name to ASCII itself.
@@ -434,13 +434,13 @@ A wall switch's and a push button's `double_click` are always a scene list.
 A push button's `hold` is `off` on the group's `grouped_light` (only when the
 click target is one light) or `dim`: ramp the target with Clip v2
 `dimming_delta` up and down in a cycle while held, `stop` on release
-(`docs/specs/finished/simple-dim-cycle.md` §2.2). Simple 0.3.x drops a `dim` recipe and
+(`docs/archive/specs/simple-dim-cycle.md` §2.2). Simple 0.3.x drops a `dim` recipe and
 keeps the rest, so its hold does nothing (BOOT still re-pairs).
 
 ### `ota` (Simple firmware ≥ 0.6.0, Round firmware ≥ 0.6.0)
 
 Present only when the switch's owner offered an update on Switches
-(`docs/specs/finished/ota.md`):
+(`docs/archive/specs/ota.md`):
 
 ```json
 "ota": {
