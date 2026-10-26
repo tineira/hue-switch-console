@@ -6,13 +6,13 @@ Three repos:
 
 | Repo | Role |
 | --- | --- |
-| `hue-simple-switch` | XIAO ESP32-C6 firmware. GPIO press → Hue Bridge on the LAN (Clip v2). Channels `boot` and `d0`–`d5` (firmware < 0.5.0: `boot`, `d0`–`d2`). |
-| `hue-round-switch` | XIAO ESP32-S3 + Round Display firmware. Tap on the circle, not pins. Pages: `docs/round-pages.md`. |
-| `hue-switch-console` | Web app (Vercel + **Neon** Postgres). User account, topology, function assignment. This repo. |
+| [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch) | XIAO ESP32-C6 firmware. GPIO press → Hue Bridge on the LAN (Clip v2). Channels `boot` and `d0`–`d5` (firmware < 0.5.0: `boot`, `d0`–`d2`). |
+| [`hue-round-switch`](https://github.com/tineira/hue-round-switch) | XIAO ESP32-S3 + Round Display firmware. Tap on the circle, not pins. Pages: `docs/round-pages.md`. |
+| [`hue-switch-console`](https://github.com/tineira/hue-switch-console) | Web app (Vercel + **Neon** Postgres). User account, topology, function assignment. This repo. |
 
 The console **never** calls the Bridge. The Bridge **never** sees Vercel. A finger on the switch **never** waits for the web.
 
-HTTP wire format: `docs/device-api.md`. Round pages: `docs/round-pages.md` (that copy is authoritative for state). Product boards are flashed and provisioned from the browser (**Setup**, `/setup`: firmware, Wi‑Fi and device token over USB); see `docs/device-api.md`.
+HTTP wire format: `docs/device-api.md`. Round pages: `docs/round-pages.md` (that copy is authoritative for state). Product boards are flashed and provisioned from the browser (**Setup**, `/setup`: firmware, Wi‑Fi and device token over USB); USB protocol: `docs/usb-protocol.md`.
 
 ## Parts
 
@@ -25,9 +25,9 @@ HTTP wire format: `docs/device-api.md`. Round pages: `docs/round-pages.md` (that
 
 The **display name** is edited by the user in the console (`switches.label`); it is not sent to the device. If empty, the UI shows the MAC.
 
-**Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/specs/finished/simple-channel-types.md`); both use the same wiring:
+**Channel (Simple only).** One GPIO input. The **user** picks its `kind` in the console (spec: `docs/archive/specs/simple-channel-types.md`); both use the same wiring:
 
-- `maintained` — UI *Wall switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states). Its **Flip** setting (`flip`) is `toggle` (UI *Each flip toggles the lights*, the default for a new wall switch) or `set` (UI *The lever sets on or off*). Spec: `docs/specs/finished/toggle-on-flip.md`.
+- `maintained` — UI *Wall switch*: classic wall switch, the circuit stays **closed** or **open** (two stable states). Its **Flip** setting (`flip`) is `toggle` (UI *Each flip toggles the lights*, the default for a new wall switch) or `set` (UI *The lever sets on or off*). Spec: `docs/archive/specs/toggle-on-flip.md`.
 - `momentary` — UI *Push button*: press and release.
 
 Channels (declared by the firmware; closed = GPIO to GND, `INPUT_PULLUP`):
@@ -48,13 +48,13 @@ Do not use GPIO 3/14 (RF), 15 (LED), or USB.
 
 **Console.** Next.js on Vercel. Human login. Receives snapshots and stores assignments. Host: `https://hue.tineira.com` (Cloudflare DNS → Vercel). **All UI (copy, buttons, errors) is English.**
 
-**Postgres (Neon).** Accounts (`users`, plus Better Auth's `sessions`, `accounts` and `verifications`), device API keys, topology, recipes, Round pages. **Not Supabase Auth.** The human session is a Better Auth session cookie (`hsw.session_token`); sign-in runs inside the console (`docs/specs/finished/multi-user-accounts.md`). The runtime applies `db/schema.sql` and `lib/ensure-schema.ts`. Do not apply the migrations in `docs/archive/supabase-DO-NOT-APPLY/`.
+**Postgres (Neon).** Accounts (`users`, plus Better Auth's `sessions`, `accounts` and `verifications`), device API keys, topology, recipes, Round pages. **Not Supabase Auth.** The human session is a Better Auth session cookie (`hsw.session_token`); sign-in runs inside the console (`docs/archive/specs/multi-user-accounts.md`). The runtime applies `db/schema.sql` and `lib/ensure-schema.ts`. Do not apply the migrations in `docs/archive/supabase-DO-NOT-APPLY/`.
 
 **Hue application key.** Token the Bridge issues on pairing (`POST /api` with the Bridge button pressed). Lives in the XIAO's NVS. It is not the console API key.
 
 **Console API key / `CONSOLE_TOKEN`.** Device token (`hsw_…`). The user **creates and manages** it in the console (name, copy once, revoke). The XIAO sends it as `Authorization: Bearer`. It cannot be used to sign in to the site.
 
-**User account.** A person, identified by email. Hosted console: signs in with Google, GitHub or a 6-digit code emailed to them, no password. Sign-up follows `SIGNUP_MODE` (`closed`, `invite`, `waitlist`, `open`). The hosted console uses `waitlist`: people join a waitlist and are invited automatically while the console is below its seat cap, which the admin raises in `/admin` (`docs/specs/finished/waitlist.md`). Self-hosted console without email: the seeded `USER_EMAIL` / `USER_PASSWORD` account with a password (`.env.local`, never commit). Everything an account owns (keys, Bridges, switches, recipes) is deleted with it. Per-account limits: 25 switches, 5 Bridges, 25 active keys, 512 KB snapshot (`docs/specs/finished/multi-user-accounts.md`).
+**User account.** A person, identified by email. Hosted console: signs in with Google, GitHub or a 6-digit code emailed to them, no password. Sign-up follows `SIGNUP_MODE` (`closed`, `invite`, `waitlist`, `open`). The hosted console uses `waitlist`: people join a waitlist and are invited automatically while the console is below its seat cap, which the admin raises in `/admin` (`docs/archive/specs/waitlist.md`). Self-hosted console without email: the seeded `USER_EMAIL` / `USER_PASSWORD` account with a password (`.env.local`, never commit). Everything an account owns (keys, Bridges, switches, recipes) is deleted with it. Per-account limits: 25 switches, 5 Bridges, 25 active keys, 512 KB snapshot (`docs/archive/specs/multi-user-accounts.md`).
 
 **Topology.** Snapshot of **one Bridge**. Any XIAO paired to that `bridgeid` (or `push-from-bridge`) uploads it with `POST /api/device/register`. It is not "the switch's topology". The JSON must be enough to draw rooms and assign `rid`:
 
@@ -119,9 +119,9 @@ Not needed in v1: triple click, long-off, double_off. Noise and long wires eat t
 
 ## Display and recipes (Simple: per channel and event)
 
-A switch is configured against its own Bridge only. **Switches** shows every switch in the account as tabs, grouped in one section per `bridgeid`; each switch has its own URL (`/switches/<mac>`), and tabs move between switches without losing unsaved changes (pages: `docs/specs/finished/page-structure.md`). **Lights** is read-only: per Bridge, which switch gestures reach each room, zone and light, directly or through a group. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/specs/finished/design-bridge-v2/`).
+A switch is configured against its own Bridge only. **Switches** shows every switch in the account as tabs, grouped in one section per `bridgeid`; each switch has its own URL (`/switches/<mac>`), and tabs move between switches without losing unsaved changes (pages: `docs/archive/specs/page-structure.md`). **Lights** is read-only: per Bridge, which switch gestures reach each room, zone and light, directly or through a group. Each gesture is configured where it is shown: it opens in place and offers only choices valid for it (layout: `docs/archive/specs/design-bridge-v2/`).
 
-- **Simple:** switches, one per channel the user wired, plus BOOT. Each one gets a room or zone, a type (wall switch or push button), a target and an optional name. A wall switch adds a double-click scene list; a push button adds a double-click and a hold action. A pin with no switch does nothing. Layout: `docs/specs/finished/simple-editor-v2.md`.
+- **Simple:** switches, one per channel the user wired, plus BOOT. Each one gets a room or zone, a type (wall switch or push button), a target and an optional name. A wall switch adds a double-click scene list; a push button adds a double-click and a hold action. A pin with no switch does nothing. Layout: `docs/archive/specs/simple-editor-v2.md`.
 - **Round:** **pages**, not GPIO. Room/zone group, tap / double tap, scene list, theme, axis, timeout. `docs/round-pages.md`.
 
 The XIAO is not drawn inside the Hue tree. A gesture's light chips are the whole room or zone (`grouped_light`) and its lights; its scene chips are that group's scenes, shown only for Cycle scenes.
@@ -229,7 +229,7 @@ Channels come from `channels[]` in the config; a pin not listed is ignored. For 
 | `off` | same with `false` |
 | `recall_scene` | `PUT …/scene/{rid}` `{ "recall": { "action": "active" } }`, next `rid` of `targets[]` (Round §8.1; an `off` on the channel restarts the cycle) |
 | `toggle` | GET `on` + inverse PUT (mostly `momentary` / `short`) |
-| `dim` (`hold` only) | GET `on` + `dimming`; if off, turn on at 1 %. Then cycle while held: first leg **up** below 30 % (or from off), **down** otherwise; each leg `{ "dimming_delta": { "action": "up" \| "down", "brightness_delta": 100 }, "dynamics": { "duration": <ms> } }` timed from the distance left (3 s for a full sweep), a 250 ms pause at each end, then the other way; stops by itself after 30 s. On release `{ "dimming_delta": { "action": "stop" } }`. Never turns the light off. Spec: `docs/specs/finished/simple-dim-cycle.md` |
+| `dim` (`hold` only) | GET `on` + `dimming`; if off, turn on at 1 %. Then cycle while held: first leg **up** below 30 % (or from off), **down** otherwise; each leg `{ "dimming_delta": { "action": "up" \| "down", "brightness_delta": 100 }, "dynamics": { "duration": <ms> } }` timed from the distance left (3 s for a full sweep), a 250 ms pause at each end, then the other way; stops by itself after 30 s. On release `{ "dimming_delta": { "action": "stop" } }`. Never turns the light off. Spec: `docs/archive/specs/simple-dim-cycle.md` |
 
 5. The contact path does **not** use the console URL. If the PUT fails, log and move on; do not block other channels.
 
@@ -248,7 +248,7 @@ The Hue call is the `toggle` action (`GET on` + inverse `PUT`). On a `grouped_li
 
 At boot: load recipes from NVS **before** handling GPIO. The first read of each GPIO **only sets the state**; it does not fire `on`/`off`. Then Wi‑Fi, poll, etc.
 
-If the user changes a recipe in the app, the switch learns about it on the poll. The console sets the interval: 30 s while the switch has no config or the Switches page is open, 15 min otherwise (firmware from before this change: 1 min with no recipes, else every 1 h). Reboot = fetch recipes now; it does not fire GPIO events. Each poll reports the `rev` in NVS, so the console shows whether the switch runs the saved config (`docs/specs/finished/config-sync.md`).
+If the user changes a recipe in the app, the switch learns about it on the poll. The console sets the interval: 30 s while the switch has no config or the Switches page is open, 15 min otherwise (firmware from before this change: 1 min with no recipes, else every 1 h). Reboot = fetch recipes now; it does not fire GPIO events. Each poll reports the `rev` in NVS, so the console shows whether the switch runs the saved config (`docs/archive/specs/config-sync.md`).
 
 **Other rules:**
 
@@ -279,36 +279,31 @@ No recipes yet.
 3. If there is no valid Hue key: LED / circle blinks, `POST /api` until the Bridge button is pressed. Key and IP go to NVS.
 4. **Register + upload:** MAC, `product`, `bridgeid`, channels or `[]`, rich snapshot to `POST /api/device/register`.
 5. Asks for config → Simple: `recipes: []`; Round: empty page `p1`, often without a group until Save in the console.
-6. Channels / the circle do not fire Hue (empty slots). Poll every ~1 minute.
+6. Channels / the circle do not fire Hue (empty slots). Polls at the short interval (see Polling).
 
 The user assigns (channels or pages). The next poll (if remote `rev` > local) writes NVS and they start executing.
 
 ## Polling
 
-| State | Rate | What it asks |
-| --- | --- | --- |
-| No recipes / pages in NVS | ~1 min | Is there config? (`rev`) |
-| Some recipes / pages already | At boot and every 1 h | New `rev`? |
-
-If the user changes recipes on the web, the XIAO can take up to 1 h unless rebooted (reboot = "apply now"). The GPIO / finger do not use Vercel: NVS → Bridge.
+The console sets the delay to the next poll in every answer (`X-Poll-Sec`, `docs/device-api.md`): short while the switch has no config, is behind, or its owner has the Switches page open; long otherwise. Firmware clamps it to 30 s–1 h. Without the header (older console): ~1 min with no recipes / pages in NVS, else at boot and every 1 h. A reboot fetches the config now. The GPIO / finger do not use the console: NVS → Bridge.
 
 ## What this is not
 
 - The console is not the light's path (there is no "app in the middle" when pressing).
 - Vercel cannot reach `192.168.x.x`; the Bridge IP identifies the device on the LAN, it does not open a tunnel.
-- No remote Hue API in v1.
+- No remote Hue API.
 - No Zigbee, no impersonating Hue accessories, no mixing this tree with the Arduino sketches.
 
-## Infrastructure (done)
+## Infrastructure
 
-| What | For | Status |
-| --- | --- | --- |
-| **Vercel** project (`hue-switch-console`) | Build and serverless | Done |
-| **Neon** Postgres | Accounts, API keys, topology, recipes, pages | Done (`db/schema.sql`) |
-| **Cloudflare** DNS: `hue.tineira.com` → Vercel | The XIAO's console URL | Done |
-| Auth | Better Auth in the console (Google, GitHub, emailed code; password when self-hosted); seed `USER_EMAIL` / `USER_PASSWORD` | Done. Not Supabase Auth |
-| API keys UI | Create, copy once, revoke | Done |
-| Rich snapshot + Bridge screen | Simple = channels; Round = pages | Done |
+| What | For |
+| --- | --- |
+| **Vercel** project (`hue-switch-console`) | Build and serverless |
+| **Neon** Postgres | Accounts, API keys, topology, recipes, pages (`db/schema.sql`) |
+| **Cloudflare** DNS: `hue.tineira.com` → Vercel | The XIAO's console URL |
+| Auth | Better Auth in the console (Google, GitHub, emailed code; password when self-hosted); seed `USER_EMAIL` / `USER_PASSWORD`. Not Supabase Auth |
+| API keys UI | Create, copy once, revoke |
+| Rich snapshot + Bridge screen | Simple = channels; Round = pages |
 
 Production host: `https://hue.tineira.com`. In Cloudflare, CNAME `hue` to the target Vercel gives; TLS at the edge.
 
@@ -318,16 +313,10 @@ Production host: `https://hue.tineira.com`. In Cloudflare, CNAME `hue` to the ta
 - Switch id = ESP32 MAC (hex). A device API key belongs to an account; the switch that registers with that key belongs to that account.
 - API key: shown **once**, stored as a hash (SHA-256); the list shows only name + prefix.
 - HTTPS to `hue.tineira.com`: **verify** the certificate (Arduino bundle). `setInsecure()` only against the Hue Bridge.
-- Poll: without recipes ~1 min; with recipes at boot and every **1 h**. GPIO / finger never wait.
+- Poll: the console sets the interval (`X-Poll-Sec`, see Polling). GPIO / finger never wait.
 - Orphan recipe: kept; the Hue PUT fails; the UI marks it stale.
 - Wall-switch double-click without scenes → runs `on`. On the circle, empty slot = no-op. Boot does not synthesize GPIO events. Poll replaces the set if remote `rev` > local. Last event wins. A `bridgeid` change deletes recipes/pages **and bumps `rev`**. Sign-up only as the sign-up mode allows.
 - Minimal API:
   - Human (session cookie): sign in; CRUD API keys; GET topology; PATCH switch label; PUT channels (Simple) / PUT pages (Round).
   - Device (Bearer key): `POST /api/device/register`; `GET /api/device/config?mac=` (Simple: `rev`, `product`, `channels[]`, `recipes[]`; Round: `pages`, `pageId`, axis, timeout).
 - Tables (Neon): `users`, `device_api_keys`, `bridges` (snapshot JSON), `switches` (`product`, axis, timeout), `pages`, `recipes` (Round), `simple_channels`. The server filters by `user_id`; there is no Supabase RLS.
-
-## Repos
-
-- Simple: [github.com/tineira/hue-simple-switch](https://github.com/tineira/hue-simple-switch)
-- Round: [github.com/tineira/hue-round-switch](https://github.com/tineira/hue-round-switch)
-- Console: [github.com/tineira/hue-switch-console](https://github.com/tineira/hue-switch-console)
