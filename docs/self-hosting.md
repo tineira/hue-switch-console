@@ -1,6 +1,6 @@
 # Self-hosting the console
 
-How to run your own Hue Switch Console and set up switches that talk to it instead of `https://hue.tineira.com`. The design and its decisions are in [`specs/self-hosting.md`](specs/self-hosting.md).
+How to run your own Hue Switch Console and set up switches that talk to it instead of `https://hue.tineira.com`. The original design and its decisions are archived in [`archive/specs/self-hosting.md`](archive/specs/self-hosting.md).
 
 A self-hosted console is the same code as the hosted one. You need:
 
