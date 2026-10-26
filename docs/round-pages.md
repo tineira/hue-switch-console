@@ -1,48 +1,18 @@
-# Round Display — pages
+# Round pages
 
-**Product requirements** document. Covers `hue-round-switch` (firmware, circle) and `hue-switch-console` (web). Not an implementation guide or a changelog.
+Behavior contract for the Round switch: how pages work on the circle and in the console, and what the poll carries for them. [`hue-round-switch`](https://github.com/tineira/hue-round-switch) implements the circle side; this console implements the rest. The HTTP wire format is in [`device-api.md`](device-api.md), the product model in [`definitions.md`](definitions.md). The Round repo's `docs/pages-requirements.md` points here; there is no second copy.
 
-This is the **only** copy. `hue-round-switch/docs/pages-requirements.md` points here; do not fork it again.
+Section numbers start at 4 and some are skipped, so references from code and the firmware repo (§8.1, §8.2, §11.2, §13, rules 1–25, also cited as "decision N") keep their meaning.
 
-**Status:** `group` + `dim` are **already** in the console and in firmware **0.5.13+**. The §11.2 poll delivers them. Idle (display timeout) and input-during-Hue are **implemented**: `hue-round-switch/docs/specs/finished/idle-display.md` and `input-during-hue.md`. Pages v1 run.
-
-**Products:**
-
-| Repo | Role in this feature |
+| Repo | Role |
 | --- | --- |
 | `hue-round-switch` | 240×240 circle. One active page at a time. Center gestures + brightness ring. Swipe changes page. |
 | `hue-switch-console` | Page CRUD (room/zone group, recipes, scene lists, axis, theme, name). Sends `group` + dimmer targets in the poll. |
-| `hue-simple-switch` | **Out of scope.** Still GPIO + channels. The console UI branches by product. |
+| `hue-simple-switch` | Not affected: GPIO + channels. The console UI branches by product. |
 
-The console **never** calls the Bridge. The Bridge **never** sees Vercel. A finger on the circle **never** waits for the web. That does not change.
+The console never calls the Bridge. The Bridge never sees the console. A finger on the circle never waits for the web.
 
-Device onboarding: the web console flashes over USB and writes Wi‑Fi (Improv) and token/url (`HUESET`) into NVS. `config.h` no longer holds credentials.
-
----
-
-## 1. Verdict
-
-**Yes: the concept makes sense.** A Round Display is a single physical disc. Without pages it would be one gesture plus a ring, and every extra room would need another device or reloading the recipe. Pages are how **one** circle controls several things, without drawing buttons that don't fit.
-
-**Yes: it fits on the screen**, with strict copy limits. The usable center disc (radius 88 px, diameter 176 px) shows the **page name** (size 2, ≤12) and, below it, the **active scene** if any (size 1, ellipsis). Page dots at the bottom. **No help text** (`Tap to toggle`, `Drag ring to dim`, etc.).
-
-The touch chip (CHSC6X) does **not** deliver gestures. Tap, double and swipe are inferred in firmware from INT + (x, y). **There is no hold** on the circle: it fights the swipe and the chip's unreliable lift.
-
----
-
-## 2. Problem
-
-A single-recipe Round Display is a one-thing switch. The console expected wall-style channels (`{ id, gpio, label, kind }`). The circle is not a GPIO: it's a surface. To control living room + hallway + bedside lamp you'd need three discs, or change the recipe on the phone.
-
-The user is standing, at arm's length, touching a 39 mm circle. The UI has to be one state at a time, readable, with few gestures and no menus.
-
----
-
-## 3. Idea
-
-A **page** is anchored to **one Hue group** (`room` or `zone`). Name, theme, tap and double live there. Lights and scenes in the recipes come **only** from that group. The ring dims according to §8.2 (the group, or only the lights in the actions).
-
-Several pages live on the same device. The swipe (axis chosen **per display** in the console) moves between them. It is not a Hue recipe: it's local navigation.
+A page is anchored to one Hue group (`room` or `zone`). Name, theme, tap and double tap live on the page; lights and scenes in its recipes come only from that group. Several pages live on one switch, and a swipe (axis set per switch in the console) moves between them; the swipe is local navigation, not a Hue recipe. A scene gesture is an ordered list of scenes from that group. Off is not a scene: it is `off` on the group's `grouped_light`, usually on double tap. Example:
 
 ```text
 Page 1 "Living" (room Living)
@@ -50,18 +20,13 @@ Page 1 "Living" (room Living)
  double → off Living
  ring → dim Living (group; on lights only)
 
-Page 2 "Patio" (room Patio)
- tap → toggle Patio
- double → off Patio
- ring → dim Patio (group)
-
-Page 3 "Lamps" (room Living)
+Page 2 "Lamps" (room Living)
  tap → toggle Bedside 1
  double → toggle Bedside 2
  ring → dim only Bedside 1 and 2 (whichever are on)
 ```
 
-A scene gesture is an **ordered list** of scenes **from that group**. Off is not a scene: it's `off` on the group's `grouped_light`, on **double tap**.
+The touch chip (CHSC6X) does not deliver gestures: tap, double tap and swipe are inferred in firmware from INT + (x, y). There is no hold on the circle.
 
 ---
 
@@ -73,7 +38,7 @@ A scene gesture is an **ordered list** of scenes **from that group**. Off is not
 
 **Active page.** The one shown and the one receiving gestures. Only one. The swipe changes it. Remembered in NVS (reboot returns to the last one).
 
-**Page dots.** At the bottom of the inner disc (as in `docs/round-themes.html`). One dot per page, in console order. The **filled** dot is the active page; the others are dim. With a single page they are not drawn. Settled: not a prototype ornament, it's the circle's chrome. **Never overflow:** the whole row stays inside the inner disc; it is not clipped against the round edge nor pushed into the ring. A single row, never wrapped. See §5.1.
+**Page dots.** At the bottom of the inner disc. One dot per page, in console order. The **filled** dot is the active page; the others are dim. With a single page they are not drawn. The dots are the circle's chrome, not an ornament. **Never overflow:** the whole row stays inside the inner disc; it is not clipped against the round edge nor pushed into the ring. A single row, never wrapped. See §5.1.
 
 **Center gesture.** Happens on the inner disc (radius ≤ 88). Recipe events: `short` (tap) and `double_click` (double tap). In the console **both slots are always there**; the user assigns a recipe or leaves them empty. Empty = no-op. If double has no recipe, the tap does not wait for the second-touch window. **No hold** on screen.
 
@@ -152,7 +117,7 @@ Overflow (in this order):
 
 Size 2 is not used for the scene (the title is the page). No second line.
 
-**v1 layout of the Ready state:**
+**Layout of the Ready state:**
 
 ```text
         · page name (size 2, max 12)
@@ -208,7 +173,7 @@ Not a recipe. Does not call the Bridge.
 - Direction: swipe **left** → next page (index +1); right → previous. If the axis is vertical: up → next, down → previous.
 - Wrap: last +1 → first, and the reverse.
 - One page: the gesture does nothing.
-- Feedback: on change, the new page is painted immediately. Slide animation: not a v1 requirement.
+- Feedback: on change, the new page is painted immediately. No slide animation.
 - The active index is stored in NVS.
 
 ### 6.4 Ring — dimmer
@@ -240,7 +205,7 @@ The disc in Ready has **no** help sentences. Only name, scene if any, dots, ring
 | Page without recipes | page name | (nothing) |
 | Several pages | name + dots (filled = active) | scene if applicable |
 
-Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. Characters: ASCII plus the circle set (ñ, á, é, í, ó, ú, ü, ç, ¿, ¡ and the other letters the built-in font has; list in `docs/specs/finished/round-accented-names.md` §2); other accented letters fold to the plain letter (Á → A, Ł → L), emoji are dropped. No line breaks.
+Page names > 12 characters: the console warns; the device truncates with an ellipsis. Scenes: §5.2. Characters: ASCII plus the circle set (ñ, á, é, í, ó, ú, ü, ç, ¿, ¡ and the other letters the built-in font has; list in `ROUND_CIRCLE_CHARS`, `lib/round-themes.ts`, and the archived [`round-accented-names.md`](archive/specs/round-accented-names.md) §2); other accented letters fold to the plain letter (Á → A, Ł → L), emoji are dropped. No line breaks.
 
 System states (English, one line): `Wi-Fi...`, `No Wi-Fi`, `No Bridge`, `Press Bridge button`, `Token rejected`. They are not pages.
 
@@ -278,7 +243,7 @@ Rules:
 - All scenes in a list belong to the **page's group**. The console does not show (or allow) scenes from another room/zone.
 - The **order is edited by the user** in the console (add, remove, drag / arrows). That order is the cycle order.
 - Off does **not** go in the list. There is no "scene off" in Clip v2 (`recall.action` is `active` \| `dynamic_palette` \| `static`). Turning off is **double tap** → `off` on that group's `grouped_light`.
-- Smart scenes (`smart_scene` / `deactivate`) are out of v1.
+- Smart scenes (`smart_scene` / `deactivate`) are not supported.
 - A scene that disappears from the snapshot is marked stale in the console; the firmware skips it.
 - The circle **does** show the active scene under the page name (§5.2). The title stays the page's.
 
@@ -294,7 +259,7 @@ The `status.active` GET is only for **painting the name** in Ready (refresh on e
 
 After the PUT (or on entering the page), that `rid`'s `name` is painted. A local off clears the cached rid → the next cycle starts at the first.
 
-The finger does not wait for Vercel. The PUT to the Bridge (LAN) **does happen**; the circle **does not freeze** meanwhile: tap, double, ring and swipe stay live. Details: `hue-round-switch/docs/specs/finished/input-during-hue.md`.
+The finger does not wait for the console. The PUT to the Bridge (LAN) **does happen**; the circle **does not freeze** meanwhile: tap, double, ring and swipe stay live. Firmware design: `hue-round-switch/docs/archive/specs/input-during-hue.md`.
 
 ### 8.2 Dimmer set (ring)
 
@@ -335,7 +300,7 @@ When a Round Display is selected (not a Simple switch), the left column does **n
 ### 9.1 Display settings (once per device)
 
 - **Page swipe:** `Left / right` (default) or `Up / down`.
-- **Screen timeout:** seconds until the disc sleeps (default **30**). **0** = always on. Range 0 or 10–600. Details: `hue-round-switch/docs/specs/finished/idle-display.md`.
+- **Screen timeout:** seconds until the disc sleeps (default **30**). **0** = always on. Range 0 or 10–600. Firmware design: `hue-round-switch/docs/archive/specs/idle-display.md`.
 - The switch label (`switches.label`) is still the device name in the console list. It is **not** painted on the circle. The circle shows the **page** name.
 
 ### 9.2 Page list
@@ -355,7 +320,7 @@ The device **register** may create `p1` without a group. The human **Save** (PUT
 
 - **Group** — room or zone, required. Changing the group **resets** tap and double tap to the new-page defaults (toggle / off on the new group) with a notice; nothing else survives a room change anyway. Gesture choices **only** show that group's lights and scenes.
 - **Name** — input, folded for the circle (`Niños` stays, `Ángel` → `Angel`), max 12 characters (warning if cut; the device truncates). It's what the circle shows.
-- **Theme** — visual picker of **round dials**, the same language as `hue-round-switch/docs/round-themes.html` (not the site's CSS dropdown). One palette per page: clicking a circle picks it (selection ring). On/Off in the preview to see lights on vs off. The name on the sample dial can be the page's. The user does not edit hex.
+- **Theme** — visual picker of **round dials**, the same dial as §10 (not the site's CSS dropdown). One palette per page: clicking a circle picks it (selection ring). On/Off in the preview to see lights on vs off. The name on the sample dial can be the page's. The user does not edit hex.
 - **Gestures** — always **Tap** and **Double tap**, each a card that opens in place: Nothing, Toggle, Turn on, Turn off (with a light chip: the whole group or one light) or Cycle scenes. Empty = no-op; if double is empty, the tap does not wait.
 - **Scene list** — clicking a scene chip of the group adds it (numbered in cycle order); clicking again removes it; reorder with ↑ ↓. Max 8. Off is not a list item.
 - Each card's header says in words what it does, e.g. *"Cycles Relax → Bright → Night"*, *"Turns off all of Living"*, and a **Ring** line says *"Dims Living (lights that are on)"*, *"Dims those lights"* or *"Unused"*.
@@ -364,7 +329,7 @@ The device **register** may create `p1` without a group. The human **Save** (PUT
 
 No UI changes: channels `boot` and `d0`–`d5` (`d0`–`d2` before Simple firmware 0.5.0), events `on` / `off` / `double_click` / `short`. The circle does not add `hold` to the shared schema.
 
-The console tells products apart by what the firmware registers (`product: "round"` vs GPIO channels). An old Round that still sends only `c1` is treated as a one-page Round (migration, §14).
+The console tells products apart by what the firmware registers (`product: "round"` vs GPIO channels). An old Round that still sends only `c1` is treated as a one-page Round (§14).
 
 ---
 
@@ -372,15 +337,7 @@ The console tells products apart by what the firmware registers (`product: "roun
 
 A **closed** set of **20 palettes** for the GC9A01. Each palette names RGB565 colors, not web CSS. All 20 stay; the set is not trimmed.
 
-Visual spec for the picker (and the prototype hex values): `hue-round-switch/docs/round-themes.html`. In the console it's the **same dial**: background, inner disc, 270° dimmer ring, page name, sample scene if applicable, dots. **No** `Tap to cycle scenes` or other how-tos. In the prototype the 3 dots are samples; **on the device they are real**: N dots = N pages, the filled one = active page. Differences from the standalone HTML:
-
-| Prototype | Console (page editor) |
-| --- | --- |
-| Keep / several at once | **One** palette per page. Click = pick. The selected one has the ring |
-| Copy kept ids | does not exist |
-| Fixed "Living" title | uses the **page name** if there is one |
-| All On / All Off | one On/Off preview toggle (or per dial), to judge lights on |
-| Standalone page | embedded in the page editor, slightly smaller dials if needed |
+Hex values: `lib/round-themes.ts` (the firmware converts them to RGB565). The page editor's picker draws each palette as the device does: background, inner disc, 270° dimmer ring, page name, sample scene if applicable, dots. **No** `Tap to cycle scenes` or other how-tos. **One** palette per page: a click picks it and the selected dial gets a ring. One On/Off preview toggle shows lights on vs off, and the sample dial uses the page name when there is one. The original picker prototype is archived at [`archive/prototypes/round-themes.html`](archive/prototypes/round-themes.html).
 
 Fields per palette:
 
@@ -394,7 +351,7 @@ Fields per palette:
 | `ringTrack` | Empty dimmer track |
 | `error` | Wi‑Fi fail, failed-command ring flash, rejected-token dot (can be shared) |
 
-v1 list (stable id, English copy):
+Palettes (stable id, English copy):
 
 | id | Name | Blurb |
 | --- | --- | --- |
@@ -507,18 +464,14 @@ Round introduces no new events compared to the shared schema. `double_click` on 
 
 ## 12. Data (console)
 
-Before pages, `recipes` was unique on `(switch_id, channel_id, event)` and `event` was checked to `on | off | double_click | short`. That does not model pages.
-
-Required:
+The console stores (schema: `db/schema.sql`):
 
 - Product discriminator on `switches` (`product` text: `simple` | `round`).
 - Round settings on the switch: `page_swipe_axis`, `screen_timeout_sec` (default 30; 0 = always on).
-- A **pages** table (or JSON) per switch: `id`, `name`, `sort_order`, `theme`, `group` (room/zone + grouped_light rid), `dim` (`group` \| `lights` \| null).
+- A **pages** table per switch: `id`, `name`, `sort_order`, `theme`, `group` (room/zone + grouped_light rid), `dim` (`group` \| `lights` \| null).
 - Round recipes tied to `page_id` + `event` (`short` | `double_click`).
-- `recall_scene` on Round stores **several** ordered `rid`s (child table or JSON), not a single `target_rid`.
-- Simple switch recipes stay as they are (one `rid` per recipe; they don't rotate).
-
-The SQL detail is up to the implementer; this document requires the model, not the DDL.
+- `recall_scene` on Round stores **several** ordered `rid`s, not a single `target_rid`.
+- Simple switch recipes keep one `rid` per recipe (they don't rotate).
 
 Limits the server validates:
 
@@ -542,78 +495,29 @@ Limits the server validates:
 - Snapshot / register / console poll run **outside** the touch loop. Recipe / ring / page refresh are in `hue_job`.
 - NVS stores `rev`, axis, `screenTimeoutSec`, pages (id, name, theme, group, `dim`), recipes (scene lists with `rid` + `name` folded for the circle, stored as UTF-8), active page index, last scene `rid` per gesture (cache).
 - The poll's `dim` is authoritative. `dim: null` = no ring. The firmware does not infer the set from recipes.
-- Screen sleep: `hue-round-switch/docs/specs/finished/idle-display.md`. Backlight off after the timeout; the first touch wakes and does not act.
+- Screen sleep (firmware design: `hue-round-switch/docs/archive/specs/idle-display.md`). Backlight off after the timeout; the first touch wakes and does not act.
 - Ring `mode: lights`: GET those rids + PUT to the ones that are on (or turn the set on if all are off). Do not put those GETs on the loop's stack.
 - Rotating scenes: next rid from NVS (last local PUT) + PUT (LAN). `status.active` GET only for the name. A 404 in `targets[]` is skipped. A local off clears the rid. Does not call the console.
 - On page change: paint immediately, GET the new target's Hue state (on/brightness) in the background. A swipe never blocks on the network. Unknown = off; the first tap sends **on**.
-- Recipe and dimmer GET/PUT **also** do not block the touch loop. Last-wins if another gesture arrives. Ready does not use `UI_BUSY`. See `hue-round-switch/docs/specs/finished/input-during-hue.md`.
+- Recipe and dimmer GET/PUT **also** do not block the touch loop. Last-wins if another gesture arrives. Ready does not use `UI_BUSY`. Firmware design: `hue-round-switch/docs/archive/specs/input-during-hue.md`.
 - If a recipe's `pageId` no longer exists: ignore it. If the active index points to a deleted page: go to the first.
 - If the paired `bridgeid` changes: drop pages, recipes and `rev` in NVS **before** the poll (the `rid`s belong to another Bridge), leave one default empty page. Do not treat remote `rev` 0 as "don't replace" if the bid changed.
 - Revoked API key: the poll fails; what's in NVS **keeps** running on the LAN.
 - `kMaxRecipes` is 16; with 6×2 (tap + double), 16 is plenty.
 
-### Measured capacity (XIAO ESP32-S3, `default_8MB`)
+---
 
-Build at the time (`arduino-cli compile --profile xiao-s3`, firmware 0.3.0), **before** pages:
+## 14. Old Round registers
 
-| Resource | Used | Cap | Headroom |
-| --- | --- | --- | --- |
-| App flash (`app0`) | 1,188,458 B (35%) | 3,342,336 B (0x330000) | ~2.05 MB |
-| Static SRAM (Arduino "globals") | 57,964 B (17%) | 327,680 B | ~270 KB heap |
-| PSRAM OPI 8 MB | 0 (unused) | 8 MB | not needed |
-| NVS | Hue IP/key + recipes JSON + core Wi‑Fi | 20 KB (`0x5000`) | the only tight spot |
+A Round that registers only a `c1` channel with a `short` recipe (pre-pages firmware) is treated as a one-page Round: the console marks it `product: round`, creates page `p1` (theme `ember`), moves `c1`/`short` to `p1`/`short` and infers `group` from the target (light → its room; scene → its group; `grouped_light` → that one). If the group cannot be inferred, the page stays without a group until the user picks one (no ring). `dim` follows §8.2, and the next poll with a new `rev` delivers the §11.2 object.
 
-Partitions: `nvs` 20 KB, `app0`/`app1` 3.19 MB each (OTA fits with the current binary), `spiffs` 1.5 MB empty.
-
-Estimated extra for pages (6 pages, 12 recipes, lists of up to 8 scenes, palettes, gesture state machine, name/dots UI):
-
-| Resource | Extra | Fits? |
-| --- | --- | --- |
-| Code flash | ~20–40 KB | yes, still ~36% |
-| Static SRAM | ~2 KB (pages + recipes 24 × ~100 B) | yes |
-| Heap during poll | config JSON ~4–6 KB with scene lists; the register snapshot was already the peak | yes |
-| NVS `putString` | one string ≤ **4000 B** (`nvs_set_str` limit) | yes if split: recipes in `json`, pages in another key. Scene lists can push the JSON; split per page if it gets close to 4000 B |
-
-The S3 has **plenty of room** in flash and RAM. No framebuffer or PSRAM needed. The only implementation caveat: don't put pages+recipes in **one** `Preferences.putString` close to 4000 B; use two keys. The product bottleneck is still the 176 px disc, not the chip.
+Simple switch: no migration.
 
 ---
 
-## 14. Migration
+## 16. Rules
 
-Round devices that already registered `c1` + a `short` recipe:
-
-1. The console marks them `product: round`.
-2. Creates a page `p1`, theme `ember`, tap/double per the migrated recipe.
-3. Copies `c1`/`short` to `p1`/`short`. Infers `group` from the target (light → its room; scene → its `group`; `grouped_light` → that one). If it can't be inferred, the page stays without a group until the user picks one in the console (no ring, stale recipes). `dim` per §8.2.
-4. The next poll with a new `rev` delivers the §11.2 object.
-5. No `c1` dual-write. v1 assumes **flashing the firmware together with the console cut**. There are no pre-pages boards in the field.
-
-Simple switch: zero migration.
-
----
-
-## 15. Out of scope (v1)
-
-- Triple tap.
-- Hold on the circle (recipe gesture). Off is double tap. The 3 s BOOT hold (re-pair) stays.
-- Swipe as a Hue recipe. The swipe **only** changes page. Rotating scenes is the recipe gesture (`recall_scene` with a list), not a swipe.
-- Putting "Off" as an item in the scene carousel.
-- Smart scenes (`smart_scene`) in the list.
-- Pinch / multi-touch (the chip is single-finger).
-- More than 6 pages.
-- Editing the page name **on the circle**.
-- Free-hex themes.
-- Slide animation between pages.
-- Clock / screensaver / widgets on a page. The black sleep (`hue-round-switch/docs/specs/finished/idle-display.md`) is not a screensaver.
-- Pages shared between several devices.
-- One Round talking to two Bridges.
-- Changing `hue-simple-switch` or its GPIO double-click state machine.
-
----
-
-## 16. Proposed decisions (so the doc has no gaps)
-
-These are not code. They are the default unless said otherwise.
+Numbered rules the console and the firmware rely on. Code and the Round repo cite them as "rule N" or "decision N".
 
 1. **Pages ≠ GPIO channels.** The console defines pages; the firmware does not declare fake pins.
 2. **Maximum 6 pages.** The disc shows dots; 8 is already tight.
@@ -624,7 +528,7 @@ These are not code. They are the default unless said otherwise.
 7. **Last active page** is remembered in NVS. A reboot returns to it.
 8. **Page = one room or zone.** Recipes only from that group. **`dim` on save** (§8.2): scene or group action → `grouped_light`; only child lights → those lights; otherwise no ring. The ring is not a slot.
 9. **No fallback** `double_click` → another recipe on the circle.
-10. **Themes = the prototype's 20 palettes**, closed set. Picker = grid of round dials (like `docs/round-themes.html`). One per page. Default `ember`. Not the site's CSS theme.
+10. **Themes = the 20 palettes of §10**, closed set. Picker = grid of round dials. One per page. Default `ember`. Not the site's CSS theme.
 11. **No hold on the circle.** Off lives on `double_click`. The swipe is decided by displacement, not a timer. BOOT 3 s hold (re-pair) does not change.
 12. **Tap on release**, never on touch-down.
 13. **Classification by start zone** (center vs ring) so swipe and dimmer don't fight.
@@ -637,36 +541,6 @@ These are not code. They are the default unless said otherwise.
 20. **Names on the circle = the circle set.** Page and scene: ASCII plus the accented letters the built-in 5×7 font has (`Niños` stays `Niños`); other letters fold to the plain letter (`Ángel` → `Angel`). Names are UTF-8 on the wire and in NVS; the firmware converts them to font codes when drawing.
 21. **Ring like the Hue app:** only the target's lights that are on. If the whole target is off, the drag turns it on at that %. `mode: lights` uses an absolute % on each light that is on, not a relative scale.
 22. **Tap = bedside lamp and double = group off** → `dim.mode = group` (rule 2), not the individual lights.
-23. **Touches while Hue answers:** the disc keeps accepting input. Optimistic ack (invert, fill, scene, ring). Last-wins. No `UI_BUSY` in Ready. `hue-round-switch/docs/specs/finished/input-during-hue.md`.
+23. **Touches while Hue answers:** the disc keeps accepting input. Optimistic ack (invert, fill, scene, ring). Last-wins. No `UI_BUSY` in Ready.
 24. **Tap = light A and double = light B** (two different `light`s): the disc fill is split (left = tap, right = double). The touch area and gestures do not change. Each side keeps the on state of its `rid`; the toggle does not use a single per-page bit. Any other layout: whole disc.
-25. **Screen sleep:** per-device timeout in the console (default 30 s, 0 = always on). Black disc; the first touch only wakes. `hue-round-switch/docs/specs/finished/idle-display.md`.
-
----
-
-## 17. Open questions
-
-None. Closed:
-
-1. Swipe left = next.
-2. New page: tap and double always assignable (empty on creation).
-3. Reboot returns to the last page.
-4. Names on the circle: ASCII plus the circle set (rule 20).
-
----
-
-## 18. Definition of done
-
-This feature is **done** when:
-
-- In the console, a Round has pages anchored to a room/zone, which can be added, deleted, reordered, named and colored.
-- Tap and double only see lights/scenes from that group.
-- A scene gesture takes an orderable list from **that** group; each use applies the next. Off is the group on double tap, not a scene.
-- The ring dims the group if there are scenes or a group action; if there are only child lights, it dims those (on only).
-- The circle shows the page name, the active scene below it if any (no how-to), dots if there is more than one (filled = where I am, never leaving the disc), and the ring when applicable.
-- In the console, each page's theme is picked from a grid of round dials (the 20 palettes).
-- A swipe on the configured axis changes page **without** calling Vercel or the Bridge.
-- That page's tap / double run NVS → Bridge **without** freezing touch (`hue-round-switch/docs/specs/finished/input-during-hue.md`). Swipe changes page. No screen hold.
-- A Simple switch in the same console still shows as GPIO channels.
-- Screen timeout in the console; the disc turns off by itself and the first touch on black does not fire a recipe (`hue-round-switch/docs/specs/finished/idle-display.md`).
-
-The console persists group + `dim.mode`. Firmware **0.5.13+** consumes the §11.2 poll. Idle and input-during-Hue are in the firmware's `docs/specs/finished/`. The rest of pages v1 already runs.
+25. **Screen sleep:** per-device timeout in the console (default 30 s, 0 = always on). Black disc; the first touch only wakes.
