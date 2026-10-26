@@ -23,7 +23,7 @@
     "better-auth": "^1.7.6",
     "disposable-email-domains": "^1.0.62",
     "esptool-js": "^0.6.1",
-    "next": "16.3.6",
+    "next": "16.4.3",
     "pg": "^8.23.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
