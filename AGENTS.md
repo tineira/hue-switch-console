@@ -10,6 +10,27 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # hue-switch-console
 
+Shared agent rules (secrets, modes, reviews, cleanup) live in [agentic-os](https://github.com/tineira/agentic-os); this file keeps the profile below and this repo's own rules.
+
+## Profile (agentic-os)
+
+Agent rules: https://github.com/tineira/agentic-os (read `README.md` first). This profile overrides its defaults.
+
+| Key | Value |
+|---|---|
+| Product copy language | en (all three repos; no new Spanish) |
+| Working language (docs, code, commits) | English |
+| Adversarial review | on (default; Tomas can override) — default pairs: see agentic-os `models/routing.md` |
+| Backlog / status | Linear project "Hue Switch" (team Tineria, `TIN`) |
+| Specs and decisions | Cross-repo specs in `docs/specs/` (from `docs/specs/TEMPLATE.md`); Notion page: TBD (Tomas) |
+| Deploy | Vercel project "hue-switch-console", production on push to `main` (alias `hue.tineira.com`); docs-only pushes skip the build (`scripts/vercel-ignore.sh`) |
+| Database | Neon Postgres (`DATABASE_URL`; any Postgres with `DATABASE_DRIVER=pg`), shared by localhost and prod: no (use a development database) |
+| Migration commands | Schema in `db/schema.sql`, applied by the console at the first request; `npm run schema` regenerates `lib/generated/schema.ts` (commit both); `npm run migrate` applies it ahead of time |
+| Local gate before push | `npm run lint` + `npm test` + `npx next typegen && npx tsc --noEmit` + `npm run build` |
+| Freezes | none |
+| Related repos | Firmware: [`hue-round-switch`](https://github.com/tineira/hue-round-switch) (ESP32-S3 Round), [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch) (ESP32-C6); this repo owns the contract ("Multi-repo" below) |
+| Run scope (if a run is active) | none |
+
 Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 
 - **English everywhere**, in all three repos: product UI (labels, errors, auth emails), docs, specs, READMEs, code comments, commit messages. Do not write new Spanish; translate Spanish you touch.
@@ -23,6 +44,8 @@ Vercel/Next.js commissioning UI. Not the Arduino firmware (`hue-simple-switch`).
 - Do **not** use local Playwright to verify login or `/setup`. Worktrees lack a working DB session; Web Serial needs a person in Chrome with USB. Check production after deploy. Playwright-against-localhost is expected to fail and is not a defect.
 
 ## Git (human owns)
+
+Mode rules: see agentic-os rules/mode-interactive.md and rules/mode-run.md.
 
 - `git commit` / `git push` only on explicit request in that moment.
 - Local gate before a push (the real gate): `npm run lint`, `npm test`, `npx next typegen && npx tsc --noEmit`, and `npm run build`.
