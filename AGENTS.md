@@ -27,6 +27,7 @@ Agent rules: https://github.com/tineira/agentic-os (read `README.md` first). Thi
 | Database | Neon Postgres (`DATABASE_URL`; any Postgres with `DATABASE_DRIVER=pg`), shared by localhost and prod: no (use a development database) |
 | Migration commands | Schema in `db/schema.sql`, applied by the console at the first request; `npm run schema` regenerates `lib/generated/schema.ts` (commit both); `npm run migrate` applies it ahead of time |
 | Local gate before push | `npm run lint` + `npm test` + `npx next typegen && npx tsc --noEmit` + `npm run build` |
+| Branching | Direct push to `main` allowed (no PR required); the review and local gate still run before the push |
 | Freezes | none |
 | Related repos | Firmware: [`hue-round-switch`](https://github.com/tineira/hue-round-switch) (ESP32-S3 Round), [`hue-simple-switch`](https://github.com/tineira/hue-simple-switch) (ESP32-C6); this repo owns the contract ("Multi-repo" below) |
 | Run scope (if a run is active) | none |
@@ -50,7 +51,7 @@ Mode rules: see agentic-os rules/mode-interactive.md and rules/mode-run.md.
 - `git commit` / `git push` only on explicit request in that moment.
 - Local gate before a push (the real gate): `npm run lint`, `npm test`, `npx next typegen && npx tsc --noEmit`, and `npm run build`.
 - After a `git push` to `main`, the turn is done when the Vercel **production** deploy for that SHA is Ready (alias `hue.tineira.com`). Do **not** wait for GitHub Actions.
-- GitHub Actions `CI` is a backstop. Before your **next** push, check the latest `main` run. Red → fix first. Network flake → `gh run rerun <id> --failed` and move on.
+- GitHub Actions `CI` is a backstop. Before your **next** push, check the latest `main` run. Red → fix first. Network flake → one `gh run rerun <id> --failed` (agentic-os base allows a single rerun of a transient failure) and move on.
 - Commits that touch no app code may use `[skip ci] [skip deploy]` (see docs-only / ignoreCommand above); when both skip, there is nothing to wait for.
 
 ## Parallel sessions
