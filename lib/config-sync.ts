@@ -1,5 +1,5 @@
 // Config sync: how often a switch polls and whether it runs the current revision
-// (docs/specs/finished/config-sync.md).
+// (docs/archive/specs/config-sync.md).
 
 export type ConfigStatus = "current" | "pending" | "not_applied" | "ahead" | "unknown";
 

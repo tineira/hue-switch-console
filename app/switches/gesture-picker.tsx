@@ -2,7 +2,7 @@
 
 // One gesture (Tap, Double tap, Click, Hold, …) configured in place: a header with the
 // summary sentence, and when open only the choices that are valid for it.
-// Design: docs/specs/design-bridge-v2/README.md, "Gesture picker".
+// Design: docs/archive/specs/design-bridge-v2/README.md, "Gesture picker".
 
 import { groupLights, groupScenes, type GestureAction } from "@/lib/gestures";
 import { MAX_SCENE_LIST, sceneListItem } from "@/lib/pages";

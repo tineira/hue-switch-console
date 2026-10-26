@@ -10,13 +10,13 @@ import { sql } from "@/lib/sql";
 import { isSuspended } from "@/lib/suspension";
 import { pendingDocuments, type TermsDocument } from "@/lib/terms";
 
-// Human sessions are Better Auth sessions (docs/specs/finished/multi-user-accounts.md §2.2).
+// Human sessions are Better Auth sessions (docs/archive/specs/multi-user-accounts.md §2.2).
 // Pages and routes keep calling getSessionUser / requireSessionUser.
 
 export type SessionUser = {
   id: string;
   email?: string;
-  /** Documents still to accept (docs/specs/finished/terms-and-safety.md §2.4); empty once accepted. */
+  /** Documents still to accept (docs/archive/specs/terms-and-safety.md §2.4); empty once accepted. */
   pending: TermsDocument[];
 };
 
@@ -32,7 +32,7 @@ export async function getSessionUser(
   await ensureSchema();
   const session = await auth().api.getSession({ headers: await headers() });
   if (!session) return null;
-  // A suspension past its end date no longer counts (docs/specs/finished/admin-tools.md §2.6).
+  // A suspension past its end date no longer counts (docs/archive/specs/admin-tools.md §2.6).
   if (session.user.banned && (await isSuspended(session.user.id))) return null;
   const pending = await pendingDocuments(session.user.id);
   if (pending.length > 0 && !opts.allowPending) return null;

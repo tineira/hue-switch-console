@@ -15,7 +15,7 @@ import { bearerToken, databaseError, jsonError, jsonOk } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
-// Firmware CI uploads a release here (docs/specs/finished/firmware-uploads.md §2.2). It is stored,
+// Firmware CI uploads a release here (docs/archive/specs/firmware-uploads.md §2.2). It is stored,
 // not made current: an admin does that in /admin.
 export async function POST(req: Request, context: { params: Promise<{ product: string }> }) {
   const auth = uploadTokenMatches(bearerToken(req));
@@ -38,7 +38,7 @@ export async function POST(req: Request, context: { params: Promise<{ product: s
   const notes = String(form.get("notes") ?? "").replace(/\r\n/g, "\n").trim();
   if (!notes) return jsonError(400, "missing_notes");
 
-  // Optional: older firmware CI does not send it (docs/specs/finished/credits.md §2.4).
+  // Optional: older firmware CI does not send it (docs/archive/specs/credits.md §2.4).
   let credits: CreditEntry[] | null = null;
   const rawCredits = form.get("credits");
   if (rawCredits !== null) {

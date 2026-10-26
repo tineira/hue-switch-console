@@ -1,5 +1,5 @@
 // Simple channel model: group → type → target → gestures.
-// Specs: docs/specs/finished/simple-channel-types.md, docs/specs/finished/simple-editor-v2.md.
+// Specs: docs/archive/specs/simple-channel-types.md, docs/archive/specs/simple-editor-v2.md.
 
 import {
   MAX_SCENE_LIST,
@@ -50,7 +50,7 @@ export function kindLabel(kind: ChannelKind): string {
   return kind === "momentary" ? "Push button" : "Wall switch";
 }
 
-/** A new wall switch toggles on each flip (docs/specs/finished/toggle-on-flip.md); a push button has no flip. */
+/** A new wall switch toggles on each flip (docs/archive/specs/toggle-on-flip.md); a push button has no flip. */
 export function defaultFlip(kind: ChannelKind): SimpleFlip {
   return kind === "maintained" ? "toggle" : "set";
 }
@@ -95,7 +95,7 @@ export function holdOffAvailable(config: SimpleChannelConfig): boolean {
 }
 
 /**
- * A dim hold dims what Click controls (docs/specs/finished/simple-hold-dim.md §1), so its
+ * A dim hold dims what Click controls (docs/archive/specs/simple-hold-dim.md §1), so its
  * target is always the channel's target. Other holds are left as they are.
  */
 export function withDimOnTarget(config: SimpleChannelConfig): SimpleChannelConfig {

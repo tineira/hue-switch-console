@@ -3,7 +3,7 @@ import { sql } from "@/lib/sql";
 import { secretMatches } from "@/lib/tokens";
 import type { ProductId } from "@/lib/web-setup/products";
 
-// Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
+// Firmware releases uploaded by firmware CI (docs/archive/specs/firmware-uploads.md).
 // An upload is stored but not current: a signed-in admin makes it current from /admin, and
 // only then does it reach /setup, OTA offers and /changelog.
 
@@ -64,7 +64,7 @@ export function checkImage(product: ProductId, name: PartName, data: Uint8Array)
 
 export type UploadPart = { name: PartName; data: Uint8Array };
 
-// Third-party software linked into a firmware image, sent by firmware CI (docs/specs/finished/credits.md §2.4).
+// Third-party software linked into a firmware image, sent by firmware CI (docs/archive/specs/credits.md §2.4).
 export type CreditEntry = { name: string; version: string; license: string; url: string };
 
 const CREDIT_FIELDS = ["name", "version", "license", "url"] as const;
@@ -229,7 +229,7 @@ export type StoredRelease = {
   waiting: boolean;
 };
 
-/** Every release of a product, newest first, for /admin (docs/specs/finished/admin-tools.md §2.4). */
+/** Every release of a product, newest first, for /admin (docs/archive/specs/admin-tools.md §2.4). */
 export async function listStoredReleases(product: ProductId): Promise<StoredRelease[]> {
   const rows = await sql()`
     select r.version, r.created_at,
@@ -332,7 +332,7 @@ export type ReleaseNotes = FirmwareNotes & { credits: CreditEntry[] | null };
 
 /**
  * One released version's notes and credits, for `scripts/import-firmware.mjs` on another console
- * (docs/specs/self-hosting.md §2.3). An upload still waiting in /admin is not released: null.
+ * (docs/archive/specs/self-hosting.md §2.3). An upload still waiting in /admin is not released: null.
  */
 export async function releaseNotes(product: ProductId, version: string): Promise<ReleaseNotes | null> {
   const rows = await sql()`
@@ -369,7 +369,7 @@ export async function currentCredits(product: ProductId): Promise<CurrentCredits
 
 export type AppImage = { version: string; sha256: string; size: number };
 
-/** The current release's `firmware.bin`, what an OTA offer points at (docs/specs/finished/ota.md §2.2). */
+/** The current release's `firmware.bin`, what an OTA offer points at (docs/archive/specs/ota.md §2.2). */
 export async function currentAppImage(product: ProductId): Promise<AppImage | null> {
   const rows = await sql()`
     select r.version, p.sha256, p.size

@@ -51,12 +51,12 @@ export type Recipe = {
 
 export type SimpleEvent = "on" | "off" | "double_click" | "short" | "hold";
 
-/** What a push-button double-click or hold does. `dim` is hold only (docs/specs/finished/simple-hold-dim.md). */
+/** What a push-button double-click or hold does. `dim` is hold only (docs/archive/specs/simple-hold-dim.md). */
 export type SimpleGesture =
   | { action: "on" | "off" | "toggle" | "dim"; target: RecipeTarget }
   | { action: "recall_scene"; targets: SceneListItem[] };
 
-/** What the user configures per Simple channel (docs/specs/finished/simple-channel-types.md). */
+/** What the user configures per Simple channel (docs/archive/specs/simple-channel-types.md). */
 export type SimpleChannelConfig = {
   id: string;
   kind: ChannelKind;
@@ -161,9 +161,9 @@ export type SwitchPublic = {
   rev_changed_at: string | null;
   /** When the switch is next expected to poll. */
   next_poll_at: string | null;
-  /** When a poll or register last reported `firmware` (docs/specs/finished/ota.md §3). */
+  /** When a poll or register last reported `firmware` (docs/archive/specs/ota.md §3). */
   firmware_seen_at: string | null;
-  /** Simple with an OTA client (docs/specs/finished/ota.md §3.2). */
+  /** Simple with an OTA client (docs/archive/specs/ota.md §3.2). */
   ota_capable: boolean;
   /** Set while an update is offered; the offer is always the product's current release. */
   ota_offered_at: string | null;

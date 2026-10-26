@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Rich } from "@/app/rich-text";
 import { CANT_BREAK, PORT_NAME } from "@/lib/setup-guide";
 
-// Building blocks of the Set up over USB stepper (docs/specs/setup-guide.md §2.1).
+// Building blocks of the Set up over USB stepper (docs/archive/specs/setup-guide.md §2.1).
 
 export type StepState = "done" | "warn" | "error" | "current" | "later";
 

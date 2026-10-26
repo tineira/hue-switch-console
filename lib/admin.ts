@@ -2,7 +2,7 @@ import { isAdminEmail } from "@/lib/account-config";
 import type { FleetCount } from "@/lib/fleet";
 import { sql } from "@/lib/sql";
 
-// /admin queries (docs/specs/finished/multi-user-accounts.md §2.7, docs/specs/finished/admin-tools.md).
+// /admin queries (docs/archive/specs/multi-user-accounts.md §2.7, docs/archive/specs/admin-tools.md).
 // Counts only: no recipes or topology.
 
 export const PAGE_SIZE = 50;
@@ -205,7 +205,7 @@ export async function deleteAccountById(userId: string): Promise<string | null> 
   return email;
 }
 
-/** Counts for the admin tab row (docs/specs/finished/admin-tabs.md §2). */
+/** Counts for the admin tab row (docs/archive/specs/admin-tabs.md §2). */
 export async function adminTabCounts(): Promise<{ accounts: number; waiting: number }> {
   const rows = await sql()`
     select (select count(*)::int from users) as accounts,

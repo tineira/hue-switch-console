@@ -1,7 +1,7 @@
 export const THEME_STORAGE_KEY = "hsw-theme";
 
 // Slate and Slate Light are the defaults; Matrix is ours; the rest follow Omarchy's themes
-// (github.com/basecamp/omarchy, MIT). Tokens are in app/globals.css, chosen in docs/theme-preview.html.
+// (github.com/basecamp/omarchy, MIT). Tokens are in app/globals.css, chosen in docs/archive/prototypes/theme-preview.html.
 export const THEMES = [
   {
     id: "slate",

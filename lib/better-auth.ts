@@ -17,7 +17,7 @@ import { consumeInvite, INVITE_COOKIE, readCookie, signupDecision } from "@/lib/
 import { pgConnectionString, pgPool, sql, usesPgDriver } from "@/lib/sql";
 import { isSuspended } from "@/lib/suspension";
 
-// Better Auth on the console's own Postgres (docs/specs/finished/multi-user-accounts.md §2.2).
+// Better Auth on the console's own Postgres (docs/archive/specs/multi-user-accounts.md §2.2).
 // Tables and columns are snake_case; `users` is the table the rest of the app already uses.
 
 type HookContext = { headers?: Headers; request?: Request } | null | undefined;

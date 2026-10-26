@@ -4,8 +4,8 @@ import { currentSignupMode } from "@/lib/console-settings";
 import { sql } from "@/lib/sql";
 import { isSuspendedRow } from "@/lib/suspension";
 
-// Sign-up gate and invites (docs/specs/finished/multi-user-accounts.md §2.3). The waitlist that
-// hands out invites is lib/waitlist.ts (docs/specs/finished/waitlist.md).
+// Sign-up gate and invites (docs/archive/specs/multi-user-accounts.md §2.3). The waitlist that
+// hands out invites is lib/waitlist.ts (docs/archive/specs/waitlist.md).
 
 export const INVITE_COOKIE = "hsw_invite";
 /** Invites the admin makes by hand. Waitlist invites expire sooner (lib/waitlist.ts). */
@@ -121,7 +121,7 @@ export async function consumeInvite(code: string | null | undefined, userId: str
 export const INVITE_STATES = ["all", "open", "used", "revoked", "expired"] as const;
 export type InviteState = (typeof INVITE_STATES)[number];
 
-/** One page of invites, newest first, filtered by state (docs/specs/finished/admin-tools.md §2.7). */
+/** One page of invites, newest first, filtered by state (docs/archive/specs/admin-tools.md §2.7). */
 export async function listInvites(input: {
   state: InviteState;
   page: number;

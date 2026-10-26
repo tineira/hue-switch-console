@@ -184,7 +184,7 @@ function PrivacyContent() {
 }
 
 // A self-hosted console: the hosted text would name the wrong operator and services
-// (docs/specs/self-hosting.md §5 decision 5).
+// (docs/archive/specs/self-hosting.md §5 decision 5).
 function SelfHostedPrivacy() {
   const email = process.env.CONTACT_EMAIL?.trim();
   const policy = process.env.PRIVACY_URL?.trim();
@@ -240,7 +240,7 @@ function SelfHostedPrivacy() {
   );
 }
 
-// Public: no sign-in needed. Linked from /login and the footer (docs/specs/finished/multi-user-accounts.md §2.12).
+// Public: no sign-in needed. Linked from /login and the footer (docs/archive/specs/multi-user-accounts.md §2.12).
 export default async function PrivacyPage() {
   const user = await getSessionUser({ allowPending: true }).catch(() => null);
   const content = isHostedConsole() ? <PrivacyContent /> : <SelfHostedPrivacy />;

@@ -65,7 +65,7 @@ alter table switches add column if not exists apply_failed boolean not null defa
 alter table switches add column if not exists rev_changed_at timestamptz;
 alter table switches add column if not exists editing_until timestamptz;
 alter table switches add column if not exists next_poll_at timestamptz;
--- OTA (docs/specs/ota.md §2.5): when the poll last reported a version, and the pending offer.
+-- OTA (docs/archive/specs/ota.md §2.5): when the poll last reported a version, and the pending offer.
 alter table switches add column if not exists firmware_seen_at timestamptz;
 alter table switches add column if not exists ota_offered_at timestamptz;
 alter table switches add column if not exists ota_error text;
@@ -128,7 +128,7 @@ create unique index if not exists recipes_round_uniq
 
 create index if not exists recipes_switch_id_idx on recipes (switch_id);
 
--- Simple channel settings (docs/specs/finished/simple-channel-types.md). The config
+-- Simple channel settings (docs/archive/specs/simple-channel-types.md). The config
 -- poll derives the Simple recipes from these rows; `recipes` holds Round only.
 create table if not exists simple_channels (
   switch_id uuid not null references switches (id) on delete cascade,
@@ -147,14 +147,14 @@ create table if not exists simple_channels (
 
 alter table simple_channels add column if not exists double_click jsonb;
 
--- Console-only switch name (docs/specs/simple-editor-v2.md §2). Never sent to the board.
+-- Console-only switch name (docs/archive/specs/simple-editor-v2.md §2). Never sent to the board.
 alter table simple_channels add column if not exists label text;
 
--- What a wall switch's lever does (docs/specs/finished/toggle-on-flip.md): 'set' = closed on, open off;
+-- What a wall switch's lever does (docs/archive/specs/toggle-on-flip.md): 'set' = closed on, open off;
 -- 'toggle' = each flip toggles the target. Always 'set' on a push button.
 alter table simple_channels add column if not exists flip text not null default 'set' check (flip in ('set', 'toggle'));
 
--- Firmware releases uploaded by firmware CI (docs/specs/finished/firmware-uploads.md).
+-- Firmware releases uploaded by firmware CI (docs/archive/specs/firmware-uploads.md).
 create table if not exists firmware_releases (
   id uuid primary key default gen_random_uuid(),
   product text not null check (product in ('round', 'simple')),
@@ -179,8 +179,8 @@ create table if not exists firmware_current (
   release_id uuid not null references firmware_releases (id)
 );
 
--- Config sync (docs/specs/finished/config-sync.md).
--- Firmware credits (docs/specs/finished/credits.md).
+-- Config sync (docs/archive/specs/config-sync.md).
+-- Firmware credits (docs/archive/specs/credits.md).
 alter table firmware_releases add column if not exists credits jsonb;
 -- Set when an admin makes the release current (or it was current before uploads needed
 -- approval). Null: uploaded by CI, waiting in /admin, not on /changelog or the manifest.
@@ -188,7 +188,7 @@ alter table firmware_releases add column if not exists credits jsonb;
 alter table firmware_releases add column if not exists approved_at timestamptz default now();
 alter table firmware_releases alter column approved_at drop default;
 
--- Multi-user accounts (docs/specs/finished/multi-user-accounts.md §2.9).
+-- Multi-user accounts (docs/archive/specs/multi-user-accounts.md §2.9).
 -- users doubles as Better Auth's user table; the rest are its tables.
 alter table users add column if not exists name text not null default '';
 alter table users add column if not exists email_verified boolean not null default false;
@@ -298,7 +298,7 @@ create index if not exists auth_events_email_idx on auth_events (kind, email, cr
 
 create index if not exists auth_events_time_idx on auth_events (kind, created_at);
 
--- Waitlist with a user cap (docs/specs/finished/waitlist.md §2.8). invite_requests is the waitlist.
+-- Waitlist with a user cap (docs/archive/specs/waitlist.md §2.8). invite_requests is the waitlist.
 create table if not exists console_settings (
   id boolean primary key default true check (id),                   -- one row
   signup_mode text,                                                 -- null: use SIGNUP_MODE
@@ -332,7 +332,7 @@ alter table invite_requests drop column if exists note;
 
 create index if not exists invite_requests_email_idx on invite_requests (lower(email), status);
 
--- Admin tools (docs/specs/finished/admin-tools.md §2.9). target keeps the email or version as text, so an
+-- Admin tools (docs/archive/specs/admin-tools.md §2.9). target keeps the email or version as text, so an
 -- event still reads well after the account is deleted.
 create table if not exists admin_events (
   id bigserial primary key,
@@ -348,7 +348,7 @@ create index if not exists admin_events_created on admin_events (created_at desc
 
 create index if not exists switches_user_seen_idx on switches (user_id, last_seen_at);
 
--- Which version of the Safety notice and Terms each account accepted (docs/specs/finished/terms-and-safety.md
+-- Which version of the Safety notice and Terms each account accepted (docs/archive/specs/terms-and-safety.md
 -- §2.3). Append-only, so a re-acceptance keeps the history.
 create table if not exists terms_acceptances (
   user_id uuid not null references users (id) on delete cascade,
@@ -376,7 +376,7 @@ begin
 
 end $$;
 
--- The schema version this database last applied (docs/specs/finished/schema-version.md §2.3). ensureSchema()
+-- The schema version this database last applied (docs/archive/specs/schema-version.md §2.3). ensureSchema()
 -- reads it once per process and runs this file only when the code's version differs.
 create table if not exists schema_meta (
   id boolean primary key default true check (id),

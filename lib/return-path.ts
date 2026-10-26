@@ -1,4 +1,4 @@
-// Where sign-in sends the person afterwards (docs/specs/finished/public-how-to-changelog.md, D2 (c)).
+// Where sign-in sends the person afterwards (docs/archive/specs/public-how-to-changelog.md, D2 (c)).
 // Only a path on this site is accepted, so `?next=` can never send anyone to another origin.
 
 /** Request header that proxy.ts sets to the page's path and query; never trusted from the browser. */

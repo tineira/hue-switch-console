@@ -1,7 +1,7 @@
 import consoleCredits from "@/lib/generated/console-credits.json";
 import type { CreditEntry } from "@/lib/firmware";
 
-// Credits page content (docs/specs/finished/credits.md §2.2).
+// Credits page content (docs/archive/specs/credits.md §2.2).
 
 // GitHub Sponsors page, linked from the footer and Credits. Always a plain link out, never an
 // in-app payment: donations keep the Vercel Hobby plan non-commercial.

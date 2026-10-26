@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 type Params = { params: Promise<{ product: string; version: string }> };
 
 // Public notes and credits of a released version, so another console can import it with
-// scripts/import-firmware.mjs (docs/specs/self-hosting.md §2.3). The manifest stays minimal.
+// scripts/import-firmware.mjs (docs/archive/specs/self-hosting.md §2.3). The manifest stays minimal.
 export async function GET(_req: Request, context: Params) {
   const raw = await context.params;
   const product = parseProductId(raw.product);

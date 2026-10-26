@@ -10,7 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && node scripts/check-docs-layout.mjs",
     "push-from-bridge": "node scripts/push-from-bridge.mjs",
     "migrate": "node scripts/migrate.mjs",
     "schema": "node scripts/gen-schema.mjs",

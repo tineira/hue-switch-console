@@ -9,7 +9,7 @@ import { howToDescription, howToHref, howToTitle, readHowTo } from "@/lib/how-to
 export const dynamic = "force-dynamic";
 
 // The server renders the view the query string names (switch, topic, Simple build type), so each
-// one is its own page for search (docs/specs/finished/how-to-navigation.md §2.3).
+// one is its own page for search (docs/archive/specs/how-to-navigation.md §2.3).
 export async function generateMetadata({ searchParams }: PageProps<"/how-to">): Promise<Metadata> {
   const params = await searchParams;
   const view = readHowTo((key) => params[key]);
@@ -20,7 +20,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/how-to">): 
   };
 }
 
-// Public: signed-out visitors get the same guide (docs/specs/finished/public-how-to-changelog.md §4.2).
+// Public: signed-out visitors get the same guide (docs/archive/specs/public-how-to-changelog.md §4.2).
 export default async function HowToPage() {
   const user = await getSessionUser({ allowPending: true }).catch(() => null);
   // The Round's Wi-Fi screen shows the firmware version; this one is what /setup flashes now.

@@ -50,7 +50,7 @@ function Number_({ label, value, note }: { label: string; value: string | number
   );
 }
 
-// What needs the admin first, then four numbers, then the latest activity (docs/specs/finished/admin-tabs.md §2).
+// What needs the admin first, then four numbers, then the latest activity (docs/archive/specs/admin-tabs.md §2).
 export default async function AdminOverviewPage({
   searchParams,
 }: {

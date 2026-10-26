@@ -20,14 +20,14 @@ import {
 } from "@/lib/signup";
 import { admitEntry, admitQuietly, dismissEntry } from "@/lib/waitlist";
 
-// One action can change several tabs' numbers and counts (docs/specs/finished/admin-tabs.md §2).
+// One action can change several tabs' numbers and counts (docs/archive/specs/admin-tabs.md §2).
 function revalidateAdmin() {
   for (const path of ["/admin", "/admin/accounts", "/admin/firmware", "/admin/settings", "/admin/activity"]) {
     revalidatePath(path);
   }
 }
 
-// Every action records an admin event (docs/specs/finished/admin-tools.md §2.5).
+// Every action records an admin event (docs/archive/specs/admin-tools.md §2.5).
 
 export type InviteState = { link?: string; error?: string } | undefined;
 

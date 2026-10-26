@@ -125,7 +125,7 @@ function ChangelogContent({ doc, selected }: { doc: ChangelogDoc; selected: Chan
   );
 }
 
-// Public: signed-out visitors get the same page (docs/specs/finished/public-how-to-changelog.md §4.3).
+// Public: signed-out visitors get the same page (docs/archive/specs/public-how-to-changelog.md §4.3).
 export default async function ChangelogPage({ searchParams }: PageProps<"/changelog">) {
   const selected = picked((await searchParams).product);
   const user = await getSessionUser({ allowPending: true }).catch(() => null);

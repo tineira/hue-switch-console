@@ -3,9 +3,9 @@
 import { ChangelogItemText } from "@/app/changelog-item";
 import type { VersionNotes } from "@/lib/firmware-notes";
 
-// What an update changes, shared by Setup and Switches (docs/specs/finished/setup-update-notes.md).
+// What an update changes, shared by Setup and Switches (docs/archive/specs/setup-update-notes.md).
 
-// Versions listed in full before they fold into "All changes" (docs/specs/finished/setup-update-notes.md §4.3).
+// Versions listed in full before they fold into "All changes" (docs/archive/specs/setup-update-notes.md §4.3).
 const OPEN_VERSIONS = 3;
 
 function VersionList({ notes }: { notes: VersionNotes[] }) {

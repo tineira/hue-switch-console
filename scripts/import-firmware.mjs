@@ -1,4 +1,4 @@
-// Copies a released firmware from another console to this one (docs/specs/self-hosting.md §2.3), so a
+// Copies a released firmware from another console to this one (docs/archive/specs/self-hosting.md §2.3), so a
 // self-hosted console can install firmware without building it.
 //
 //   node scripts/import-firmware.mjs <round|simple> [--from https://hue.tineira.com] [--version x.y.z]

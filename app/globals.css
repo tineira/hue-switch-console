@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Themes (app/themes.ts). Slate Light is also :root, the server render and no-JS default.
-   Values come from docs/theme-preview.html: the Omarchy palettes (github.com/basecamp/omarchy,
+   Values come from docs/archive/prototypes/theme-preview.html: the Omarchy palettes (github.com/basecamp/omarchy,
    MIT) with muted and status colours nudged to pass WCAG AA; soft tints are mixed, not picked. */
 :root,
 html[data-theme="slate-light"] {
@@ -275,7 +275,7 @@ html[data-theme="rose-pine"] {
 }
 
 /* Switch colours on Lights: oklch(var(--switch-l) var(--switch-c) <hue by switch index>)
-   (docs/specs/finished/design_handoff_lights_map/README.md). Lighter on dark themes; data-scheme
+   (docs/archive/specs/design_handoff_lights_map/README.md). Lighter on dark themes; data-scheme
    comes from the theme's group in app/themes.ts. */
 :root {
   --switch-l: 0.56;
@@ -659,7 +659,7 @@ option {
   .room-layer { transition: none; }
 }
 
-/* Landing page hero + Round story track (docs/specs/handoff_landing_v2/README.md §2).
+/* Landing page hero + Round story track (docs/archive/specs/handoff_landing_v2/README.md §2).
    The card column and the story stay pinned while scrolling scrubs the Round's assembly. */
 .lv-track {
   display: grid;

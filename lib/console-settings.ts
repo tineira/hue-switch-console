@@ -2,7 +2,7 @@ import { isEmailConfigured, signupMode, userCapFromEnv, type SignupMode } from "
 import { isDbConfigured } from "@/lib/env";
 import { sql } from "@/lib/sql";
 
-// Settings the admin changes in /admin without a redeploy (docs/specs/finished/waitlist.md §2.2).
+// Settings the admin changes in /admin without a redeploy (docs/archive/specs/waitlist.md §2.2).
 // Env gives the defaults; a saved value wins. Any sign-up mode can be saved, but without an email
 // provider the console stays `closed`, because nothing can verify a new address.
 
@@ -15,7 +15,7 @@ export type ConsoleSettings = {
   noticesSeen: Partial<Record<NoticeKind, string>>;
 };
 
-/** Overview notices an admin can dismiss until something newer happens (docs/specs/finished/admin-tabs.md). */
+/** Overview notices an admin can dismiss until something newer happens (docs/archive/specs/admin-tabs.md). */
 export const NOTICE_KINDS = ["bounces", "refused"] as const;
 export type NoticeKind = (typeof NOTICE_KINDS)[number];
 

@@ -61,9 +61,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const mac = normalizeMac(url.searchParams.get("mac") ?? "");
   if (!mac) return jsonError(400, "mac query parameter is required");
-  // Optional: the revision in the switch's NVS (docs/specs/finished/config-sync.md §2.1).
+  // Optional: the revision in the switch's NVS (docs/archive/specs/config-sync.md §2.1).
   const reported = parseReportedRev(url.searchParams.get("rev"));
-  // Optional: the running firmware and the last OTA failure (docs/specs/finished/ota.md §2.1).
+  // Optional: the running firmware and the last OTA failure (docs/archive/specs/ota.md §2.1).
   const reportedFirmware = parseReportedFirmware(url.searchParams.get("firmware"));
   const otaError = parseOtaError(url.searchParams.get("ota_error"));
 
@@ -114,7 +114,7 @@ export async function GET(req: Request) {
       };
     } else if (!supportsChannelTypes(sw.firmware)) {
       // Firmware < 0.3.0 cannot run channel settings: it gets nothing to do
-      // until it is reflashed (docs/specs/finished/simple-channel-types.md §3).
+      // until it is reflashed (docs/archive/specs/simple-channel-types.md §3).
       hasConfig = true;
       rev = sw.rev;
       body = { rev, recipes: [] };
@@ -135,7 +135,7 @@ export async function GET(req: Request) {
       };
     }
 
-    // An offer is always the current release, looked up now (docs/specs/finished/ota.md §2.2, §3.2).
+    // An offer is always the current release, looked up now (docs/archive/specs/ota.md §2.2, §3.2).
     const pendingOta = Boolean(sw.ota_offered_at || sw.ota_error);
     const image = pendingOta && otaCapable(sw) ? await currentAppImage(sw.product) : null;
     const otaDone = image !== null && image.version === sw.firmware;

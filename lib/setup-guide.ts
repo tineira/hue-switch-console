@@ -1,5 +1,5 @@
 // The steps of Set up over USB, shared by /setup (the stepper) and the How-to setup overview
-// (docs/specs/setup-guide.md §2.4). **label** marks a UI label, `code` a literal.
+// (docs/archive/specs/setup-guide.md §2.4). **label** marks a UI label, `code` a literal.
 
 import type { Product } from "@/lib/how-to";
 

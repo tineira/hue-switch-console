@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     return jsonError(400, "mac must be 12 hex digits");
   }
   if (mac && !product) {
-    // A switch must say what it is (docs/specs/finished/require-product-on-register.md).
+    // A switch must say what it is (docs/archive/specs/require-product-on-register.md).
     return jsonError(400, "product_required", { details: 'product must be "round" or "simple"' });
   }
   if (!bridgeid || !lights || !rooms || !scenes) {

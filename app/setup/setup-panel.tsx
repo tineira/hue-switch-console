@@ -109,7 +109,7 @@ type ConsoleRecord = {
   label: string | null;
   // The key this board last used was revoked on API keys.
   keyRevoked: boolean;
-  // Wi-Fi update state (docs/specs/finished/ota.md §3.1); null when the console did not say.
+  // Wi-Fi update state (docs/archive/specs/ota.md §3.1); null when the console did not say.
   otaStatus: string | null;
   otaError: string | null;
 };
@@ -133,7 +133,7 @@ type Panel = "none" | "flash" | "after-flash";
 // is BOOT held on a board Chrome could not identify (the Round resets itself once it answers).
 type Gate = { kind: "boot" | "hold"; resolve: (go: boolean) => void };
 
-// How the Simple gets into install mode (docs/specs/finished/usb-download-mode.md).
+// How the Simple gets into install mode (docs/usb-protocol.md, `HUEBOOT`).
 type InstallMode = "auto" | "hueboot" | "buttons";
 
 function FirmwareVersion({
@@ -288,7 +288,7 @@ type CheckState = "done" | "warn" | "error" | "todo";
 
 // revoked: the board's last key was revoked. replacing: a new key was saved here and the
 // board has not checked in with it yet. elsewhere: the board talks to another console's host
-// (docs/specs/self-hosting.md §5 decision 2).
+// (docs/archive/specs/self-hosting.md §5 decision 2).
 type ConsoleLookup = "found" | "missing" | "error" | "revoked" | "replacing" | "elsewhere";
 
 // Automatic rereads after Detect, on the already-open port (reopening resets the Round).
@@ -355,7 +355,7 @@ export function SetupPanel({
     () => null,
   );
   const pageOrigin = useSyncExternalStore(subscribeNoop, pageOriginSnapshot, () => null);
-  // What Link to console writes with HUESET url (docs/specs/self-hosting.md §2.1).
+  // What Link to console writes with HUESET url (docs/archive/specs/self-hosting.md §2.1).
   const deviceConsoleUrl = resolveDeviceConsoleUrl({
     deviceConsoleUrl: configuredConsoleUrl,
     pageOrigin,

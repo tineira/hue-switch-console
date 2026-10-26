@@ -30,7 +30,7 @@ export const metadata = {
 const BASE = "/admin/accounts";
 
 // Who gets in and who is in: the waitlist queue, the accounts, and invites
-// (docs/specs/finished/admin-tabs.md §2).
+// (docs/archive/specs/admin-tabs.md §2).
 export default async function AdminAccountsPage({
   searchParams,
 }: {
@@ -87,7 +87,7 @@ export default async function AdminAccountsPage({
     currentSignupMode(),
   ]);
   const waitlistOn = mode === "invite" || mode === "waitlist";
-  // Which Safety and Terms versions each account accepted (docs/specs/finished/terms-and-safety.md §2.4).
+  // Which Safety and Terms versions each account accepted (docs/archive/specs/terms-and-safety.md §2.4).
   const accepted = await acceptedVersions(accounts.rows.map((a) => a.id));
   const required = requiredDocuments();
   const defaults = defaultLimits();

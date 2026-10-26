@@ -1,5 +1,5 @@
 // Sentences for a gesture card header and a Simple channel's summary line
-// (docs/specs/design-bridge-v2/README.md, "Summary sentences").
+// (docs/archive/specs/design-bridge-v2/README.md, "Summary sentences").
 
 import { nameForTarget } from "@/lib/recipes";
 import { isBootChannel } from "@/lib/simple-channels";

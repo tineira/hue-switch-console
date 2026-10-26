@@ -1,4 +1,4 @@
-// Which console a board talks to (docs/specs/self-hosting.md §2.1). Pure: no env, no browser.
+// Which console a board talks to (docs/archive/specs/self-hosting.md §2.1). Pure: no env, no browser.
 
 /** The hosted console. Only used to tell the hosted deployment apart, never as a default. */
 export const HOSTED_CONSOLE_URL = "https://hue.tineira.com";

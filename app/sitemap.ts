@@ -4,7 +4,7 @@ import { CHANGELOG_IDS, changelogHref } from "@/lib/changelog-href";
 import { howToPages } from "@/lib/how-to-nav";
 
 // Pages a signed-out visitor can read. How-to has one URL per switch and topic, and per build type
-// on the Simple's Build (docs/specs/finished/how-to-navigation.md §2.3). Changelog has one per switch
+// on the Simple's Build (docs/archive/specs/how-to-navigation.md §2.3). Changelog has one per switch
 // besides its own, which shows the console's.
 // This console's own address (BETTER_AUTH_URL, else the request), so a self-hosted one lists its own pages.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -24,7 +24,7 @@ const CONFIRM: Partial<Record<SignupMode, string>> = {
     "Nobody new can get an account. The waitlist form leaves the home page and unused invites stop working. Existing accounts keep signing in, and people already waiting stay in the queue.",
 };
 
-/** Sign-up mode and seat cap (docs/specs/finished/waitlist.md §2.7). Saving admits people if seats opened. */
+/** Sign-up mode and seat cap (docs/archive/specs/waitlist.md §2.7). Saving admits people if seats opened. */
 export function WaitlistSettingsForm({ mode, cap }: { mode: SignupMode; cap: number | null }) {
   const [state, action, pending] = useActionState<WaitlistSettingsState, FormData>(
     waitlistSettingsAction,

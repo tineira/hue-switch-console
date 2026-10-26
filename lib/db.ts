@@ -483,7 +483,7 @@ export async function touchSwitch(id: string, apiKeyId: string) {
 }
 
 /**
- * One config poll (docs/specs/finished/config-sync.md §4.2): what the switch reported, what it
+ * One config poll (docs/archive/specs/config-sync.md §4.2): what the switch reported, what it
  * was served, and when it is next expected. `reported` null leaves the applied
  * revision and the failure flag as they were (firmware that does not send `rev`).
  */
@@ -494,7 +494,7 @@ export async function recordConfigPoll(input: {
   applyFailed: boolean;
   servedRev: number;
   pollSec: number;
-  /** The `firmware` the poll reported; null keeps the stored one (docs/specs/finished/ota.md §2.1). */
+  /** The `firmware` the poll reported; null keeps the stored one (docs/archive/specs/ota.md §2.1). */
   firmware: string | null;
   otaError: string | null;
   /** The switch runs the current release: the offer is done (§3.2). */
@@ -530,7 +530,7 @@ export async function recordConfigPoll(input: {
   `;
 }
 
-/** Offers the current release to these switches, or cancels their offers (docs/specs/finished/ota.md §2.4). */
+/** Offers the current release to these switches, or cancels their offers (docs/archive/specs/ota.md §2.4). */
 export async function setOtaOffer(userId: string, switchIds: string[], offered: boolean) {
   if (switchIds.length === 0) return;
   await sql()`
@@ -662,7 +662,7 @@ export async function replaceSimpleChannels(
 /**
  * Simple recipes from before channel types (on/off/double_click/short per slot)
  * cannot be expressed as channel settings; the user approved deleting them
- * (docs/specs/finished/simple-channel-types.md §3). Idempotent: only switches that still
+ * (docs/archive/specs/simple-channel-types.md §3). Idempotent: only switches that still
  * had rows get a rev bump, so their next poll replaces the old set with nothing.
  */
 export async function dropLegacySimpleRecipes() {
@@ -1117,7 +1117,7 @@ export function isRoundSwitch(row: { product: SwitchProduct }): boolean {
 }
 
 /**
- * Removes a switch from the console (docs/specs/finished/console-review-fixes.md §C1). Its recipes, pages
+ * Removes a switch from the console (docs/archive/specs/console-review-fixes.md §C1). Its recipes, pages
  * and Simple channels cascade. Its key is revoked unless another switch of the account uses it,
  * so the board cannot register itself back; it gets 401 and keeps its saved recipes.
  */

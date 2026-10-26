@@ -83,7 +83,7 @@ function syncOf(item: SyncInfo): SyncInfo {
 
 /**
  * Keeps every switch polling fast while this page is open, and returns each one's
- * config status (docs/specs/finished/config-sync.md §4.6). Null when the request fails.
+ * config status (docs/archive/specs/config-sync.md §4.6). Null when the request fails.
  */
 async function fetchSync(): Promise<Record<string, SyncInfo> | null> {
   try {
@@ -614,7 +614,7 @@ export function SwitchesWorkspace({
     }
   }
 
-  // One line on whether the switch runs the saved config (docs/specs/finished/config-sync.md §4.6).
+  // One line on whether the switch runs the saved config (docs/archive/specs/config-sync.md §4.6).
   function syncLine(item: WorkspaceSwitch): { text: string; tone: "ok" | "muted" | "warn" } | null {
     const info = syncFor(item);
     switch (info.config_status) {
@@ -649,7 +649,7 @@ export function SwitchesWorkspace({
     }
   }
 
-  // docs/specs/finished/console-review-fixes.md §C. Afterwards the page shows the first remaining switch.
+  // docs/archive/specs/console-review-fixes.md §C. Afterwards the page shows the first remaining switch.
   async function removeFromConsole(url: string, name: string, kind: "switch" | "bridge") {
     setRemoving(true);
     setError(null);
@@ -694,7 +694,7 @@ export function SwitchesWorkspace({
     return latestFirmware[isRoundItem(item) ? "round" : "simple"];
   }
 
-  // Wi-Fi updates (docs/specs/finished/ota.md §3.1). Null when the switch cannot update over Wi-Fi.
+  // Wi-Fi updates (docs/archive/specs/ota.md §3.1). Null when the switch cannot update over Wi-Fi.
   function otaFor(item: WorkspaceSwitch): OtaStatus | null {
     const info = syncFor(item);
     if (!otaCapable({ product: item.product, firmware: info.firmware })) return null;
@@ -1247,7 +1247,7 @@ const SECONDARY_BUTTON =
   "shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-muted hover:border-filament/50 hover:text-filament disabled:opacity-50";
 
 /**
- * The firmware action next to a switch's name (docs/specs/finished/ota.md §3.1). Update opens the
+ * The firmware action next to a switch's name (docs/archive/specs/ota.md §3.1). Update opens the
  * panel that says what changes; a switch without an OTA client gets the same button, and
  * the panel sends it to Setup. Nothing when the switch runs the current release.
  */

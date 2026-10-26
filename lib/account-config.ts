@@ -1,4 +1,4 @@
-// Env-driven settings for accounts (docs/specs/finished/multi-user-accounts.md §2.10).
+// Env-driven settings for accounts (docs/archive/specs/multi-user-accounts.md §2.10).
 
 import { HOSTED_CONSOLE_URL, normalizeOrigin, resolveDeviceConsoleUrl } from "@/lib/console-url";
 
@@ -113,7 +113,7 @@ export function emailDailyCap(): number {
   return envInt("EMAIL_DAILY_CAP", 90);
 }
 
-/** USER_CAP: default seat cap until the admin saves one (docs/specs/finished/waitlist.md §2.9). Null: no cap. */
+/** USER_CAP: default seat cap until the admin saves one (docs/archive/specs/waitlist.md §2.9). Null: no cap. */
 export function userCapFromEnv(): number | null {
   const raw = envValue("USER_CAP");
   if (raw === undefined) return null;
@@ -133,7 +133,7 @@ export function publicUrl(): string | null {
 /**
  * The console URL Setup writes to boards, as far as the server knows it: DEVICE_CONSOLE_URL, else
  * BETTER_AUTH_URL. Null when neither is set; Setup then uses the origin of its own page
- * (docs/specs/self-hosting.md §2.1).
+ * (docs/archive/specs/self-hosting.md §2.1).
  */
 export function configuredDeviceConsoleUrl(): string | null {
   return resolveDeviceConsoleUrl({

@@ -1,11 +1,11 @@
-// Uploads a local build to the console, the same way firmware CI does (docs/specs/finished/firmware-uploads.md).
+// Uploads a local build to the console, the same way firmware CI does (docs/archive/specs/firmware-uploads.md).
 //
 //   node scripts/upload-firmware.mjs <round|simple> <dir> --version 0.5.28 --notes <file> [--credits <file>]
 //
 // <dir> holds bootloader.bin, partitions.bin, boot_app0.bin and firmware.bin. Without --version,
 // <dir>/manifest.json supplies it. --notes is a markdown file with that version's changelog bullets.
 // --credits is the firmware repo's THIRD_PARTY.json, sent as `credits` like firmware CI does
-// (docs/specs/finished/credits.md); /credits lists it for the current release.
+// (docs/archive/specs/credits.md); /credits lists it for the current release.
 // Needs FIRMWARE_UPLOAD_TOKEN; CONSOLE_URL defaults to https://hue.tineira.com. The release waits in
 // /admin until an admin makes it current.
 import { readFileSync, existsSync } from "node:fs";

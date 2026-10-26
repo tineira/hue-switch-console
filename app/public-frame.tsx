@@ -6,7 +6,7 @@ const SIGN_IN =
   "rounded-md border border-line bg-background px-4 py-2 text-sm font-medium hover:border-filament";
 
 // Page frame for signed-out visitors on public pages; signed-in users get Shell instead
-// (docs/specs/finished/public-how-to-changelog.md §4.1). Same frame width as Shell.
+// (docs/archive/specs/public-how-to-changelog.md §4.1). Same frame width as Shell.
 export function PublicFrame({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-5 py-8">
