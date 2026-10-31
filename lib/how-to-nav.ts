@@ -91,7 +91,7 @@ const DESCRIPTION: Record<Product, Record<Topic, string>> = {
     status: "What each screen on a Round switch for Philips Hue means, and what to do when something is wrong.",
   },
   simple: {
-    build: "Three ways to build a Simple switch for Philips Hue: try it on USB, a button box, or a board inside your wall.",
+    build: "How to build a Simple switch for Philips Hue: try it on USB or make a button box. The in-wall board is withdrawn until a revised board is ready.",
     setup: "Set up a Simple switch for Philips Hue: install the firmware, join Wi-Fi and pair it with the Hue Bridge.",
     tasks: "Change what a Simple switch for Philips Hue does: what each button does, BOOT, firmware updates and pairing again.",
     status: "What each blink of the LED on a Simple switch for Philips Hue means, and what to do when something is wrong.",

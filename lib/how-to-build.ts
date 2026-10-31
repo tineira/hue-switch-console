@@ -171,7 +171,8 @@ export const DESIGN_STATUS_LABEL: Record<DesignStatus, string> = {
 };
 
 export const DESIGN_STATUS_TEXT: Record<DesignStatus, string> = {
-  experimental: "Designed, never built and installed. Expect mistakes.",
+  experimental:
+    "Unproven. The in-wall board has a known isolation defect, and one was built and later failed. Do not build the current files.",
   maintainer: "Built and in use by the maintainer, one installation.",
   community: "Built and reported working by several people.",
 };
@@ -209,7 +210,7 @@ export const SIMPLE_LEVELS: Level[] = [
     letter: "C",
     name: "In the wall",
     needs: "Our mains carrier board and printed enclosure, behind your wall switch.",
-    who: "Experienced makers, installed by an electrician.",
+    who: "Do not build the current files: known isolation defect, revised board pending.",
     status: "experimental",
   },
 ];
@@ -526,5 +527,5 @@ export const WALL_AFTER: Pic = {
 export function buildSummary(product: Product): string {
   return product === "round"
     ? "What to buy, soldering the headers if they came loose, and how the parts go together."
-    : "Three ways to build one, from no wiring at all to a board inside your wall. What to buy, how to wire it, and whether you need resistors.";
+    : "Build one with no wiring at all or as a button box: what to buy, how to wire it, and whether you need resistors. The in-wall board is withdrawn until a revised board is ready.";
 }

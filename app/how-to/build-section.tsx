@@ -309,6 +309,20 @@ function InWall() {
         id="in-wall"
         className="flex scroll-mt-6 flex-col gap-2 rounded-xl border border-danger/50 bg-danger-soft p-4 text-sm"
       >
+        <p className="font-semibold text-danger">Do not order or build this board.</p>
+        <p className="text-muted">
+          The current board has a known isolation defect: its ground copper sits 1.5 mm from mains copper, not the
+          stated 6 mm. One board was built and later failed. A revised board is pending. Boards made from the
+          current files must not go on mains.{" "}
+          <a
+            href={HARDWARE_README}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-danger underline underline-offset-2"
+          >
+            Hardware notes ↗
+          </a>
+        </p>
         <p className="font-semibold text-danger">Mains voltage can kill.</p>
         <p className="text-muted">
           This board is an uncertified design, made with AI assistance and checked only by design-rule tools: no
@@ -333,7 +347,7 @@ function InWall() {
       </div>
       <Sub
         title="Can I use it?"
-        lead="A small board with its own power supply that sits in the wall box and reads the switches already there. Check all four before you order anything."
+        lead="A small board with its own power supply that sits in the wall box and reads the switches already there. Check these four before you plan on the revised board."
       >
         <ul className={`flex flex-col divide-y divide-line text-sm ${CARD}`}>
           {WALL_REQUIREMENTS.map((r) => (
@@ -374,10 +388,9 @@ function InWall() {
                 </svg>
               </span>
               <span className="flex flex-col gap-1">
-                <span className="text-lg font-semibold text-ok">Your box is ready for it.</span>
+                <span className="text-lg font-semibold text-ok">Your box meets the requirements.</span>
                 <span className="text-sm text-muted">
-                  All four hold. Next, get the board, then show <b className="font-medium text-foreground">Install it</b> to
-                  your electrician.
+                  All four hold, but do not get the current board. Wait for the revised one.
                 </span>
               </span>
             </div>
@@ -414,15 +427,13 @@ function InWall() {
         </div>
       </Sub>
       <Sub
-        title="Get the board"
-        lead="Order it assembled from JLCPCB with the files in the firmware repo. Set the XIAO up over USB (step 1 below) before you solder it on. Print the enclosure in PETG, ASA or PC, not PLA."
+        title="The board"
+        lead="Not available. The files for ordering it were withdrawn because of the isolation defect, and a revised board is pending."
       >
         <Picture pic={WALL_BOARD} />
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {[
-            ["Order from JLCPCB", "#order-assembled-boards-jlcpcb"],
-            ["Solder the XIAO", "#solder-the-xiao"],
-            ["Print the enclosure", "#print-the-enclosure"],
+            ["Why the files were withdrawn", "#order-assembled-boards-jlcpcb"],
             ["Schematic and parts", "#what-is-on-the-board"],
           ].map(([label, anchor]) => (
             <li key={anchor}>
@@ -443,6 +454,7 @@ function InWall() {
         title="Install it"
         lead={
           <>
+            Do not install the current board: these steps are kept for reference until the revised board is ready.
             In this order. Steps 2 to 9 are the electrician&apos;s; show them this page, and the{" "}
             <a href="/safety" className="text-danger underline underline-offset-2">
               Safety notice
