@@ -26,6 +26,7 @@ Agent rules: https://github.com/tineira/agentic-os (read `README.md` first). Thi
 | Deploy | Vercel project "hue-switch-console", production on push to `main` (alias `hue.tineira.com`); docs-only pushes skip the build (`scripts/vercel-ignore.sh`) |
 | Database | Neon Postgres (`DATABASE_URL`; any Postgres with `DATABASE_DRIVER=pg`), shared by localhost and prod: no (use a development database) |
 | Migration commands | Schema in `db/schema.sql`, applied by the console at the first request; `npm run schema` regenerates `lib/generated/schema.ts` (commit both); `npm run migrate` applies it ahead of time |
+| Verify (run the change) | agentic-os `rules/review.md` § Run the change. **Not on localhost:** no Playwright for login or `/setup` (worktrees have no working DB session; rule below). **Run it on production after the deploy** (`hue.tineira.com`): signed-in pages with Tomas's session, read-only. **Device API and schema:** `npm test` (vitest); `npm run push-from-bridge` needs a PC on the Bridge's LAN. **Can't run:** `/setup` (Web Serial: a person in Chrome with a board on USB) and anything on a real switch: a one-step check for Tomas |
 | Local gate before push | `npm run lint` + `npm test` + `npx next typegen && npx tsc --noEmit` + `npm run build` |
 | Branching | Direct push to `main` allowed (no PR required); the review and local gate still run before the push |
 | Freezes | none |
